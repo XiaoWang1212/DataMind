@@ -1,0 +1,26 @@
+# Local environment files
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Upload temp files (keep folder)
+uploads/*
+!uploads/.gitkeep
+
+# Whisper / ML caches
+.whisper_cache/
+.cache/
+
+# Local runtime artifacts
+*.sqlite3
+*.db

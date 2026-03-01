@@ -1,0 +1,35 @@
+import os
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+
+def create_app() -> Flask:
+    load_dotenv()
+
+    app = Flask(__name__)
+    max_content_length_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "25"))
+    app.config["MAX_CONTENT_LENGTH"] = max_content_length_mb * 1024 * 1024
+
+    cors_origin = os.getenv("CORS_ORIGIN", "http://localhost:5173")
+    CORS(app, resources={r"/api/*": {"origins": cors_origin}})
+
+    from routes.health import health_bp
+    from routes.stt import stt_bp
+
+    app.register_blueprint(health_bp)
+    app.register_blueprint(stt_bp, url_prefix="/api/v1/stt")
+
+    @app.get("/")
+    def root():
+        return jsonify(
+            {
+                "name": "DataMind Backend",
+                "message": "Backend service is running",
+                "health": "/api/health",
+                "stt": "/api/v1/stt/transcribe",
+            }
+        )
+
+    return app
