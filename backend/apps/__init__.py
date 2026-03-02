@@ -19,7 +19,7 @@ def create_app() -> Flask:
     from routes.stt import stt_bp
 
     app.register_blueprint(health_bp)
-    app.register_blueprint(stt_bp, url_prefix="/api/v1/stt")
+    app.register_blueprint(stt_bp, url_prefix="/api/stt")
 
     @app.get("/")
     def root():
@@ -28,7 +28,7 @@ def create_app() -> Flask:
                 "name": "DataMind Backend",
                 "message": "Backend service is running",
                 "health": "/api/health",
-                "stt": "/api/v1/stt/transcribe",
+                "stt": "/api/stt/transcribe",
             }
         )
 

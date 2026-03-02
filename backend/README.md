@@ -3,7 +3,7 @@
 ## 功能
 
 - `GET /api/health`：健康檢查
-- `POST /api/v1/stt/transcribe`：Whisper 語音轉文字
+- `POST /api/stt/transcribe`：Whisper 語音轉文字
 
 ## 安裝與啟動
 
@@ -38,9 +38,48 @@ uv run python app.py
 - 新增套件：`uv add <package>`
 - 更新鎖檔：`uv lock`
 
+## Docker / Compose
+
+在專案根目錄執行：
+
+```bash
+docker compose up --build
+```
+
+背景執行：
+
+```bash
+docker compose up --build -d
+```
+
+停止：
+
+```bash
+docker compose down
+```
+
+> Docker 版本已內建 `ffmpeg`，使用者端不需要另外安裝。
+
+測試：
+
+```bash
+curl http://127.0.0.1:5001/api/health
+curl -X POST http://127.0.0.1:5001/api/stt/transcribe \
+  -F "audio=@/path/to/audio.m4a" \
+  -F "language=zh"
+```
+
+或使用測試腳本：
+
+```bash
+cd backend
+chmod +x scripts/test_stt.sh
+./scripts/test_stt.sh tts_sample/你的音檔.m4a
+```
+
 ## STT API 用法
 
-`POST /api/v1/stt/transcribe`（`multipart/form-data`）
+`POST /api/stt/transcribe`（`multipart/form-data`）
 
 欄位：
 
@@ -52,7 +91,7 @@ uv run python app.py
 範例：
 
 ```bash
-curl -X POST http://127.0.0.1:5001/api/v1/stt/transcribe \
+curl -X POST http://127.0.0.1:5001/api/stt/transcribe \
   -F "audio=@/path/to/audio.m4a" \
   -F "language=zh"
 ```
