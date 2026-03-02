@@ -4,14 +4,18 @@
 
 - `GET /api/health`：健康檢查
 - `POST /api/stt/transcribe`：Whisper 語音轉文字
+- `POST /api/ml/pycaret/train`：執行 PyCaret 分類訓練
 
 ## 安裝與啟動
 
 ```bash
 cd backend
-uv sync
+uv python install 3.11
+uv sync --python 3.11
 cp .env.example .env
 ```
+
+> PyCaret 目前只支援 Python 3.9/3.10/3.11，建議固定使用 3.11。
 
 本機 Whisper 不需要 API key，但需要系統有 `ffmpeg`：
 
@@ -97,6 +101,42 @@ curl -X POST http://127.0.0.1:5001/api/stt/transcribe \
 ```
 
 支援副檔名：`wav`, `mp3`, `m4a`, `webm`, `ogg`, `mp4`, `mpeg`, `mpga`
+
+## PyCaret API 用法
+
+`POST /api/ml/pycaret/train`（`application/json`）
+
+欄位：
+
+- `data_path`：CSV 檔案路徑（必要）
+- `target_col`：目標欄位（可選，預設 `是否跌倒`）
+- `output_dir`：輸出目錄（可選，預設 `artifacts/pycaret`）
+
+範例：
+
+```bash
+curl -X POST http://127.0.0.1:5001/api/ml/pycaret/train \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data_path": "/Users/你的帳號/path/to/跌倒資料_0611.csv",
+    "target_col": "是否跌倒",
+    "output_dir": "artifacts/pycaret"
+  }'
+```
+
+輸出包含：
+
+- `pycaret_compare_results.csv`
+- `pycaret_teacher_format.csv`
+- `fall_model.pkl`
+
+或使用測試腳本：
+
+```bash
+cd backend
+chmod +x scripts/test_pycaret.sh
+./scripts/test_pycaret.sh /path/to/跌倒資料_0611.csv 是否跌倒 artifacts/pycaret
+```
 
 ## 說明
 

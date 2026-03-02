@@ -16,9 +16,11 @@ def create_app() -> Flask:
     CORS(app, resources={r"/api/*": {"origins": cors_origin}})
 
     from routes.health import health_bp
+    from routes.pycaret import pycaret_bp
     from routes.stt import stt_bp
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(pycaret_bp, url_prefix="/api/ml/pycaret")
     app.register_blueprint(stt_bp, url_prefix="/api/stt")
 
     @app.get("/")
@@ -29,6 +31,7 @@ def create_app() -> Flask:
                 "message": "Backend service is running",
                 "health": "/api/health",
                 "stt": "/api/stt/transcribe",
+                "pycaret": "/api/ml/pycaret/train",
             }
         )
 
