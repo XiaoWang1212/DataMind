@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datamind-backend
+    ports:
+      - "5001:5001"
+    environment:
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5001
+      FLASK_DEBUG: "false"
+      CORS_ORIGIN: http://localhost:5173
+      WHISPER_MODEL: base
+      UPLOAD_DIR: uploads
+      MAX_CONTENT_LENGTH_MB: 25
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - whisper-cache:/root/.cache/whisper
+    restart: unless-stopped
+
+volumes:
+  whisper-cache:
