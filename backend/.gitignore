@@ -24,3 +24,11 @@ uploads/*
 # Local runtime artifacts
 *.sqlite3
 *.db
+
+# ML artifacts
+artifacts/
+!artifacts/.gitkeep
+
+# model binaries
+*.pkl
+*.joblib

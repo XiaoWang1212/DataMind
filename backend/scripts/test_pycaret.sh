@@ -22,18 +22,10 @@ curl -fsS "$BASE_URL/api/health" >/dev/null
 echo "OK"
 
 echo "[2/2] 觸發 PyCaret 訓練"
-PAYLOAD=$(cat <<JSON
-{
-  "data_path": "$DATA_PATH",
-  "target_col": "$TARGET_COL",
-  "output_dir": "$OUTPUT_DIR"
-}
-JSON
-)
-
 RESPONSE="$(curl -sS -X POST "$BASE_URL/api/ml/pycaret/train" \
-  -H "Content-Type: application/json" \
-  -d "$PAYLOAD")"
+  -F "file=@${DATA_PATH}" \
+  -F "target_col=${TARGET_COL}" \
+  -F "output_dir=${OUTPUT_DIR}")"
 
 echo "$RESPONSE"
 

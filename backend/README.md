@@ -104,24 +104,29 @@ curl -X POST http://127.0.0.1:5001/api/stt/transcribe \
 
 ## PyCaret API 用法
 
-`POST /api/ml/pycaret/train`（`application/json`）
+`POST /api/ml/pycaret/train`（`multipart/form-data`）
 
 欄位：
 
-- `data_path`：CSV 檔案路徑（必要）
+- `file`：CSV 檔案（必要，推薦）
 - `target_col`：目標欄位（可選，預設 `是否跌倒`）
 - `output_dir`：輸出目錄（可選，預設 `artifacts/pycaret`）
 
-範例：
+範例（form-data 上傳）：
+
+```bash
+curl -X POST http://127.0.0.1:5001/api/ml/pycaret/train \
+  -F "file=@/Users/你的帳號/path/to/跌倒資料_0611.csv" \
+  -F "target_col=是否跌倒" \
+  -F "output_dir=artifacts/pycaret"
+```
+
+相容模式（JSON `data_path`）也可用：
 
 ```bash
 curl -X POST http://127.0.0.1:5001/api/ml/pycaret/train \
   -H "Content-Type: application/json" \
-  -d '{
-    "data_path": "/Users/你的帳號/path/to/跌倒資料_0611.csv",
-    "target_col": "是否跌倒",
-    "output_dir": "artifacts/pycaret"
-  }'
+  -d '{"data_path":"/Users/你的帳號/path/to/跌倒資料_0611.csv"}'
 ```
 
 輸出包含：
