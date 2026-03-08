@@ -18,6 +18,11 @@ const router = createRouter({
       name: "workflow",
       component: () => import("@/views/WorkflowPage.vue"),
     },
+    {
+      path: "/sidebar",
+      name: "sidebar",
+      component: () => import("@/components/Sidebar.vue"),
+    },
   ],
 });
 
