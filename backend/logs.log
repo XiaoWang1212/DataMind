@@ -5951,3 +5951,1950 @@ ValueError: could not convert string to float: 'Y'
                                         warm_start=False))],
          verbose=False)
 2026-03-05 14:19:10,355:INFO:save_model() successfully completed......................................
+2026-03-10 01:43:27,615:WARNING:
+'cuml' is a soft dependency and not included in the pycaret installation. Please run: `pip install cuml` to install.
+2026-03-10 01:43:27,615:WARNING:
+'cuml' is a soft dependency and not included in the pycaret installation. Please run: `pip install cuml` to install.
+2026-03-10 01:43:27,615:WARNING:
+'cuml' is a soft dependency and not included in the pycaret installation. Please run: `pip install cuml` to install.
+2026-03-10 01:43:27,615:WARNING:
+'cuml' is a soft dependency and not included in the pycaret installation. Please run: `pip install cuml` to install.
+2026-03-10 01:43:28,375:INFO:PyCaret ClassificationExperiment
+2026-03-10 01:43:28,375:INFO:Logging name: clf-default-name
+2026-03-10 01:43:28,375:INFO:ML Usecase: MLUsecase.CLASSIFICATION
+2026-03-10 01:43:28,375:INFO:version 3.3.2
+2026-03-10 01:43:28,375:INFO:Initializing setup()
+2026-03-10 01:43:28,375:INFO:self.USI: 9cc4
+2026-03-10 01:43:28,375:INFO:self._variable_keys: {'gpu_n_jobs_param', '_ml_usecase', 'data', 'memory', 'is_multiclass', 'y_train', 'y_test', 'log_plots_param', 'gpu_param', 'pipeline', 'n_jobs_param', '_available_plots', 'USI', 'logging_param', 'fold_groups_param', 'fix_imbalance', 'exp_name_log', 'fold_generator', 'fold_shuffle_param', 'idx', 'exp_id', 'X_test', 'X_train', 'X', 'html_param', 'y', 'seed', 'target_param'}
+2026-03-10 01:43:28,375:INFO:Checking environment
+2026-03-10 01:43:28,375:INFO:python_version: 3.11.14
+2026-03-10 01:43:28,375:INFO:python_build: ('main', 'Jan 14 2026 21:09:41')
+2026-03-10 01:43:28,375:INFO:machine: arm64
+2026-03-10 01:43:28,403:INFO:platform: macOS-26.2-arm64-arm-64bit
+2026-03-10 01:43:28,403:INFO:Memory: svmem(total=25769803776, available=7748354048, percent=69.9, used=11285954560, free=66600960, active=7694860288, inactive=7608238080, wired=3591094272)
+2026-03-10 01:43:28,403:INFO:Physical Core: 12
+2026-03-10 01:43:28,403:INFO:Logical Core: 12
+2026-03-10 01:43:28,403:INFO:Checking libraries
+2026-03-10 01:43:28,403:INFO:System:
+2026-03-10 01:43:28,403:INFO:    python: 3.11.14 (main, Jan 14 2026, 21:09:41) [Clang 21.1.4 ]
+2026-03-10 01:43:28,403:INFO:executable: /Users/xiaowang/Documents/Github/DataMind/backend/.venv/bin/python
+2026-03-10 01:43:28,403:INFO:   machine: macOS-26.2-arm64-arm-64bit
+2026-03-10 01:43:28,403:INFO:PyCaret required dependencies:
+2026-03-10 01:43:28,404:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:28,430:INFO:                 pip: Not installed
+2026-03-10 01:43:28,430:INFO:          setuptools: 82.0.0
+2026-03-10 01:43:28,430:INFO:             pycaret: 3.3.2
+2026-03-10 01:43:28,430:INFO:             IPython: 9.10.0
+2026-03-10 01:43:28,430:INFO:          ipywidgets: 8.1.8
+2026-03-10 01:43:28,430:INFO:                tqdm: 4.67.3
+2026-03-10 01:43:28,430:INFO:               numpy: 1.26.4
+2026-03-10 01:43:28,430:INFO:              pandas: 2.1.4
+2026-03-10 01:43:28,430:INFO:              jinja2: 3.1.6
+2026-03-10 01:43:28,430:INFO:               scipy: 1.11.4
+2026-03-10 01:43:28,430:INFO:              joblib: 1.3.2
+2026-03-10 01:43:28,430:INFO:             sklearn: 1.4.2
+2026-03-10 01:43:28,430:INFO:                pyod: 2.0.7
+2026-03-10 01:43:28,430:INFO:            imblearn: 0.14.1
+2026-03-10 01:43:28,430:INFO:   category_encoders: 2.7.0
+2026-03-10 01:43:28,430:INFO:            lightgbm: 4.6.0
+2026-03-10 01:43:28,430:INFO:               numba: 0.64.0
+2026-03-10 01:43:28,430:INFO:            requests: 2.32.5
+2026-03-10 01:43:28,430:INFO:          matplotlib: 3.7.5
+2026-03-10 01:43:28,430:INFO:          scikitplot: 0.3.7
+2026-03-10 01:43:28,430:INFO:         yellowbrick: 1.5
+2026-03-10 01:43:28,430:INFO:              plotly: 5.24.1
+2026-03-10 01:43:28,430:INFO:    plotly-resampler: Not installed
+2026-03-10 01:43:28,430:INFO:             kaleido: 1.2.0
+2026-03-10 01:43:28,430:INFO:           schemdraw: 0.15
+2026-03-10 01:43:28,430:INFO:         statsmodels: 0.14.6
+2026-03-10 01:43:28,430:INFO:              sktime: 0.26.0
+2026-03-10 01:43:28,430:INFO:               tbats: 1.1.3
+2026-03-10 01:43:28,430:INFO:            pmdarima: 2.0.4
+2026-03-10 01:43:28,430:INFO:              psutil: 7.2.2
+2026-03-10 01:43:28,430:INFO:          markupsafe: 3.0.3
+2026-03-10 01:43:28,430:INFO:             pickle5: Not installed
+2026-03-10 01:43:28,430:INFO:         cloudpickle: 3.1.2
+2026-03-10 01:43:28,430:INFO:         deprecation: 2.1.0
+2026-03-10 01:43:28,430:INFO:              xxhash: 3.6.0
+2026-03-10 01:43:28,430:INFO:           wurlitzer: 3.1.1
+2026-03-10 01:43:28,430:INFO:PyCaret optional dependencies:
+2026-03-10 01:43:28,435:INFO:                shap: Not installed
+2026-03-10 01:43:28,435:INFO:           interpret: Not installed
+2026-03-10 01:43:28,435:INFO:                umap: Not installed
+2026-03-10 01:43:28,435:INFO:     ydata_profiling: Not installed
+2026-03-10 01:43:28,435:INFO:  explainerdashboard: Not installed
+2026-03-10 01:43:28,435:INFO:             autoviz: Not installed
+2026-03-10 01:43:28,435:INFO:           fairlearn: Not installed
+2026-03-10 01:43:28,435:INFO:          deepchecks: Not installed
+2026-03-10 01:43:28,435:INFO:             xgboost: Not installed
+2026-03-10 01:43:28,435:INFO:            catboost: Not installed
+2026-03-10 01:43:28,435:INFO:              kmodes: Not installed
+2026-03-10 01:43:28,435:INFO:             mlxtend: Not installed
+2026-03-10 01:43:28,435:INFO:       statsforecast: Not installed
+2026-03-10 01:43:28,435:INFO:        tune_sklearn: Not installed
+2026-03-10 01:43:28,435:INFO:                 ray: Not installed
+2026-03-10 01:43:28,435:INFO:            hyperopt: Not installed
+2026-03-10 01:43:28,435:INFO:              optuna: Not installed
+2026-03-10 01:43:28,435:INFO:               skopt: Not installed
+2026-03-10 01:43:28,435:INFO:              mlflow: Not installed
+2026-03-10 01:43:28,435:INFO:              gradio: Not installed
+2026-03-10 01:43:28,435:INFO:             fastapi: Not installed
+2026-03-10 01:43:28,435:INFO:             uvicorn: Not installed
+2026-03-10 01:43:28,435:INFO:              m2cgen: Not installed
+2026-03-10 01:43:28,435:INFO:           evidently: Not installed
+2026-03-10 01:43:28,435:INFO:               fugue: Not installed
+2026-03-10 01:43:28,435:INFO:           streamlit: Not installed
+2026-03-10 01:43:28,436:INFO:             prophet: Not installed
+2026-03-10 01:43:28,436:INFO:None
+2026-03-10 01:43:28,436:INFO:Set up data.
+2026-03-10 01:43:48,005:INFO:PyCaret ClassificationExperiment
+2026-03-10 01:43:48,005:INFO:Logging name: clf-default-name
+2026-03-10 01:43:48,005:INFO:ML Usecase: MLUsecase.CLASSIFICATION
+2026-03-10 01:43:48,005:INFO:version 3.3.2
+2026-03-10 01:43:48,005:INFO:Initializing setup()
+2026-03-10 01:43:48,005:INFO:self.USI: 4822
+2026-03-10 01:43:48,005:INFO:self._variable_keys: {'gpu_n_jobs_param', '_ml_usecase', 'data', 'memory', 'is_multiclass', 'y_train', 'y_test', 'log_plots_param', 'gpu_param', 'pipeline', 'n_jobs_param', '_available_plots', 'USI', 'logging_param', 'fold_groups_param', 'fix_imbalance', 'exp_name_log', 'fold_generator', 'fold_shuffle_param', 'idx', 'exp_id', 'X_test', 'X_train', 'X', 'html_param', 'y', 'seed', 'target_param'}
+2026-03-10 01:43:48,005:INFO:Checking environment
+2026-03-10 01:43:48,005:INFO:python_version: 3.11.14
+2026-03-10 01:43:48,005:INFO:python_build: ('main', 'Jan 14 2026 21:09:41')
+2026-03-10 01:43:48,005:INFO:machine: arm64
+2026-03-10 01:43:48,005:INFO:platform: macOS-26.2-arm64-arm-64bit
+2026-03-10 01:43:48,006:INFO:Memory: svmem(total=25769803776, available=8040710144, percent=68.8, used=10913005568, free=270303232, active=7768408064, inactive=7699578880, wired=3144597504)
+2026-03-10 01:43:48,006:INFO:Physical Core: 12
+2026-03-10 01:43:48,006:INFO:Logical Core: 12
+2026-03-10 01:43:48,006:INFO:Checking libraries
+2026-03-10 01:43:48,006:INFO:System:
+2026-03-10 01:43:48,006:INFO:    python: 3.11.14 (main, Jan 14 2026, 21:09:41) [Clang 21.1.4 ]
+2026-03-10 01:43:48,006:INFO:executable: /Users/xiaowang/Documents/Github/DataMind/backend/.venv/bin/python
+2026-03-10 01:43:48,006:INFO:   machine: macOS-26.2-arm64-arm-64bit
+2026-03-10 01:43:48,006:INFO:PyCaret required dependencies:
+2026-03-10 01:43:48,006:INFO:                 pip: Not installed
+2026-03-10 01:43:48,006:INFO:          setuptools: 82.0.0
+2026-03-10 01:43:48,006:INFO:             pycaret: 3.3.2
+2026-03-10 01:43:48,006:INFO:             IPython: 9.10.0
+2026-03-10 01:43:48,006:INFO:          ipywidgets: 8.1.8
+2026-03-10 01:43:48,006:INFO:                tqdm: 4.67.3
+2026-03-10 01:43:48,006:INFO:               numpy: 1.26.4
+2026-03-10 01:43:48,006:INFO:              pandas: 2.1.4
+2026-03-10 01:43:48,006:INFO:              jinja2: 3.1.6
+2026-03-10 01:43:48,006:INFO:               scipy: 1.11.4
+2026-03-10 01:43:48,006:INFO:              joblib: 1.3.2
+2026-03-10 01:43:48,006:INFO:             sklearn: 1.4.2
+2026-03-10 01:43:48,006:INFO:                pyod: 2.0.7
+2026-03-10 01:43:48,006:INFO:            imblearn: 0.14.1
+2026-03-10 01:43:48,006:INFO:   category_encoders: 2.7.0
+2026-03-10 01:43:48,006:INFO:            lightgbm: 4.6.0
+2026-03-10 01:43:48,006:INFO:               numba: 0.64.0
+2026-03-10 01:43:48,006:INFO:            requests: 2.32.5
+2026-03-10 01:43:48,006:INFO:          matplotlib: 3.7.5
+2026-03-10 01:43:48,006:INFO:          scikitplot: 0.3.7
+2026-03-10 01:43:48,006:INFO:         yellowbrick: 1.5
+2026-03-10 01:43:48,006:INFO:              plotly: 5.24.1
+2026-03-10 01:43:48,006:INFO:    plotly-resampler: Not installed
+2026-03-10 01:43:48,006:INFO:             kaleido: 1.2.0
+2026-03-10 01:43:48,006:INFO:           schemdraw: 0.15
+2026-03-10 01:43:48,006:INFO:         statsmodels: 0.14.6
+2026-03-10 01:43:48,006:INFO:              sktime: 0.26.0
+2026-03-10 01:43:48,006:INFO:               tbats: 1.1.3
+2026-03-10 01:43:48,006:INFO:            pmdarima: 2.0.4
+2026-03-10 01:43:48,006:INFO:              psutil: 7.2.2
+2026-03-10 01:43:48,006:INFO:          markupsafe: 3.0.3
+2026-03-10 01:43:48,006:INFO:             pickle5: Not installed
+2026-03-10 01:43:48,006:INFO:         cloudpickle: 3.1.2
+2026-03-10 01:43:48,006:INFO:         deprecation: 2.1.0
+2026-03-10 01:43:48,006:INFO:              xxhash: 3.6.0
+2026-03-10 01:43:48,006:INFO:           wurlitzer: 3.1.1
+2026-03-10 01:43:48,006:INFO:PyCaret optional dependencies:
+2026-03-10 01:43:48,006:INFO:                shap: Not installed
+2026-03-10 01:43:48,006:INFO:           interpret: Not installed
+2026-03-10 01:43:48,006:INFO:                umap: Not installed
+2026-03-10 01:43:48,006:INFO:     ydata_profiling: Not installed
+2026-03-10 01:43:48,006:INFO:  explainerdashboard: Not installed
+2026-03-10 01:43:48,006:INFO:             autoviz: Not installed
+2026-03-10 01:43:48,006:INFO:           fairlearn: Not installed
+2026-03-10 01:43:48,006:INFO:          deepchecks: Not installed
+2026-03-10 01:43:48,006:INFO:             xgboost: Not installed
+2026-03-10 01:43:48,006:INFO:            catboost: Not installed
+2026-03-10 01:43:48,006:INFO:              kmodes: Not installed
+2026-03-10 01:43:48,006:INFO:             mlxtend: Not installed
+2026-03-10 01:43:48,006:INFO:       statsforecast: Not installed
+2026-03-10 01:43:48,006:INFO:        tune_sklearn: Not installed
+2026-03-10 01:43:48,006:INFO:                 ray: Not installed
+2026-03-10 01:43:48,006:INFO:            hyperopt: Not installed
+2026-03-10 01:43:48,006:INFO:              optuna: Not installed
+2026-03-10 01:43:48,006:INFO:               skopt: Not installed
+2026-03-10 01:43:48,006:INFO:              mlflow: Not installed
+2026-03-10 01:43:48,006:INFO:              gradio: Not installed
+2026-03-10 01:43:48,006:INFO:             fastapi: Not installed
+2026-03-10 01:43:48,006:INFO:             uvicorn: Not installed
+2026-03-10 01:43:48,006:INFO:              m2cgen: Not installed
+2026-03-10 01:43:48,006:INFO:           evidently: Not installed
+2026-03-10 01:43:48,006:INFO:               fugue: Not installed
+2026-03-10 01:43:48,006:INFO:           streamlit: Not installed
+2026-03-10 01:43:48,006:INFO:             prophet: Not installed
+2026-03-10 01:43:48,006:INFO:None
+2026-03-10 01:43:48,006:INFO:Set up data.
+2026-03-10 01:43:48,013:INFO:Set up folding strategy.
+2026-03-10 01:43:48,013:INFO:Set up train/test split.
+2026-03-10 01:43:48,027:INFO:Set up index.
+2026-03-10 01:43:48,027:INFO:Assigning column types.
+2026-03-10 01:43:48,029:INFO:Engine successfully changes for model 'lr' to 'sklearn'.
+2026-03-10 01:43:48,041:INFO:Engine for model 'knn' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,043:INFO:Engine for model 'rbfsvm' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,053:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,053:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,065:INFO:Engine for model 'knn' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,065:INFO:Engine for model 'rbfsvm' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,073:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,073:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,073:INFO:Engine successfully changes for model 'knn' to 'sklearn'.
+2026-03-10 01:43:48,086:INFO:Engine for model 'rbfsvm' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,093:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,093:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,106:INFO:Engine for model 'rbfsvm' has not been set explicitly, hence returning None.
+2026-03-10 01:43:48,113:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,113:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,113:INFO:Engine successfully changes for model 'rbfsvm' to 'sklearn'.
+2026-03-10 01:43:48,133:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,133:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,154:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,154:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,155:INFO:Preparing preprocessing pipeline...
+2026-03-10 01:43:48,156:INFO:Set up label encoding.
+2026-03-10 01:43:48,156:INFO:Set up simple imputation.
+2026-03-10 01:43:48,159:INFO:Set up encoding of ordinal features.
+2026-03-10 01:43:48,170:INFO:Set up encoding of categorical features.
+2026-03-10 01:43:48,170:INFO:Set up imbalanced handling.
+2026-03-10 01:43:48,170:INFO:Set up feature normalization.
+2026-03-10 01:43:48,170:INFO:Set up column name cleaning.
+2026-03-10 01:43:48,574:INFO:Finished creating preprocessing pipeline.
+2026-03-10 01:43:48,620:INFO:Pipeline: Pipeline(memory=FastMemory(location=/var/folders/qr/v7zsrctd3rj_brd6d8n5cq7c0000gn/T/joblib),
+         steps=[('label_encoding',
+                 TransformerWrapperWithInverse(exclude=None, include=None,
+                                               transformer=LabelEncoder())),
+                ('numerical_imputer',
+                 TransformerWrapper(exclude=None,
+                                    include=['age', '意識狀態', '精神狀態', '下肢肌力',
+                                             'K氏量表', '巴氏量表'],
+                                    transformer=SimpleImputer(add_indicator=Fal...
+                                    transformer=FixImbalancer(estimator=SMOTE(k_neighbors=5,
+                                                                              random_state=42,
+                                                                              sampling_strategy='auto')))),
+                ('normalize',
+                 TransformerWrapper(exclude=None, include=None,
+                                    transformer=StandardScaler(copy=True,
+                                                               with_mean=True,
+                                                               with_std=True))),
+                ('clean_column_names',
+                 TransformerWrapper(exclude=None, include=None,
+                                    transformer=CleanColumnNames(match='[\\]\\[\\,\\{\\}\\"\\:]+')))],
+         verbose=False)
+2026-03-10 01:43:48,620:INFO:Creating final display dataframe.
+2026-03-10 01:43:48,842:INFO:Setup _display_container:                     Description             Value
+0                    Session id                42
+1                        Target               Sex
+2                   Target type            Binary
+3                Target mapping        F: 0, M: 1
+4           Original data shape        (1182, 40)
+5        Transformed data shape        (1271, 40)
+6   Transformed train set shape         (916, 40)
+7    Transformed test set shape         (355, 40)
+8              Numeric features                 6
+9          Categorical features                33
+10                   Preprocess              True
+11              Imputation type            simple
+12           Numeric imputation              mean
+13       Categorical imputation              mode
+14     Maximum one-hot encoding                25
+15              Encoding method              None
+16                Fix imbalance              True
+17         Fix imbalance method             SMOTE
+18                    Normalize              True
+19             Normalize method            zscore
+20               Fold Generator   StratifiedKFold
+21                  Fold Number                 5
+22                     CPU Jobs                -1
+23                      Use GPU             False
+24               Log Experiment             False
+25              Experiment Name  clf-default-name
+26                          USI              4822
+2026-03-10 01:43:48,863:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,863:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,883:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,883:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:48,884:INFO:setup() successfully completed in 0.88s...............
+2026-03-10 01:43:48,884:INFO:Initializing compare_models()
+2026-03-10 01:43:48,884:INFO:compare_models(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, include=None, exclude=['lightgbm'], fold=None, round=4, cross_validation=True, sort=Accuracy, n_select=1, budget_time=None, turbo=True, errors=ignore, fit_kwargs=None, groups=None, experiment_custom_tags=None, probability_threshold=None, verbose=True, parallel=None, caller_params={'self': <pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, 'include': None, 'exclude': ['lightgbm'], 'fold': None, 'round': 4, 'cross_validation': True, 'sort': 'Accuracy', 'n_select': 1, 'budget_time': None, 'turbo': True, 'errors': 'ignore', 'fit_kwargs': None, 'groups': None, 'experiment_custom_tags': None, 'probability_threshold': None, 'engine': None, 'verbose': True, 'parallel': None, '__class__': <class 'pycaret.classification.oop.ClassificationExperiment'>})
+2026-03-10 01:43:48,884:INFO:Checking exceptions
+2026-03-10 01:43:48,885:INFO:Preparing display monitor
+2026-03-10 01:43:48,886:INFO:Initializing Logistic Regression
+2026-03-10 01:43:48,886:INFO:Total runtime is 5.960464477539062e-07 minutes
+2026-03-10 01:43:48,886:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:48,886:INFO:Initializing create_model()
+2026-03-10 01:43:48,886:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=lr, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:48,886:INFO:Checking exceptions
+2026-03-10 01:43:48,886:INFO:Importing libraries
+2026-03-10 01:43:48,886:INFO:Copying training dataset
+2026-03-10 01:43:48,888:INFO:Defining folds
+2026-03-10 01:43:48,888:INFO:Declaring metric variables
+2026-03-10 01:43:48,888:INFO:Importing untrained model
+2026-03-10 01:43:48,888:INFO:Logistic Regression Imported successfully
+2026-03-10 01:43:48,888:INFO:Starting cross validation
+2026-03-10 01:43:48,889:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:50,901:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:50,901:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:50,901:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:50,901:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:50,901:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:51,009:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,009:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,009:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,009:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,009:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,011:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,012:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,012:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,012:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,026:INFO:Calculating mean and std
+2026-03-10 01:43:51,026:INFO:Creating metrics dataframe
+2026-03-10 01:43:51,027:INFO:Uploading results into container
+2026-03-10 01:43:51,027:INFO:Uploading model into container now
+2026-03-10 01:43:51,028:INFO:_master_model_container: 1
+2026-03-10 01:43:51,028:INFO:_display_container: 2
+2026-03-10 01:43:51,028:INFO:LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='l2',
+                   random_state=42, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False)
+2026-03-10 01:43:51,028:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:51,090:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:51,090:INFO:Creating metrics dataframe
+2026-03-10 01:43:51,091:INFO:Initializing K Neighbors Classifier
+2026-03-10 01:43:51,091:INFO:Total runtime is 0.03674904902776082 minutes
+2026-03-10 01:43:51,091:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:51,091:INFO:Initializing create_model()
+2026-03-10 01:43:51,091:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=knn, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:51,091:INFO:Checking exceptions
+2026-03-10 01:43:51,091:INFO:Importing libraries
+2026-03-10 01:43:51,091:INFO:Copying training dataset
+2026-03-10 01:43:51,093:INFO:Defining folds
+2026-03-10 01:43:51,093:INFO:Declaring metric variables
+2026-03-10 01:43:51,093:INFO:Importing untrained model
+2026-03-10 01:43:51,093:INFO:K Neighbors Classifier Imported successfully
+2026-03-10 01:43:51,093:INFO:Starting cross validation
+2026-03-10 01:43:51,094:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:51,188:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,189:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,190:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,191:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,192:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,192:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,902:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:51,903:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:51,904:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:51,995:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,996:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,996:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,996:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,997:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,997:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,997:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,998:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:51,998:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,005:INFO:Calculating mean and std
+2026-03-10 01:43:52,006:INFO:Creating metrics dataframe
+2026-03-10 01:43:52,006:INFO:Uploading results into container
+2026-03-10 01:43:52,007:INFO:Uploading model into container now
+2026-03-10 01:43:52,007:INFO:_master_model_container: 2
+2026-03-10 01:43:52,007:INFO:_display_container: 2
+2026-03-10 01:43:52,007:INFO:KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='minkowski',
+                     metric_params=None, n_jobs=-1, n_neighbors=5, p=2,
+                     weights='uniform')
+2026-03-10 01:43:52,007:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:52,062:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:52,062:INFO:Creating metrics dataframe
+2026-03-10 01:43:52,063:INFO:Initializing Naive Bayes
+2026-03-10 01:43:52,063:INFO:Total runtime is 0.052950584888458246 minutes
+2026-03-10 01:43:52,063:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:52,063:INFO:Initializing create_model()
+2026-03-10 01:43:52,063:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=nb, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:52,063:INFO:Checking exceptions
+2026-03-10 01:43:52,063:INFO:Importing libraries
+2026-03-10 01:43:52,063:INFO:Copying training dataset
+2026-03-10 01:43:52,065:INFO:Defining folds
+2026-03-10 01:43:52,065:INFO:Declaring metric variables
+2026-03-10 01:43:52,065:INFO:Importing untrained model
+2026-03-10 01:43:52,065:INFO:Naive Bayes Imported successfully
+2026-03-10 01:43:52,065:INFO:Starting cross validation
+2026-03-10 01:43:52,066:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:52,149:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,150:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,151:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,156:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,156:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,157:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,160:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,161:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,162:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,870:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:52,870:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:52,960:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,961:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,961:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,962:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,962:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,963:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:52,974:INFO:Calculating mean and std
+2026-03-10 01:43:52,974:INFO:Creating metrics dataframe
+2026-03-10 01:43:52,975:INFO:Uploading results into container
+2026-03-10 01:43:52,975:INFO:Uploading model into container now
+2026-03-10 01:43:52,975:INFO:_master_model_container: 3
+2026-03-10 01:43:52,975:INFO:_display_container: 2
+2026-03-10 01:43:52,975:INFO:GaussianNB(priors=None, var_smoothing=1e-09)
+2026-03-10 01:43:52,975:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:53,029:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:53,030:INFO:Creating metrics dataframe
+2026-03-10 01:43:53,030:INFO:Initializing Decision Tree Classifier
+2026-03-10 01:43:53,030:INFO:Total runtime is 0.06907346248626708 minutes
+2026-03-10 01:43:53,030:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:53,031:INFO:Initializing create_model()
+2026-03-10 01:43:53,031:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=dt, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:53,031:INFO:Checking exceptions
+2026-03-10 01:43:53,031:INFO:Importing libraries
+2026-03-10 01:43:53,031:INFO:Copying training dataset
+2026-03-10 01:43:53,032:INFO:Defining folds
+2026-03-10 01:43:53,032:INFO:Declaring metric variables
+2026-03-10 01:43:53,032:INFO:Importing untrained model
+2026-03-10 01:43:53,032:INFO:Decision Tree Classifier Imported successfully
+2026-03-10 01:43:53,032:INFO:Starting cross validation
+2026-03-10 01:43:53,033:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:53,119:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,120:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,121:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,125:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,126:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,126:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,126:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,127:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,127:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,127:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,128:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,128:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,129:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,129:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,130:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,142:INFO:Calculating mean and std
+2026-03-10 01:43:53,143:INFO:Creating metrics dataframe
+2026-03-10 01:43:53,143:INFO:Uploading results into container
+2026-03-10 01:43:53,143:INFO:Uploading model into container now
+2026-03-10 01:43:53,144:INFO:_master_model_container: 4
+2026-03-10 01:43:53,144:INFO:_display_container: 2
+2026-03-10 01:43:53,144:INFO:DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='gini',
+                       max_depth=None, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_samples_leaf=1,
+                       min_samples_split=2, min_weight_fraction_leaf=0.0,
+                       monotonic_cst=None, random_state=42, splitter='best')
+2026-03-10 01:43:53,144:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:53,195:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:53,195:INFO:Creating metrics dataframe
+2026-03-10 01:43:53,196:INFO:Initializing SVM - Linear Kernel
+2026-03-10 01:43:53,196:INFO:Total runtime is 0.07182586590449015 minutes
+2026-03-10 01:43:53,196:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:53,196:INFO:Initializing create_model()
+2026-03-10 01:43:53,196:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=svm, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:53,196:INFO:Checking exceptions
+2026-03-10 01:43:53,196:INFO:Importing libraries
+2026-03-10 01:43:53,196:INFO:Copying training dataset
+2026-03-10 01:43:53,197:INFO:Defining folds
+2026-03-10 01:43:53,197:INFO:Declaring metric variables
+2026-03-10 01:43:53,197:INFO:Importing untrained model
+2026-03-10 01:43:53,197:INFO:SVM - Linear Kernel Imported successfully
+2026-03-10 01:43:53,198:INFO:Starting cross validation
+2026-03-10 01:43:53,198:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:53,286:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,286:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,286:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,286:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,287:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,287:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,287:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,288:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,288:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,290:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,291:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,292:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:53,979:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:54,071:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,072:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,072:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,084:INFO:Calculating mean and std
+2026-03-10 01:43:54,085:INFO:Creating metrics dataframe
+2026-03-10 01:43:54,085:INFO:Uploading results into container
+2026-03-10 01:43:54,086:INFO:Uploading model into container now
+2026-03-10 01:43:54,086:INFO:_master_model_container: 5
+2026-03-10 01:43:54,086:INFO:_display_container: 2
+2026-03-10 01:43:54,086:INFO:SGDClassifier(alpha=0.0001, average=False, class_weight=None,
+              early_stopping=False, epsilon=0.1, eta0=0.001, fit_intercept=True,
+              l1_ratio=0.15, learning_rate='optimal', loss='hinge',
+              max_iter=1000, n_iter_no_change=5, n_jobs=-1, penalty='l2',
+              power_t=0.5, random_state=42, shuffle=True, tol=0.001,
+              validation_fraction=0.1, verbose=0, warm_start=False)
+2026-03-10 01:43:54,086:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:54,137:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:54,137:INFO:Creating metrics dataframe
+2026-03-10 01:43:54,138:INFO:Initializing Ridge Classifier
+2026-03-10 01:43:54,138:INFO:Total runtime is 0.08753324747085571 minutes
+2026-03-10 01:43:54,138:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:54,138:INFO:Initializing create_model()
+2026-03-10 01:43:54,138:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=ridge, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:54,138:INFO:Checking exceptions
+2026-03-10 01:43:54,138:INFO:Importing libraries
+2026-03-10 01:43:54,138:INFO:Copying training dataset
+2026-03-10 01:43:54,140:INFO:Defining folds
+2026-03-10 01:43:54,140:INFO:Declaring metric variables
+2026-03-10 01:43:54,140:INFO:Importing untrained model
+2026-03-10 01:43:54,140:INFO:Ridge Classifier Imported successfully
+2026-03-10 01:43:54,140:INFO:Starting cross validation
+2026-03-10 01:43:54,141:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:54,226:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,227:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,227:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,227:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,227:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,228:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,229:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,230:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,231:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,233:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,234:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,235:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:54,942:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/_distutils_hack/__init__.py:30: UserWarning: Setuptools is replacing distutils. Support for replacing an already imported distutils is deprecated. In the future, this condition will fail. Register concerns at https://github.com/pypa/setuptools/issues/new?template=distutils-deprecation.yml
+  warnings.warn(
+
+2026-03-10 01:43:55,033:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,034:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,035:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,037:INFO:Calculating mean and std
+2026-03-10 01:43:55,037:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,038:INFO:Uploading results into container
+2026-03-10 01:43:55,038:INFO:Uploading model into container now
+2026-03-10 01:43:55,038:INFO:_master_model_container: 6
+2026-03-10 01:43:55,038:INFO:_display_container: 2
+2026-03-10 01:43:55,038:INFO:RidgeClassifier(alpha=1.0, class_weight=None, copy_X=True, fit_intercept=True,
+                max_iter=None, positive=False, random_state=42, solver='auto',
+                tol=0.0001)
+2026-03-10 01:43:55,038:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:55,091:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:55,091:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,092:INFO:Initializing Random Forest Classifier
+2026-03-10 01:43:55,092:INFO:Total runtime is 0.1034275492032369 minutes
+2026-03-10 01:43:55,092:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:55,092:INFO:Initializing create_model()
+2026-03-10 01:43:55,092:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=rf, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:55,092:INFO:Checking exceptions
+2026-03-10 01:43:55,092:INFO:Importing libraries
+2026-03-10 01:43:55,092:INFO:Copying training dataset
+2026-03-10 01:43:55,094:INFO:Defining folds
+2026-03-10 01:43:55,094:INFO:Declaring metric variables
+2026-03-10 01:43:55,094:INFO:Importing untrained model
+2026-03-10 01:43:55,094:INFO:Random Forest Classifier Imported successfully
+2026-03-10 01:43:55,094:INFO:Starting cross validation
+2026-03-10 01:43:55,095:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:55,340:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,342:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,343:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,350:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,351:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,352:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,352:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,352:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,353:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,353:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,354:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,354:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,355:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,356:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,357:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,369:INFO:Calculating mean and std
+2026-03-10 01:43:55,369:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,370:INFO:Uploading results into container
+2026-03-10 01:43:55,370:INFO:Uploading model into container now
+2026-03-10 01:43:55,370:INFO:_master_model_container: 7
+2026-03-10 01:43:55,370:INFO:_display_container: 2
+2026-03-10 01:43:55,370:INFO:RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
+                       criterion='gini', max_depth=None, max_features='sqrt',
+                       max_leaf_nodes=None, max_samples=None,
+                       min_impurity_decrease=0.0, min_samples_leaf=1,
+                       min_samples_split=2, min_weight_fraction_leaf=0.0,
+                       monotonic_cst=None, n_estimators=100, n_jobs=-1,
+                       oob_score=False, random_state=42, verbose=0,
+                       warm_start=False)
+2026-03-10 01:43:55,370:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:55,422:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:55,422:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,423:INFO:Initializing Quadratic Discriminant Analysis
+2026-03-10 01:43:55,423:INFO:Total runtime is 0.10894676446914672 minutes
+2026-03-10 01:43:55,423:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:55,423:INFO:Initializing create_model()
+2026-03-10 01:43:55,423:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=qda, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:55,423:INFO:Checking exceptions
+2026-03-10 01:43:55,423:INFO:Importing libraries
+2026-03-10 01:43:55,423:INFO:Copying training dataset
+2026-03-10 01:43:55,426:INFO:Defining folds
+2026-03-10 01:43:55,426:INFO:Declaring metric variables
+2026-03-10 01:43:55,426:INFO:Importing untrained model
+2026-03-10 01:43:55,426:INFO:Quadratic Discriminant Analysis Imported successfully
+2026-03-10 01:43:55,426:INFO:Starting cross validation
+2026-03-10 01:43:55,427:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:55,493:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/discriminant_analysis.py:935: UserWarning: Variables are collinear
+  warnings.warn("Variables are collinear")
+
+2026-03-10 01:43:55,493:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/discriminant_analysis.py:935: UserWarning: Variables are collinear
+  warnings.warn("Variables are collinear")
+
+2026-03-10 01:43:55,495:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/discriminant_analysis.py:935: UserWarning: Variables are collinear
+  warnings.warn("Variables are collinear")
+
+2026-03-10 01:43:55,501:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/discriminant_analysis.py:935: UserWarning: Variables are collinear
+  warnings.warn("Variables are collinear")
+
+2026-03-10 01:43:55,507:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/discriminant_analysis.py:935: UserWarning: Variables are collinear
+  warnings.warn("Variables are collinear")
+
+2026-03-10 01:43:55,513:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,514:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,515:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,516:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,517:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,518:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,518:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,519:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,520:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,523:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,524:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,525:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,529:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,530:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,530:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,535:INFO:Calculating mean and std
+2026-03-10 01:43:55,535:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,536:INFO:Uploading results into container
+2026-03-10 01:43:55,536:INFO:Uploading model into container now
+2026-03-10 01:43:55,536:INFO:_master_model_container: 8
+2026-03-10 01:43:55,536:INFO:_display_container: 2
+2026-03-10 01:43:55,536:INFO:QuadraticDiscriminantAnalysis(priors=None, reg_param=0.0,
+                              store_covariance=False, tol=0.0001)
+2026-03-10 01:43:55,536:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:55,591:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:55,591:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,591:INFO:Initializing Ada Boost Classifier
+2026-03-10 01:43:55,591:INFO:Total runtime is 0.1117579460144043 minutes
+2026-03-10 01:43:55,592:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:55,592:INFO:Initializing create_model()
+2026-03-10 01:43:55,592:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=ada, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:55,592:INFO:Checking exceptions
+2026-03-10 01:43:55,592:INFO:Importing libraries
+2026-03-10 01:43:55,592:INFO:Copying training dataset
+2026-03-10 01:43:55,594:INFO:Defining folds
+2026-03-10 01:43:55,594:INFO:Declaring metric variables
+2026-03-10 01:43:55,594:INFO:Importing untrained model
+2026-03-10 01:43:55,594:INFO:Ada Boost Classifier Imported successfully
+2026-03-10 01:43:55,594:INFO:Starting cross validation
+2026-03-10 01:43:55,595:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:55,662:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/ensemble/_weight_boosting.py:519: FutureWarning: The SAMME.R algorithm (the default) is deprecated and will be removed in 1.6. Use the SAMME algorithm to circumvent this warning.
+  warnings.warn(
+
+2026-03-10 01:43:55,671:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/ensemble/_weight_boosting.py:519: FutureWarning: The SAMME.R algorithm (the default) is deprecated and will be removed in 1.6. Use the SAMME algorithm to circumvent this warning.
+  warnings.warn(
+
+2026-03-10 01:43:55,673:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/ensemble/_weight_boosting.py:519: FutureWarning: The SAMME.R algorithm (the default) is deprecated and will be removed in 1.6. Use the SAMME algorithm to circumvent this warning.
+  warnings.warn(
+
+2026-03-10 01:43:55,676:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/ensemble/_weight_boosting.py:519: FutureWarning: The SAMME.R algorithm (the default) is deprecated and will be removed in 1.6. Use the SAMME algorithm to circumvent this warning.
+  warnings.warn(
+
+2026-03-10 01:43:55,677:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/ensemble/_weight_boosting.py:519: FutureWarning: The SAMME.R algorithm (the default) is deprecated and will be removed in 1.6. Use the SAMME algorithm to circumvent this warning.
+  warnings.warn(
+
+2026-03-10 01:43:55,715:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,716:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,717:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,720:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,721:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,721:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,724:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,725:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,725:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,726:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,726:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,727:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,728:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,729:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,730:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,739:INFO:Calculating mean and std
+2026-03-10 01:43:55,740:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,740:INFO:Uploading results into container
+2026-03-10 01:43:55,740:INFO:Uploading model into container now
+2026-03-10 01:43:55,741:INFO:_master_model_container: 9
+2026-03-10 01:43:55,741:INFO:_display_container: 2
+2026-03-10 01:43:55,741:INFO:AdaBoostClassifier(algorithm='SAMME.R', estimator=None, learning_rate=1.0,
+                   n_estimators=50, random_state=42)
+2026-03-10 01:43:55,741:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:55,792:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:55,792:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,793:INFO:Initializing Gradient Boosting Classifier
+2026-03-10 01:43:55,793:INFO:Total runtime is 0.11511051654815674 minutes
+2026-03-10 01:43:55,793:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:55,793:INFO:Initializing create_model()
+2026-03-10 01:43:55,793:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=gbc, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:55,793:INFO:Checking exceptions
+2026-03-10 01:43:55,793:INFO:Importing libraries
+2026-03-10 01:43:55,793:INFO:Copying training dataset
+2026-03-10 01:43:55,795:INFO:Defining folds
+2026-03-10 01:43:55,795:INFO:Declaring metric variables
+2026-03-10 01:43:55,795:INFO:Importing untrained model
+2026-03-10 01:43:55,795:INFO:Gradient Boosting Classifier Imported successfully
+2026-03-10 01:43:55,795:INFO:Starting cross validation
+2026-03-10 01:43:55,796:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:55,959:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,961:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,962:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,962:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,962:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,963:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,966:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,967:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,968:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,970:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,971:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,972:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,974:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,975:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,976:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:55,991:INFO:Calculating mean and std
+2026-03-10 01:43:55,991:INFO:Creating metrics dataframe
+2026-03-10 01:43:55,992:INFO:Uploading results into container
+2026-03-10 01:43:55,992:INFO:Uploading model into container now
+2026-03-10 01:43:55,992:INFO:_master_model_container: 10
+2026-03-10 01:43:55,992:INFO:_display_container: 2
+2026-03-10 01:43:55,992:INFO:GradientBoostingClassifier(ccp_alpha=0.0, criterion='friedman_mse', init=None,
+                           learning_rate=0.1, loss='log_loss', max_depth=3,
+                           max_features=None, max_leaf_nodes=None,
+                           min_impurity_decrease=0.0, min_samples_leaf=1,
+                           min_samples_split=2, min_weight_fraction_leaf=0.0,
+                           n_estimators=100, n_iter_no_change=None,
+                           random_state=42, subsample=1.0, tol=0.0001,
+                           validation_fraction=0.1, verbose=0,
+                           warm_start=False)
+2026-03-10 01:43:55,992:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:56,047:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:56,047:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,048:INFO:Initializing Linear Discriminant Analysis
+2026-03-10 01:43:56,048:INFO:Total runtime is 0.11935890118281046 minutes
+2026-03-10 01:43:56,048:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:56,048:INFO:Initializing create_model()
+2026-03-10 01:43:56,048:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=lda, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:56,048:INFO:Checking exceptions
+2026-03-10 01:43:56,048:INFO:Importing libraries
+2026-03-10 01:43:56,048:INFO:Copying training dataset
+2026-03-10 01:43:56,049:INFO:Defining folds
+2026-03-10 01:43:56,049:INFO:Declaring metric variables
+2026-03-10 01:43:56,049:INFO:Importing untrained model
+2026-03-10 01:43:56,049:INFO:Linear Discriminant Analysis Imported successfully
+2026-03-10 01:43:56,049:INFO:Starting cross validation
+2026-03-10 01:43:56,050:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:56,145:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,146:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,146:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,147:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,147:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,148:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,148:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,148:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,149:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,149:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,150:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,150:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,151:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,151:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,152:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,165:INFO:Calculating mean and std
+2026-03-10 01:43:56,165:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,166:INFO:Uploading results into container
+2026-03-10 01:43:56,166:INFO:Uploading model into container now
+2026-03-10 01:43:56,166:INFO:_master_model_container: 11
+2026-03-10 01:43:56,166:INFO:_display_container: 2
+2026-03-10 01:43:56,166:INFO:LinearDiscriminantAnalysis(covariance_estimator=None, n_components=None,
+                           priors=None, shrinkage=None, solver='svd',
+                           store_covariance=False, tol=0.0001)
+2026-03-10 01:43:56,166:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:56,223:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:56,223:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,224:INFO:Initializing Extra Trees Classifier
+2026-03-10 01:43:56,224:INFO:Total runtime is 0.12229476769765218 minutes
+2026-03-10 01:43:56,224:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:56,224:INFO:Initializing create_model()
+2026-03-10 01:43:56,224:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=et, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:56,224:INFO:Checking exceptions
+2026-03-10 01:43:56,224:INFO:Importing libraries
+2026-03-10 01:43:56,224:INFO:Copying training dataset
+2026-03-10 01:43:56,226:INFO:Defining folds
+2026-03-10 01:43:56,226:INFO:Declaring metric variables
+2026-03-10 01:43:56,226:INFO:Importing untrained model
+2026-03-10 01:43:56,226:INFO:Extra Trees Classifier Imported successfully
+2026-03-10 01:43:56,226:INFO:Starting cross validation
+2026-03-10 01:43:56,227:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:56,425:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,427:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,428:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,428:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,430:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,431:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,431:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,432:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,433:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,437:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,438:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,439:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,443:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,444:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,445:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,458:INFO:Calculating mean and std
+2026-03-10 01:43:56,458:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,459:INFO:Uploading results into container
+2026-03-10 01:43:56,459:INFO:Uploading model into container now
+2026-03-10 01:43:56,459:INFO:_master_model_container: 12
+2026-03-10 01:43:56,459:INFO:_display_container: 2
+2026-03-10 01:43:56,459:INFO:ExtraTreesClassifier(bootstrap=False, ccp_alpha=0.0, class_weight=None,
+                     criterion='gini', max_depth=None, max_features='sqrt',
+                     max_leaf_nodes=None, max_samples=None,
+                     min_impurity_decrease=0.0, min_samples_leaf=1,
+                     min_samples_split=2, min_weight_fraction_leaf=0.0,
+                     monotonic_cst=None, n_estimators=100, n_jobs=-1,
+                     oob_score=False, random_state=42, verbose=0,
+                     warm_start=False)
+2026-03-10 01:43:56,459:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:56,515:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:56,515:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,516:INFO:Initializing Dummy Classifier
+2026-03-10 01:43:56,516:INFO:Total runtime is 0.12716321150461832 minutes
+2026-03-10 01:43:56,516:INFO:SubProcess create_model() called ==================================
+2026-03-10 01:43:56,516:INFO:Initializing create_model()
+2026-03-10 01:43:56,516:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=dummy, fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=True, predict=True, fit_kwargs={}, groups=None, refit=False, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=<pycaret.internal.display.display.CommonDisplay object at 0x15d5ef590>, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:56,516:INFO:Checking exceptions
+2026-03-10 01:43:56,516:INFO:Importing libraries
+2026-03-10 01:43:56,516:INFO:Copying training dataset
+2026-03-10 01:43:56,519:INFO:Defining folds
+2026-03-10 01:43:56,519:INFO:Declaring metric variables
+2026-03-10 01:43:56,519:INFO:Importing untrained model
+2026-03-10 01:43:56,519:INFO:Dummy Classifier Imported successfully
+2026-03-10 01:43:56,519:INFO:Starting cross validation
+2026-03-10 01:43:56,520:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:56,606:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,606:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,607:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1509: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f"{metric.capitalize()} is", len(result))
+
+2026-03-10 01:43:56,607:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,611:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,612:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,613:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1509: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f"{metric.capitalize()} is", len(result))
+
+2026-03-10 01:43:56,613:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,619:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,620:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,620:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1509: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f"{metric.capitalize()} is", len(result))
+
+2026-03-10 01:43:56,620:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,621:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,621:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,622:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1509: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f"{metric.capitalize()} is", len(result))
+
+2026-03-10 01:43:56,622:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,624:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,625:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,626:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1509: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f"{metric.capitalize()} is", len(result))
+
+2026-03-10 01:43:56,626:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:56,640:INFO:Calculating mean and std
+2026-03-10 01:43:56,640:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,641:INFO:Uploading results into container
+2026-03-10 01:43:56,641:INFO:Uploading model into container now
+2026-03-10 01:43:56,641:INFO:_master_model_container: 13
+2026-03-10 01:43:56,641:INFO:_display_container: 2
+2026-03-10 01:43:56,641:INFO:DummyClassifier(constant=None, random_state=42, strategy='prior')
+2026-03-10 01:43:56,641:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:56,714:INFO:SubProcess create_model() end ==================================
+2026-03-10 01:43:56,714:INFO:Creating metrics dataframe
+2026-03-10 01:43:56,717:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/internal/pycaret_experiment/supervised_experiment.py:339: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
+  .applymap(highlight_cols, subset=["TT (Sec)"])
+
+2026-03-10 01:43:56,718:INFO:Initializing create_model()
+2026-03-10 01:43:56,718:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=ExtraTreesClassifier(bootstrap=False, ccp_alpha=0.0, class_weight=None,
+                     criterion='gini', max_depth=None, max_features='sqrt',
+                     max_leaf_nodes=None, max_samples=None,
+                     min_impurity_decrease=0.0, min_samples_leaf=1,
+                     min_samples_split=2, min_weight_fraction_leaf=0.0,
+                     monotonic_cst=None, n_estimators=100, n_jobs=-1,
+                     oob_score=False, random_state=42, verbose=0,
+                     warm_start=False), fold=StratifiedKFold(n_splits=5, random_state=None, shuffle=False), round=4, cross_validation=False, predict=False, fit_kwargs={}, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=False, system=False, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:56,718:INFO:Checking exceptions
+2026-03-10 01:43:56,718:INFO:Importing libraries
+2026-03-10 01:43:56,718:INFO:Copying training dataset
+2026-03-10 01:43:56,723:INFO:Defining folds
+2026-03-10 01:43:56,723:INFO:Declaring metric variables
+2026-03-10 01:43:56,723:INFO:Importing untrained model
+2026-03-10 01:43:56,723:INFO:Declaring custom model
+2026-03-10 01:43:56,723:INFO:Extra Trees Classifier Imported successfully
+2026-03-10 01:43:56,724:INFO:Cross validation set to False
+2026-03-10 01:43:56,724:INFO:Fitting Model
+2026-03-10 01:43:56,948:INFO:ExtraTreesClassifier(bootstrap=False, ccp_alpha=0.0, class_weight=None,
+                     criterion='gini', max_depth=None, max_features='sqrt',
+                     max_leaf_nodes=None, max_samples=None,
+                     min_impurity_decrease=0.0, min_samples_leaf=1,
+                     min_samples_split=2, min_weight_fraction_leaf=0.0,
+                     monotonic_cst=None, n_estimators=100, n_jobs=-1,
+                     oob_score=False, random_state=42, verbose=0,
+                     warm_start=False)
+2026-03-10 01:43:56,949:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:57,060:INFO:_master_model_container: 13
+2026-03-10 01:43:57,060:INFO:_display_container: 2
+2026-03-10 01:43:57,060:INFO:ExtraTreesClassifier(bootstrap=False, ccp_alpha=0.0, class_weight=None,
+                     criterion='gini', max_depth=None, max_features='sqrt',
+                     max_leaf_nodes=None, max_samples=None,
+                     min_impurity_decrease=0.0, min_samples_leaf=1,
+                     min_samples_split=2, min_weight_fraction_leaf=0.0,
+                     monotonic_cst=None, n_estimators=100, n_jobs=-1,
+                     oob_score=False, random_state=42, verbose=0,
+                     warm_start=False)
+2026-03-10 01:43:57,061:INFO:compare_models() successfully completed......................................
+2026-03-10 01:43:57,062:INFO:gpu_param set to False
+2026-03-10 01:43:57,083:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:57,083:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:57,103:WARNING:
+'xgboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install xgboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:57,103:WARNING:
+'catboost' is a soft dependency and not included in the pycaret installation. Please run: `pip install catboost` to install.
+Alternately, you can install this by running `pip install pycaret[models]`
+2026-03-10 01:43:57,104:INFO:Initializing create_model()
+2026-03-10 01:43:57,104:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=lr, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:57,104:INFO:Checking exceptions
+2026-03-10 01:43:57,105:INFO:Importing libraries
+2026-03-10 01:43:57,105:INFO:Copying training dataset
+2026-03-10 01:43:57,107:INFO:Defining folds
+2026-03-10 01:43:57,107:INFO:Declaring metric variables
+2026-03-10 01:43:57,107:INFO:Importing untrained model
+2026-03-10 01:43:57,107:INFO:Logistic Regression Imported successfully
+2026-03-10 01:43:57,107:INFO:Starting cross validation
+2026-03-10 01:43:57,108:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:57,194:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,195:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,195:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,197:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,198:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,200:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,200:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,201:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,202:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,203:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,204:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,204:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,204:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,205:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,206:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,209:INFO:Calculating mean and std
+2026-03-10 01:43:57,209:INFO:Creating metrics dataframe
+2026-03-10 01:43:57,210:INFO:Finalizing model
+2026-03-10 01:43:57,711:INFO:Uploading results into container
+2026-03-10 01:43:57,711:INFO:Uploading model into container now
+2026-03-10 01:43:57,715:INFO:_master_model_container: 14
+2026-03-10 01:43:57,715:INFO:_display_container: 3
+2026-03-10 01:43:57,716:INFO:LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='l2',
+                   random_state=42, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False)
+2026-03-10 01:43:57,716:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:57,811:INFO:Initializing predict_model()
+2026-03-10 01:43:57,811:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='l2',
+                   random_state=42, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d4a8c20>)
+2026-03-10 01:43:57,811:INFO:Checking exceptions
+2026-03-10 01:43:57,811:INFO:Preloading libraries
+2026-03-10 01:43:57,959:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,961:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:57,964:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,076:INFO:Initializing create_model()
+2026-03-10 01:43:58,076:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=knn, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:58,076:INFO:Checking exceptions
+2026-03-10 01:43:58,077:INFO:Importing libraries
+2026-03-10 01:43:58,077:INFO:Copying training dataset
+2026-03-10 01:43:58,081:INFO:Defining folds
+2026-03-10 01:43:58,082:INFO:Declaring metric variables
+2026-03-10 01:43:58,082:INFO:Importing untrained model
+2026-03-10 01:43:58,082:INFO:K Neighbors Classifier Imported successfully
+2026-03-10 01:43:58,082:INFO:Starting cross validation
+2026-03-10 01:43:58,083:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:58,214:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,214:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,215:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,216:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,216:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,217:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,217:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,217:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,217:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,220:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,221:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,221:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,229:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,230:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,231:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,233:INFO:Calculating mean and std
+2026-03-10 01:43:58,233:INFO:Creating metrics dataframe
+2026-03-10 01:43:58,234:INFO:Finalizing model
+2026-03-10 01:43:58,291:INFO:Uploading results into container
+2026-03-10 01:43:58,291:INFO:Uploading model into container now
+2026-03-10 01:43:58,293:INFO:_master_model_container: 15
+2026-03-10 01:43:58,293:INFO:_display_container: 5
+2026-03-10 01:43:58,293:INFO:KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='minkowski',
+                     metric_params=None, n_jobs=-1, n_neighbors=5, p=2,
+                     weights='uniform')
+2026-03-10 01:43:58,293:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:58,345:INFO:Initializing predict_model()
+2026-03-10 01:43:58,345:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='minkowski',
+                     metric_params=None, n_jobs=-1, n_neighbors=5, p=2,
+                     weights='uniform'), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d2f1e40>)
+2026-03-10 01:43:58,345:INFO:Checking exceptions
+2026-03-10 01:43:58,345:INFO:Preloading libraries
+2026-03-10 01:43:58,461:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,462:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,463:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,521:INFO:Initializing create_model()
+2026-03-10 01:43:58,521:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=nb, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:58,521:INFO:Checking exceptions
+2026-03-10 01:43:58,521:INFO:Importing libraries
+2026-03-10 01:43:58,521:INFO:Copying training dataset
+2026-03-10 01:43:58,523:INFO:Defining folds
+2026-03-10 01:43:58,523:INFO:Declaring metric variables
+2026-03-10 01:43:58,523:INFO:Importing untrained model
+2026-03-10 01:43:58,523:INFO:Naive Bayes Imported successfully
+2026-03-10 01:43:58,523:INFO:Starting cross validation
+2026-03-10 01:43:58,524:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:58,609:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,610:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,610:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,618:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,619:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,619:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,625:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,625:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,626:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,626:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,627:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,627:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,632:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,633:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,633:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,638:INFO:Calculating mean and std
+2026-03-10 01:43:58,638:INFO:Creating metrics dataframe
+2026-03-10 01:43:58,638:INFO:Finalizing model
+2026-03-10 01:43:58,696:INFO:Uploading results into container
+2026-03-10 01:43:58,696:INFO:Uploading model into container now
+2026-03-10 01:43:58,698:INFO:_master_model_container: 16
+2026-03-10 01:43:58,698:INFO:_display_container: 7
+2026-03-10 01:43:58,698:INFO:GaussianNB(priors=None, var_smoothing=1e-09)
+2026-03-10 01:43:58,698:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:58,752:INFO:Initializing predict_model()
+2026-03-10 01:43:58,752:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=GaussianNB(priors=None, var_smoothing=1e-09), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d4a8c20>)
+2026-03-10 01:43:58,752:INFO:Checking exceptions
+2026-03-10 01:43:58,752:INFO:Preloading libraries
+2026-03-10 01:43:58,877:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,878:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,880:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:58,936:INFO:Initializing create_model()
+2026-03-10 01:43:58,936:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=dt, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:58,936:INFO:Checking exceptions
+2026-03-10 01:43:58,936:INFO:Importing libraries
+2026-03-10 01:43:58,936:INFO:Copying training dataset
+2026-03-10 01:43:58,939:INFO:Defining folds
+2026-03-10 01:43:58,939:INFO:Declaring metric variables
+2026-03-10 01:43:58,939:INFO:Importing untrained model
+2026-03-10 01:43:58,939:INFO:Decision Tree Classifier Imported successfully
+2026-03-10 01:43:58,939:INFO:Starting cross validation
+2026-03-10 01:43:58,940:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:59,022:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,023:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,023:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,031:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,031:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,032:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,032:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,032:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,033:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,035:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,035:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,036:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,037:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,038:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,038:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,047:INFO:Calculating mean and std
+2026-03-10 01:43:59,048:INFO:Creating metrics dataframe
+2026-03-10 01:43:59,048:INFO:Finalizing model
+2026-03-10 01:43:59,106:INFO:Uploading results into container
+2026-03-10 01:43:59,106:INFO:Uploading model into container now
+2026-03-10 01:43:59,108:INFO:_master_model_container: 17
+2026-03-10 01:43:59,108:INFO:_display_container: 9
+2026-03-10 01:43:59,108:INFO:DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='gini',
+                       max_depth=None, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_samples_leaf=1,
+                       min_samples_split=2, min_weight_fraction_leaf=0.0,
+                       monotonic_cst=None, random_state=42, splitter='best')
+2026-03-10 01:43:59,108:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:59,162:INFO:Initializing predict_model()
+2026-03-10 01:43:59,162:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='gini',
+                       max_depth=None, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_samples_leaf=1,
+                       min_samples_split=2, min_weight_fraction_leaf=0.0,
+                       monotonic_cst=None, random_state=42, splitter='best'), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d2f1e40>)
+2026-03-10 01:43:59,162:INFO:Checking exceptions
+2026-03-10 01:43:59,162:INFO:Preloading libraries
+2026-03-10 01:43:59,273:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,274:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,275:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,333:INFO:Initializing create_model()
+2026-03-10 01:43:59,333:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=svm, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:59,333:INFO:Checking exceptions
+2026-03-10 01:43:59,333:INFO:Importing libraries
+2026-03-10 01:43:59,333:INFO:Copying training dataset
+2026-03-10 01:43:59,335:INFO:Defining folds
+2026-03-10 01:43:59,335:INFO:Declaring metric variables
+2026-03-10 01:43:59,335:INFO:Importing untrained model
+2026-03-10 01:43:59,335:INFO:SVM - Linear Kernel Imported successfully
+2026-03-10 01:43:59,335:INFO:Starting cross validation
+2026-03-10 01:43:59,336:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:43:59,417:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,418:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,419:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,422:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,423:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,423:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,433:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,434:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,434:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,434:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,435:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,435:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,435:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,436:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,436:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,447:INFO:Calculating mean and std
+2026-03-10 01:43:59,447:INFO:Creating metrics dataframe
+2026-03-10 01:43:59,448:INFO:Finalizing model
+2026-03-10 01:43:59,507:INFO:Uploading results into container
+2026-03-10 01:43:59,507:INFO:Uploading model into container now
+2026-03-10 01:43:59,509:INFO:_master_model_container: 18
+2026-03-10 01:43:59,509:INFO:_display_container: 11
+2026-03-10 01:43:59,509:INFO:SGDClassifier(alpha=0.0001, average=False, class_weight=None,
+              early_stopping=False, epsilon=0.1, eta0=0.001, fit_intercept=True,
+              l1_ratio=0.15, learning_rate='optimal', loss='hinge',
+              max_iter=1000, n_iter_no_change=5, n_jobs=-1, penalty='l2',
+              power_t=0.5, random_state=42, shuffle=True, tol=0.001,
+              validation_fraction=0.1, verbose=0, warm_start=False)
+2026-03-10 01:43:59,509:INFO:create_model() successfully completed......................................
+2026-03-10 01:43:59,563:INFO:Initializing predict_model()
+2026-03-10 01:43:59,563:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=SGDClassifier(alpha=0.0001, average=False, class_weight=None,
+              early_stopping=False, epsilon=0.1, eta0=0.001, fit_intercept=True,
+              l1_ratio=0.15, learning_rate='optimal', loss='hinge',
+              max_iter=1000, n_iter_no_change=5, n_jobs=-1, penalty='l2',
+              power_t=0.5, random_state=42, shuffle=True, tol=0.001,
+              validation_fraction=0.1, verbose=0, warm_start=False), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d4a8c20>)
+2026-03-10 01:43:59,563:INFO:Checking exceptions
+2026-03-10 01:43:59,563:INFO:Preloading libraries
+2026-03-10 01:43:59,732:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/utils/generic.py:585: UserWarning: Traceback (most recent call last):
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/utils/generic.py", line 580, in _calculate_metric
+    calculated_metric = score_func(y_test, target, sample_weight=weights, **kwargs)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/internal/metrics.py", line 144, in __call__
+    return self.score_func(y_true, y_pred, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_ranking.py", line 619, in roc_auc_score
+    y_score = check_array(y_score, ensure_2d=False)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/validation.py", line 997, in check_array
+    array = _asarray_with_order(array, order=order, dtype=dtype, xp=xp)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/_array_api.py", line 521, in _asarray_with_order
+    array = numpy.asarray(array, order=order, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: 'M'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/utils/generic.py", line 583, in _calculate_metric
+    calculated_metric = score_func(y_test, target, **kwargs)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/pycaret/internal/metrics.py", line 144, in __call__
+    return self.score_func(y_true, y_pred, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_ranking.py", line 619, in roc_auc_score
+    y_score = check_array(y_score, ensure_2d=False)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/validation.py", line 997, in check_array
+    array = _asarray_with_order(array, order=order, dtype=dtype, xp=xp)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/utils/_array_api.py", line 521, in _asarray_with_order
+    array = numpy.asarray(array, order=order, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: 'M'
+
+  warnings.warn(traceback.format_exc())
+
+2026-03-10 01:43:59,733:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,736:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,738:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:43:59,857:INFO:Initializing create_model()
+2026-03-10 01:43:59,857:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=rbfsvm, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:43:59,857:INFO:Checking exceptions
+2026-03-10 01:43:59,857:INFO:Importing libraries
+2026-03-10 01:43:59,857:INFO:Copying training dataset
+2026-03-10 01:43:59,860:INFO:Defining folds
+2026-03-10 01:43:59,860:INFO:Declaring metric variables
+2026-03-10 01:43:59,860:INFO:Importing untrained model
+2026-03-10 01:43:59,860:INFO:SVM - Radial Kernel Imported successfully
+2026-03-10 01:43:59,860:INFO:Starting cross validation
+2026-03-10 01:43:59,861:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=-1
+2026-03-10 01:44:00,069:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,070:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,071:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,075:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,076:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,076:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,076:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,076:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,077:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,077:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,077:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,077:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,101:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,102:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,103:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,106:INFO:Calculating mean and std
+2026-03-10 01:44:00,107:INFO:Creating metrics dataframe
+2026-03-10 01:44:00,107:INFO:Finalizing model
+2026-03-10 01:44:00,248:INFO:Uploading results into container
+2026-03-10 01:44:00,248:INFO:Uploading model into container now
+2026-03-10 01:44:00,250:INFO:_master_model_container: 19
+2026-03-10 01:44:00,250:INFO:_display_container: 13
+2026-03-10 01:44:00,250:INFO:SVC(C=1.0, break_ties=False, cache_size=200, class_weight=None, coef0=0.0,
+    decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+    max_iter=-1, probability=True, random_state=42, shrinking=True, tol=0.001,
+    verbose=False)
+2026-03-10 01:44:00,250:INFO:create_model() successfully completed......................................
+2026-03-10 01:44:00,306:INFO:Initializing predict_model()
+2026-03-10 01:44:00,306:INFO:predict_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=SVC(C=1.0, break_ties=False, cache_size=200, class_weight=None, coef0=0.0,
+    decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+    max_iter=-1, probability=True, random_state=42, shrinking=True, tol=0.001,
+    verbose=False), probability_threshold=None, encoded_labels=False, raw_score=False, round=4, verbose=True, ml_usecase=None, preprocess=True, encode_labels=<function _SupervisedExperiment.predict_model.<locals>.encode_labels at 0x15d4a8c20>)
+2026-03-10 01:44:00,306:INFO:Checking exceptions
+2026-03-10 01:44:00,306:INFO:Preloading libraries
+2026-03-10 01:44:00,435:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,436:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,437:WARNING:/Users/xiaowang/Documents/Github/DataMind/backend/.venv/lib/python3.11/site-packages/sklearn/metrics/_classification.py:1561: UserWarning: Note that pos_label (set to 'M') is ignored when average != 'binary' (got 'weighted'). You may use labels=[pos_label] to specify a single positive class.
+  warnings.warn(
+
+2026-03-10 01:44:00,496:INFO:Initializing create_model()
+2026-03-10 01:44:00,496:INFO:create_model(self=<pycaret.classification.oop.ClassificationExperiment object at 0x15d1f0610>, estimator=gpc, fold=5, round=4, cross_validation=True, predict=True, fit_kwargs=None, groups=None, refit=True, probability_threshold=None, experiment_custom_tags=None, verbose=True, system=True, add_to_model_list=True, metrics=None, display=None, model_only=True, return_train_score=False, error_score=0.0, kwargs={})
+2026-03-10 01:44:00,496:INFO:Checking exceptions
+2026-03-10 01:44:00,496:INFO:Importing libraries
+2026-03-10 01:44:00,496:INFO:Copying training dataset
+2026-03-10 01:44:00,498:INFO:Defining folds
+2026-03-10 01:44:00,498:INFO:Declaring metric variables
+2026-03-10 01:44:00,498:INFO:Importing untrained model
+2026-03-10 01:44:00,498:INFO:Gaussian Process Classifier Imported successfully
+2026-03-10 01:44:00,498:INFO:Starting cross validation
+2026-03-10 01:44:00,499:INFO:Cross validating with StratifiedKFold(n_splits=5, random_state=None, shuffle=False), n_jobs=1
