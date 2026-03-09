@@ -1,146 +1,146 @@
 <script setup lang="ts">
-  import type { PyCaretTrainResponse } from "../types/pycaret";
-  import { computed, ref } from "vue";
-  import { trainPyCaret } from "../api/pycaret";
+  import type { PyCaretTrainResponse } from '../types/pycaret'
+  import { computed, ref } from 'vue'
+  import { trainPyCaret } from '../api/pycaret'
 
-  const file = ref<File | null>(null);
-  const columns = ref<string[]>([]);
-  const rows = ref<string[][]>([]);
-  const targetCol = ref("");
-  const outputDir = ref("artifacts/pycaret");
+  const file = ref<File | null>(null)
+  const columns = ref<string[]>([])
+  const rows = ref<string[][]>([])
+  const targetCol = ref('')
+  const outputDir = ref('artifacts/pycaret')
 
-  const loading = ref(false);
-  const errorMsg = ref("");
-  const result = ref<PyCaretTrainResponse | null>(null);
+  const loading = ref(false)
+  const errorMsg = ref('')
+  const result = ref<PyCaretTrainResponse | null>(null)
 
-  const maxPreviewRows = 50;
+  const maxPreviewRows = 50
 
-  function parseCsvLine(line: string): string[] {
-    const out: string[] = [];
-    let cur = "";
-    let inQuotes = false;
+  function parseCsvLine (line: string): string[] {
+    const out: string[] = []
+    let cur = ''
+    let inQuotes = false
 
     for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      const next = line[i + 1];
+      const ch = line[i]
+      const next = line[i + 1]
 
       if (ch === '"' && inQuotes && next === '"') {
-        cur += '"';
-        i++;
-        continue;
+        cur += '"'
+        i++
+        continue
       }
       if (ch === '"') {
-        inQuotes = !inQuotes;
-        continue;
+        inQuotes = !inQuotes
+        continue
       }
-      if (ch === "," && !inQuotes) {
-        out.push(cur.trim());
-        cur = "";
-        continue;
+      if (ch === ',' && !inQuotes) {
+        out.push(cur.trim())
+        cur = ''
+        continue
       }
-      cur += ch;
+      cur += ch
     }
-    out.push(cur.trim());
-    return out;
+    out.push(cur.trim())
+    return out
   }
 
-  async function onPickFile(e: Event) {
-    errorMsg.value = "";
-    result.value = null;
-    const input = e.target as HTMLInputElement;
-    const f = input.files?.[0];
-    if (!f) return;
+  async function onPickFile (e: Event) {
+    errorMsg.value = ''
+    result.value = null
+    const input = e.target as HTMLInputElement
+    const f = input.files?.[0]
+    if (!f) return
 
-    file.value = f;
+    file.value = f
 
-    const text = await f.text();
+    const text = await f.text()
     const lines = text
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((l) => l.trim().length > 0);
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .filter(l => l.trim().length > 0)
 
     if (lines.length < 2) {
-      errorMsg.value = "CSV 內容不足（至少要有標題列 + 1 筆資料）";
-      return;
+      errorMsg.value = 'CSV 內容不足（至少要有標題列 + 1 筆資料）'
+      return
     }
 
-    const headerLine = lines[0];
+    const headerLine = lines[0]
     if (!headerLine) {
-      errorMsg.value = "CSV 標題列為空";
-      return;
+      errorMsg.value = 'CSV 標題列為空'
+      return
     }
 
-    columns.value = parseCsvLine(headerLine);
+    columns.value = parseCsvLine(headerLine)
     rows.value = lines
       .slice(1, 1 + maxPreviewRows)
-      .map((line) => parseCsvLine(line));
+      .map(line => parseCsvLine(line))
 
     if (!targetCol.value || !columns.value.includes(targetCol.value)) {
-      targetCol.value = columns.value[0] || "";
+      targetCol.value = columns.value[0] || ''
     }
   }
 
-  async function submitTrain() {
+  async function submitTrain () {
     if (!file.value) {
-      errorMsg.value = "請先選擇 CSV 檔案";
-      return;
+      errorMsg.value = '請先選擇 CSV 檔案'
+      return
     }
     if (!targetCol.value) {
-      errorMsg.value = "請先選擇目標欄位";
-      return;
+      errorMsg.value = '請先選擇目標欄位'
+      return
     }
 
-    loading.value = true;
-    errorMsg.value = "";
-    result.value = null;
+    loading.value = true
+    errorMsg.value = ''
+    result.value = null
     try {
       const res = await trainPyCaret({
         file: file.value,
         targetCol: targetCol.value,
         outputDir: outputDir.value,
-      });
-      result.value = res;
+      })
+      result.value = res
     } catch (error: any) {
-      errorMsg.value = error?.message || "訓練失敗";
+      errorMsg.value = error?.message || '訓練失敗'
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   const hasPreview = computed(
     () => columns.value.length > 0 && rows.value.length > 0,
-  );
+  )
 
-  const trainResult = computed(() => result.value?.result);
+  const trainResult = computed(() => result.value?.result)
 
   const confusionLabels = computed(
     () => trainResult.value?.confusion_matrix?.labels || [],
-  );
+  )
 
   const confusionMatrix = computed(
     () => trainResult.value?.confusion_matrix?.matrix || [],
-  );
+  )
 
   const correlationColumns = computed(
     () => trainResult.value?.correlation_matrix?.columns || [],
-  );
+  )
 
   const correlationMatrix = computed(
     () => trainResult.value?.correlation_matrix?.matrix || [],
-  );
+  )
 
   const correlationMessage = computed(
-    () => trainResult.value?.correlation_matrix?.message || "",
-  );
+    () => trainResult.value?.correlation_matrix?.message || '',
+  )
 
   const resultJson = computed(() => {
-    if (!result.value) return "";
-    return JSON.stringify(result.value, null, 2);
-  });
+    if (!result.value) return ''
+    return JSON.stringify(result.value, null, 2)
+  })
 
-  function fmtNumber(value: number) {
-    if (!Number.isFinite(value)) return "-";
-    return Number.isInteger(value) ? `${value}` : value.toFixed(3);
+  function fmtNumber (value: number) {
+    if (!Number.isFinite(value)) return '-'
+    return Number.isInteger(value) ? `${value}` : value.toFixed(3)
   }
 </script>
 
@@ -149,11 +149,11 @@
     <h2>PyCaret API 測試</h2>
 
     <div class="toolbar">
-      <input accept=".csv,text/csv" type="file" @change="onPickFile" />
+      <input accept=".csv,text/csv" type="file" @change="onPickFile">
       <input
         v-model="outputDir"
         placeholder="output_dir (預設 artifacts/pycaret)"
-      />
+      >
       <button :disabled="loading || !file || !targetCol" @click="submitTrain">
         {{ loading ? "訓練中..." : "送出訓練" }}
       </button>
