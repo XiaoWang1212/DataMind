@@ -1,6 +1,10 @@
 from pathlib import Path
 
 import pandas as pd
+from services.pycaret_metrics import (
+    build_confusion_matrix_payload,
+    build_correlation_matrix_payload,
+)
 
 
 class PyCaretTrainingService:
@@ -116,6 +120,16 @@ class PyCaretTrainingService:
         model_path_no_suffix = output_base / "fall_model"
         save_model(final_model, str(model_path_no_suffix))
 
+        best_model_predictions = predict_model(best_model)
+        confusion_matrix_payload = build_confusion_matrix_payload(
+            predictions=best_model_predictions,
+            target_col=target_col,
+        )
+        correlation_matrix_payload = build_correlation_matrix_payload(
+            source_df=df,
+            target_col=target_col,
+        )
+
         return {
             "target_col": target_col,
             "best_model": str(best_model),
@@ -124,4 +138,6 @@ class PyCaretTrainingService:
             "model_path": f"{model_path_no_suffix}.pkl",
             "row_count": int(len(df)),
             "feature_count": int(len(df.columns) - 1),
+            "confusion_matrix": confusion_matrix_payload,
+            "correlation_matrix": correlation_matrix_payload,
         }
