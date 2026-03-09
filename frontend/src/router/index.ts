@@ -18,6 +18,11 @@ const router = createRouter({
       name: "workflow",
       component: () => import("@/views/WorkflowPage.vue"),
     },
+    {
+      path: "/results",
+      name: "results",
+      component: () => import("@/views/ResultsPage.vue"),
+    },
   ],
 });
 
