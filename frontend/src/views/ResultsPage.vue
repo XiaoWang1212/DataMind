@@ -8,7 +8,6 @@
       </div>
 
       <v-btn
-        block
         class="add-btn"
         color="primary"
         prepend-icon="mdi-plus"
@@ -63,6 +62,7 @@
             class="toolbar-tab"
             :class="{ 'toolbar-tab--active': tab.active }"
             type="button"
+            @click="setActiveTab(tab.key)"
           >
             <v-icon :icon="tab.icon" size="14" />
             <span>{{ tab.label }}</span>
@@ -137,6 +137,12 @@
 </template>
 
 <script setup lang="ts">
+  import { onMounted, ref } from 'vue'
+
+  onMounted(() => {
+    document.title = 'DataMind'
+  })
+
   interface RecentRun {
     id: string
     name: string
@@ -177,10 +183,16 @@
     { id: 'r6', name: 'XXXXXX', time: 'XX天前' },
   ]
 
-  const tabs: ToolbarTab[] = [
+  const tabs = ref<ToolbarTab[]>([
     { key: 'report', label: '報告', icon: 'mdi-file-document-outline', active: true },
-    { key: 'code', label: '程式碼', icon: 'mdi-code-tags' },
-  ]
+    { key: 'code', label: '程式碼', icon: 'mdi-code-tags', active: false },
+  ])
+
+  const setActiveTab = (targetKey: ToolbarTab['key']) => {
+    tabs.value.forEach((tab) => {
+      tab.active = tab.key === targetKey
+    })
+  }
 
   const metricCards: MetricCard[] = [
     { title: '最佳模型', value: 'XGBoost', hint: '極限梯度提升' },
@@ -279,6 +291,7 @@
 
   .add-btn {
     margin-top: 14px;
+    max-width: 100%;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: none;
