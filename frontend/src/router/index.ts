@@ -23,6 +23,16 @@ const router = createRouter({
       name: "sidebar",
       component: () => import("@/components/Sidebar.vue"),
     },
+    {
+      path: "/results",
+      name: "results",
+      component: () => import("@/views/ResultsPage.vue"),
+    },
+    {
+      path: "/pycaret",
+      name: "pycaret",
+      component: () => import("@/views/PyCaretTestPage.vue"),
+    }
   ],
 });
 
