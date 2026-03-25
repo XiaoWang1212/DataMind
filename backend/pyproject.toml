@@ -12,6 +12,8 @@ dependencies = [
   "pandas",
   "pycaret",
   "scikit-learn",
+  "FlagEmbedding",
+  "pymupdf",
 ]
 
 [build-system]

@@ -17,7 +17,7 @@ def _is_allowed_data_file(filename: str) -> bool:
         return False
     ext = filename.rsplit(".", 1)[1].lower()
     return ext in ALLOWED_DATA_EXTENSIONS
-
+    
 
 @pycaret_bp.post("/train")
 def train_pycaret_model():
