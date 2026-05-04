@@ -142,7 +142,10 @@ def upload_paper():
     # 處理 JSON body
     data = request.get_json()
     if not data:
-        return jsonify({"success": False, "error": "No file or JSON data provided"}), 400
+        return (
+            jsonify({"success": False, "error": "No file or JSON data provided"}),
+            400,
+        )
 
     title = data.get("title")
     content = data.get("content")
