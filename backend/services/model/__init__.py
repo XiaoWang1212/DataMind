@@ -1,8 +1,8 @@
-from .model import (
+from .models.base import BaseModelWrapper
+from .defaults import (
     AdaBoostModel,
     BaggingModel,
     BalancedRandomForestModel,
-    BaseModelWrapper,
     BernoulliNBModel,
     CalibratedClassifierModel,
     CatBoostModel,
@@ -27,17 +27,17 @@ from .model import (
     RandomForestModel,
     SVMModel,
     XGBoostModel,
-    ModelRegistry,
-    register_default_models,
-    AutomationModelEvaluator,
-    ModelResult,
 )
 
+from .registry import ModelRegistry, register_default_models
+from .evaluator import AutomationModelEvaluator, ModelResult
+from .manager import *
+
 __all__ = [
+    "BaseModelWrapper",
     "AdaBoostModel",
     "BaggingModel",
     "BalancedRandomForestModel",
-    "BaseModelWrapper",
     "BernoulliNBModel",
     "CalibratedClassifierModel",
     "CatBoostModel",

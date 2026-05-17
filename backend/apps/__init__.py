@@ -20,12 +20,14 @@ def create_app() -> Flask:
     from routes.rag import rag_bp
     from routes.stt import stt_bp
     from routes.gemini import gemini_bp
+    from routes.mineru import mineru_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(pycaret_bp, url_prefix="/api/ml/pycaret")
     app.register_blueprint(rag_bp, url_prefix="/api/rag")
     app.register_blueprint(stt_bp, url_prefix="/api/stt")
     app.register_blueprint(gemini_bp, url_prefix="/api/gemini")
+    app.register_blueprint(mineru_bp, url_prefix="/api/mineru")
 
     @app.get("/")
     def root():
@@ -38,6 +40,7 @@ def create_app() -> Flask:
                 "pycaret": "/api/ml/pycaret/train",
                 "rag": "/api/rag",
                 "gemini": "/api/gemini",
+                "mineru": "/api/mineru",
             }
         )
 
