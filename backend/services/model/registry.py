@@ -90,5 +90,46 @@ def register_default_models() -> None:
         ModelRegistry.register_model(EasyEnsembleModel())
 
 
+def extract_model_components(
+    payload: dict,
+    model_names: Optional[List[str]] = None,
+) -> List[Dict[str, Optional[str]]]:
+    """從 AI JSON payload 中萃取需要的 model component。
+
+    payload 範例為：
+    {
+      "features": [...],
+      "models": [
+        { "name": "Decision Tree (DT)", "type": "分類模型", "purpose": "..." },
+        ...
+      ]
+    }
+
+    如果提供 model_names，則只回傳名稱符合的模型元件。
+    """
+    models = payload.get("models") if isinstance(payload, dict) else []
+    if not isinstance(models, list):
+        return []
+
+    result: List[Dict[str, Optional[str]]] = []
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+
+        name = model.get("name")
+        if model_names is not None and name not in model_names:
+            continue
+
+        result.append(
+            {
+                "name": name,
+                "type": model.get("type"),
+                "purpose": model.get("purpose"),
+            }
+        )
+
+    return result
+
+
 # Register models when module is imported.
 register_default_models()

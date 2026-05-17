@@ -14,7 +14,8 @@ dependencies = [
   "xgboost",
   "lightgbm",
   "catboost",
-  "imbalanced-learn"
+  "imbalanced-learn",
+  "seaborn",
 ]
 
 [build-system]

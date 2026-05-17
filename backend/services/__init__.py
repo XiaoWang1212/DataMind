@@ -66,4 +66,5 @@ __all__ = [
     "register_default_models",
     "AutomationModelEvaluator",
     "ModelResult",
+    "DataVisualizationService",
 ]

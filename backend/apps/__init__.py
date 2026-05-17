@@ -21,6 +21,7 @@ def create_app() -> Flask:
     from routes.stt import stt_bp
     from routes.gemini import gemini_bp
     from routes.mineru import mineru_bp
+    from routes.model import model_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(pycaret_bp, url_prefix="/api/ml/pycaret")
@@ -28,6 +29,8 @@ def create_app() -> Flask:
     app.register_blueprint(stt_bp, url_prefix="/api/stt")
     app.register_blueprint(gemini_bp, url_prefix="/api/gemini")
     app.register_blueprint(mineru_bp, url_prefix="/api/mineru")
+    app.register_blueprint(model_bp, url_prefix="/api/models")
+    app.register_blueprint(visualization_bp, url_prefix="/api/visualization")
 
     @app.get("/")
     def root():
