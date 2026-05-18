@@ -1,6 +1,7 @@
 <template>
   <div class="workflow-file-upload-panel">
     <div
+      v-if="!hasPreview"
       class="upload-modal-dropzone"
       :class="{ 'upload-modal-dropzone--active': dragActive }"
       @dragenter.prevent="onDragEnter"
@@ -34,7 +35,7 @@
       <div class="upload-modal-preview-header">資料視覺化</div>
       <div class="upload-modal-preview-summary">
         <span>{{ previewColumns.length }} 個欄位</span>
-        <span>{{ filePreviewRows.length }} 筆資料</span>
+        <span>{{ allRows.length }} 筆資料</span>
       </div>
 
       <div class="upload-modal-chart-grid">
@@ -44,29 +45,62 @@
           class="upload-modal-chart-card"
         >
           <div class="upload-modal-chart-title">{{ chart.label }}</div>
+          <div class="upload-modal-chart-subtitle">
+            {{ chart.type === "numeric" ? "直方圖" : "類別分布" }}
+          </div>
           <div class="upload-modal-chart-meta">
             <span>{{
               chart.type === "numeric" ? "數值欄位" : "類別欄位"
             }}</span>
-            <span>{{ chart.counts.length }} 種值</span>
+            <span>{{ chart.counts.length }} 個區間</span>
           </div>
-          <div class="upload-modal-chart-bars">
-            <div
-              v-for="item in chart.counts"
-              :key="item.label"
-              class="upload-modal-chart-bar-row"
-            >
-              <div class="upload-modal-chart-bar-label">{{ item.label }}</div>
-              <div class="upload-modal-chart-bar-track">
-                <div
-                  class="upload-modal-chart-bar-fill"
-                  :style="{
-                    width: `${Math.max(4, Math.round((item.count / chart.maxCount) * 100))}%`,
-                  }"
+          <div class="upload-modal-chart-plot">
+            <svg preserveAspectRatio="none" viewBox="0 0 320 170">
+              <g v-for="(item, idx) in chart.counts" :key="item.label">
+                <rect
+                  fill="#2563eb"
+                  :height="
+                    Math.max(4, Math.round((item.count / chart.maxCount) * 110))
+                  "
+                  rx="6"
+                  :width="Math.max(24, 280 / chart.counts.length - 8)"
+                  :x="12 + idx * (300 / chart.counts.length)"
+                  :y="
+                    150 -
+                      Math.max(4, Math.round((item.count / chart.maxCount) * 110))
+                  "
                 />
-              </div>
-              <div class="upload-modal-chart-bar-value">{{ item.count }}</div>
-            </div>
+                <text
+                  fill="#475569"
+                  font-size="10"
+                  text-anchor="middle"
+                  :x="
+                    12 +
+                      idx * (300 / chart.counts.length) +
+                      Math.max(24, 280 / chart.counts.length - 8) / 2
+                  "
+                  y="165"
+                >
+                  {{ item.label }}
+                </text>
+                <text
+                  fill="#0f172a"
+                  font-size="10"
+                  text-anchor="middle"
+                  :x="
+                    12 +
+                      idx * (300 / chart.counts.length) +
+                      Math.max(24, 280 / chart.counts.length - 8) / 2
+                  "
+                  :y="
+                    140 -
+                      Math.max(4, Math.round((item.count / chart.maxCount) * 110))
+                  "
+                >
+                  {{ item.count }}
+                </text>
+              </g>
+            </svg>
           </div>
         </div>
       </div>
@@ -111,12 +145,13 @@
   const selectedFile = ref<File | null>(null)
   const errorMessage = ref('')
   const previewColumns = ref<string[]>([])
+  const allRows = ref<string[][]>([])
   const filePreviewRows = ref<string[][]>([])
   const dragActive = ref(false)
 
   const fileName = computed(() => props.fileName ?? '')
   const hasPreview = computed(
-    () => previewColumns.value.length > 0 && filePreviewRows.value.length > 0,
+    () => previewColumns.value.length > 0 && allRows.value.length > 0,
   )
 
   const chartData = computed(() => {
@@ -130,7 +165,7 @@
     }
 
     return previewColumns.value.map((label, index) => {
-      const values = filePreviewRows.value.map(row => row[index] ?? '')
+      const values = allRows.value.map(row => row[index] ?? '')
       const cleanedValues = values.map(value => value.trim())
       const numericValues = cleanedValues
         .filter(value => value !== '' && !Number.isNaN(Number(value)))
@@ -226,9 +261,9 @@
 
     const headerLine = lines[0]!
     previewColumns.value = parseCsvLine(headerLine)
-    filePreviewRows.value = lines
-      .slice(1, 11)
-      .map(line => parseCsvLine(line))
+    const allDataRows = lines.slice(1).map(line => parseCsvLine(line))
+    allRows.value = allDataRows
+    filePreviewRows.value = allDataRows.slice(0, 10)
     emit('update:fileName', file.name)
   }
 
@@ -438,6 +473,13 @@
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 8px;
+    color: #0f172a;
+  }
+
+  .upload-modal-chart-subtitle {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
   }
 
   .upload-modal-chart-meta {
@@ -457,7 +499,7 @@
 
   .upload-modal-chart-bar-row {
     display: grid;
-    grid-template-columns: 1.2fr 3fr auto;
+    grid-template-columns: minmax(75px, 1.4fr) 1fr auto;
     gap: 10px;
     align-items: center;
   }
@@ -468,6 +510,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .upload-modal-chart-bar-track {
@@ -494,10 +537,13 @@
     overflow: auto;
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 14px;
+    background: #ffffff;
+    color: #0f172a;
   }
 
   .upload-modal-preview-table table {
     width: 100%;
+    min-width: max-content;
     border-collapse: collapse;
   }
 
@@ -507,10 +553,17 @@
     border-bottom: 1px solid rgba(226, 232, 240, 0.9);
     text-align: left;
     font-size: 13px;
+    white-space: nowrap;
+    color: #0f172a;
   }
 
   .upload-modal-preview-table th {
     background: #f8fafc;
     color: #0f172a;
+  }
+
+  .workflow-file-upload-panel {
+    font-family:
+      "Noto Sans TC", "Microsoft JhengHei", "Apple LiGothic", sans-serif;
   }
 </style>

@@ -30,7 +30,6 @@ def create_app() -> Flask:
     app.register_blueprint(gemini_bp, url_prefix="/api/gemini")
     app.register_blueprint(mineru_bp, url_prefix="/api/mineru")
     app.register_blueprint(model_bp, url_prefix="/api/models")
-    app.register_blueprint(visualization_bp, url_prefix="/api/visualization")
 
     @app.get("/")
     def root():

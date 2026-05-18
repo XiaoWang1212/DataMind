@@ -213,6 +213,7 @@
     border: none;
     border-radius: 0;
     height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -239,6 +240,7 @@
   .panel-header h3 {
     margin: 0 0 2px;
     font-size: 16px;
+    color: #0f172a;
   }
 
   .panel-header p {
