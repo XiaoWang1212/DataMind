@@ -1,0 +1,40 @@
+{
+  "models": [
+    {
+      "name": "Decision Tree",
+      "type": "Classification",
+      "purpose_zh": "基於單個特徵在每個內部節點進行分裂，以分類輸入數據並產生預測結果",
+      "purpose_en": "Splits data based on a single feature at each internal node to classify input data and generate prediction outcomes"
+    },
+    {
+      "name": "Bayesian Network",
+      "type": "Probabilistic Graphical Model",
+      "purpose_zh": "基於貝葉斯定理的圖形概率模型，用有向無環圖表示變數間的條件依賴關係",
+      "purpose_en": "A graph-based probabilistic model based on Bayes' theorem, representing conditional dependencies between variables using a directed acyclic graph"
+    },
+    {
+      "name": "Support Vector Machine",
+      "type": "Classification",
+      "purpose_zh": "透過結構風險最小化，將特徵變數映射到高維向量空間，並識別最佳分離超平面",
+      "purpose_en": "Maps independent variables to a high-dimensional vector space using structural risk minimization, and identifies optimal separating hyperplanes"
+    },
+    {
+      "name": "Random Forest",
+      "type": "Ensemble Learning",
+      "purpose_zh": "基於決策樹的集成學習技術，透過多個決策樹的投票來提高分類準確性",
+      "purpose_en": "A Decision Tree-based ensemble technique that builds multiple decision trees and determines predictions by majority vote"
+    },
+    {
+      "name": "Bagging",
+      "type": "Ensemble Learning",
+      "purpose_zh": "從訓練數據集生成多個引導樣本數據集，透過平均所有基礎分類器的預測來估計結果",
+      "purpose_en": "Generates multiple bootstrap sample datasets from training data and estimates prediction output by averaging all base classifier predictions"
+    },
+    {
+      "name": "AdaBoost",
+      "type": "Ensemble Learning",
+      "purpose_zh": "迭代運行學習算法，根據訓練數據集的分類錯誤調整實例權重，並使用加權多數投票聚合預測結果",
+      "purpose_en": "Iteratively runs a learning algorithm, adjusts instance weights based on classification errors, and aggregates results using weighted majority vote"
+    }
+  ]
+}

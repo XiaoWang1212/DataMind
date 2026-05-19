@@ -4,6 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: datamind-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "5001:5001"
     environment:
@@ -30,6 +32,17 @@ services:
       - WEBHOOK_URL=https://ideally-strewn-papyrus.ngrok-free.dev
     volumes:
       - n8n_data:/home/node/.n8n
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: datamind-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   whisper-cache:

@@ -2,9 +2,17 @@
   <!-- 自訂節點 UI：左 target / 右 source + 圓形 icon + label -->
   <div class="icon-node-wrap">
     <!-- 右側輸出點：連到下一個節點 -->
-    <Handle class="invisible-handle handle-right" :position="Position.Right" type="source" />
+    <Handle
+      class="invisible-handle handle-right"
+      :position="Position.Right"
+      type="source"
+    />
     <!-- 左側輸入點：接收前一個節點 -->
-    <Handle class="invisible-handle handle-left" :position="Position.Left" type="target" />
+    <Handle
+      class="invisible-handle handle-left"
+      :position="Position.Left"
+      type="target"
+    />
 
     <!-- 節點主體 -->
     <div class="icon-node" :class="colorClass">
@@ -19,25 +27,25 @@
 </template>
 
 <script setup lang="ts">
-  import { Handle, type NodeProps, Position } from '@vue-flow/core'
-  import { computed } from 'vue'
+  import { Handle, type NodeProps, Position } from "@vue-flow/core";
+  import { computed } from "vue";
 
   // Vue Flow 傳入的節點資料（id/data/selected...）
-  const props = defineProps<NodeProps>()
+  const props = defineProps<NodeProps>();
 
   // 從節點 data 取出 icon，沒有就用預設 icon
-  const icon = computed(() => String(props.data?.icon ?? 'mdi-circle'))
+  const icon = computed(() => String(props.data?.icon ?? "mdi-circle"));
 
   // 從節點 data 取出 label
-  const label = computed(() => String(props.data?.label ?? ''))
+  const label = computed(() => String(props.data?.label ?? ""));
 
   // 從節點 data 取出顏色 class（例如 node-yellow / node-pending）
   const colorClass = computed(() =>
-    String(props.data?.colorClass ?? 'node-purple'),
-  )
+    String(props.data?.colorClass ?? "node-purple"),
+  );
 
   // demo 動畫狀態（running 時顯示 spinner）
-  const status = computed(() => props.data?.status ?? null)
+  const status = computed(() => props.data?.status ?? null);
 </script>
 
 <style scoped>
@@ -89,16 +97,16 @@
   }
 
   .node-yellow {
-    background: #F0E274;
+    background: #f0e274;
     color: #fdfdfd;
   }
 
   .node-pending {
-    background: #CED3E9;
+    background: #ced3e9;
   }
 
   .node-purple {
-    background: linear-gradient(165deg, #005DFF 0%, #4c8cff 100%);
+    background: linear-gradient(165deg, #005dff 0%, #4c8cff 100%);
   }
 
   .invisible-handle {
