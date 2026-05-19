@@ -17,23 +17,64 @@ cp .env.example .env
 
 > PyCaret 目前只支援 Python 3.9/3.10/3.11，建議固定使用 3.11。
 
+### macOS / Windows 本機執行 (Native)
+
+建議使用 Python 原生虛擬環境：
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate   # macOS / Linux
+# .\.venv\Scripts\activate  # Windows PowerShell
+pip install -r requirements.txt
+```
+
+如果你使用 `uv`，也可以保留原本方式。
+
 本機 Whisper 不需要 API key，但需要系統有 `ffmpeg`：
 
 ```bash
-brew install ffmpeg
+brew install ffmpeg    # macOS
+choco install ffmpeg   # Windows (if using Chocolatey)
 ```
 
-可選調整 `.env`：
+### MinerU / OCR 注意
 
-```dotenv
-WHISPER_MODEL=base
+- 後端已改為直接使用 `mineru[api]` 內部 Python 套件，不再依賴獨立 MinerU HTTP 服務。
+- 請在 backend 開發環境中安裝 `mineru[api]==2.7.6`，後端會在程式內部呼叫 MinerU 套件。
+- 如果你使用 Docker 執行 backend，請確認容器內也安裝了 `mineru[api]==2.7.6`。
+
+#### 給組員的執行步驟
+
+1. 先複製 `.env.example` 成 `.env`：
+
+```bash
+cd backend
+cp .env.example .env
 ```
 
-啟動：
+2. 安裝 backend 依賴：
+
+```bash
+pip install -r requirements.txt
+```
+
+3. 確認 `.env` 中的 MinerU 設定：
+
+```bash
+MINERU_BACKEND=hybrid-auto-engine
+MINERU_LANG_LIST=ch
+MINERU_PARSE_METHOD=auto
+MINERU_MODEL=mineru-default
+```
+
+4. 啟動 backend：
 
 ```bash
 uv run python app.py
 ```
+
+> 若使用 `uv sync` 或 `uv add`，請確保 `pyproject.toml` 中已包含 `mineru[api]==2.7.6`。
 
 ## uv 管理
 

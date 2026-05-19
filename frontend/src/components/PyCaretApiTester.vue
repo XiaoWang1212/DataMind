@@ -1,6 +1,7 @@
 <script setup lang="ts">
+  import type { PyCaretTrainResponse } from '../types/pycaret'
   import { computed, ref } from 'vue'
-  import { trainPyCaret } from '@/api/pycaret'
+  import { trainPyCaret } from '../api/pycaret'
 
   const file = ref<File | null>(null)
   const columns = ref<string[]>([])
@@ -10,7 +11,7 @@
 
   const loading = ref(false)
   const errorMsg = ref('')
-  const result = ref<any>(null)
+  const result = ref<PyCaretTrainResponse | null>(null)
 
   const maxPreviewRows = 50
 
@@ -70,7 +71,9 @@
     }
 
     columns.value = parseCsvLine(headerLine)
-    rows.value = lines.slice(1, 1 + maxPreviewRows).map(parseCsvLine)
+    rows.value = lines
+      .slice(1, 1 + maxPreviewRows)
+      .map(line => parseCsvLine(line))
 
     if (!targetCol.value || !columns.value.includes(targetCol.value)) {
       targetCol.value = columns.value[0] || ''
@@ -107,6 +110,38 @@
   const hasPreview = computed(
     () => columns.value.length > 0 && rows.value.length > 0,
   )
+
+  const trainResult = computed(() => result.value?.result)
+
+  const confusionLabels = computed(
+    () => trainResult.value?.confusion_matrix?.labels || [],
+  )
+
+  const confusionMatrix = computed(
+    () => trainResult.value?.confusion_matrix?.matrix || [],
+  )
+
+  const correlationColumns = computed(
+    () => trainResult.value?.correlation_matrix?.columns || [],
+  )
+
+  const correlationMatrix = computed(
+    () => trainResult.value?.correlation_matrix?.matrix || [],
+  )
+
+  const correlationMessage = computed(
+    () => trainResult.value?.correlation_matrix?.message || '',
+  )
+
+  const resultJson = computed(() => {
+    if (!result.value) return ''
+    return JSON.stringify(result.value, null, 2)
+  })
+
+  function fmtNumber (value: number) {
+    if (!Number.isFinite(value)) return '-'
+    return Number.isInteger(value) ? `${value}` : value.toFixed(3)
+  }
 </script>
 
 <template>
@@ -159,7 +194,77 @@
       </table>
     </div>
 
-    <pre v-if="result">{{ result }}</pre>
+    <div
+      v-if="confusionLabels.length > 0 && confusionMatrix.length > 0"
+      class="matrix-wrap"
+    >
+      <h3>Confusion Matrix（最佳模型）</h3>
+      <div class="table-wrap">
+        <table class="excel">
+          <thead>
+            <tr>
+              <th>Actual \ Predicted</th>
+              <th v-for="label in confusionLabels" :key="`cm-header-${label}`">
+                {{ label }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(row, rowIdx) in confusionMatrix"
+              :key="`cm-row-${rowIdx}`"
+            >
+              <th>{{ confusionLabels[rowIdx] || `Class ${rowIdx + 1}` }}</th>
+              <td
+                v-for="(cell, colIdx) in row"
+                :key="`cm-cell-${rowIdx}-${colIdx}`"
+              >
+                {{ fmtNumber(cell) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      v-if="correlationColumns.length > 0 && correlationMatrix.length > 0"
+      class="matrix-wrap"
+    >
+      <h3>Correlation Matrix</h3>
+      <div class="table-wrap">
+        <table class="excel">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th v-for="col in correlationColumns" :key="`corr-header-${col}`">
+                {{ col }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(row, rowIdx) in correlationMatrix"
+              :key="`corr-row-${rowIdx}`"
+            >
+              <th>
+                {{ correlationColumns[rowIdx] || `Feature ${rowIdx + 1}` }}
+              </th>
+              <td
+                v-for="(cell, colIdx) in row"
+                :key="`corr-cell-${rowIdx}-${colIdx}`"
+              >
+                {{ fmtNumber(cell) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p v-else-if="correlationMessage" class="hint">{{ correlationMessage }}</p>
+
+    <pre v-if="resultJson">{{ resultJson }}</pre>
   </section>
 </template>
 
@@ -186,6 +291,12 @@
     overflow: auto;
     border: 1px solid #ddd;
     max-height: 480px;
+  }
+  .matrix-wrap {
+    margin-top: 16px;
+  }
+  .hint {
+    margin-top: 8px;
   }
   .excel {
     border-collapse: collapse;

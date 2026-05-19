@@ -4,6 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: datamind-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "5001:5001"
     environment:
@@ -17,6 +19,17 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - whisper-cache:/root/.cache/whisper
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: datamind-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:

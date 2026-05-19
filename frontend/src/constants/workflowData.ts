@@ -4,6 +4,21 @@ import type { FlowNode } from '@/types/workflow'
 
 export const INITIAL_NODES: FlowNode[] = [
   {
+    id: 'file',
+    type: 'iconNode',
+    position: { x: -120, y: 290 },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+    data: {
+      icon: 'mdi-file-outline',
+      label: 'File',
+      colorClass: 'node-pending',
+      description: '上傳資料檔案',
+      fields: [],
+      config: { fileName: '' },
+    },
+  },
+  {
     id: 'dataTable',
     type: 'iconNode',
     position: { x: 60, y: 290 },
@@ -133,6 +148,7 @@ export const INITIAL_NODES: FlowNode[] = [
 
 /** 核心連線資料，不含樣式（樣式由 canvasEdges computed 動態產生） */
 export const INITIAL_EDGES: Pick<Edge, 'id' | 'source' | 'target' | 'type'>[] = [
+  { id: 'e0',  source: 'file',              target: 'dataTable',        type: 'default' },
   { id: 'e1',  source: 'dataTable',         target: 'preprocessor',      type: 'default' },
   { id: 'e2a', source: 'preprocessor',      target: 'modelLinear',       type: 'default' },
   { id: 'e2b', source: 'preprocessor',      target: 'modelRandomForest', type: 'default' },
@@ -150,8 +166,9 @@ export type DemoStep = { nodeIds: string[]; delay: number }
 
 /** Demo 動畫：依序點亮的節點 id 與觸發時間（ms） */
 export const DEMO_STEPS: DemoStep[] = [
-  { nodeIds: ['dataTable'],         delay: 800  },
-  { nodeIds: ['preprocessor'],      delay: 1800 },
+  { nodeIds: ['file'],              delay: 800  },
+  { nodeIds: ['dataTable'],         delay: 1400 },
+  { nodeIds: ['preprocessor'],      delay: 2200 },
   { nodeIds: ['modelLinear'],       delay: 2700 },
   { nodeIds: ['modelRandomForest'], delay: 3200 },
   { nodeIds: ['modelXgboost'],      delay: 3700 },

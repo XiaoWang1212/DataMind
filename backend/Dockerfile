@@ -9,13 +9,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg ca-certificates curl \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       zlib1g-dev \
+       ffmpeg \
+       ca-certificates \
+       curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN CFLAGS="-I/usr/include -I/usr/include/aarch64-linux-gnu" \
+    CPPFLAGS="-I/usr/include -I/usr/include/aarch64-linux-gnu" \
+    uv sync --frozen --no-dev
 
 COPY . .
 RUN mkdir -p uploads
