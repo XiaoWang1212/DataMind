@@ -48,7 +48,7 @@
               hidden
               type="file"
               @change="handleFileChange"
-            />
+            >
           </label>
           <div v-if="selectedUploadFile" class="upload-dropzone__file">
             已選檔案：{{ selectedUploadFile.name }}
@@ -80,10 +80,25 @@
       class="demo-btn"
       :class="{ 'demo-btn--running': isDemoRunning }"
       :disabled="isDemoRunning"
+      type="button"
       @click="startDemo"
     >
       {{ isDemoRunning ? "⏳" : "▶" }}
     </button>
+    <button
+      class="demo-btn json-upload-btn"
+      type="button"
+      @click="triggerJsonUpload"
+    >
+      上傳 JSON
+    </button>
+    <input
+      ref="jsonFileInput"
+      accept=".json,application/json"
+      hidden
+      type="file"
+      @change="handleJsonFileChange"
+    >
 
     <!-- 下方抽屜：只有選到節點時才出現 -->
     <Transition name="slide-up">
@@ -117,53 +132,55 @@
 </template>
 
 <script setup lang="ts">
-  import type { Edge } from "@vue-flow/core";
   import type {
     ConfigValue,
     EdgeBase,
     FlowNode,
     SimpleNode,
-  } from "@/types/workflow";
-  import { computed, markRaw, onBeforeUnmount, ref } from "vue";
-  import { useDrawerDrag } from "@/composables/useDrawerDrag";
+  } from '@/types/workflow'
+  import { type Edge, Position } from '@vue-flow/core'
+  import { computed, markRaw, nextTick, onBeforeUnmount, ref } from 'vue'
+  import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
     DEMO_STEPS,
     INITIAL_EDGES,
     INITIAL_NODES,
     NODE_RUN_DURATION,
-  } from "@/constants/workflowData";
-  import IconNode from "./IconNode.vue";
-  import WorkflowCanvas from "./WorkflowCanvas.vue";
-  import WorkflowOptionsPanel from "./WorkflowOptionsPanel.vue";
+  } from '@/constants/workflowData'
+  import IconNode from './IconNode.vue'
+  import WorkflowCanvas from './WorkflowCanvas.vue'
+  import WorkflowOptionsPanel from './WorkflowOptionsPanel.vue'
 
   // demo 動畫狀態：Map<nodeId, 'running' | 'finished'>
-  const nodeStatuses = ref<Map<string, "running" | "finished">>(new Map());
+  const nodeStatuses = ref<Map<string, 'running' | 'finished'>>(new Map())
 
   // demo 是否正在執行中
-  const isDemoRunning = ref(false);
+  const isDemoRunning = ref(false)
 
   // demo 全部動畫是否已結束（結束後邊線保持黃色但停止動畫）
-  const isDemoFinished = ref(false);
+  const isDemoFinished = ref(false)
 
   // 存放 demo 計時器 id，元件卸載時用來清除
-  const demoTimers: number[] = [];
+  const demoTimers: number[] = []
 
   // 註冊自訂節點元件：iconNode 對應 IconNode.vue
   const nodeTypes = {
     iconNode: markRaw(IconNode),
-  };
+  }
 
   // 核心節點與連線資料
-  const nodes = ref<FlowNode[]>(INITIAL_NODES);
-  const edges = ref<EdgeBase[]>(INITIAL_EDGES);
+  const nodes = ref<FlowNode[]>(INITIAL_NODES)
+  const edges = ref<EdgeBase[]>(INITIAL_EDGES)
 
-  const uploadDialogVisible = ref(false);
-  const selectedUploadFile = ref<File | null>(null);
-  const dragActive = ref(false);
+  const uploadDialogVisible = ref(false)
+  const selectedUploadFile = ref<File | null>(null)
+  const dragActive = ref(false)
+  const jsonFileInput = ref<HTMLInputElement | null>(null)
+  const selectedJsonFile = ref<File | null>(null)
 
   // 預設不選任何節點，點擊後才顯示下方 options
-  const selectedNodeId = ref<string | null>(null);
+  const selectedNodeId = ref<string | null>(null)
 
   // 抽屜拖曳邏輯（封裝在 composable）
   const {
@@ -171,144 +188,275 @@
     style: drawerStyle,
     startDrag,
     reset: resetDrawer,
-  } = useDrawerDrag();
+  } = useDrawerDrag()
 
   // 目前被選取的節點（傳給 OptionsPanel）
   const selectedNode = computed<SimpleNode | null>(() => {
-    if (!selectedNodeId.value) return null;
-    const node = nodes.value.find((item) => item.id === selectedNodeId.value);
-    return node ? { id: node.id, data: node.data } : null;
-  });
+    if (!selectedNodeId.value) return null
+    const node = nodes.value.find(item => item.id === selectedNodeId.value)
+    return node ? { id: node.id, data: node.data } : null
+  })
 
   // 節點顏色：完成的節點改成黃色，其餘依 data.colorClass
   const canvasNodes = computed<FlowNode[]>(() =>
-    nodes.value.map((node) => {
-      const status = nodeStatuses.value.get(node.id) ?? null;
+    nodes.value.map(node => {
+      const status = nodeStatuses.value.get(node.id) ?? null
       return {
         ...node,
-        class: "",
+        class: '',
         data: {
           ...node.data,
           status,
           // 只有 finished 才變黃，running 保持原色（只顯示 spinner）
           colorClass:
-            status === "finished" ? "node-yellow" : node.data.colorClass,
+            status === 'finished' ? 'node-yellow' : node.data.colorClass,
         },
-      };
+      }
     }),
-  );
+  )
 
   // flow 連線：每次 nodeStatuses 變動都產生全新物件，確保 Vue Flow 偵測到變化並更新 SVG marker
   const canvasEdges = computed<Edge[]>(() =>
     edges.value.map((edge): Edge => {
-      const done = nodeStatuses.value.get(String(edge.source)) === "finished";
+      const done = nodeStatuses.value.get(String(edge.source)) === 'finished'
       return {
         ...edge,
         animated: done && !isDemoFinished.value,
         style: done
-          ? { stroke: "#F0E274", strokeWidth: 2 }
-          : { stroke: "#d9d9d9", strokeWidth: 1.5 },
-      };
+          ? { stroke: '#F0E274', strokeWidth: 2 }
+          : { stroke: '#d9d9d9', strokeWidth: 1.5 },
+      }
     }),
-  );
+  )
 
   // 重置 demo 全部狀態並清除所有計時器
-  function resetDemo(): void {
-    nodeStatuses.value = new Map();
-    isDemoRunning.value = false;
-    isDemoFinished.value = false;
+  function resetDemo (): void {
+    nodeStatuses.value = new Map()
+    isDemoRunning.value = false
+    isDemoFinished.value = false
     for (const timer of demoTimers) {
-      clearTimeout(timer);
+      clearTimeout(timer)
     }
-    demoTimers.length = 0;
+    demoTimers.length = 0
   }
 
   // 演示執行：依照 workflow 順序逐步點亮節點
-  function startDemo(): void {
-    if (isDemoRunning.value) return;
+  function startDemo (): void {
+    if (isDemoRunning.value) return
 
-    resetDemo();
-    isDemoRunning.value = true;
+    resetDemo()
+    isDemoRunning.value = true
 
     for (const { nodeIds, delay } of DEMO_STEPS) {
       // 先設為 running：顯示 spinner
       demoTimers.push(
         setTimeout(() => {
-          const next = new Map(nodeStatuses.value);
-          for (const id of nodeIds) next.set(id, "running");
-          nodeStatuses.value = next;
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'running')
+          nodeStatuses.value = next
         }, delay),
         setTimeout(() => {
-          const next = new Map(nodeStatuses.value);
-          for (const id of nodeIds) next.set(id, "finished");
-          nodeStatuses.value = next;
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'finished')
+          nodeStatuses.value = next
         }, delay + NODE_RUN_DURATION),
-      );
+      )
     }
 
     // 全部節點完成後再等 DEMO_FINISH_LINGER，才停止動畫
-    const lastStepDelay = Math.max(...DEMO_STEPS.map((s) => s.delay));
-    const endTime = lastStepDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER;
+    const lastStepDelay = Math.max(...DEMO_STEPS.map(s => s.delay))
+    const endTime = lastStepDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
     demoTimers.push(
       setTimeout(() => {
-        isDemoRunning.value = false;
-        isDemoFinished.value = true;
+        isDemoRunning.value = false
+        isDemoFinished.value = true
       }, endTime),
-    );
+    )
   }
 
   // 節點點擊：更新目前選擇的 node
-  function handleSelectNode(nodeId: string): void {
+  function handleSelectNode (nodeId: string): void {
     if (selectedNodeId.value === nodeId) {
-      closeMenu();
-      return;
+      closeMenu()
+      return
     }
-    selectedNodeId.value = nodeId;
-    resetDrawer();
+    selectedNodeId.value = nodeId
+    resetDrawer()
 
-    if (nodeId.startsWith("model")) {
-      openUploadDialog();
+    if (nodeId.startsWith('model')) {
+      openUploadDialog()
     }
   }
 
-  function openUploadDialog(): void {
-    uploadDialogVisible.value = true;
-    selectedUploadFile.value = null;
-    dragActive.value = false;
+  function openUploadDialog (): void {
+    uploadDialogVisible.value = true
+    selectedUploadFile.value = null
+    dragActive.value = false
   }
 
-  function closeUploadDialog(): void {
-    uploadDialogVisible.value = false;
-    selectedUploadFile.value = null;
-    dragActive.value = false;
+  function closeUploadDialog (): void {
+    uploadDialogVisible.value = false
+    selectedUploadFile.value = null
+    dragActive.value = false
   }
 
-  function handleFileChange(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    selectedUploadFile.value = target.files?.[0] ?? null;
+  function triggerJsonUpload (): void {
+    jsonFileInput.value?.click()
   }
 
-  function handleDrop(event: DragEvent): void {
-    event.preventDefault();
-    dragActive.value = false;
-    const files = event.dataTransfer?.files;
+  function handleJsonFileChange (event: Event): void {
+    const target = event.target as HTMLInputElement
+    selectedJsonFile.value = target.files?.[0] ?? null
+    target.value = ''
+    if (selectedJsonFile.value) {
+      loadJsonModels(selectedJsonFile.value)
+    }
+  }
+
+  async function loadJsonModels (file: File): Promise<void> {
+    if (!file.name.toLowerCase().endsWith('.json')) return
+
+    const rawText = await file.text()
+    let parsed
+    try {
+      parsed = JSON.parse(rawText) as {
+        models?: Array<{
+          name?: string
+          type?: string
+          purpose_zh?: string
+          purpose_en?: string
+        }>
+      }
+    } catch (error) {
+      console.error('Invalid JSON file', error)
+      return
+    }
+
+    if (!Array.isArray(parsed.models)) {
+      console.warn('JSON does not contain a models array')
+      return
+    }
+
+    const modelEntries = parsed.models.filter(
+      (
+        model,
+      ): model is {
+        name: string
+        type?: string
+        purpose_zh?: string
+        purpose_en?: string
+      } => typeof model.name === 'string' && model.name.trim().length > 0,
+    )
+
+    if (modelEntries.length === 0) return
+
+    const dynamicModelNodes: FlowNode[] = modelEntries.map((model, index) => ({
+      id: `modelJson${index}`,
+      type: 'iconNode',
+      position: { x: 420, y: 100 + index * 110 },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      data: {
+        icon: 'mdi-cube-outline',
+        label: model.name.trim(),
+        colorClass: 'node-pending',
+        description: model.purpose_zh || model.purpose_en || 'JSON 匯入模型',
+        fields: [],
+        config: {},
+      },
+    }))
+
+    const fileNode = INITIAL_NODES.find(node => node.id === 'file')
+    const dataTableNode = INITIAL_NODES.find(node => node.id === 'dataTable')
+    const preprocessorNode = INITIAL_NODES.find(
+      node => node.id === 'preprocessor',
+    )
+    const testScoreNode = INITIAL_NODES.find(node => node.id === 'testScore')
+    const confusionMatrixNode = INITIAL_NODES.find(
+      node => node.id === 'confusionMatrix',
+    )
+
+    if (
+      !fileNode
+      || !dataTableNode
+      || !preprocessorNode
+      || !testScoreNode
+      || !confusionMatrixNode
+    ) {
+      return
+    }
+
+    nodes.value = [
+      fileNode,
+      dataTableNode,
+      preprocessorNode,
+      ...dynamicModelNodes,
+      testScoreNode,
+      confusionMatrixNode,
+    ]
+
+    await nextTick()
+
+    edges.value = [
+      {
+        id: 'e0',
+        source: 'file',
+        target: 'dataTable',
+        type: 'default',
+      },
+      {
+        id: 'e1',
+        source: 'dataTable',
+        target: 'preprocessor',
+        type: 'default',
+      },
+      ...dynamicModelNodes.map((node, index) => ({
+        id: `e_preprocessor_model_${index}`,
+        source: 'preprocessor',
+        target: node.id,
+        type: 'default',
+      })),
+      ...dynamicModelNodes.map((node, index) => ({
+        id: `e_model_testScore_${index}`,
+        source: node.id,
+        target: 'testScore',
+        type: 'default',
+      })),
+      {
+        id: 'e4',
+        source: 'testScore',
+        target: 'confusionMatrix',
+        type: 'default',
+      },
+    ]
+  }
+
+  function handleFileChange (event: Event): void {
+    const target = event.target as HTMLInputElement
+    selectedUploadFile.value = target.files?.[0] ?? null
+  }
+
+  function handleDrop (event: DragEvent): void {
+    event.preventDefault()
+    dragActive.value = false
+    const files = event.dataTransfer?.files
     if (files && files.length > 0) {
-      selectedUploadFile.value = files.item(0) ?? null;
+      selectedUploadFile.value = files.item(0) ?? null
     }
   }
 
-  function handleDragEnter(): void {
-    dragActive.value = true;
+  function handleDragEnter (): void {
+    dragActive.value = true
   }
 
-  function handleDragLeave(): void {
-    dragActive.value = false;
+  function handleDragLeave (): void {
+    dragActive.value = false
   }
 
-  function confirmUpload(): void {
-    if (!selectedNodeId.value || !selectedUploadFile.value) return;
-    nodes.value = nodes.value.map((node) => {
-      if (node.id !== selectedNodeId.value) return node;
+  function confirmUpload (): void {
+    if (!selectedNodeId.value || !selectedUploadFile.value) return
+    nodes.value = nodes.value.map(node => {
+      if (node.id !== selectedNodeId.value) return node
       return {
         ...node,
         data: {
@@ -318,36 +466,36 @@
             fileName: selectedUploadFile.value!.name,
           },
         },
-      };
-    });
-    closeUploadDialog();
+      }
+    })
+    closeUploadDialog()
   }
 
   // 點空白區可收起 menu
-  function closeMenu(): void {
-    selectedNodeId.value = null;
-    resetDrawer();
+  function closeMenu (): void {
+    selectedNodeId.value = null
+    resetDrawer()
   }
 
   // 面板儲存：只更新對應 node 的 config
-  function handleUpdateConfig(payload: {
-    nodeId: string;
-    config: Record<string, ConfigValue>;
+  function handleUpdateConfig (payload: {
+    nodeId: string
+    config: Record<string, ConfigValue>
   }): void {
-    nodes.value = nodes.value.map((node) => {
-      if (node.id !== payload.nodeId) return node;
+    nodes.value = nodes.value.map(node => {
+      if (node.id !== payload.nodeId) return node
       return {
         ...node,
         data: {
           ...node.data,
           config: { ...node.data.config, ...payload.config },
         },
-      };
-    });
+      }
+    })
   }
 
   // 元件卸載時確保清除 demo 計時器
-  onBeforeUnmount(resetDemo);
+  onBeforeUnmount(resetDemo)
 </script>
 
 <style scoped>
@@ -402,6 +550,34 @@
   .demo-btn:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+
+  .json-upload-btn {
+    position: absolute;
+    top: 14px;
+    right: 64px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #005dff;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
+  .json-upload-btn:hover {
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .options-drawer {

@@ -1,0 +1,334 @@
+{
+  "features": [
+    {
+      "name": "Sex",
+      "type": "nominal",
+      "description_zh": "患者性別（0 = 女性，1 = 男性）",
+      "description_en": "Patient sex (0 = Female, 1 = Male)"
+    },
+    {
+      "name": "Age",
+      "type": "numerical",
+      "description_zh": "患者年齡（住院日期減去出生日期）",
+      "description_en": "Patient age (hospital date minus date of birth)"
+    },
+    {
+      "name": "Department",
+      "type": "nominal",
+      "description_zh": "住院科別（1 = 內科，2 = 外科，3 = 骨科，4 = 婦科）",
+      "description_en": "Inpatient department (1 = Internal medicine, 2 = Surgical, 3 = Orthopedics, 4 = Gynecology)"
+    },
+    {
+      "name": "Dementia",
+      "type": "nominal",
+      "description_zh": "患者是否有失智症診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a dementia diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Depression",
+      "type": "nominal",
+      "description_zh": "患者是否有憂鬱症診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a depression diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Diabetes mellitus",
+      "type": "nominal",
+      "description_zh": "患者是否有糖尿病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a diabetes mellitus diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Cancer",
+      "type": "nominal",
+      "description_zh": "患者是否有癌症診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a cancer diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Cardiovascular diseases",
+      "type": "nominal",
+      "description_zh": "患者是否有心血管疾病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a cardiovascular diseases diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Neurologic diseases",
+      "type": "nominal",
+      "description_zh": "患者是否有神經系統疾病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a neurologic diseases diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Stroke",
+      "type": "nominal",
+      "description_zh": "患者是否有中風診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a stroke diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Musculoskeletal diseases",
+      "type": "nominal",
+      "description_zh": "患者是否有肌肉骨骼疾病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have a musculoskeletal diseases diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Eye diseases",
+      "type": "nominal",
+      "description_zh": "患者是否有眼部疾病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have an eye diseases diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Ear diseases",
+      "type": "nominal",
+      "description_zh": "患者是否有耳部疾病診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have an ear diseases diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Anemia",
+      "type": "nominal",
+      "description_zh": "患者是否有貧血診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have an anemia diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Orthostatic hypotension",
+      "type": "nominal",
+      "description_zh": "患者是否有姿位性低血壓診斷（0 = 否，1 = 是）",
+      "description_en": "Did this patient have an orthostatic hypotension diagnosis (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Showering",
+      "type": "numerical",
+      "description_zh": "患者淋浴自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient showering self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Changing clothes",
+      "type": "numerical",
+      "description_zh": "患者穿衣自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient changing clothes self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Toileting",
+      "type": "numerical",
+      "description_zh": "患者如廁自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient toileting self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Preforming mobility functions",
+      "type": "numerical",
+      "description_zh": "患者活動功能自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient performing mobility functions self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Using excretion function",
+      "type": "numerical",
+      "description_zh": "患者排泄功能自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient using excretion function self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Eating",
+      "type": "numerical",
+      "description_zh": "患者進食自理能力（1 = 完全依賴，2 = 部分依賴，3 = 自理）",
+      "description_en": "Patient eating self-care ability (1 = Complete dependence, 2 = Partial dependence, 3 = Self-care)"
+    },
+    {
+      "name": "Karnofsky Performance Scale",
+      "type": "numerical",
+      "description_zh": "卡諾夫斯基功能狀態量表評分（0-4分）",
+      "description_en": "Karnofsky Performance Scale score (0-4 points)"
+    },
+    {
+      "name": "Barthel Index",
+      "type": "numerical",
+      "description_zh": "巴氏量表評分（0-99分）",
+      "description_en": "Barthel Index score (0-99 points)"
+    },
+    {
+      "name": "Consciousness",
+      "type": "nominal",
+      "description_zh": "患者意識狀態（1 = 清醒，2 = 麻醉未醒，3 = 嗜睡，4 = 木僵，5 = 昏迷，6 = 其他）",
+      "description_en": "Patient consciousness level (1 = Alert, 2 = Anesthesia and not awake, 3 = Drowsiness, 4 = Stupor, 5 = Comatose, 6 = Other)"
+    },
+    {
+      "name": "Emotional",
+      "type": "nominal",
+      "description_zh": "患者情緒狀態（1 = 平靜，2 = 焦慮，3 = 憂鬱，4 = 冷漠，5 = 興奮，6 = 悲傷，7 = 恐懼，8 = 恐懼死亡，9 = 自殺意圖，10 = 對日常活動失去興趣，11 = 愛哭，12 = 其他）",
+      "description_en": "Patient emotional state (1 = Calm, 2 = Anxiety, 3 = Depression, 4 = Indifferent, 5 = Excitement, 6 = Sadness, 7 = Fear, 8 = Fear to death, 9 = Intention to suicide, 10 = Lost interest in daily activities, 11 = Weepy, 12 = Other)"
+    },
+    {
+      "name": "Visual impairment (left/right)",
+      "type": "nominal",
+      "description_zh": "患者是否有視覺障礙（0 = 否，1 = 是）",
+      "description_en": "Patient has visual impairment (left/right) (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Malnutrition",
+      "type": "nominal",
+      "description_zh": "患者是否有營養不良（0 = 否，1 = 是）",
+      "description_en": "Patient has malnutrition (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Sleep disorder",
+      "type": "nominal",
+      "description_zh": "患者是否有睡眠障礙（0 = 否，1 = 是）",
+      "description_en": "Patient has sleep disorder (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Prosthesis limb",
+      "type": "nominal",
+      "description_zh": "患者是否有義肢（0 = 否，1 = 是）",
+      "description_en": "Patient has prosthetic limb (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Lower limb muscle strength",
+      "type": "nominal",
+      "description_zh": "下肢肌力等級（0-5分）",
+      "description_en": "Lower limb muscle strength grade (0-5)"
+    },
+    {
+      "name": "Surgery records",
+      "type": "nominal",
+      "description_zh": "患者是否有手術記錄（0 = 否，1 = 是）",
+      "description_en": "Patient has surgery records (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Peripheral intravenous catheter",
+      "type": "nominal",
+      "description_zh": "患者是否有周邊靜脈導管（0 = 否，1 = 是）",
+      "description_en": "Patient has peripheral intravenous catheter (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Dizziness",
+      "type": "nominal",
+      "description_zh": "患者是否有頭暈症狀（0 = 否，1 = 是）",
+      "description_en": "Patient has dizziness symptom (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Headache",
+      "type": "nominal",
+      "description_zh": "患者是否有頭痛症狀（0 = 否，1 = 是）",
+      "description_en": "Patient has headache symptom (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Diarrhea",
+      "type": "nominal",
+      "description_zh": "患者是否有腹瀉症狀（0 = 否，1 = 是）",
+      "description_en": "Patient has diarrhea symptom (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Pollakiuria",
+      "type": "nominal",
+      "description_zh": "患者是否有頻尿症狀（0 = 否，1 = 是）",
+      "description_en": "Patient has pollakiuria symptom (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Weakness",
+      "type": "nominal",
+      "description_zh": "患者是否有虛弱症狀（0 = 否，1 = 是）",
+      "description_en": "Patient has weakness symptom (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "high-risk group of fall",
+      "type": "nominal",
+      "description_zh": "患者是否被歸類為高跌倒風險組（0 = 否，1 = 是）",
+      "description_en": "Patient is classified as high-risk group of fall (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Central nervous system drugs—anticonvulsants",
+      "type": "nominal",
+      "description_zh": "患者是否服用抗痙攣藥（0 = 否，1 = 是）",
+      "description_en": "Did this patient take central nervous system drugs—anticonvulsants (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Hematological agents—antithrombotic agents",
+      "type": "nominal",
+      "description_zh": "患者是否服用抗血栓藥物（0 = 否，1 = 是）",
+      "description_en": "Did this patient take hematological agents—antithrombotic agents (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Central nervous system drugs—general anesthetics",
+      "type": "nominal",
+      "description_zh": "患者是否服用全身麻醉劑（0 = 否，1 = 是）",
+      "description_en": "Did this patient take central nervous system drugs—general anesthetics (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Skin and mucous membranes preparations—antipruritic and local anesthetics",
+      "type": "nominal",
+      "description_zh": "患者是否服用止癢劑和局部麻醉劑（0 = 否，1 = 是）",
+      "description_en": "Did this patient take skin and mucous membranes preparations—antipruritic and local anesthetics (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Central nervous system drugs—narcotic analgesics",
+      "type": "nominal",
+      "description_zh": "患者是否服用麻醉性止痛劑（0 = 否，1 = 是）",
+      "description_en": "Did this patient take central nervous system drugs—narcotic analgesics (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Central nervous system drugs—sedatives and hypnotics",
+      "type": "nominal",
+      "description_zh": "患者是否服用鎮靜劑和安眠藥（0 = 否，1 = 是）",
+      "description_en": "Did this patient take central nervous system drugs—sedatives and hypnotics (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Central nervous system drugs—tranquilizers",
+      "type": "nominal",
+      "description_zh": "患者是否服用鎮定劑（0 = 否，1 = 是）",
+      "description_en": "Did this patient take central nervous system drugs—tranquilizers (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Antihistamines and antiallergy agents",
+      "type": "nominal",
+      "description_zh": "患者是否服用抗組織胺和抗過敏藥物（0 = 否，1 = 是）",
+      "description_en": "Did this patient take antihistamines and antiallergy agents (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Electrolytic, caloric, and water balance—diuretics",
+      "type": "nominal",
+      "description_zh": "患者是否服用利尿劑（0 = 否，1 = 是）",
+      "description_en": "Did this patient take electrolytic, caloric, and water balance—diuretics (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Fall score",
+      "type": "numerical",
+      "description_zh": "跌倒評分（0-7分）",
+      "description_en": "Fall score (0-7 score)"
+    },
+    {
+      "name": "Fall Scale Age",
+      "type": "nominal",
+      "description_zh": "跌倒評分中的年齡類別（0 = <65歲，1 = ≧65歲）",
+      "description_en": "Age category in fall scale (0 = <65 y, 1 = ≧65 y)"
+    },
+    {
+      "name": "Fall Scale Consciousness",
+      "type": "nominal",
+      "description_zh": "跌倒評分中的意識狀態（0 = 清醒或昏迷，1 = 意識障礙）",
+      "description_en": "Consciousness level in fall scale (0 = Alert or coma, 1 = Disturbance of consciousness)"
+    },
+    {
+      "name": "Fall history",
+      "type": "nominal",
+      "description_zh": "跌倒史（0 = 無，1 = 有）",
+      "description_en": "Fall history (0 = No history of fall, 1 = History of fall)"
+    },
+    {
+      "name": "Walking ability",
+      "type": "nominal",
+      "description_zh": "行走能力（0 = 步態穩定或臥床，1 = 步態不穩或需輔助裝置）",
+      "description_en": "Walking ability (0 = Stable gaits or bed rest, 1 = Unstable gaits or assistive devices)"
+    },
+    {
+      "name": "Toileting ability",
+      "type": "nominal",
+      "description_zh": "如廁能力（0 = 自理，1 = 如廁失能）",
+      "description_en": "Toileting ability (0 = Self-care, 1 = Toileting disability)"
+    },
+    {
+      "name": "Taking medications that have been associated with increased fall risk",
+      "type": "nominal",
+      "description_zh": "是否服用與跌倒風險增加相關的藥物（0 = 否，1 = 是）",
+      "description_en": "Taking medications associated with increased fall risk (0 = No, 1 = Yes)"
+    },
+    {
+      "name": "Other (free text)",
+      "type": "nominal",
+      "description_zh": "其他（0 = 否，1 = 是）",
+      "description_en": "Other (free text) (0 = No, 1 = Yes)"
+    }
+  ]
+}
