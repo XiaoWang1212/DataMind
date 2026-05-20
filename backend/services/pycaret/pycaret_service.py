@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from services.pycaret_metrics import (
+from .pycaret_metrics import (
     build_confusion_matrix_payload,
     build_correlation_matrix_payload,
 )
@@ -83,7 +83,9 @@ class PyCaretTrainingService:
                 continue
 
             pos_label = 1 if 1 in labels else ("Y" if "Y" in labels else labels[-1])
-            neg_label = next((label for label in labels if label != pos_label), pos_label)
+            neg_label = next(
+                (label for label in labels if label != pos_label), pos_label
+            )
 
             cm = confusion_matrix(y_true, y_pred, labels=[neg_label, pos_label])
             if cm.size == 4:
