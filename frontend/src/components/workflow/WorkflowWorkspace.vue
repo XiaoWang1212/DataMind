@@ -86,6 +86,13 @@
       {{ isDemoRunning ? "⏳" : "▶" }}
     </button>
     <button
+      class="demo-btn execute-workflow-btn"
+      type="button"
+      @click="executeWorkflow"
+    >
+      執行 Workflow
+    </button>
+    <button
       class="demo-btn json-upload-btn"
       type="button"
       @click="triggerJsonUpload"
@@ -99,6 +106,39 @@
       type="file"
       @change="handleJsonFileChange"
     >
+
+    <div v-if="workflowResult || workflowError" class="workflow-result">
+      <div v-if="workflowError" class="workflow-error">{{ workflowError }}</div>
+      <div v-if="workflowResult" class="workflow-summary">
+        <h4>Score Summary</h4>
+        <div v-if="workflowSummary.length > 0" class="summary-list">
+          <div
+            v-for="(item, index) in workflowSummary"
+            :key="`${item.model_name}-${item.split_name}-${index}`"
+            class="summary-item"
+          >
+            <div class="summary-item__header">
+              <span>{{ item.model_name }}</span>
+              <span>{{ item.split_name }}</span>
+            </div>
+            <div class="summary-item__metrics">
+              <span
+                v-for="metric in item.metrics"
+                :key="metric.metric"
+                class="summary-metric"
+              >
+                {{ metric.metric }}:
+                <strong>{{ metric.valueFormatted }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="summary-empty">No summary metrics available.</div>
+      </div>
+      <pre v-if="workflowResult">{{
+        JSON.stringify(workflowResult, null, 2)
+      }}</pre>
+    </div>
 
     <!-- 下方抽屜：只有選到節點時才出現 -->
     <Transition name="slide-up">
@@ -124,6 +164,7 @@
             :selected-node="selectedNode"
             @open-upload="openUploadDialog"
             @update-config="handleUpdateConfig"
+            @update:file="handleDataFile"
           />
         </div>
       </div>
@@ -178,6 +219,71 @@
   const dragActive = ref(false)
   const jsonFileInput = ref<HTMLInputElement | null>(null)
   const selectedJsonFile = ref<File | null>(null)
+  const workflowDataFile = ref<File | null>(null)
+  const workflowResult = ref<null | Record<string, unknown>>(null)
+  const workflowError = ref<string | null>(null)
+
+  const workflowSummary = computed(() => {
+    if (!workflowResult.value) return []
+
+    const results = Array.isArray(workflowResult.value.results)
+      ? workflowResult.value.results
+      : []
+
+    const modelGroups = new Map<
+      string,
+      {
+        count: number
+        metrics: Record<string, number[]>
+        errors: Record<string, string[]>
+      }
+    >()
+
+    results
+      .filter((result: any) => result && typeof result === 'object')
+      .forEach((result: any) => {
+        const modelName = result.model_name || 'unknown'
+        const existing = modelGroups.get(modelName) ?? {
+          count: 0,
+          metrics: {},
+          errors: {},
+        }
+
+        if (Array.isArray(result.metrics)) {
+          result.metrics.forEach((metric: any) => {
+            const name = metric.metric || 'unknown'
+            if (metric?.error) {
+              existing.errors[name] = metric.error
+              return
+            }
+            const value = Number(metric.value)
+            if (!Number.isNaN(value)) {
+              existing.metrics[name] = existing.metrics[name] ?? []
+              existing.metrics[name].push(value)
+            }
+          })
+        }
+
+        existing.count += 1
+        modelGroups.set(modelName, existing)
+      })
+
+    return Array.from(modelGroups.entries()).map(([modelName, group]) => ({
+      model_name: modelName,
+      split_name: `${group.count} splits`,
+      metrics: Object.entries(group.metrics).map(([metric, values]) => ({
+        metric,
+        valueFormatted:
+          values.length > 0
+            ? (
+              values.reduce((sum, current) => sum + current, 0)
+              / values.length
+            ).toFixed(4)
+            : 'N/A',
+      })),
+      errors: group.errors,
+    }))
+  })
 
   // 預設不選任何節點，點擊後才顯示下方 options
   const selectedNodeId = ref<string | null>(null)
@@ -319,25 +425,25 @@
     const rawText = await file.text()
     let parsed
     try {
-      parsed = JSON.parse(rawText) as {
-        models?: Array<{
-          name?: string
-          type?: string
-          purpose_zh?: string
-          purpose_en?: string
-        }>
-      }
+      parsed = JSON.parse(rawText) as Record<string, unknown>
     } catch (error) {
       console.error('Invalid JSON file', error)
       return
     }
 
-    if (!Array.isArray(parsed.models)) {
-      console.warn('JSON does not contain a models array')
-      return
-    }
+    const models = Array.isArray(parsed.models) ? parsed.models : []
+    const featureEngineering = Array.isArray(parsed.featureEngineering)
+      ? (parsed.featureEngineering as Array<Record<string, unknown>>)
+      : []
+    const preprocessing = Array.isArray(parsed.preprocessing)
+      ? (parsed.preprocessing as Array<Record<string, unknown>>)
+      : []
+    const validation = parsed.validation as Record<string, unknown> | undefined
+    const metrics = Array.isArray(parsed.metrics)
+      ? (parsed.metrics as Array<Record<string, unknown>>)
+      : []
 
-    const modelEntries = parsed.models.filter(
+    const modelEntries = models.filter(
       (
         model,
       ): model is {
@@ -345,15 +451,22 @@
         type?: string
         purpose_zh?: string
         purpose_en?: string
-      } => typeof model.name === 'string' && model.name.trim().length > 0,
+      } =>
+        model !== null
+        && typeof model === 'object'
+        && typeof model.name === 'string'
+        && model.name.trim().length > 0,
     )
 
-    if (modelEntries.length === 0) return
+    if (modelEntries.length === 0) {
+      console.warn('JSON does not contain a valid models array')
+      return
+    }
 
     const dynamicModelNodes: FlowNode[] = modelEntries.map((model, index) => ({
       id: `modelJson${index}`,
       type: 'iconNode',
-      position: { x: 420, y: 100 + index * 110 },
+      position: { x: 420, y: 120 + index * 110 },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       data: {
@@ -362,7 +475,10 @@
         colorClass: 'node-pending',
         description: model.purpose_zh || model.purpose_en || 'JSON 匯入模型',
         fields: [],
-        config: {},
+        config: {
+          modelName: model.name.trim(),
+          type: model.type || 'classification',
+        },
       },
     }))
 
@@ -386,16 +502,82 @@
       return
     }
 
+    const featureNode: FlowNode | null
+      = featureEngineering.length > 0
+        ? {
+          id: 'featureEngineering',
+          type: 'iconNode',
+          position: { x: 330, y: 170 },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
+          data: {
+            icon: 'mdi-brain',
+            label: 'Feature\nEngineering',
+            colorClass: 'node-pending',
+            description: '根據論文擷取的特徵工程步驟',
+            fields: [],
+            config: {
+              pipeline: featureEngineering,
+            },
+          },
+        }
+        : null
+
+    const updatedPreprocessorNode: FlowNode = {
+      ...preprocessorNode,
+      data: {
+        ...preprocessorNode.data,
+        description: '從論文擷取的前處理設定',
+        fields: [],
+        config: {
+          pipeline: preprocessing,
+        },
+      },
+    }
+
+    const updatedTestScoreNode: FlowNode = {
+      ...testScoreNode,
+      data: {
+        ...testScoreNode.data,
+        description: '切分資料與評估指標設定',
+        fields: [],
+        config: {
+          targetCol:
+            (parsed as any).target_col
+            || (parsed as any).targetCol
+            || '是否跌倒',
+          validation: validation || { method: 'test_on_test', train_size: 0.7 },
+          metrics: metrics.length > 0 ? metrics : [{ metric: 'accuracy' }],
+        },
+      },
+    }
+
     nodes.value = [
       fileNode,
       dataTableNode,
-      preprocessorNode,
+      updatedPreprocessorNode,
+      ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
-      testScoreNode,
+      updatedTestScoreNode,
       confusionMatrixNode,
     ]
 
     await nextTick()
+
+    const modelEdges = dynamicModelNodes.flatMap((node, index) => [
+      {
+        id: `e_preprocessor_model_${index}`,
+        source: featureNode ? 'featureEngineering' : 'preprocessor',
+        target: node.id,
+        type: 'default',
+      },
+      {
+        id: `e_model_testScore_${index}`,
+        source: node.id,
+        target: 'testScore',
+        type: 'default',
+      },
+    ])
 
     edges.value = [
       {
@@ -410,18 +592,17 @@
         target: 'preprocessor',
         type: 'default',
       },
-      ...dynamicModelNodes.map((node, index) => ({
-        id: `e_preprocessor_model_${index}`,
-        source: 'preprocessor',
-        target: node.id,
-        type: 'default',
-      })),
-      ...dynamicModelNodes.map((node, index) => ({
-        id: `e_model_testScore_${index}`,
-        source: node.id,
-        target: 'testScore',
-        type: 'default',
-      })),
+      ...(featureNode
+        ? [
+          {
+            id: 'e2_feature',
+            source: 'preprocessor',
+            target: 'featureEngineering',
+            type: 'default',
+          },
+        ]
+        : []),
+      ...modelEdges,
       {
         id: 'e4',
         source: 'testScore',
@@ -429,6 +610,82 @@
         type: 'default',
       },
     ]
+  }
+
+  function handleDataFile (file: File): void {
+    workflowDataFile.value = file
+    workflowError.value = null
+  }
+
+  function buildWorkflowPayload (): Record<string, unknown> {
+    const preprocessNode = nodes.value.find(
+      node => node.id === 'preprocessor',
+    )
+    const featureNode = nodes.value.find(
+      node => node.id === 'featureEngineering',
+    )
+    const testScoreNode = nodes.value.find(node => node.id === 'testScore')
+    const modelNodes = nodes.value.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+
+    const preprocessPipelines = preprocessNode?.data.config.pipeline ?? []
+    const featureEngineeringPipelines = featureNode?.data.config.pipeline ?? []
+    const validationConfig = testScoreNode?.data.config.validation ?? {}
+    const metrics = testScoreNode?.data.config.metrics ?? []
+
+    return {
+      target_col: testScoreNode?.data.config.targetCol ?? '是否跌倒',
+      preprocess_pipelines: Array.isArray(preprocessPipelines)
+        ? [preprocessPipelines]
+        : [],
+      feature_engineering_pipelines: Array.isArray(featureEngineeringPipelines)
+        ? [featureEngineeringPipelines]
+        : [],
+      model_names: modelNodes
+        .map(
+          node =>
+            node.data.config.modelName || node.data.label.replace(/\n/g, ' '),
+        )
+        .filter(Boolean),
+      validation_config: validationConfig,
+      score_variants: Array.isArray(metrics)
+        ? metrics.map(metric =>
+          typeof metric === 'string' ? { metric } : metric,
+        )
+        : [],
+    }
+  }
+
+  async function executeWorkflow (): Promise<void> {
+    if (!workflowDataFile.value) {
+      workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
+      return
+    }
+
+    const payload = buildWorkflowPayload()
+    const formData = new FormData()
+    formData.append('file', workflowDataFile.value)
+    formData.append('workflow_payload', JSON.stringify(payload))
+
+    workflowError.value = null
+    workflowResult.value = null
+
+    try {
+      const response = await fetch('/api/models/workflow/execute', {
+        method: 'POST',
+        body: formData,
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        workflowError.value = result.error || `HTTP ${response.status}`
+        return
+      }
+      workflowResult.value = result
+    } catch (error) {
+      workflowError.value
+        = error instanceof Error ? error.message : 'Workflow 執行失敗'
+    }
   }
 
   function handleFileChange (event: Event): void {
@@ -576,8 +833,110 @@
     padding: 0 14px;
   }
 
+  .execute-workflow-btn {
+    position: absolute;
+    top: 14px;
+    right: 170px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #005dff;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
   .json-upload-btn:hover {
     background: rgba(255, 255, 255, 0.92);
+  }
+
+  .workflow-result {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    right: 18px;
+    z-index: 5;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 93, 255, 0.12);
+    box-shadow: 0 20px 40px rgba(17, 24, 39, 0.08);
+    color: #102a43;
+    max-height: 320px;
+    overflow: auto;
+  }
+
+  .workflow-summary {
+    margin-bottom: 12px;
+  }
+
+  .summary-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .summary-item {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #f6fbff;
+    border: 1px solid rgba(0, 93, 255, 0.12);
+  }
+
+  .summary-item__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+    color: #022d65;
+  }
+
+  .summary-item__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #16325c;
+  }
+
+  .summary-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0, 93, 255, 0.08);
+    color: #103d82;
+    font-size: 12px;
+  }
+
+  .workflow-result pre {
+    margin: 0;
+    padding: 14px;
+    background: #f1f7ff;
+    border-radius: 12px;
+    color: #0f172a;
+    overflow-x: auto;
+  }
+
+  .workflow-error {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: rgba(255, 235, 238, 0.9);
+    border: 1px solid rgba(244, 67, 54, 0.18);
+    border-radius: 12px;
+    color: #b00020;
   }
 
   .options-drawer {
@@ -608,6 +967,90 @@
     overflow-x: hidden;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .workflow-result {
+    position: absolute;
+    top: 62px;
+    right: 14px;
+    z-index: 5;
+    width: min(430px, calc(100% - 32px));
+    max-height: 500px;
+    overflow: auto;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 16px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+  }
+
+  .workflow-error {
+    margin-bottom: 10px;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .workflow-summary {
+    margin-bottom: 12px;
+  }
+
+  .workflow-summary h4 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #0f172a;
+    letter-spacing: 0.02em;
+  }
+
+  .summary-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .summary-item {
+    padding: 10px 12px;
+    background: rgba(0, 93, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 93, 255, 0.12);
+  }
+
+  .summary-item__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #0f172a;
+  }
+
+  .summary-item__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .summary-metric {
+    font-size: 12px;
+    color: #334155;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 999px;
+    padding: 4px 8px;
+  }
+
+  .summary-empty {
+    font-size: 12px;
+    color: #475569;
+  }
+
+  .workflow-result pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #0f172a;
   }
 
   .options-drawer__bar {

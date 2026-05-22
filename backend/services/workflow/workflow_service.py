@@ -18,6 +18,10 @@ from sklearn.model_selection import (
 )
 
 from services.model.registry import ModelRegistry
+from .feature_engineering_service import (
+    apply_feature_engineering_pipeline,
+    apply_feature_engineering_pipeline_for_split,
+)
 from .preprocess_service import apply_preprocess_pipeline, generate_preprocess_variants
 from .test_score_service import evaluate_metrics, generate_score_variants
 
@@ -243,6 +247,7 @@ class WorkflowService:
         model_names: List[str],
         score_variants: List[Dict[str, Any]],
         validation_config: Optional[Dict[str, Any]] = None,
+        feature_engineering_pipelines: Optional[List[List[Dict[str, Any]]]] = None,
         train_size: float = 0.7,
         random_state: int = 42,
     ) -> Dict[str, Any]:
@@ -263,17 +268,25 @@ class WorkflowService:
         if not preprocess_pipelines:
             preprocess_pipelines = [[]]
 
+        if not feature_engineering_pipelines:
+            feature_engineering_pipelines = [[]]
+
         for pipeline_index, pipeline_steps in enumerate(preprocess_pipelines):
             processed = apply_preprocess_pipeline(X.copy(), pipeline_steps)
             processed = cls._prepare_features(processed)
 
             if processed.empty:
                 raise ValueError(
-                    f"Preprocessed feature set is empty for pipeline {pipeline_index}"
+                    f"Processed feature set is empty for pipeline {pipeline_index}"
                 )
 
             split_definitions = cls._generate_resampling_splits(
                 processed, y, validation_config
+            )
+            feature_steps = (
+                feature_engineering_pipelines[pipeline_index]
+                if pipeline_index < len(feature_engineering_pipelines)
+                else []
             )
 
             for model_name in model_names:
@@ -298,23 +311,93 @@ class WorkflowService:
                     y_train = y.iloc[train_idx]
                     y_test = y.iloc[test_idx]
 
+                    overlap = len(set(train_idx).intersection(set(test_idx)))
+                    print(
+                        "[workflow debug] model=",
+                        model_name,
+                        "split=",
+                        split_definition["name"],
+                    )
+                    print("[workflow debug] overlap", overlap)
+                    print(
+                        "[workflow debug] X_train",
+                        X_train.shape,
+                        "X_test",
+                        X_test.shape,
+                    )
+                    print(
+                        "[workflow debug] y_train counts",
+                        y_train.value_counts(dropna=False).to_dict(),
+                    )
+                    print(
+                        "[workflow debug] y_test counts",
+                        y_test.value_counts(dropna=False).to_dict(),
+                    )
+                    print("[workflow debug] feature_steps", feature_steps)
+
+                    if feature_steps:
+                        X_train, X_test = apply_feature_engineering_pipeline_for_split(
+                            X_train, X_test, feature_steps, target_train=y_train
+                        )
+                        print(
+                            "[workflow debug] after feature engineering",
+                            "X_train",
+                            X_train.shape,
+                            "X_test",
+                            X_test.shape,
+                        )
+
                     estimator.fit(X_train, y_train)
                     y_pred = pd.Series(estimator.predict(X_test), index=y_test.index)
+                    print("[workflow debug] y_pred sample", y_pred.head(10).tolist())
+                    print("[workflow debug] y_test sample", y_test.head(10).tolist())
+                    print(
+                        "[workflow debug] y_pred equals y_test all",
+                        (y_pred == y_test).all(),
+                    )
+                    print(
+                        "[workflow debug] y_pred unequal count",
+                        int((y_pred != y_test).sum()),
+                    )
+                    print(
+                        "[workflow debug] confusion",
+                        pd.crosstab(
+                            y_test,
+                            y_pred,
+                            rownames=["true"],
+                            colnames=["pred"],
+                            dropna=False,
+                        ).to_dict(),
+                    )
                     y_score = None
                     if hasattr(estimator, "predict_proba"):
                         try:
-                            y_score = cls._safe_score_array(
-                                estimator.predict_proba(X_test)[:, 1]
+                            proba = estimator.predict_proba(X_test)
+                            classes = getattr(estimator, "classes_", None)
+                            print(
+                                "[workflow debug] proba shape",
+                                getattr(proba, "shape", None),
+                                "classes",
+                                classes,
                             )
-                        except Exception:
+                            y_score = {
+                                "proba": proba,
+                                "classes": (
+                                    classes.tolist() if classes is not None else None
+                                ),
+                            }
+                        except Exception as exc:
+                            print("[workflow debug] predict_proba error", exc)
                             y_score = None
 
                     metrics = evaluate_metrics(y_test, y_pred, y_score, score_variants)
+                    print("[workflow debug] metrics", metrics)
                     results.append(
                         {
                             "preprocess_pipeline_index": pipeline_index,
                             "model_name": model_name,
-                            "pipeline_steps": pipeline_steps,
+                            "preprocess_steps": pipeline_steps,
+                            "feature_engineering_steps": feature_steps,
                             "split_name": split_definition["name"],
                             "validation_config": split_definition["config"],
                             "metrics": metrics,

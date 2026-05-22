@@ -94,30 +94,38 @@ def _impute_missing(df: pd.DataFrame, step: Dict[str, Any]) -> pd.DataFrame:
     return result
 
 
+def _select_relevant_feature_names(
+    df: pd.DataFrame,
+    step: Dict[str, Any],
+    target: Optional[pd.Series] = None,
+) -> List[str]:
+    k = int(step.get("k", min(len(df.columns), 10)))
+    numeric_df = df.select_dtypes(include=["number"])
+    if numeric_df.empty:
+        return []
+
+    if target is None or len(target) != len(df):
+        selector = VarianceThreshold(
+            threshold=float(step.get("variance_threshold", 0.0))
+        )
+        selector.fit(numeric_df)
+        mask = selector.get_support()
+        numeric_cols = numeric_df.columns.tolist()
+        selected = [col for include, col in zip(mask, numeric_cols) if include][:k]
+        return selected
+
+    selector = SelectKBest(score_func=f_classif, k=min(k, numeric_df.shape[1]))
+    selector.fit(numeric_df, target)
+    return numeric_df.columns[selector.get_support()].tolist()
+
+
 def _select_relevant_features(
     df: pd.DataFrame,
     step: Dict[str, Any],
     target: Optional[pd.Series] = None,
 ) -> pd.DataFrame:
-    k = int(step.get("k", min(len(df.columns), 10)))
-    if target is None or len(target) != len(df):
-        selector = VarianceThreshold(
-            threshold=float(step.get("variance_threshold", 0.0))
-        )
-        selector.fit(df.select_dtypes(include=["number"]))
-        mask = selector.get_support()
-        numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-        selected = [col for include, col in zip(mask, numeric_cols) if include][:k]
-        return df[selected]
-
-    numeric_df = df.select_dtypes(include=["number"])
-    if numeric_df.empty:
-        return df
-
-    selector = SelectKBest(score_func=f_classif, k=min(k, numeric_df.shape[1]))
-    selector.fit(numeric_df, target)
-    selected = numeric_df.columns[selector.get_support()].tolist()
-    return df[selected]
+    selected = _select_relevant_feature_names(df, step, target=target)
+    return df[[col for col in selected if col in df.columns]]
 
 
 def _select_random_features(df: pd.DataFrame, step: Dict[str, Any]) -> pd.DataFrame:
@@ -214,6 +222,61 @@ def apply_feature_engineering_pipeline(
             result = _cur_decomposition(result, step)
 
     return result
+
+
+def apply_feature_engineering_pipeline_for_split(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    pipeline_steps: List[Dict[str, Any]],
+    target_train: Optional[pd.Series] = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    train_result = train_df.copy()
+    test_result = test_df.copy()
+
+    for step in pipeline_steps:
+        step_type = step.get("type")
+        if step_type not in FEATURE_ENGINEERING_STEP_TYPES:
+            continue
+
+        if step_type == "discretize_continuous":
+            train_result = _discretize_continuous(train_result, step)
+            test_result = _discretize_continuous(test_result, step)
+        elif step_type == "continuize_discrete":
+            train_result = _continuize_discrete(train_result, step)
+            test_result = _continuize_discrete(test_result, step)
+        elif step_type == "impute_missing":
+            train_result = _impute_missing(train_result, step)
+            test_result = _impute_missing(test_result, step)
+        elif step_type == "select_relevant_features":
+            selected = _select_relevant_feature_names(
+                train_result, step, target=target_train
+            )
+            train_result = train_result[
+                [col for col in selected if col in train_result.columns]
+            ]
+            test_result = test_result[
+                [col for col in selected if col in test_result.columns]
+            ]
+        elif step_type == "select_random_features":
+            train_result = _select_random_features(train_result, step)
+            test_result = _select_random_features(test_result, step)
+        elif step_type == "normalize_features":
+            train_result = _normalize_features(train_result, step)
+            test_result = _normalize_features(test_result, step)
+        elif step_type == "randomize_rows":
+            train_result = _randomize_rows(train_result, step)
+            test_result = _randomize_rows(test_result, step)
+        elif step_type == "remove_sparse_features":
+            train_result = _remove_sparse_features(train_result, step)
+            test_result = _remove_sparse_features(test_result, step)
+        elif step_type == "pca":
+            train_result = _pca(train_result, step)
+            test_result = _pca(test_result, step)
+        elif step_type == "cur_decomposition":
+            train_result = _cur_decomposition(train_result, step)
+            test_result = _cur_decomposition(test_result, step)
+
+    return train_result, test_result
 
 
 def generate_feature_engineering_variants(

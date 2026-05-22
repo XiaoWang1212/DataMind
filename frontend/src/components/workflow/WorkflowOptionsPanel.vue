@@ -19,7 +19,7 @@
               v-model.number="localConfig.previewRows"
               min="1"
               type="number"
-            >
+            />
           </div>
 
           <div class="preview-box" :style="previewBoxStyle">
@@ -50,6 +50,7 @@
           <WorkflowFileUploadPanel
             :file-name="fileName"
             @update:file-name="(value) => (localConfig.fileName = value)"
+            @update:file="(file) => emit('update:file', file)"
           />
         </template>
 
@@ -77,7 +78,7 @@
               :id="field.key"
               v-model="localConfig[field.key]"
               type="text"
-            >
+            />
 
             <input
               v-else-if="field.type === 'number'"
@@ -85,7 +86,7 @@
               v-model.number="localConfig[field.key]"
               min="0"
               type="number"
-            >
+            />
 
             <select v-else :id="field.key" v-model="localConfig[field.key]">
               <option
@@ -133,78 +134,79 @@
 </template>
 
 <script setup lang="ts">
-  import type { ConfigValue, SimpleNode } from '@/types/workflow'
-  import { computed, reactive, watch } from 'vue'
+  import type { ConfigValue, SimpleNode } from "@/types/workflow";
+  import { computed, reactive, watch } from "vue";
   import {
     PREVIEW_HEADERS,
     PREVIEW_SOURCE_ROWS,
-  } from '@/constants/workflowData'
-  import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
+  } from "@/constants/workflowData";
+  import WorkflowFileUploadPanel from "./nodePanel/WorkflowFileUploadPanel.vue";
 
   // 父層傳入目前選取節點
-  const props = defineProps<{ selectedNode: SimpleNode | null }>()
+  const props = defineProps<{ selectedNode: SimpleNode | null }>();
 
   // 將設定變更回傳給父層
   const emit = defineEmits<{
     (
-      e: 'update-config',
-      payload: { nodeId: string, config: Record<string, ConfigValue> },
-    ): void
-    (e: 'open-upload'): void
-  }>()
+      e: "update-config",
+      payload: { nodeId: string; config: Record<string, ConfigValue> },
+    ): void;
+    (e: "open-upload"): void;
+    (e: "update:file", file: File): void;
+  }>();
 
   // localConfig：面板內可編輯的暫存設定，按下「儲存設定」才同步給父層
-  const localConfig = reactive<Record<string, ConfigValue>>({})
+  const localConfig = reactive<Record<string, ConfigValue>>({});
 
   const isModelNode = computed(() =>
-    props.selectedNode?.id.startsWith('model'),
-  )
+    props.selectedNode?.id.startsWith("model"),
+  );
 
   const fileName = computed(() =>
-    typeof localConfig.fileName === 'string' ? localConfig.fileName : '',
-  )
+    typeof localConfig.fileName === "string" ? localConfig.fileName : "",
+  );
 
   // 預覽列數的高度計算常數
-  const PREVIEW_HEADER_HEIGHT = 34
-  const PREVIEW_ROW_HEIGHT = 31
-  const PREVIEW_MAX_HEIGHT = 360
+  const PREVIEW_HEADER_HEIGHT = 34;
+  const PREVIEW_ROW_HEIGHT = 31;
+  const PREVIEW_MAX_HEIGHT = 360;
 
   // 根據「預覽筆數」切片示意資料
   const previewRows = computed(() => {
-    const count = Math.max(1, Number(localConfig.previewRows ?? 5))
-    return PREVIEW_SOURCE_ROWS.slice(0, count)
-  })
+    const count = Math.max(1, Number(localConfig.previewRows ?? 5));
+    return PREVIEW_SOURCE_ROWS.slice(0, count);
+  });
 
   // 讓可視高度隨預覽筆數動態調整
   const previewBoxStyle = computed(() => {
-    const count = Math.max(1, Number(localConfig.previewRows ?? 5))
-    const dynamicHeight = PREVIEW_HEADER_HEIGHT + count * PREVIEW_ROW_HEIGHT
+    const count = Math.max(1, Number(localConfig.previewRows ?? 5));
+    const dynamicHeight = PREVIEW_HEADER_HEIGHT + count * PREVIEW_ROW_HEIGHT;
     return {
       maxHeight: `${Math.min(PREVIEW_MAX_HEIGHT, dynamicHeight)}px`,
-    }
-  })
+    };
+  });
 
   // 當切換節點時，把該節點 config 複製到本地表單狀態
   watch(
     () => props.selectedNode,
-    node => {
+    (node) => {
       // 先清空舊資料，避免欄位殘留
-      for (const key of Object.keys(localConfig)) delete localConfig[key]
+      for (const key of Object.keys(localConfig)) delete localConfig[key];
       if (!node) {
-        return
+        return;
       }
-      Object.assign(localConfig, node.data.config)
+      Object.assign(localConfig, node.data.config);
     },
     { immediate: true },
-  )
+  );
 
   // 儲存：把本地表單值回傳給父層更新對應節點
-  function save () {
-    if (!props.selectedNode) return
-    emit('update-config', {
+  function save() {
+    if (!props.selectedNode) return;
+    emit("update-config", {
       nodeId: props.selectedNode.id,
       config: { ...localConfig },
-    })
+    });
   }
 </script>
 

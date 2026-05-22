@@ -139,6 +139,7 @@
 
   const emit = defineEmits<{
     (e: 'update:fileName', value: string): void
+    (e: 'update:file', value: File): void
   }>()
 
   const fileInput = ref<HTMLInputElement | null>(null)
@@ -239,6 +240,7 @@
 
   async function loadFile (file: File) {
     selectedFile.value = file
+    emit('update:file', file)
     errorMessage.value = ''
     previewColumns.value = []
     filePreviewRows.value = []
