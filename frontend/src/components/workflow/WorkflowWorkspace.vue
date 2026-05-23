@@ -161,7 +161,9 @@
         <!-- 設定內容區（可滾動） -->
         <div class="options-drawer__scroll">
           <WorkflowOptionsPanel
+            :file="workflowDataFile"
             :selected-node="selectedNode"
+            :workflow-file-name="workflowDataFile?.name"
             @open-upload="openUploadDialog"
             @update-config="handleUpdateConfig"
             @update:file="handleDataFile"
@@ -180,7 +182,14 @@
     SimpleNode,
   } from '@/types/workflow'
   import { type Edge, Position } from '@vue-flow/core'
-  import { computed, markRaw, nextTick, onBeforeUnmount, ref } from 'vue'
+  import {
+    computed,
+    markRaw,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+  } from 'vue'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
@@ -223,6 +232,145 @@
   const workflowResult = ref<null | Record<string, unknown>>(null)
   const workflowError = ref<string | null>(null)
 
+  const WORKFLOW_DATA_FILE_STORAGE_KEY = 'workflowDataFile'
+  const WORKFLOW_JSON_FILE_STORAGE_KEY = 'workflowJsonFile'
+
+  function arrayBufferToBase64 (buffer: ArrayBuffer): string {
+    let binary = ''
+    const bytes = new Uint8Array(buffer)
+    for (let i = 0; i < bytes.byteLength; i += 1) {
+      const byte = bytes[i]!
+      binary += String.fromCodePoint(byte)
+    }
+    return btoa(binary)
+  }
+
+  function base64ToUint8Array (base64: string): Uint8Array {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.codePointAt(i) ?? 0
+    }
+    return bytes
+  }
+
+  async function saveWorkflowDataFileToStorage (
+    file: File | null,
+  ): Promise<void> {
+    if (!file) {
+      localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+      return
+    }
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const payload = {
+        name: file.name,
+        type: file.type || 'text/csv',
+        contentBase64: arrayBufferToBase64(buffer),
+      }
+      localStorage.setItem(
+        WORKFLOW_DATA_FILE_STORAGE_KEY,
+        JSON.stringify(payload),
+      )
+    } catch (error) {
+      console.warn('Unable to persist workflow file to localStorage', error)
+    }
+  }
+
+  async function loadWorkflowDataFileFromStorage (): Promise<File | null> {
+    const raw = localStorage.getItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+    if (!raw) return null
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        name: string
+        type: string
+        contentBase64: string
+      }
+      const bytes = base64ToUint8Array(parsed.contentBase64)
+      return new File([bytes.buffer as ArrayBuffer], parsed.name, {
+        type: parsed.type,
+      })
+    } catch (error) {
+      console.warn('Unable to restore workflow file from localStorage', error)
+      localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+      return null
+    }
+  }
+
+  async function saveWorkflowJsonFileToStorage (
+    file: File | null,
+  ): Promise<void> {
+    if (!file) {
+      localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const payload = {
+        name: file.name,
+        type: file.type || 'application/json',
+        text,
+      }
+      localStorage.setItem(
+        WORKFLOW_JSON_FILE_STORAGE_KEY,
+        JSON.stringify(payload),
+      )
+    } catch (error) {
+      console.warn('Unable to persist workflow JSON to localStorage', error)
+    }
+  }
+
+  async function loadWorkflowJsonFileFromStorage (): Promise<File | null> {
+    const raw = localStorage.getItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+    if (!raw) return null
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        name: string
+        type: string
+        text: string
+      }
+      return new File([parsed.text], parsed.name, { type: parsed.type })
+    } catch (error) {
+      console.warn('Unable to restore workflow JSON from localStorage', error)
+      localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+      return null
+    }
+  }
+
+  function updateFileNodeConfig (fileName: string | null): void {
+    nodes.value = nodes.value.map(node => {
+      if (node.id !== 'file') return node
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          config: {
+            ...node.data.config,
+            fileName,
+          },
+        },
+      }
+    })
+  }
+
+  onMounted(async () => {
+    const restoredDataFile = await loadWorkflowDataFileFromStorage()
+    if (restoredDataFile) {
+      workflowDataFile.value = restoredDataFile
+      updateFileNodeConfig(restoredDataFile.name)
+    }
+
+    const restoredJsonFile = await loadWorkflowJsonFileFromStorage()
+    if (restoredJsonFile) {
+      selectedJsonFile.value = restoredJsonFile
+      await loadJsonModels(restoredJsonFile)
+    }
+  })
+
   const workflowSummary = computed(() => {
     if (!workflowResult.value) return []
 
@@ -239,34 +387,34 @@
       }
     >()
 
-    results
-      .filter((result: any) => result && typeof result === 'object')
-      .forEach((result: any) => {
-        const modelName = result.model_name || 'unknown'
-        const existing = modelGroups.get(modelName) ?? {
-          count: 0,
-          metrics: {},
-          errors: {},
-        }
+    for (const result of results.filter(
+      (result: any) => result && typeof result === 'object',
+    )) {
+      const modelName = result.model_name || 'unknown'
+      const existing = modelGroups.get(modelName) ?? {
+        count: 0,
+        metrics: {},
+        errors: {},
+      }
 
-        if (Array.isArray(result.metrics)) {
-          result.metrics.forEach((metric: any) => {
-            const name = metric.metric || 'unknown'
-            if (metric?.error) {
-              existing.errors[name] = metric.error
-              return
-            }
-            const value = Number(metric.value)
-            if (!Number.isNaN(value)) {
-              existing.metrics[name] = existing.metrics[name] ?? []
-              existing.metrics[name].push(value)
-            }
-          })
+      if (Array.isArray(result.metrics)) {
+        for (const metric of result.metrics) {
+          const name = metric.metric || 'unknown'
+          if (metric?.error) {
+            existing.errors[name] = metric.error
+            continue
+          }
+          const value = Number(metric.value)
+          if (!Number.isNaN(value)) {
+            existing.metrics[name] = existing.metrics[name] ?? []
+            existing.metrics[name].push(value)
+          }
         }
+      }
 
-        existing.count += 1
-        modelGroups.set(modelName, existing)
-      })
+      existing.count += 1
+      modelGroups.set(modelName, existing)
+    }
 
     return Array.from(modelGroups.entries()).map(([modelName, group]) => ({
       model_name: modelName,
@@ -346,6 +494,35 @@
     demoTimers.length = 0
   }
 
+  type DemoStep = {
+    nodeIds: string[]
+    delay: number
+  }
+
+  function buildDemoSteps (): DemoStep[] {
+    let steps = DEMO_STEPS.slice(0, 3) as DemoStep[]
+
+    if (nodes.value.some(node => node.id === 'featureEngineering')) {
+      steps = [...steps, { nodeIds: ['featureEngineering'], delay: 2400 }]
+    }
+
+    const modelNodes = nodes.value.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+
+    let nextDelay = (steps.at(-1)?.delay ?? 2400) + 500
+    for (const node of modelNodes) {
+      steps = [...steps, { nodeIds: [node.id], delay: nextDelay }]
+      nextDelay += 500
+    }
+
+    return [
+      ...steps,
+      { nodeIds: ['testScore'], delay: nextDelay + 200 },
+      { nodeIds: ['confusionMatrix'], delay: nextDelay + 1400 },
+    ]
+  }
+
   // 演示執行：依照 workflow 順序逐步點亮節點
   function startDemo (): void {
     if (isDemoRunning.value) return
@@ -353,7 +530,8 @@
     resetDemo()
     isDemoRunning.value = true
 
-    for (const { nodeIds, delay } of DEMO_STEPS) {
+    const demoSteps = buildDemoSteps()
+    for (const { nodeIds, delay } of demoSteps) {
       // 先設為 running：顯示 spinner
       demoTimers.push(
         setTimeout(() => {
@@ -370,7 +548,7 @@
     }
 
     // 全部節點完成後再等 DEMO_FINISH_LINGER，才停止動畫
-    const lastStepDelay = Math.max(...DEMO_STEPS.map(s => s.delay))
+    const lastStepDelay = Math.max(...demoSteps.map(s => s.delay))
     const endTime = lastStepDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
     demoTimers.push(
       setTimeout(() => {
@@ -484,6 +662,9 @@
 
     const fileNode = INITIAL_NODES.find(node => node.id === 'file')
     const dataTableNode = INITIAL_NODES.find(node => node.id === 'dataTable')
+    const distributionNode = INITIAL_NODES.find(
+      node => node.id === 'distribution',
+    )
     const preprocessorNode = INITIAL_NODES.find(
       node => node.id === 'preprocessor',
     )
@@ -495,6 +676,7 @@
     if (
       !fileNode
       || !dataTableNode
+      || !distributionNode
       || !preprocessorNode
       || !testScoreNode
       || !confusionMatrixNode
@@ -555,6 +737,7 @@
     nodes.value = [
       fileNode,
       dataTableNode,
+      distributionNode,
       updatedPreprocessorNode,
       ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
@@ -587,6 +770,12 @@
         type: 'default',
       },
       {
+        id: 'e0a',
+        source: 'file',
+        target: 'distribution',
+        type: 'default',
+      },
+      {
         id: 'e1',
         source: 'dataTable',
         target: 'preprocessor',
@@ -610,11 +799,26 @@
         type: 'default',
       },
     ]
+
+    selectedJsonFile.value = file
+    saveWorkflowJsonFileToStorage(file)
   }
 
   function handleDataFile (file: File): void {
     workflowDataFile.value = file
     workflowError.value = null
+    updateFileNodeConfig(file.name)
+    saveWorkflowDataFileToStorage(file)
+  }
+
+  async function ensureWorkflowDataFile (): Promise<void> {
+    if (workflowDataFile.value) return
+
+    const restoredFile = await loadWorkflowDataFileFromStorage()
+    if (restoredFile) {
+      workflowDataFile.value = restoredFile
+      updateFileNodeConfig(restoredFile.name)
+    }
   }
 
   function buildWorkflowPayload (): Record<string, unknown> {
@@ -658,10 +862,14 @@
   }
 
   async function executeWorkflow (): Promise<void> {
+    await ensureWorkflowDataFile()
     if (!workflowDataFile.value) {
       workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
       return
     }
+
+    resetDemo()
+    startDemo()
 
     const payload = buildWorkflowPayload()
     const formData = new FormData()
@@ -679,12 +887,14 @@
       const result = await response.json()
       if (!response.ok) {
         workflowError.value = result.error || `HTTP ${response.status}`
+        resetDemo()
         return
       }
       workflowResult.value = result
     } catch (error) {
       workflowError.value
         = error instanceof Error ? error.message : 'Workflow 執行失敗'
+      resetDemo()
     }
   }
 
