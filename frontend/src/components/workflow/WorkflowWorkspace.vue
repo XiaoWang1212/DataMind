@@ -107,37 +107,8 @@
       @change="handleJsonFileChange"
     >
 
-    <div v-if="workflowResult || workflowError" class="workflow-result">
-      <div v-if="workflowError" class="workflow-error">{{ workflowError }}</div>
-      <div v-if="workflowResult" class="workflow-summary">
-        <h4>Score Summary</h4>
-        <div v-if="workflowSummary.length > 0" class="summary-list">
-          <div
-            v-for="(item, index) in workflowSummary"
-            :key="`${item.model_name}-${item.split_name}-${index}`"
-            class="summary-item"
-          >
-            <div class="summary-item__header">
-              <span>{{ item.model_name }}</span>
-              <span>{{ item.split_name }}</span>
-            </div>
-            <div class="summary-item__metrics">
-              <span
-                v-for="metric in item.metrics"
-                :key="metric.metric"
-                class="summary-metric"
-              >
-                {{ metric.metric }}:
-                <strong>{{ metric.valueFormatted }}</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div v-else class="summary-empty">No summary metrics available.</div>
-      </div>
-      <pre v-if="workflowResult">{{
-        JSON.stringify(workflowResult, null, 2)
-      }}</pre>
+    <div v-if="workflowError" class="workflow-result">
+      <div class="workflow-error">{{ workflowError }}</div>
     </div>
 
     <!-- 下方抽屜：只有選到節點時才出現 -->
@@ -164,6 +135,7 @@
             :file="workflowDataFile"
             :selected-node="selectedNode"
             :workflow-file-name="workflowDataFile?.name"
+            :workflow-summary="workflowSummary"
             @open-upload="openUploadDialog"
             @update-config="handleUpdateConfig"
             @update:file="handleDataFile"
@@ -566,10 +538,6 @@
     }
     selectedNodeId.value = nodeId
     resetDrawer()
-
-    if (nodeId.startsWith('model')) {
-      openUploadDialog()
-    }
   }
 
   function openUploadDialog (): void {
@@ -705,17 +673,21 @@
         }
         : null
 
-    const updatedPreprocessorNode: FlowNode = {
-      ...preprocessorNode,
-      data: {
-        ...preprocessorNode.data,
-        description: '從論文擷取的前處理設定',
-        fields: [],
-        config: {
-          pipeline: preprocessing,
+    const preprocessorNodeIncluded = preprocessing.length > 0
+
+    const updatedPreprocessorNode: FlowNode | null = preprocessorNodeIncluded
+      ? {
+        ...preprocessorNode,
+        data: {
+          ...preprocessorNode.data,
+          description: '從論文擷取的前處理設定',
+          fields: [],
+          config: {
+            pipeline: preprocessing,
+          },
         },
-      },
-    }
+      }
+      : null
 
     const updatedTestScoreNode: FlowNode = {
       ...testScoreNode,
@@ -738,7 +710,9 @@
       fileNode,
       dataTableNode,
       distributionNode,
-      updatedPreprocessorNode,
+      ...(preprocessorNodeIncluded && updatedPreprocessorNode
+        ? [updatedPreprocessorNode]
+        : []),
       ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
       updatedTestScoreNode,
@@ -747,10 +721,16 @@
 
     await nextTick()
 
+    const modelSourceNode = featureNode
+      ? 'featureEngineering'
+      : (preprocessorNodeIncluded
+        ? 'preprocessor'
+        : 'dataTable')
+
     const modelEdges = dynamicModelNodes.flatMap((node, index) => [
       {
-        id: `e_preprocessor_model_${index}`,
-        source: featureNode ? 'featureEngineering' : 'preprocessor',
+        id: `e_${modelSourceNode}_model_${index}`,
+        source: modelSourceNode,
         target: node.id,
         type: 'default',
       },
@@ -775,17 +755,21 @@
         target: 'distribution',
         type: 'default',
       },
-      {
-        id: 'e1',
-        source: 'dataTable',
-        target: 'preprocessor',
-        type: 'default',
-      },
+      ...(preprocessorNodeIncluded
+        ? [
+          {
+            id: 'e1',
+            source: 'dataTable',
+            target: 'preprocessor',
+            type: 'default',
+          },
+        ]
+        : []),
       ...(featureNode
         ? [
           {
             id: 'e2_feature',
-            source: 'preprocessor',
+            source: preprocessorNodeIncluded ? 'preprocessor' : 'dataTable',
             target: 'featureEngineering',
             type: 'default',
           },

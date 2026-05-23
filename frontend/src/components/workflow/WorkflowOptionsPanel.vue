@@ -33,18 +33,18 @@
           <DistributionPanel :file="props.file" :file-name="fileName" />
         </template>
 
-        <!-- 非 Data Table / File / Distribution 節點：依 fields 動態渲染一般表單 -->
-        <template v-else>
-          <div v-if="isModelNode" class="upload-card">
-            <div class="upload-card__title">模型檔案上傳</div>
-            <p class="upload-card__desc">
-              請上傳模型權重或設定檔，檔案會與該模型節點綁定。
-            </p>
-            <div v-if="localConfig.fileName" class="upload-card__info">
-              已上傳：{{ localConfig.fileName }}
-            </div>
-          </div>
+        <!-- Feature Engineering 節點：顯示特徵工程設定 -->
+        <template v-else-if="selectedNode.id === 'featureEngineering'">
+          <FeatureEngineeringPanel :pipeline="featureEngineeringPipeline" />
+        </template>
 
+        <!-- Test & Score 節點：顯示評分摘要 -->
+        <template v-else-if="selectedNode.id === 'testScore'">
+          <TestScorePanel :summary="workflowSummary" />
+        </template>
+
+        <!-- 非 Data Table / File / Distribution / Feature Engineering / Test & Score 節點：依 fields 動態渲染一般表單 -->
+        <template v-else-if="!isModelNode">
           <div
             v-for="field in selectedNode.data.fields"
             :key="field.key"
@@ -78,35 +78,6 @@
             </select>
           </div>
         </template>
-
-        <!-- Model 節點：額外資訊放在可收合區塊 -->
-        <details
-          v-if="selectedNode.id.startsWith('model')"
-          class="details"
-          open
-        >
-          <summary class="details__summary">模型參數</summary>
-          <div class="details__content">
-            <!-- modelMore 節點：列出已收合的模型 -->
-            <template v-if="selectedNode.id === 'modelMore'">
-              <div class="hint">
-                已收合模型：Support Vector Machine、Naive Bayes、K-Nearest
-                Neighbors ...
-              </div>
-            </template>
-            <!-- 其餘模型節點：沒有額外參數時顯示提示 -->
-            <template v-else-if="selectedNode.data.fields.length === 0">
-              <div class="hint">此模型目前沒有額外參數</div>
-            </template>
-          </div>
-        </details>
-      </div>
-
-      <!-- 操作按鈕：固定在面板底部 -->
-      <div v-if="selectedNode.id !== 'distribution'" class="actions">
-        <button class="btn btn-primary" type="button" @click="save">
-          儲存設定
-        </button>
       </div>
     </div>
   </section>
@@ -117,12 +88,21 @@
   import { computed, reactive, watch } from 'vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
+  import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
+  import TestScorePanel from './nodePanel/TestScorePanel.vue'
   import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
+
+  type TestScoreSummary = {
+    model_name: string
+    split_name: string
+    metrics: Array<{ metric: string, valueFormatted: string }>
+  }
 
   const props = defineProps<{
     selectedNode: SimpleNode | null
     file?: File | null
     workflowFileName?: string | null
+    workflowSummary?: TestScoreSummary[]
   }>()
 
   // 將設定變更回傳給父層
@@ -147,6 +127,15 @@
       return localConfig.fileName
     }
     return props.workflowFileName ?? ''
+  })
+
+  const workflowSummary = computed(() => props.workflowSummary ?? [])
+
+  const featureEngineeringPipeline = computed(() => {
+    const pipelineValue = localConfig.pipeline
+    return Array.isArray(pipelineValue)
+      ? (pipelineValue as Array<Record<string, unknown>>)
+      : []
   })
 
   // 當切換節點時，把該節點 config 複製到本地表單狀態
