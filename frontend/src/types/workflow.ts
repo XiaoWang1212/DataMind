@@ -7,7 +7,13 @@ export interface NodeField {
   options?: string[];
 }
 
-export type ConfigValue = string | number | boolean | null;
+export type ConfigValue =
+  | string
+  | number
+  | boolean
+  | null
+  | ConfigValue[]
+  | Record<string, ConfigValue>;
 
 export interface NodeData {
   icon: string;

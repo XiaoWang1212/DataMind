@@ -75,22 +75,15 @@
       </div>
     </div>
 
-    <!-- Demo 執行按鈕 -->
-    <button
-      class="demo-btn"
-      :class="{ 'demo-btn--running': isDemoRunning }"
-      :disabled="isDemoRunning"
-      type="button"
-      @click="startDemo"
-    >
-      {{ isDemoRunning ? "⏳" : "▶" }}
-    </button>
     <button
       class="demo-btn execute-workflow-btn"
+      :disabled="pausedAtNodeId === 'dataTable' && !dataTableCanContinue"
       type="button"
-      @click="executeWorkflow"
+      @click="
+        pausedAtNodeId === 'dataTable' ? continueWorkflow() : executeWorkflow()
+      "
     >
-      執行 Workflow
+      {{ pausedAtNodeId === "dataTable" ? "繼續 Workflow" : "執行 Workflow" }}
     </button>
     <button
       class="demo-btn json-upload-btn"
@@ -133,9 +126,11 @@
         <div class="options-drawer__scroll">
           <WorkflowOptionsPanel
             :file="workflowDataFile"
+            :paused-node-id="pausedAtNodeId"
             :selected-node="selectedNode"
             :workflow-file-name="workflowDataFile?.name"
             :workflow-summary="workflowSummary"
+            @apply-column-config="handleApplyColumnConfig"
             @open-upload="openUploadDialog"
             @update-config="handleUpdateConfig"
             @update:file="handleDataFile"
@@ -162,6 +157,7 @@
     onMounted,
     ref,
   } from 'vue'
+  import { executeWorkflowApi } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
@@ -173,6 +169,15 @@
   import IconNode from './IconNode.vue'
   import WorkflowCanvas from './WorkflowCanvas.vue'
   import WorkflowOptionsPanel from './WorkflowOptionsPanel.vue'
+
+  type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
+  type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
+
+  interface ColumnConfig {
+    name: string
+    type: ColumnType
+    role: ColumnRole
+  }
 
   // demo 動畫狀態：Map<nodeId, 'running' | 'finished'>
   const nodeStatuses = ref<Map<string, 'running' | 'finished'>>(new Map())
@@ -203,6 +208,8 @@
   const workflowDataFile = ref<File | null>(null)
   const workflowResult = ref<null | Record<string, unknown>>(null)
   const workflowError = ref<string | null>(null)
+  const pausedAtNodeId = ref<string | null>(null)
+  const dataTableApplied = ref(false)
 
   const WORKFLOW_DATA_FILE_STORAGE_KEY = 'workflowDataFile'
   const WORKFLOW_JSON_FILE_STORAGE_KEY = 'workflowJsonFile'
@@ -328,6 +335,26 @@
       }
     })
   }
+
+  const dataTableColumnConfig = computed(() => {
+    const node = nodes.value.find(node => node.id === 'dataTable')
+    if (!node) return [] as Array<{ name: string, type: string, role: string }>
+    const config = node.data.config.columnConfig
+    return Array.isArray(config)
+      ? (config as Array<{ name: string, type: string, role: string }>)
+      : []
+  })
+
+  const selectedTargetColumn = computed(() =>
+    dataTableColumnConfig.value.find(column => column.role === 'target'),
+  )
+
+  const dataTableCanContinue = computed(
+    () =>
+      pausedAtNodeId.value === 'dataTable'
+      && dataTableApplied.value
+      && selectedTargetColumn.value !== undefined,
+  )
 
   onMounted(async () => {
     const restoredDataFile = await loadWorkflowDataFileFromStorage()
@@ -460,10 +487,72 @@
     nodeStatuses.value = new Map()
     isDemoRunning.value = false
     isDemoFinished.value = false
+    pausedAtNodeId.value = null
     for (const timer of demoTimers) {
       clearTimeout(timer)
     }
     demoTimers.length = 0
+  }
+
+  function scheduleWorkflowSteps (steps: DemoStep[], baseDelay = 0): void {
+    if (steps.length === 0) {
+      return
+    }
+
+    for (const { nodeIds, delay } of steps) {
+      const offset = delay - baseDelay
+      if (offset < 0) continue
+
+      demoTimers.push(
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'running')
+          nodeStatuses.value = next
+        }, offset),
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'finished')
+          nodeStatuses.value = next
+        }, offset + NODE_RUN_DURATION),
+      )
+    }
+
+    const lastDelay = steps.at(-1)!.delay
+    const endTime
+      = lastDelay - baseDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
+    demoTimers.push(
+      window.setTimeout(() => {
+        isDemoRunning.value = false
+        isDemoFinished.value = true
+      }, endTime),
+    )
+  }
+
+  function continueWorkflow (): void {
+    if (!dataTableCanContinue.value) {
+      workflowError.value = selectedTargetColumn.value
+        ? '請先按 Apply，再繼續 Workflow。'
+        : '請先選擇 target 欄位，再按 Apply。'
+      return
+    }
+
+    pausedAtNodeId.value = null
+    isDemoRunning.value = true
+
+    const dataTableStep = buildDemoSteps().find(step =>
+      step.nodeIds.includes('dataTable'),
+    )
+    if (!dataTableStep) return
+
+    const current = new Map(nodeStatuses.value)
+    current.set('dataTable', 'finished')
+    nodeStatuses.value = current
+
+    const remainingSteps = buildDemoSteps().filter(
+      step => step.delay > dataTableStep.delay,
+    )
+    scheduleWorkflowSteps(remainingSteps, dataTableStep.delay)
+    runWorkflowRequest()
   }
 
   type DemoStep = {
@@ -493,41 +582,6 @@
       { nodeIds: ['testScore'], delay: nextDelay + 200 },
       { nodeIds: ['confusionMatrix'], delay: nextDelay + 1400 },
     ]
-  }
-
-  // 演示執行：依照 workflow 順序逐步點亮節點
-  function startDemo (): void {
-    if (isDemoRunning.value) return
-
-    resetDemo()
-    isDemoRunning.value = true
-
-    const demoSteps = buildDemoSteps()
-    for (const { nodeIds, delay } of demoSteps) {
-      // 先設為 running：顯示 spinner
-      demoTimers.push(
-        setTimeout(() => {
-          const next = new Map(nodeStatuses.value)
-          for (const id of nodeIds) next.set(id, 'running')
-          nodeStatuses.value = next
-        }, delay),
-        setTimeout(() => {
-          const next = new Map(nodeStatuses.value)
-          for (const id of nodeIds) next.set(id, 'finished')
-          nodeStatuses.value = next
-        }, delay + NODE_RUN_DURATION),
-      )
-    }
-
-    // 全部節點完成後再等 DEMO_FINISH_LINGER，才停止動畫
-    const lastStepDelay = Math.max(...demoSteps.map(s => s.delay))
-    const endTime = lastStepDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
-    demoTimers.push(
-      setTimeout(() => {
-        isDemoRunning.value = false
-        isDemoFinished.value = true
-      }, endTime),
-    )
   }
 
   // 節點點擊：更新目前選擇的 node
@@ -806,6 +860,7 @@
   }
 
   function buildWorkflowPayload (): Record<string, unknown> {
+    const dataTableNode = nodes.value.find(node => node.id === 'dataTable')
     const preprocessNode = nodes.value.find(
       node => node.id === 'preprocessor',
     )
@@ -823,7 +878,6 @@
     const metrics = testScoreNode?.data.config.metrics ?? []
 
     return {
-      target_col: testScoreNode?.data.config.targetCol ?? '是否跌倒',
       preprocess_pipelines: Array.isArray(preprocessPipelines)
         ? [preprocessPipelines]
         : [],
@@ -842,6 +896,37 @@
           typeof metric === 'string' ? { metric } : metric,
         )
         : [],
+      column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
+        ? (dataTableNode?.data.config.columnConfig as ColumnConfig[]).filter(
+          column => column.role !== 'skip',
+        )
+        : [],
+      target_col:
+        selectedTargetColumn.value?.name
+        ?? testScoreNode?.data.config.targetCol
+        ?? '是否跌倒',
+    }
+  }
+
+  async function runWorkflowRequest (): Promise<void> {
+    if (!workflowDataFile.value) {
+      workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
+      return
+    }
+
+    workflowError.value = null
+    workflowResult.value = null
+
+    try {
+      const payload = buildWorkflowPayload()
+      workflowResult.value = await executeWorkflowApi({
+        file: workflowDataFile.value,
+        workflowPayload: payload,
+      })
+    } catch (error) {
+      workflowError.value
+        = error instanceof Error ? error.message : 'Workflow 執行失敗'
+      resetDemo()
     }
   }
 
@@ -853,33 +938,18 @@
     }
 
     resetDemo()
-    startDemo()
-
-    const payload = buildWorkflowPayload()
-    const formData = new FormData()
-    formData.append('file', workflowDataFile.value)
-    formData.append('workflow_payload', JSON.stringify(payload))
-
+    isDemoRunning.value = true
+    pausedAtNodeId.value = 'dataTable'
     workflowError.value = null
     workflowResult.value = null
 
-    try {
-      const response = await fetch('/api/models/workflow/execute', {
-        method: 'POST',
-        body: formData,
-      })
-      const result = await response.json()
-      if (!response.ok) {
-        workflowError.value = result.error || `HTTP ${response.status}`
-        resetDemo()
-        return
-      }
-      workflowResult.value = result
-    } catch (error) {
-      workflowError.value
-        = error instanceof Error ? error.message : 'Workflow 執行失敗'
-      resetDemo()
-    }
+    const nextStatuses = new Map<string, 'running' | 'finished'>([
+      ['file', 'finished'],
+      ['distribution', 'finished'],
+      ['dataTable', 'running'],
+    ])
+    nodeStatuses.value = nextStatuses
+    selectedNodeId.value = 'dataTable'
   }
 
   function handleFileChange (event: Event): void {
@@ -920,6 +990,11 @@
       }
     })
     closeUploadDialog()
+  }
+
+  function handleApplyColumnConfig (): void {
+    dataTableApplied.value = true
+    workflowError.value = null
   }
 
   // 點空白區可收起 menu
@@ -1006,7 +1081,6 @@
   .json-upload-btn {
     position: absolute;
     top: 14px;
-    right: 64px;
     z-index: 5;
     display: inline-flex;
     align-items: center;
@@ -1030,7 +1104,7 @@
   .execute-workflow-btn {
     position: absolute;
     top: 14px;
-    right: 170px;
+    right: 120px;
     z-index: 5;
     display: inline-flex;
     align-items: center;
@@ -1157,10 +1231,10 @@
     flex: 1;
     min-height: 0;
     display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    flex-direction: column;
-    overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .workflow-result {

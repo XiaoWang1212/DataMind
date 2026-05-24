@@ -12,9 +12,12 @@
       <div class="panel-body">
         <template v-if="selectedNode.id === 'dataTable'">
           <DataTablePanel
+            :column-config="localConfig.columnConfig as ColumnConfig[]"
             :file="props.file"
             :file-name="fileName"
-            :preview-rows="Number(localConfig.previewRows ?? 10)"
+            :loading="props.pausedNodeId === 'dataTable'"
+            @apply-column-config="handleApplyColumnConfig"
+            @update-column-config="handleColumnConfigChange"
           />
         </template>
 
@@ -92,6 +95,15 @@
   import TestScorePanel from './nodePanel/TestScorePanel.vue'
   import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
 
+  type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
+  type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
+
+  interface ColumnConfig {
+    name: string
+    type: ColumnType
+    role: ColumnRole
+  }
+
   type TestScoreSummary = {
     model_name: string
     split_name: string
@@ -103,6 +115,7 @@
     file?: File | null
     workflowFileName?: string | null
     workflowSummary?: TestScoreSummary[]
+    pausedNodeId?: string | null
   }>()
 
   // 將設定變更回傳給父層
@@ -111,7 +124,7 @@
       e: 'update-config',
       payload: { nodeId: string, config: Record<string, ConfigValue> },
     ): void
-    (e: 'open-upload'): void
+    (e: 'open-upload' | 'apply-column-config'): void
     (e: 'update:file', file: File): void
   }>()
 
@@ -130,6 +143,19 @@
   })
 
   const workflowSummary = computed(() => props.workflowSummary ?? [])
+
+  function handleColumnConfigChange (value: ColumnConfig[]): void {
+    localConfig.columnConfig = value
+    if (!props.selectedNode) return
+    emit('update-config', {
+      nodeId: props.selectedNode.id,
+      config: { columnConfig: value },
+    })
+  }
+
+  function handleApplyColumnConfig (): void {
+    emit('apply-column-config')
+  }
 
   const featureEngineeringPipeline = computed(() => {
     const pipelineValue = localConfig.pipeline
@@ -151,15 +177,6 @@
     },
     { immediate: true },
   )
-
-  // 儲存：把本地表單值回傳給父層更新對應節點
-  function save () {
-    if (!props.selectedNode) return
-    emit('update-config', {
-      nodeId: props.selectedNode.id,
-      config: { ...localConfig },
-    })
-  }
 </script>
 
 <style scoped>
@@ -170,7 +187,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     padding: 14px 18px 0;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -206,8 +225,7 @@
   .panel-body {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     gap: 10px;

@@ -29,8 +29,8 @@ export const INITIAL_NODES: FlowNode[] = [
       label: "Data\nTable",
       colorClass: "node-pending",
       description: "上傳資料預覽",
-      fields: [{ key: "previewRows", label: "預覽筆數", type: "number" }],
-      config: { previewRows: 10 },
+      fields: [],
+      config: {},
     },
   },
   {
@@ -238,8 +238,8 @@ export type DemoStep = { nodeIds: string[]; delay: number };
 /** Demo 動畫：依序點亮的節點 id 與觸發時間（ms） */
 export const DEMO_STEPS: DemoStep[] = [
   { nodeIds: ["file"], delay: 800 },
-  { nodeIds: ["dataTable"], delay: 1400 },
-  { nodeIds: ["distribution"], delay: 1800 },
+  { nodeIds: ["distribution"], delay: 1400 },
+  { nodeIds: ["dataTable"], delay: 1800 },
   { nodeIds: ["preprocessor"], delay: 2600 },
   { nodeIds: ["modelLinear"], delay: 3100 },
   { nodeIds: ["modelRandomForest"], delay: 3600 },
