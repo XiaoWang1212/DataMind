@@ -109,6 +109,45 @@ class WorkflowService:
             "random_state": int(config.get("random_state", 42)),
         }
 
+    @staticmethod
+    def _extract_feature_importance(
+        estimator: Any, feature_names: List[str]
+    ) -> Optional[List[Dict[str, Any]]]:
+        if not feature_names:
+            return None
+
+        importance_values = None
+        if hasattr(estimator, "feature_importances_"):
+            importance_values = np.asarray(getattr(estimator, "feature_importances_"))
+        elif hasattr(estimator, "coef_"):
+            coef = np.asarray(getattr(estimator, "coef_"))
+            if coef.ndim == 1:
+                importance_values = np.abs(coef)
+            elif coef.ndim == 2:
+                importance_values = np.mean(np.abs(coef), axis=0)
+        elif hasattr(estimator, "coef") and callable(getattr(estimator, "coef")):
+            try:
+                coef = np.asarray(estimator.coef_(feature_names))
+                if coef.ndim == 1:
+                    importance_values = np.abs(coef)
+                elif coef.ndim == 2:
+                    importance_values = np.mean(np.abs(coef), axis=0)
+            except Exception:
+                importance_values = None
+
+        if importance_values is None:
+            return None
+
+        if importance_values.shape[0] != len(feature_names):
+            return None
+
+        importance_list = [
+            {"feature": feature, "importance": float(value)}
+            for feature, value in zip(feature_names, importance_values)
+        ]
+        importance_list.sort(key=lambda item: item["importance"], reverse=True)
+        return importance_list
+
     @classmethod
     def _generate_resampling_splits(
         cls,
@@ -248,6 +287,7 @@ class WorkflowService:
         score_variants: List[Dict[str, Any]],
         validation_config: Optional[Dict[str, Any]] = None,
         feature_engineering_pipelines: Optional[List[List[Dict[str, Any]]]] = None,
+        column_config: Optional[List[Dict[str, Any]]] = None,
         train_size: float = 0.7,
         random_state: int = 42,
     ) -> Dict[str, Any]:
@@ -258,6 +298,18 @@ class WorkflowService:
 
         y = df[target_col]
         X = df.drop(columns=[target_col])
+
+        if column_config:
+            skip_columns = [
+                item.get("name")
+                for item in column_config
+                if isinstance(item, dict) and item.get("role") == "skip"
+            ]
+            skip_columns = [col for col in skip_columns if isinstance(col, str)]
+            if skip_columns:
+                X = X.drop(
+                    columns=[c for c in skip_columns if c in X.columns], errors="ignore"
+                )
 
         if X.empty:
             raise ValueError("Feature matrix is empty after dropping the target column")
@@ -401,6 +453,10 @@ class WorkflowService:
                             "split_name": split_definition["name"],
                             "validation_config": split_definition["config"],
                             "metrics": metrics,
+                            "feature_importance": cls._extract_feature_importance(
+                                estimator,
+                                list(X_train.columns),
+                            ),
                             "feature_count": int(processed.shape[1]),
                             "row_count": int(processed.shape[0]),
                         }

@@ -146,7 +146,7 @@ export const INITIAL_NODES: FlowNode[] = [
   {
     id: "testScore",
     type: "iconNode",
-    position: { x: 600, y: 290 },
+    position: { x: 600, y: 220 },
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
     data: {
@@ -164,6 +164,21 @@ export const INITIAL_NODES: FlowNode[] = [
         },
       ],
       config: { split: 0.2, metric: "accuracy" },
+    },
+  },
+  {
+    id: "featureImportance",
+    type: "iconNode",
+    position: { x: 600, y: 360 },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+    data: {
+      icon: "mdi-chart-bell-curve",
+      label: "Feature\nImportance",
+      colorClass: "node-pending",
+      description: "顯示特徵重要性，協助找出影響模型的欄位",
+      fields: [],
+      config: {},
     },
   },
   {
@@ -225,6 +240,12 @@ export const INITIAL_EDGES: Pick<Edge, "id" | "source" | "target" | "type">[] =
     { id: "e3c", source: "modelXgboost", target: "testScore", type: "default" },
     { id: "e3d", source: "modelMore", target: "testScore", type: "default" },
     {
+      id: "e4a",
+      source: "testScore",
+      target: "featureImportance",
+      type: "default",
+    },
+    {
       id: "e4",
       source: "testScore",
       target: "confusionMatrix",
@@ -246,7 +267,7 @@ export const DEMO_STEPS: DemoStep[] = [
   { nodeIds: ["modelXgboost"], delay: 4100 },
   { nodeIds: ["modelMore"], delay: 4600 },
   { nodeIds: ["testScore"], delay: 5800 },
-  { nodeIds: ["confusionMatrix"], delay: 7000 },
+  { nodeIds: ["featureImportance", "confusionMatrix"], delay: 6400 },
 ];
 
 /** 每個節點顯示 loading spinner 的持續時間（ms） */

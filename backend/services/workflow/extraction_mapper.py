@@ -188,6 +188,14 @@ def build_workflow_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         or None
     )
 
+    column_config = _parse_json_field(
+        payload.get("column_config") or payload.get("columnConfig")
+    )
+    if isinstance(column_config, list):
+        column_config = [item for item in column_config if isinstance(item, dict)]
+    else:
+        column_config = []
+
     return {
         "preprocess_pipelines": preprocess_pipelines,
         "feature_engineering_pipelines": feature_engineering_pipelines,
@@ -195,4 +203,5 @@ def build_workflow_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         "validation_config": validation_config,
         "score_variants": score_variants,
         "target_col": target_col,
+        "column_config": column_config,
     }

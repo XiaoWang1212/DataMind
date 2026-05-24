@@ -147,6 +147,13 @@ def execute_workflow():
     )
     train_size = float(payload.get("train_size", 0.7))
     random_state = int(payload.get("random_state", 42))
+    column_config = _parse_json_field(
+        payload.get("column_config", payload.get("columnConfig", []))
+    )
+    if isinstance(column_config, dict):
+        column_config = [column_config]
+    if not isinstance(column_config, list):
+        column_config = []
 
     if any(
         key in payload
@@ -179,6 +186,7 @@ def execute_workflow():
                 "target_col",
                 payload.get("targetCol", payload.get("target", "是否跌倒")),
             )
+        column_config = mapped.get("column_config", [])
 
     if uploaded and uploaded.filename:
         if not _is_allowed_csv_file(uploaded.filename):
@@ -237,6 +245,8 @@ def execute_workflow():
     if not isinstance(score_variants, list):
         score_variants = []
 
+    column_config = column_config if column_config is not None else []
+
     try:
         result = WorkflowService.execute_workflow(
             data_path=data_path,
@@ -248,6 +258,7 @@ def execute_workflow():
             validation_config=validation_config,
             train_size=train_size,
             random_state=random_state,
+            column_config=column_config,
         )
         return jsonify(result)
     except FileNotFoundError as exc:

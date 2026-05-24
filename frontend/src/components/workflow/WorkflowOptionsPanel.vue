@@ -36,6 +36,12 @@
           <DistributionPanel :file="props.file" :file-name="fileName" />
         </template>
 
+        <template v-else-if="selectedNode.id === 'featureImportance'">
+          <FeatureImportancePanel
+            :workflow-result="props.workflowResult ?? undefined"
+          />
+        </template>
+
         <!-- Feature Engineering 節點：顯示特徵工程設定 -->
         <template v-else-if="selectedNode.id === 'featureEngineering'">
           <FeatureEngineeringPanel :pipeline="featureEngineeringPipeline" />
@@ -92,6 +98,7 @@
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
   import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
+  import FeatureImportancePanel from './nodePanel/FeatureImportancePanel.vue'
   import TestScorePanel from './nodePanel/TestScorePanel.vue'
   import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
 
@@ -115,6 +122,7 @@
     file?: File | null
     workflowFileName?: string | null
     workflowSummary?: TestScoreSummary[]
+    workflowResult?: Record<string, unknown> | null
     pausedNodeId?: string | null
   }>()
 

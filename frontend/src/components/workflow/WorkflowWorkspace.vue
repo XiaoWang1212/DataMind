@@ -129,6 +129,7 @@
             :paused-node-id="pausedAtNodeId"
             :selected-node="selectedNode"
             :workflow-file-name="workflowDataFile?.name"
+            :workflow-result="workflowResult"
             :workflow-summary="workflowSummary"
             @apply-column-config="handleApplyColumnConfig"
             @open-upload="openUploadDialog"
@@ -580,7 +581,10 @@
     return [
       ...steps,
       { nodeIds: ['testScore'], delay: nextDelay + 200 },
-      { nodeIds: ['confusionMatrix'], delay: nextDelay + 1400 },
+      {
+        nodeIds: ['featureImportance', 'confusionMatrix'],
+        delay: nextDelay + 900,
+      },
     ]
   }
 
@@ -691,6 +695,9 @@
       node => node.id === 'preprocessor',
     )
     const testScoreNode = INITIAL_NODES.find(node => node.id === 'testScore')
+    const featureImportanceNode = INITIAL_NODES.find(
+      node => node.id === 'featureImportance',
+    )
     const confusionMatrixNode = INITIAL_NODES.find(
       node => node.id === 'confusionMatrix',
     )
@@ -701,6 +708,7 @@
       || !distributionNode
       || !preprocessorNode
       || !testScoreNode
+      || !featureImportanceNode
       || !confusionMatrixNode
     ) {
       return
@@ -770,6 +778,7 @@
       ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
       updatedTestScoreNode,
+      featureImportanceNode,
       confusionMatrixNode,
     ]
 
@@ -830,6 +839,12 @@
         ]
         : []),
       ...modelEdges,
+      {
+        id: 'e4a',
+        source: 'testScore',
+        target: 'featureImportance',
+        type: 'default',
+      },
       {
         id: 'e4',
         source: 'testScore',
@@ -897,9 +912,7 @@
         )
         : [],
       column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
-        ? (dataTableNode?.data.config.columnConfig as ColumnConfig[]).filter(
-          column => column.role !== 'skip',
-        )
+        ? (dataTableNode?.data.config.columnConfig as ColumnConfig[])
         : [],
       target_col:
         selectedTargetColumn.value?.name
