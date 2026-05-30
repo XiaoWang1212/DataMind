@@ -5,7 +5,7 @@ from uuid import uuid4
 from werkzeug.utils import secure_filename
 
 from flask import Blueprint, jsonify, request
-from services.pycaret_service import PyCaretTrainingService
+from services.pycaret import PyCaretTrainingService
 
 pycaret_bp = Blueprint("pycaret", __name__)
 
@@ -17,13 +17,15 @@ def _is_allowed_data_file(filename: str) -> bool:
         return False
     ext = filename.rsplit(".", 1)[1].lower()
     return ext in ALLOWED_DATA_EXTENSIONS
-    
+
 
 @pycaret_bp.post("/train")
 def train_pycaret_model():
     payload = request.get_json(silent=True) or {}
     target_col = request.form.get("target_col") or payload.get("target_col", "是否跌倒")
-    output_dir = request.form.get("output_dir") or payload.get("output_dir", "artifacts/pycaret")
+    output_dir = request.form.get("output_dir") or payload.get(
+        "output_dir", "artifacts/pycaret"
+    )
 
     uploaded = request.files.get("file")
     if not uploaded or not uploaded.filename:
@@ -46,7 +48,10 @@ def train_pycaret_model():
     temp_data_path = None
 
     if not data_path:
-        return jsonify({"error": "file (form-data) or data_path (json) is required"}), 400
+        return (
+            jsonify({"error": "file (form-data) or data_path (json) is required"}),
+            400,
+        )
 
     try:
         service = PyCaretTrainingService()

@@ -75,15 +75,15 @@
       </div>
     </div>
 
-    <!-- Demo 執行按鈕 -->
     <button
-      class="demo-btn"
-      :class="{ 'demo-btn--running': isDemoRunning }"
-      :disabled="isDemoRunning"
+      class="demo-btn execute-workflow-btn"
+      :disabled="pausedAtNodeId === 'dataTable' && !dataTableCanContinue"
       type="button"
-      @click="startDemo"
+      @click="
+        pausedAtNodeId === 'dataTable' ? continueWorkflow() : executeWorkflow()
+      "
     >
-      {{ isDemoRunning ? "⏳" : "▶" }}
+      {{ pausedAtNodeId === "dataTable" ? "繼續 Workflow" : "執行 Workflow" }}
     </button>
     <button
       class="demo-btn json-upload-btn"
@@ -99,6 +99,10 @@
       type="file"
       @change="handleJsonFileChange"
     >
+
+    <div v-if="workflowError" class="workflow-result">
+      <div class="workflow-error">{{ workflowError }}</div>
+    </div>
 
     <!-- 下方抽屜：只有選到節點時才出現 -->
     <Transition name="slide-up">
@@ -121,9 +125,16 @@
         <!-- 設定內容區（可滾動） -->
         <div class="options-drawer__scroll">
           <WorkflowOptionsPanel
+            :file="workflowDataFile"
+            :paused-node-id="pausedAtNodeId"
             :selected-node="selectedNode"
+            :workflow-file-name="workflowDataFile?.name"
+            :workflow-result="workflowResult"
+            :workflow-summary="workflowSummary"
+            @apply-column-config="handleApplyColumnConfig"
             @open-upload="openUploadDialog"
             @update-config="handleUpdateConfig"
+            @update:file="handleDataFile"
           />
         </div>
       </div>
@@ -139,7 +150,15 @@
     SimpleNode,
   } from '@/types/workflow'
   import { type Edge, Position } from '@vue-flow/core'
-  import { computed, markRaw, nextTick, onBeforeUnmount, ref } from 'vue'
+  import {
+    computed,
+    markRaw,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+  } from 'vue'
+  import { executeWorkflowApi } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
@@ -151,6 +170,15 @@
   import IconNode from './IconNode.vue'
   import WorkflowCanvas from './WorkflowCanvas.vue'
   import WorkflowOptionsPanel from './WorkflowOptionsPanel.vue'
+
+  type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
+  type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
+
+  interface ColumnConfig {
+    name: string
+    type: ColumnType
+    role: ColumnRole
+  }
 
   // demo 動畫狀態：Map<nodeId, 'running' | 'finished'>
   const nodeStatuses = ref<Map<string, 'running' | 'finished'>>(new Map())
@@ -178,6 +206,232 @@
   const dragActive = ref(false)
   const jsonFileInput = ref<HTMLInputElement | null>(null)
   const selectedJsonFile = ref<File | null>(null)
+  const workflowDataFile = ref<File | null>(null)
+  const workflowResult = ref<null | Record<string, unknown>>(null)
+  const workflowError = ref<string | null>(null)
+  const pausedAtNodeId = ref<string | null>(null)
+  const dataTableApplied = ref(false)
+
+  const WORKFLOW_DATA_FILE_STORAGE_KEY = 'workflowDataFile'
+  const WORKFLOW_JSON_FILE_STORAGE_KEY = 'workflowJsonFile'
+
+  function arrayBufferToBase64 (buffer: ArrayBuffer): string {
+    let binary = ''
+    const bytes = new Uint8Array(buffer)
+    for (let i = 0; i < bytes.byteLength; i += 1) {
+      const byte = bytes[i]!
+      binary += String.fromCodePoint(byte)
+    }
+    return btoa(binary)
+  }
+
+  function base64ToUint8Array (base64: string): Uint8Array {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.codePointAt(i) ?? 0
+    }
+    return bytes
+  }
+
+  async function saveWorkflowDataFileToStorage (
+    file: File | null,
+  ): Promise<void> {
+    if (!file) {
+      localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+      return
+    }
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const payload = {
+        name: file.name,
+        type: file.type || 'text/csv',
+        contentBase64: arrayBufferToBase64(buffer),
+      }
+      localStorage.setItem(
+        WORKFLOW_DATA_FILE_STORAGE_KEY,
+        JSON.stringify(payload),
+      )
+    } catch (error) {
+      console.warn('Unable to persist workflow file to localStorage', error)
+    }
+  }
+
+  async function loadWorkflowDataFileFromStorage (): Promise<File | null> {
+    const raw = localStorage.getItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+    if (!raw) return null
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        name: string
+        type: string
+        contentBase64: string
+      }
+      const bytes = base64ToUint8Array(parsed.contentBase64)
+      return new File([bytes.buffer as ArrayBuffer], parsed.name, {
+        type: parsed.type,
+      })
+    } catch (error) {
+      console.warn('Unable to restore workflow file from localStorage', error)
+      localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+      return null
+    }
+  }
+
+  async function saveWorkflowJsonFileToStorage (
+    file: File | null,
+  ): Promise<void> {
+    if (!file) {
+      localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const payload = {
+        name: file.name,
+        type: file.type || 'application/json',
+        text,
+      }
+      localStorage.setItem(
+        WORKFLOW_JSON_FILE_STORAGE_KEY,
+        JSON.stringify(payload),
+      )
+    } catch (error) {
+      console.warn('Unable to persist workflow JSON to localStorage', error)
+    }
+  }
+
+  async function loadWorkflowJsonFileFromStorage (): Promise<File | null> {
+    const raw = localStorage.getItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+    if (!raw) return null
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        name: string
+        type: string
+        text: string
+      }
+      return new File([parsed.text], parsed.name, { type: parsed.type })
+    } catch (error) {
+      console.warn('Unable to restore workflow JSON from localStorage', error)
+      localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+      return null
+    }
+  }
+
+  function updateFileNodeConfig (fileName: string | null): void {
+    nodes.value = nodes.value.map(node => {
+      if (node.id !== 'file') return node
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          config: {
+            ...node.data.config,
+            fileName,
+          },
+        },
+      }
+    })
+  }
+
+  const dataTableColumnConfig = computed(() => {
+    const node = nodes.value.find(node => node.id === 'dataTable')
+    if (!node) return [] as Array<{ name: string, type: string, role: string }>
+    const config = node.data.config.columnConfig
+    return Array.isArray(config)
+      ? (config as Array<{ name: string, type: string, role: string }>)
+      : []
+  })
+
+  const selectedTargetColumn = computed(() =>
+    dataTableColumnConfig.value.find(column => column.role === 'target'),
+  )
+
+  const dataTableCanContinue = computed(
+    () =>
+      pausedAtNodeId.value === 'dataTable'
+      && dataTableApplied.value
+      && selectedTargetColumn.value !== undefined,
+  )
+
+  onMounted(async () => {
+    const restoredDataFile = await loadWorkflowDataFileFromStorage()
+    if (restoredDataFile) {
+      workflowDataFile.value = restoredDataFile
+      updateFileNodeConfig(restoredDataFile.name)
+    }
+
+    const restoredJsonFile = await loadWorkflowJsonFileFromStorage()
+    if (restoredJsonFile) {
+      selectedJsonFile.value = restoredJsonFile
+      await loadJsonModels(restoredJsonFile)
+    }
+  })
+
+  const workflowSummary = computed(() => {
+    if (!workflowResult.value) return []
+
+    const results = Array.isArray(workflowResult.value.results)
+      ? workflowResult.value.results
+      : []
+
+    const modelGroups = new Map<
+      string,
+      {
+        count: number
+        metrics: Record<string, number[]>
+        errors: Record<string, string[]>
+      }
+    >()
+
+    for (const result of results.filter(
+      (result: any) => result && typeof result === 'object',
+    )) {
+      const modelName = result.model_name || 'unknown'
+      const existing = modelGroups.get(modelName) ?? {
+        count: 0,
+        metrics: {},
+        errors: {},
+      }
+
+      if (Array.isArray(result.metrics)) {
+        for (const metric of result.metrics) {
+          const name = metric.metric || 'unknown'
+          if (metric?.error) {
+            existing.errors[name] = metric.error
+            continue
+          }
+          const value = Number(metric.value)
+          if (!Number.isNaN(value)) {
+            existing.metrics[name] = existing.metrics[name] ?? []
+            existing.metrics[name].push(value)
+          }
+        }
+      }
+
+      existing.count += 1
+      modelGroups.set(modelName, existing)
+    }
+
+    return Array.from(modelGroups.entries()).map(([modelName, group]) => ({
+      model_name: modelName,
+      split_name: `${group.count} splits`,
+      metrics: Object.entries(group.metrics).map(([metric, values]) => ({
+        metric,
+        valueFormatted:
+          values.length > 0
+            ? (
+              values.reduce((sum, current) => sum + current, 0)
+              / values.length
+            ).toFixed(4)
+            : 'N/A',
+      })),
+      errors: group.errors,
+    }))
+  })
 
   // 預設不選任何節點，點擊後才顯示下方 options
   const selectedNodeId = ref<string | null>(null)
@@ -234,44 +488,104 @@
     nodeStatuses.value = new Map()
     isDemoRunning.value = false
     isDemoFinished.value = false
+    pausedAtNodeId.value = null
     for (const timer of demoTimers) {
       clearTimeout(timer)
     }
     demoTimers.length = 0
   }
 
-  // 演示執行：依照 workflow 順序逐步點亮節點
-  function startDemo (): void {
-    if (isDemoRunning.value) return
+  function scheduleWorkflowSteps (steps: DemoStep[], baseDelay = 0): void {
+    if (steps.length === 0) {
+      return
+    }
 
-    resetDemo()
-    isDemoRunning.value = true
+    for (const { nodeIds, delay } of steps) {
+      const offset = delay - baseDelay
+      if (offset < 0) continue
 
-    for (const { nodeIds, delay } of DEMO_STEPS) {
-      // 先設為 running：顯示 spinner
       demoTimers.push(
-        setTimeout(() => {
+        window.setTimeout(() => {
           const next = new Map(nodeStatuses.value)
           for (const id of nodeIds) next.set(id, 'running')
           nodeStatuses.value = next
-        }, delay),
-        setTimeout(() => {
+        }, offset),
+        window.setTimeout(() => {
           const next = new Map(nodeStatuses.value)
           for (const id of nodeIds) next.set(id, 'finished')
           nodeStatuses.value = next
-        }, delay + NODE_RUN_DURATION),
+        }, offset + NODE_RUN_DURATION),
       )
     }
 
-    // 全部節點完成後再等 DEMO_FINISH_LINGER，才停止動畫
-    const lastStepDelay = Math.max(...DEMO_STEPS.map(s => s.delay))
-    const endTime = lastStepDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
+    const lastDelay = steps.at(-1)!.delay
+    const endTime
+      = lastDelay - baseDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
     demoTimers.push(
-      setTimeout(() => {
+      window.setTimeout(() => {
         isDemoRunning.value = false
         isDemoFinished.value = true
       }, endTime),
     )
+  }
+
+  function continueWorkflow (): void {
+    if (!dataTableCanContinue.value) {
+      workflowError.value = selectedTargetColumn.value
+        ? '請先按 Apply，再繼續 Workflow。'
+        : '請先選擇 target 欄位，再按 Apply。'
+      return
+    }
+
+    pausedAtNodeId.value = null
+    isDemoRunning.value = true
+
+    const dataTableStep = buildDemoSteps().find(step =>
+      step.nodeIds.includes('dataTable'),
+    )
+    if (!dataTableStep) return
+
+    const current = new Map(nodeStatuses.value)
+    current.set('dataTable', 'finished')
+    nodeStatuses.value = current
+
+    const remainingSteps = buildDemoSteps().filter(
+      step => step.delay > dataTableStep.delay,
+    )
+    scheduleWorkflowSteps(remainingSteps, dataTableStep.delay)
+    runWorkflowRequest()
+  }
+
+  type DemoStep = {
+    nodeIds: string[]
+    delay: number
+  }
+
+  function buildDemoSteps (): DemoStep[] {
+    let steps = DEMO_STEPS.slice(0, 3) as DemoStep[]
+
+    if (nodes.value.some(node => node.id === 'featureEngineering')) {
+      steps = [...steps, { nodeIds: ['featureEngineering'], delay: 2400 }]
+    }
+
+    const modelNodes = nodes.value.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+
+    let nextDelay = (steps.at(-1)?.delay ?? 2400) + 500
+    for (const node of modelNodes) {
+      steps = [...steps, { nodeIds: [node.id], delay: nextDelay }]
+      nextDelay += 500
+    }
+
+    return [
+      ...steps,
+      { nodeIds: ['testScore'], delay: nextDelay + 200 },
+      {
+        nodeIds: ['featureImportance', 'confusionMatrix'],
+        delay: nextDelay + 900,
+      },
+    ]
   }
 
   // 節點點擊：更新目前選擇的 node
@@ -282,10 +596,6 @@
     }
     selectedNodeId.value = nodeId
     resetDrawer()
-
-    if (nodeId.startsWith('model')) {
-      openUploadDialog()
-    }
   }
 
   function openUploadDialog (): void {
@@ -319,25 +629,25 @@
     const rawText = await file.text()
     let parsed
     try {
-      parsed = JSON.parse(rawText) as {
-        models?: Array<{
-          name?: string
-          type?: string
-          purpose_zh?: string
-          purpose_en?: string
-        }>
-      }
+      parsed = JSON.parse(rawText) as Record<string, unknown>
     } catch (error) {
       console.error('Invalid JSON file', error)
       return
     }
 
-    if (!Array.isArray(parsed.models)) {
-      console.warn('JSON does not contain a models array')
-      return
-    }
+    const models = Array.isArray(parsed.models) ? parsed.models : []
+    const featureEngineering = Array.isArray(parsed.featureEngineering)
+      ? (parsed.featureEngineering as Array<Record<string, unknown>>)
+      : []
+    const preprocessing = Array.isArray(parsed.preprocessing)
+      ? (parsed.preprocessing as Array<Record<string, unknown>>)
+      : []
+    const validation = parsed.validation as Record<string, unknown> | undefined
+    const metrics = Array.isArray(parsed.metrics)
+      ? (parsed.metrics as Array<Record<string, unknown>>)
+      : []
 
-    const modelEntries = parsed.models.filter(
+    const modelEntries = models.filter(
       (
         model,
       ): model is {
@@ -345,15 +655,22 @@
         type?: string
         purpose_zh?: string
         purpose_en?: string
-      } => typeof model.name === 'string' && model.name.trim().length > 0,
+      } =>
+        model !== null
+        && typeof model === 'object'
+        && typeof model.name === 'string'
+        && model.name.trim().length > 0,
     )
 
-    if (modelEntries.length === 0) return
+    if (modelEntries.length === 0) {
+      console.warn('JSON does not contain a valid models array')
+      return
+    }
 
     const dynamicModelNodes: FlowNode[] = modelEntries.map((model, index) => ({
       id: `modelJson${index}`,
       type: 'iconNode',
-      position: { x: 420, y: 100 + index * 110 },
+      position: { x: 420, y: 120 + index * 110 },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       data: {
@@ -362,16 +679,25 @@
         colorClass: 'node-pending',
         description: model.purpose_zh || model.purpose_en || 'JSON 匯入模型',
         fields: [],
-        config: {},
+        config: {
+          modelName: model.name.trim(),
+          type: model.type || 'classification',
+        },
       },
     }))
 
     const fileNode = INITIAL_NODES.find(node => node.id === 'file')
     const dataTableNode = INITIAL_NODES.find(node => node.id === 'dataTable')
+    const distributionNode = INITIAL_NODES.find(
+      node => node.id === 'distribution',
+    )
     const preprocessorNode = INITIAL_NODES.find(
       node => node.id === 'preprocessor',
     )
     const testScoreNode = INITIAL_NODES.find(node => node.id === 'testScore')
+    const featureImportanceNode = INITIAL_NODES.find(
+      node => node.id === 'featureImportance',
+    )
     const confusionMatrixNode = INITIAL_NODES.find(
       node => node.id === 'confusionMatrix',
     )
@@ -379,23 +705,105 @@
     if (
       !fileNode
       || !dataTableNode
+      || !distributionNode
       || !preprocessorNode
       || !testScoreNode
+      || !featureImportanceNode
       || !confusionMatrixNode
     ) {
       return
     }
 
+    const featureNode: FlowNode | null
+      = featureEngineering.length > 0
+        ? {
+          id: 'featureEngineering',
+          type: 'iconNode',
+          position: { x: 330, y: 170 },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
+          data: {
+            icon: 'mdi-brain',
+            label: 'Feature\nEngineering',
+            colorClass: 'node-pending',
+            description: '根據論文擷取的特徵工程步驟',
+            fields: [],
+            config: {
+              pipeline: featureEngineering,
+            },
+          },
+        }
+        : null
+
+    const preprocessorNodeIncluded = preprocessing.length > 0
+
+    const updatedPreprocessorNode: FlowNode | null = preprocessorNodeIncluded
+      ? {
+        ...preprocessorNode,
+        data: {
+          ...preprocessorNode.data,
+          description: '從論文擷取的前處理設定',
+          fields: [],
+          config: {
+            pipeline: preprocessing,
+          },
+        },
+      }
+      : null
+
+    const updatedTestScoreNode: FlowNode = {
+      ...testScoreNode,
+      data: {
+        ...testScoreNode.data,
+        description: '切分資料與評估指標設定',
+        fields: [],
+        config: {
+          targetCol:
+            (parsed as any).target_col
+            || (parsed as any).targetCol
+            || '是否跌倒',
+          validation: validation || { method: 'test_on_test', train_size: 0.7 },
+          metrics: metrics.length > 0 ? metrics : [{ metric: 'accuracy' }],
+        },
+      },
+    }
+
     nodes.value = [
       fileNode,
       dataTableNode,
-      preprocessorNode,
+      distributionNode,
+      ...(preprocessorNodeIncluded && updatedPreprocessorNode
+        ? [updatedPreprocessorNode]
+        : []),
+      ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
-      testScoreNode,
+      updatedTestScoreNode,
+      featureImportanceNode,
       confusionMatrixNode,
     ]
 
     await nextTick()
+
+    const modelSourceNode = featureNode
+      ? 'featureEngineering'
+      : (preprocessorNodeIncluded
+        ? 'preprocessor'
+        : 'dataTable')
+
+    const modelEdges = dynamicModelNodes.flatMap((node, index) => [
+      {
+        id: `e_${modelSourceNode}_model_${index}`,
+        source: modelSourceNode,
+        target: node.id,
+        type: 'default',
+      },
+      {
+        id: `e_model_testScore_${index}`,
+        source: node.id,
+        target: 'testScore',
+        type: 'default',
+      },
+    ])
 
     edges.value = [
       {
@@ -405,23 +813,38 @@
         type: 'default',
       },
       {
-        id: 'e1',
-        source: 'dataTable',
-        target: 'preprocessor',
+        id: 'e0a',
+        source: 'file',
+        target: 'distribution',
         type: 'default',
       },
-      ...dynamicModelNodes.map((node, index) => ({
-        id: `e_preprocessor_model_${index}`,
-        source: 'preprocessor',
-        target: node.id,
+      ...(preprocessorNodeIncluded
+        ? [
+          {
+            id: 'e1',
+            source: 'dataTable',
+            target: 'preprocessor',
+            type: 'default',
+          },
+        ]
+        : []),
+      ...(featureNode
+        ? [
+          {
+            id: 'e2_feature',
+            source: preprocessorNodeIncluded ? 'preprocessor' : 'dataTable',
+            target: 'featureEngineering',
+            type: 'default',
+          },
+        ]
+        : []),
+      ...modelEdges,
+      {
+        id: 'e4a',
+        source: 'testScore',
+        target: 'featureImportance',
         type: 'default',
-      })),
-      ...dynamicModelNodes.map((node, index) => ({
-        id: `e_model_testScore_${index}`,
-        source: node.id,
-        target: 'testScore',
-        type: 'default',
-      })),
+      },
       {
         id: 'e4',
         source: 'testScore',
@@ -429,6 +852,117 @@
         type: 'default',
       },
     ]
+
+    selectedJsonFile.value = file
+    saveWorkflowJsonFileToStorage(file)
+  }
+
+  function handleDataFile (file: File): void {
+    workflowDataFile.value = file
+    workflowError.value = null
+    updateFileNodeConfig(file.name)
+    saveWorkflowDataFileToStorage(file)
+  }
+
+  async function ensureWorkflowDataFile (): Promise<void> {
+    if (workflowDataFile.value) return
+
+    const restoredFile = await loadWorkflowDataFileFromStorage()
+    if (restoredFile) {
+      workflowDataFile.value = restoredFile
+      updateFileNodeConfig(restoredFile.name)
+    }
+  }
+
+  function buildWorkflowPayload (): Record<string, unknown> {
+    const dataTableNode = nodes.value.find(node => node.id === 'dataTable')
+    const preprocessNode = nodes.value.find(
+      node => node.id === 'preprocessor',
+    )
+    const featureNode = nodes.value.find(
+      node => node.id === 'featureEngineering',
+    )
+    const testScoreNode = nodes.value.find(node => node.id === 'testScore')
+    const modelNodes = nodes.value.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+
+    const preprocessPipelines = preprocessNode?.data.config.pipeline ?? []
+    const featureEngineeringPipelines = featureNode?.data.config.pipeline ?? []
+    const validationConfig = testScoreNode?.data.config.validation ?? {}
+    const metrics = testScoreNode?.data.config.metrics ?? []
+
+    return {
+      preprocess_pipelines: Array.isArray(preprocessPipelines)
+        ? [preprocessPipelines]
+        : [],
+      feature_engineering_pipelines: Array.isArray(featureEngineeringPipelines)
+        ? [featureEngineeringPipelines]
+        : [],
+      model_names: modelNodes
+        .map(
+          node =>
+            node.data.config.modelName || node.data.label.replace(/\n/g, ' '),
+        )
+        .filter(Boolean),
+      validation_config: validationConfig,
+      score_variants: Array.isArray(metrics)
+        ? metrics.map(metric =>
+          typeof metric === 'string' ? { metric } : metric,
+        )
+        : [],
+      column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
+        ? (dataTableNode?.data.config.columnConfig as ColumnConfig[])
+        : [],
+      target_col:
+        selectedTargetColumn.value?.name
+        ?? testScoreNode?.data.config.targetCol
+        ?? '是否跌倒',
+    }
+  }
+
+  async function runWorkflowRequest (): Promise<void> {
+    if (!workflowDataFile.value) {
+      workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
+      return
+    }
+
+    workflowError.value = null
+    workflowResult.value = null
+
+    try {
+      const payload = buildWorkflowPayload()
+      workflowResult.value = await executeWorkflowApi({
+        file: workflowDataFile.value,
+        workflowPayload: payload,
+      })
+    } catch (error) {
+      workflowError.value
+        = error instanceof Error ? error.message : 'Workflow 執行失敗'
+      resetDemo()
+    }
+  }
+
+  async function executeWorkflow (): Promise<void> {
+    await ensureWorkflowDataFile()
+    if (!workflowDataFile.value) {
+      workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
+      return
+    }
+
+    resetDemo()
+    isDemoRunning.value = true
+    pausedAtNodeId.value = 'dataTable'
+    workflowError.value = null
+    workflowResult.value = null
+
+    const nextStatuses = new Map<string, 'running' | 'finished'>([
+      ['file', 'finished'],
+      ['distribution', 'finished'],
+      ['dataTable', 'running'],
+    ])
+    nodeStatuses.value = nextStatuses
+    selectedNodeId.value = 'dataTable'
   }
 
   function handleFileChange (event: Event): void {
@@ -469,6 +1003,11 @@
       }
     })
     closeUploadDialog()
+  }
+
+  function handleApplyColumnConfig (): void {
+    dataTableApplied.value = true
+    workflowError.value = null
   }
 
   // 點空白區可收起 menu
@@ -555,7 +1094,30 @@
   .json-upload-btn {
     position: absolute;
     top: 14px;
-    right: 64px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #005dff;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
+  .execute-workflow-btn {
+    position: absolute;
+    top: 14px;
+    right: 120px;
     z-index: 5;
     display: inline-flex;
     align-items: center;
@@ -578,6 +1140,84 @@
 
   .json-upload-btn:hover {
     background: rgba(255, 255, 255, 0.92);
+  }
+
+  .workflow-result {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    right: 18px;
+    z-index: 5;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 93, 255, 0.12);
+    box-shadow: 0 20px 40px rgba(17, 24, 39, 0.08);
+    color: #102a43;
+    max-height: 320px;
+    overflow: auto;
+  }
+
+  .workflow-summary {
+    margin-bottom: 12px;
+  }
+
+  .summary-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .summary-item {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #f6fbff;
+    border: 1px solid rgba(0, 93, 255, 0.12);
+  }
+
+  .summary-item__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+    color: #022d65;
+  }
+
+  .summary-item__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #16325c;
+  }
+
+  .summary-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0, 93, 255, 0.08);
+    color: #103d82;
+    font-size: 12px;
+  }
+
+  .workflow-result pre {
+    margin: 0;
+    padding: 14px;
+    background: #f1f7ff;
+    border-radius: 12px;
+    color: #0f172a;
+    overflow-x: auto;
+  }
+
+  .workflow-error {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: rgba(255, 235, 238, 0.9);
+    border: 1px solid rgba(244, 67, 54, 0.18);
+    border-radius: 12px;
+    color: #b00020;
   }
 
   .options-drawer {
@@ -604,10 +1244,94 @@
     flex: 1;
     min-height: 0;
     display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    flex-direction: column;
-    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .workflow-result {
+    position: absolute;
+    top: 62px;
+    right: 14px;
+    z-index: 5;
+    width: min(430px, calc(100% - 32px));
+    max-height: 500px;
+    overflow: auto;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 16px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+  }
+
+  .workflow-error {
+    margin-bottom: 10px;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .workflow-summary {
+    margin-bottom: 12px;
+  }
+
+  .workflow-summary h4 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #0f172a;
+    letter-spacing: 0.02em;
+  }
+
+  .summary-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .summary-item {
+    padding: 10px 12px;
+    background: rgba(0, 93, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 93, 255, 0.12);
+  }
+
+  .summary-item__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #0f172a;
+  }
+
+  .summary-item__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .summary-metric {
+    font-size: 12px;
+    color: #334155;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 999px;
+    padding: 4px 8px;
+  }
+
+  .summary-empty {
+    font-size: 12px;
+    color: #475569;
+  }
+
+  .workflow-result pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #0f172a;
   }
 
   .options-drawer__bar {

@@ -27,25 +27,25 @@
 </template>
 
 <script setup lang="ts">
-  import { Handle, type NodeProps, Position } from "@vue-flow/core";
-  import { computed } from "vue";
+  import { Handle, type NodeProps, Position } from '@vue-flow/core'
+  import { computed } from 'vue'
 
   // Vue Flow 傳入的節點資料（id/data/selected...）
-  const props = defineProps<NodeProps>();
+  const props = defineProps<NodeProps>()
 
   // 從節點 data 取出 icon，沒有就用預設 icon
-  const icon = computed(() => String(props.data?.icon ?? "mdi-circle"));
+  const icon = computed(() => String(props.data?.icon ?? 'mdi-circle'))
 
   // 從節點 data 取出 label
-  const label = computed(() => String(props.data?.label ?? ""));
+  const label = computed(() => String(props.data?.label ?? ''))
 
   // 從節點 data 取出顏色 class（例如 node-yellow / node-pending）
   const colorClass = computed(() =>
-    String(props.data?.colorClass ?? "node-purple"),
-  );
+    String(props.data?.colorClass ?? 'node-purple'),
+  )
 
   // demo 動畫狀態（running 時顯示 spinner）
-  const status = computed(() => props.data?.status ?? null);
+  const status = computed(() => props.data?.status ?? null)
 </script>
 
 <style scoped>

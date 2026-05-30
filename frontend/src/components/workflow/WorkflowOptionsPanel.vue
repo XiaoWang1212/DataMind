@@ -10,61 +10,50 @@
       </div>
 
       <div class="panel-body">
-        <!-- Data Table 節點：顯示資料預覽（資料來源為上一頁已上傳結果） -->
         <template v-if="selectedNode.id === 'dataTable'">
-          <div class="form-row">
-            <label for="preview-rows">預覽筆數</label>
-            <input
-              id="preview-rows"
-              v-model.number="localConfig.previewRows"
-              min="1"
-              type="number"
-            >
-          </div>
-
-          <div class="preview-box" :style="previewBoxStyle">
-            <table>
-              <thead>
-                <tr>
-                  <th v-for="header in PREVIEW_HEADERS" :key="header">
-                    {{ header }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, rowIndex) in previewRows" :key="rowIndex">
-                  <td
-                    v-for="(cell, cellIndex) in row"
-                    :key="`${rowIndex}-${cellIndex}`"
-                  >
-                    {{ cell }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <DataTablePanel
+            :column-config="localConfig.columnConfig as ColumnConfig[]"
+            :file="props.file"
+            :file-name="fileName"
+            :loading="props.pausedNodeId === 'dataTable'"
+            @apply-column-config="handleApplyColumnConfig"
+            @update-column-config="handleColumnConfigChange"
+          />
         </template>
 
         <!-- File 節點：顯示上傳區塊 -->
         <template v-if="selectedNode.id === 'file'">
           <WorkflowFileUploadPanel
+            :file="props.file"
             :file-name="fileName"
+            @update:file="(file) => emit('update:file', file)"
             @update:file-name="(value) => (localConfig.fileName = value)"
           />
         </template>
 
-        <!-- 非 Data Table 節點：依 fields 動態渲染一般表單 -->
-        <template v-else>
-          <div v-if="isModelNode" class="upload-card">
-            <div class="upload-card__title">模型檔案上傳</div>
-            <p class="upload-card__desc">
-              請上傳模型權重或設定檔，檔案會與該模型節點綁定。
-            </p>
-            <div v-if="localConfig.fileName" class="upload-card__info">
-              已上傳：{{ localConfig.fileName }}
-            </div>
-          </div>
+        <!-- Distribution 節點：顯示當前資料視覺化 -->
+        <template v-else-if="selectedNode.id === 'distribution'">
+          <DistributionPanel :file="props.file" :file-name="fileName" />
+        </template>
 
+        <template v-else-if="selectedNode.id === 'featureImportance'">
+          <FeatureImportancePanel
+            :workflow-result="props.workflowResult ?? undefined"
+          />
+        </template>
+
+        <!-- Feature Engineering 節點：顯示特徵工程設定 -->
+        <template v-else-if="selectedNode.id === 'featureEngineering'">
+          <FeatureEngineeringPanel :pipeline="featureEngineeringPipeline" />
+        </template>
+
+        <!-- Test & Score 節點：顯示評分摘要 -->
+        <template v-else-if="selectedNode.id === 'testScore'">
+          <TestScorePanel :summary="workflowSummary" />
+        </template>
+
+        <!-- 非 Data Table / File / Distribution / Feature Engineering / Test & Score 節點：依 fields 動態渲染一般表單 -->
+        <template v-else-if="!isModelNode">
           <div
             v-for="field in selectedNode.data.fields"
             :key="field.key"
@@ -98,35 +87,6 @@
             </select>
           </div>
         </template>
-
-        <!-- Model 節點：額外資訊放在可收合區塊 -->
-        <details
-          v-if="selectedNode.id.startsWith('model')"
-          class="details"
-          open
-        >
-          <summary class="details__summary">模型參數</summary>
-          <div class="details__content">
-            <!-- modelMore 節點：列出已收合的模型 -->
-            <template v-if="selectedNode.id === 'modelMore'">
-              <div class="hint">
-                已收合模型：Support Vector Machine、Naive Bayes、K-Nearest
-                Neighbors ...
-              </div>
-            </template>
-            <!-- 其餘模型節點：沒有額外參數時顯示提示 -->
-            <template v-else-if="selectedNode.data.fields.length === 0">
-              <div class="hint">此模型目前沒有額外參數</div>
-            </template>
-          </div>
-        </details>
-      </div>
-
-      <!-- 操作按鈕：固定在面板底部 -->
-      <div class="actions">
-        <button class="btn btn-primary" type="button" @click="save">
-          儲存設定
-        </button>
       </div>
     </div>
   </section>
@@ -135,14 +95,36 @@
 <script setup lang="ts">
   import type { ConfigValue, SimpleNode } from '@/types/workflow'
   import { computed, reactive, watch } from 'vue'
-  import {
-    PREVIEW_HEADERS,
-    PREVIEW_SOURCE_ROWS,
-  } from '@/constants/workflowData'
+  import DataTablePanel from './nodePanel/DataTablePanel.vue'
+  import DistributionPanel from './nodePanel/DistributionPanel.vue'
+  import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
+  import FeatureImportancePanel from './nodePanel/FeatureImportancePanel.vue'
+  import TestScorePanel from './nodePanel/TestScorePanel.vue'
   import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
 
-  // 父層傳入目前選取節點
-  const props = defineProps<{ selectedNode: SimpleNode | null }>()
+  type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
+  type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
+
+  interface ColumnConfig {
+    name: string
+    type: ColumnType
+    role: ColumnRole
+  }
+
+  type TestScoreSummary = {
+    model_name: string
+    split_name: string
+    metrics: Array<{ metric: string, valueFormatted: string }>
+  }
+
+  const props = defineProps<{
+    selectedNode: SimpleNode | null
+    file?: File | null
+    workflowFileName?: string | null
+    workflowSummary?: TestScoreSummary[]
+    workflowResult?: Record<string, unknown> | null
+    pausedNodeId?: string | null
+  }>()
 
   // 將設定變更回傳給父層
   const emit = defineEmits<{
@@ -150,7 +132,8 @@
       e: 'update-config',
       payload: { nodeId: string, config: Record<string, ConfigValue> },
     ): void
-    (e: 'open-upload'): void
+    (e: 'open-upload' | 'apply-column-config'): void
+    (e: 'update:file', file: File): void
   }>()
 
   // localConfig：面板內可編輯的暫存設定，按下「儲存設定」才同步給父層
@@ -160,28 +143,33 @@
     props.selectedNode?.id.startsWith('model'),
   )
 
-  const fileName = computed(() =>
-    typeof localConfig.fileName === 'string' ? localConfig.fileName : '',
-  )
-
-  // 預覽列數的高度計算常數
-  const PREVIEW_HEADER_HEIGHT = 34
-  const PREVIEW_ROW_HEIGHT = 31
-  const PREVIEW_MAX_HEIGHT = 360
-
-  // 根據「預覽筆數」切片示意資料
-  const previewRows = computed(() => {
-    const count = Math.max(1, Number(localConfig.previewRows ?? 5))
-    return PREVIEW_SOURCE_ROWS.slice(0, count)
+  const fileName = computed(() => {
+    if (typeof localConfig.fileName === 'string' && localConfig.fileName) {
+      return localConfig.fileName
+    }
+    return props.workflowFileName ?? ''
   })
 
-  // 讓可視高度隨預覽筆數動態調整
-  const previewBoxStyle = computed(() => {
-    const count = Math.max(1, Number(localConfig.previewRows ?? 5))
-    const dynamicHeight = PREVIEW_HEADER_HEIGHT + count * PREVIEW_ROW_HEIGHT
-    return {
-      maxHeight: `${Math.min(PREVIEW_MAX_HEIGHT, dynamicHeight)}px`,
-    }
+  const workflowSummary = computed(() => props.workflowSummary ?? [])
+
+  function handleColumnConfigChange (value: ColumnConfig[]): void {
+    localConfig.columnConfig = value
+    if (!props.selectedNode) return
+    emit('update-config', {
+      nodeId: props.selectedNode.id,
+      config: { columnConfig: value },
+    })
+  }
+
+  function handleApplyColumnConfig (): void {
+    emit('apply-column-config')
+  }
+
+  const featureEngineeringPipeline = computed(() => {
+    const pipelineValue = localConfig.pipeline
+    return Array.isArray(pipelineValue)
+      ? (pipelineValue as Array<Record<string, unknown>>)
+      : []
   })
 
   // 當切換節點時，把該節點 config 複製到本地表單狀態
@@ -197,15 +185,6 @@
     },
     { immediate: true },
   )
-
-  // 儲存：把本地表單值回傳給父層更新對應節點
-  function save () {
-    if (!props.selectedNode) return
-    emit('update-config', {
-      nodeId: props.selectedNode.id,
-      config: { ...localConfig },
-    })
-  }
 </script>
 
 <style scoped>
@@ -216,7 +195,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     padding: 14px 18px 0;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -252,8 +233,7 @@
   .panel-body {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -390,6 +370,7 @@
   }
 
   .upload-modal-preview-header {
+    color: #1f2937;
     font-size: 16px;
     font-weight: 700;
   }

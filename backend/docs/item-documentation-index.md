@@ -1,0 +1,67 @@
+# Workflow Item Documentation Index
+
+## Models
+- [Logistic Regression](models/logistic_regression.md)
+- [K Nearest Neighbors](models/k_nearest_neighbors.md)
+- [Svm](models/svm.md)
+- [Decision Tree](models/decision_tree.md)
+- [Ridge Classifier](models/ridge_classifier.md)
+- [Linear Discriminant Analysis](models/linear_discriminant_analysis.md)
+- [Quadratic Discriminant Analysis](models/quadratic_discriminant_analysis.md)
+- [Mlp](models/mlp.md)
+- [Sgd Classifier](models/sgd_classifier.md)
+- [Bagging](models/bagging.md)
+- [Random Forest](models/random_forest.md)
+- [Extra Trees](models/extra_trees.md)
+- [Gradient Boosting](models/gradient_boosting.md)
+- [Hist Gradient Boosting](models/hist_gradient_boosting.md)
+- [Adaboost](models/adaboost.md)
+- [Passive Aggressive](models/passive_aggressive.md)
+- [Calibrated Classifier](models/calibrated_classifier.md)
+- [Gaussian Nb](models/gaussian_nb.md)
+- [Multinomial Nb](models/multinomial_nb.md)
+- [Complement Nb](models/complement_nb.md)
+- [Bernoulli Nb](models/bernoulli_nb.md)
+- [Radius Neighbors](models/radius_neighbors.md)
+- [Xgboost](models/xgboost.md)
+- [Lightgbm](models/lightgbm.md)
+- [Catboost](models/catboost.md)
+- [Balanced Random Forest](models/balanced_random_forest.md)
+- [Easy Ensemble](models/easy_ensemble.md)
+
+## Preprocess
+- [Drop Columns](preprocess/drop_columns.md)
+- [Fill Na](preprocess/fill_na.md)
+- [Normalize](preprocess/normalize.md)
+- [Standardize](preprocess/standardize.md)
+- [One Hot](preprocess/one_hot.md)
+- [Label Encode](preprocess/label_encode.md)
+
+## Feature Engineering
+- [Discretize Continuous](feature_engineering/discretize_continuous.md)
+- [Continuize Discrete](feature_engineering/continuize_discrete.md)
+- [Impute Missing](feature_engineering/impute_missing.md)
+- [Select Relevant Features](feature_engineering/select_relevant_features.md)
+- [Select Random Features](feature_engineering/select_random_features.md)
+- [Normalize Features](feature_engineering/normalize_features.md)
+- [Randomize Rows](feature_engineering/randomize_rows.md)
+- [Remove Sparse Features](feature_engineering/remove_sparse_features.md)
+- [Pca](feature_engineering/pca.md)
+- [Cur Decomposition](feature_engineering/cur_decomposition.md)
+
+## Validation
+- [Test On Test](validation/test_on_test.md)
+- [Test On Train](validation/test_on_train.md)
+- [K Fold](validation/k_fold.md)
+- [Group K Fold](validation/group_k_fold.md)
+- [Random Sampling](validation/random_sampling.md)
+- [Leave One Out](validation/leave_one_out.md)
+
+## Score Metrics
+- [Accuracy](score_metrics/accuracy.md)
+- [Precision](score_metrics/precision.md)
+- [Recall](score_metrics/recall.md)
+- [F1](score_metrics/f1.md)
+- [Auc](score_metrics/auc.md)
+- [Specificity](score_metrics/specificity.md)
+
