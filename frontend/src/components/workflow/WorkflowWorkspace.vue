@@ -99,6 +99,21 @@
       type="file"
       @change="handleJsonFileChange"
     >
+    <button
+      class="demo-btn paper-upload-btn"
+      :disabled="paperUploading"
+      type="button"
+      @click="triggerPaperUpload"
+    >
+      {{ paperUploading ? "上傳中..." : "上傳論文" }}
+    </button>
+    <input
+      ref="paperFileInput"
+      accept=".pdf,.doc,.docx,.txt"
+      hidden
+      type="file"
+      @change="handlePaperFileChange"
+    >
 
     <div v-if="workflowError" class="workflow-result">
       <div class="workflow-error">{{ workflowError }}</div>
@@ -206,6 +221,13 @@
   const dragActive = ref(false)
   const jsonFileInput = ref<HTMLInputElement | null>(null)
   const selectedJsonFile = ref<File | null>(null)
+  const paperFileInput = ref<HTMLInputElement | null>(null)
+  const paperUploading = ref(false)
+
+  // n8n webhook 路徑（analyze-paper workflow）
+  const N8N_PAPER_WEBHOOK_URL
+    = (import.meta.env.VITE_N8N_PAPER_WEBHOOK_URL as string | undefined)
+      ?? 'https://ideally-strewn-papyrus.ngrok-free.dev/webhook-test/analyze-paper'
   const workflowDataFile = ref<File | null>(null)
   const workflowResult = ref<null | Record<string, unknown>>(null)
   const workflowError = ref<string | null>(null)
@@ -965,6 +987,62 @@
     selectedNodeId.value = 'dataTable'
   }
 
+  function triggerPaperUpload (): void {
+    paperFileInput.value?.click()
+  }
+
+  // 上傳論文檔案，呼叫 n8n webhook，並將回傳的 workflow JSON 直接載入畫布
+  async function handlePaperFileChange (event: Event): Promise<void> {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0] ?? null
+    target.value = ''
+    if (!file) return
+
+    paperUploading.value = true
+    workflowError.value = null
+
+    try {
+      // n8n Extract from File 預設讀取 binary 屬性名稱為 "data"
+      const formData = new FormData()
+      formData.append('data', file, file.name)
+
+      const response = await fetch(N8N_PAPER_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        throw new Error(
+          `n8n webhook 回應錯誤：${response.status} ${errorText}`,
+        )
+      }
+
+      const contentType = response.headers.get('content-type') ?? ''
+      const result = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text()
+      console.log('[n8n] analyze-paper response:', result)
+
+      // n8n Respond to Webhook 回傳陣列，取第一筆即為 workflow JSON
+      const payload = Array.isArray(result) ? result[0] : result
+      if (payload && typeof payload === 'object') {
+        const jsonBlob = new File(
+          [JSON.stringify(payload)],
+          `${file.name.replace(/\.[^.]+$/, '')}.json`,
+          { type: 'application/json' },
+        )
+        await loadJsonModels(jsonBlob)
+      }
+    } catch (error) {
+      workflowError.value
+        = error instanceof Error ? error.message : '論文上傳失敗'
+      console.error('[n8n] analyze-paper error:', error)
+    } finally {
+      paperUploading.value = false
+    }
+  }
+
   function handleFileChange (event: Event): void {
     const target = event.target as HTMLInputElement
     selectedUploadFile.value = target.files?.[0] ?? null
@@ -1139,6 +1217,34 @@
   }
 
   .json-upload-btn:hover {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .paper-upload-btn {
+    position: absolute;
+    top: 14px;
+    right: 230px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #005dff;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
+  .paper-upload-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.92);
   }
 
