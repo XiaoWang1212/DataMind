@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import WorkflowWorkspace from '@/components/workflow/WorkflowWorkspace.vue'
+  import WorkflowWorkspace from '@/components/workflow/WorkflowWorkspace.vue'
 </script>
 
 <style scoped>

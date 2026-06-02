@@ -32,3 +32,9 @@ artifacts/
 # model binaries
 *.pkl
 *.joblib
+
+# model
+ml_models/
+
+# Logs
+*.log

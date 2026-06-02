@@ -1,6 +1,10 @@
 from pathlib import Path
 
 import pandas as pd
+from .pycaret_metrics import (
+    build_confusion_matrix_payload,
+    build_correlation_matrix_payload,
+)
 
 
 class PyCaretTrainingService:
@@ -79,7 +83,9 @@ class PyCaretTrainingService:
                 continue
 
             pos_label = 1 if 1 in labels else ("Y" if "Y" in labels else labels[-1])
-            neg_label = next((label for label in labels if label != pos_label), pos_label)
+            neg_label = next(
+                (label for label in labels if label != pos_label), pos_label
+            )
 
             cm = confusion_matrix(y_true, y_pred, labels=[neg_label, pos_label])
             if cm.size == 4:
@@ -116,6 +122,16 @@ class PyCaretTrainingService:
         model_path_no_suffix = output_base / "fall_model"
         save_model(final_model, str(model_path_no_suffix))
 
+        best_model_predictions = predict_model(best_model)
+        confusion_matrix_payload = build_confusion_matrix_payload(
+            predictions=best_model_predictions,
+            target_col=target_col,
+        )
+        correlation_matrix_payload = build_correlation_matrix_payload(
+            source_df=df,
+            target_col=target_col,
+        )
+
         return {
             "target_col": target_col,
             "best_model": str(best_model),
@@ -124,4 +140,6 @@ class PyCaretTrainingService:
             "model_path": f"{model_path_no_suffix}.pkl",
             "row_count": int(len(df)),
             "feature_count": int(len(df.columns) - 1),
+            "confusion_matrix": confusion_matrix_payload,
+            "correlation_matrix": correlation_matrix_payload,
         }

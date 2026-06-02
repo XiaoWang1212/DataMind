@@ -2,9 +2,17 @@
   <!-- 自訂節點 UI：左 target / 右 source + 圓形 icon + label -->
   <div class="icon-node-wrap">
     <!-- 右側輸出點：連到下一個節點 -->
-    <Handle class="invisible-handle handle-right" :position="Position.Right" type="source" />
+    <Handle
+      class="invisible-handle handle-right"
+      :position="Position.Right"
+      type="source"
+    />
     <!-- 左側輸入點：接收前一個節點 -->
-    <Handle class="invisible-handle handle-left" :position="Position.Left" type="target" />
+    <Handle
+      class="invisible-handle handle-left"
+      :position="Position.Left"
+      type="target"
+    />
 
     <!-- 節點主體 -->
     <div class="icon-node" :class="colorClass">
@@ -89,16 +97,16 @@
   }
 
   .node-yellow {
-    background: #F0E274;
+    background: #f0e274;
     color: #fdfdfd;
   }
 
   .node-pending {
-    background: #CED3E9;
+    background: #ced3e9;
   }
 
   .node-purple {
-    background: linear-gradient(165deg, #005DFF 0%, #4c8cff 100%);
+    background: linear-gradient(165deg, #005dff 0%, #4c8cff 100%);
   }
 
   .invisible-handle {
