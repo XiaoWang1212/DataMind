@@ -157,6 +157,7 @@
     onBeforeUnmount,
     onMounted,
     ref,
+    watch,
   } from 'vue'
   import { executeWorkflowApi } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
@@ -442,6 +443,7 @@
     style: drawerStyle,
     startDrag,
     reset: resetDrawer,
+    expand: expandDrawer,
   } = useDrawerDrag()
 
   // 目前被選取的節點（傳給 OptionsPanel）
@@ -595,8 +597,17 @@
       return
     }
     selectedNodeId.value = nodeId
-    resetDrawer()
+    expandDrawer()
   }
+
+  watch(
+    () => selectedNodeId.value,
+    value => {
+      if (value) {
+        expandDrawer()
+      }
+    },
+  )
 
   function openUploadDialog (): void {
     uploadDialogVisible.value = true
@@ -1248,6 +1259,11 @@
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+  }
+
+  .options-drawer--expanded {
+    height: calc(100vh - 16px) !important;
+    max-height: calc(100vh - 16px) !important;
   }
 
   .workflow-result {
