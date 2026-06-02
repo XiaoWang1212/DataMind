@@ -3,14 +3,27 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_cors import CORS
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 def create_app() -> Flask:
     load_dotenv()
 
     app = Flask(__name__)
-    max_content_length_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "25"))
+    max_content_length_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "100"))
     app.config["MAX_CONTENT_LENGTH"] = max_content_length_mb * 1024 * 1024
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def handle_request_entity_too_large(_: RequestEntityTooLarge):
+        return (
+            jsonify(
+                {
+                    "error": "Request entity too large."
+                    f" Increase MAX_CONTENT_LENGTH_MB if you need to upload bigger files.",
+                }
+            ),
+            413,
+        )
 
     cors_origin = os.getenv("CORS_ORIGIN", "http://localhost:5173")
     CORS(app, resources={r"/api/*": {"origins": cors_origin}})

@@ -465,7 +465,6 @@
     style: drawerStyle,
     startDrag,
     reset: resetDrawer,
-    expand: expandDrawer,
   } = useDrawerDrag()
 
   // 目前被選取的節點（傳給 OptionsPanel）
@@ -619,17 +618,7 @@
       return
     }
     selectedNodeId.value = nodeId
-    expandDrawer()
   }
-
-  watch(
-    () => selectedNodeId.value,
-    value => {
-      if (value) {
-        expandDrawer()
-      }
-    },
-  )
 
   function openUploadDialog (): void {
     uploadDialogVisible.value = true
@@ -1367,9 +1356,35 @@
     overscroll-behavior: contain;
   }
 
+  .options-drawer__scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+  }
+
+  .options-drawer__scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .options-drawer__scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+  }
+
+  .options-drawer__scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  .options-drawer__scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.72) transparent;
+  }
+
   .options-drawer--expanded {
-    height: calc(100vh - 16px) !important;
-    max-height: calc(100vh - 16px) !important;
+    height: 54vh !important;
+    max-height: 54vh !important;
   }
 
   .workflow-result {

@@ -11,7 +11,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 const PEEKED_PX = 100;
 const COLLAPSED_PX = 280;
 function getExpandedPx(): number {
-  return window.innerHeight - 16;
+  return Math.round(window.innerHeight * 0.54);
 }
 
 // 吸附動畫時長（ms）
