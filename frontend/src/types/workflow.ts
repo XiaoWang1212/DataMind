@@ -12,8 +12,8 @@ export type ConfigValue =
   | number
   | boolean
   | null
-  | ConfigValue[]
-  | Record<string, ConfigValue>;
+  | unknown[]
+  | Record<string, unknown>;
 
 export interface NodeData {
   icon: string;
