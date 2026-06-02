@@ -1383,8 +1383,7 @@
   }
 
   .options-drawer--expanded {
-    height: 54vh !important;
-    max-height: 54vh !important;
+    max-height: 54vh;
   }
 
   .workflow-result {

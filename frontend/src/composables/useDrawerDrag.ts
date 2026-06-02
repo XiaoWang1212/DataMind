@@ -64,7 +64,7 @@ export function useDrawerDrag() {
   const style = computed(() => {
     if (stage.value === "expanded" && !isDragging.value) {
       return {
-        height: "calc(100vh - 16px)",
+        height: `${expandedPx.value}px`,
         transition: `height ${SNAP_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
       };
     }
