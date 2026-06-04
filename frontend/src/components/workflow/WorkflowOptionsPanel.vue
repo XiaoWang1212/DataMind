@@ -52,6 +52,90 @@
           <TestScorePanel :summary="workflowSummary" />
         </template>
 
+        <template v-else-if="selectedNode.id === 'modelMore'">
+          <div class="form-row">
+            <label for="available-models">可用模型</label>
+            <select
+              id="available-models"
+              v-model="selectedModel"
+              :disabled="modelOptionsLoading || availableModels.length === 0"
+            >
+              <option disabled value="">
+                {{ modelOptionsLoading ? "載入中..." : "請選擇模型" }}
+              </option>
+              <option
+                v-for="model in availableModels"
+                :key="model"
+                :value="model"
+              >
+                {{ model }}
+              </option>
+            </select>
+          </div>
+          <div class="form-row">
+            <button
+              class="btn btn-primary"
+              :disabled="!selectedModel || modelOptionsLoading"
+              type="button"
+              @click="handleAddModel"
+            >
+              新增模型
+            </button>
+          </div>
+          <div v-if="availableModels.length === 0" class="info-text">
+            目前沒有可用模型，請稍後再試。
+          </div>
+        </template>
+
+        <template v-else-if="isModelNode">
+          <div class="form-row">
+            <label>Model</label>
+            <div>
+              {{
+                selectedNode.data.config.modelName ||
+                  selectedNode.data.label.replace(/\n/g, " ")
+              }}
+            </div>
+          </div>
+          <div v-if="selectedNode.data.fields.length === 0" class="info-text">
+            此模型目前沒有額外設定。
+          </div>
+          <div v-else-if="selectedNode.data.fields.length > 0">
+            <div
+              v-for="field in selectedNode.data.fields"
+              :key="field.key"
+              class="form-row"
+            >
+              <label :for="field.key">{{ field.label }}</label>
+
+              <input
+                v-if="field.type === 'text'"
+                :id="field.key"
+                v-model="localConfig[field.key]"
+                type="text"
+              >
+
+              <input
+                v-else-if="field.type === 'number'"
+                :id="field.key"
+                v-model.number="localConfig[field.key]"
+                min="0"
+                type="number"
+              >
+
+              <select v-else :id="field.key" v-model="localConfig[field.key]">
+                <option
+                  v-for="option in field.options ?? []"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </template>
+
         <!-- 非 Data Table / File / Distribution / Feature Engineering / Test & Score 節點：依 fields 動態渲染一般表單 -->
         <template v-else-if="!isModelNode">
           <div
@@ -94,7 +178,7 @@
 
 <script setup lang="ts">
   import type { ConfigValue, SimpleNode } from '@/types/workflow'
-  import { computed, reactive, watch } from 'vue'
+  import { computed, reactive, ref, watch } from 'vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
   import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
@@ -124,6 +208,9 @@
     workflowSummary?: TestScoreSummary[]
     workflowResult?: Record<string, unknown> | null
     pausedNodeId?: string | null
+    availableModels?: string[]
+    usedModelNames?: string[]
+    modelOptionsLoading?: boolean
   }>()
 
   // 將設定變更回傳給父層
@@ -134,10 +221,12 @@
     ): void
     (e: 'open-upload' | 'apply-column-config'): void
     (e: 'update:file', file: File): void
+    (e: 'add-model', modelName: string): void
   }>()
 
   // localConfig：面板內可編輯的暫存設定，按下「儲存設定」才同步給父層
   const localConfig = reactive<Record<string, ConfigValue>>({})
+  const selectedModel = ref<string>('')
 
   const isModelNode = computed(() =>
     props.selectedNode?.id.startsWith('model'),
@@ -150,7 +239,29 @@
     return props.workflowFileName ?? ''
   })
 
+  const availableModels = computed(() => props.availableModels ?? [])
   const workflowSummary = computed(() => props.workflowSummary ?? [])
+
+  watch(
+    () => availableModels.value,
+    models => {
+      selectedModel.value = models.length > 0 ? models[0]! : ''
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => props.selectedNode?.id,
+    () => {
+      selectedModel.value
+        = availableModels.value.length > 0 ? availableModels.value[0]! : ''
+    },
+  )
+
+  function handleAddModel (): void {
+    if (!selectedModel.value) return
+    emit('add-model', selectedModel.value)
+  }
 
   function handleColumnConfigChange (value: ColumnConfig[]): void {
     localConfig.columnConfig = value

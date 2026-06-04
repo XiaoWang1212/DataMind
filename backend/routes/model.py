@@ -115,6 +115,18 @@ def preprocess_variants():
         )
 
 
+@model_bp.get("/available")
+def available_models():
+    try:
+        available = WorkflowService.list_registered_models()
+        return jsonify({"success": True, "models": available})
+    except Exception as exc:
+        return (
+            jsonify({"error": f"Failed to load available models: {str(exc)}"}),
+            500,
+        )
+
+
 @model_bp.post("/score/variants")
 def score_variants():
     payload = request.get_json(silent=True) or {}

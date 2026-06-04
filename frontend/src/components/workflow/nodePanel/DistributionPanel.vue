@@ -13,92 +13,96 @@
     </div>
 
     <div v-else>
-      <div class="distribution-summary">
-        <span>{{ previewColumns.length }} 個欄位</span>
-        <span>{{ allRows.length }} 筆資料</span>
+      <div v-if="loading" class="distribution-loading">
+        資料讀取中...
       </div>
+      <div v-else>
+        <div class="distribution-summary">
+          <span>{{ previewColumns.length }} 個欄位</span>
+          <span>{{ allRows.length }} 筆資料</span>
+        </div>
 
-      <div class="distribution-chart-grid">
-        <div
-          v-for="(chart, index) in chartData"
-          :key="chart.label"
-          class="distribution-chart-card"
-        >
+        <div class="distribution-chart-grid">
           <div
-            class="distribution-chart-title"
-            :class="{ expanded: isChartLabelExpanded(index) }"
+            v-for="(chart, index) in chartData"
+            :key="chart.label"
+            class="distribution-chart-card"
           >
-            {{ chart.label }}
-          </div>
-          <button
-            v-if="isChartLabelLong(chart.label)"
-            class="distribution-title-toggle"
-            type="button"
-            @click="toggleChartLabel(index)"
-          >
-            {{ isChartLabelExpanded(index) ? "收起" : "更多" }}
-          </button>
-          <div class="distribution-chart-subtitle">
-            {{ chart.type === "numeric" ? "直方圖" : "類別分布" }}
-          </div>
-          <div class="distribution-chart-meta">
-            <span>{{
-              chart.type === "numeric" ? "數值欄位" : "類別欄位"
-            }}</span>
-            <span>{{ chart.counts.length }} 個區間</span>
-          </div>
-          <div class="distribution-chart-plot">
-            <svg preserveAspectRatio="none" viewBox="0 0 320 170">
-              <g v-for="(item, idx) in chart.counts" :key="item.label">
-                <rect
-                  fill="#2563eb"
-                  :height="
-                    Math.max(4, Math.round((item.count / chart.maxCount) * 110))
-                  "
-                  rx="6"
-                  :width="Math.max(24, 280 / chart.counts.length - 8)"
-                  :x="12 + idx * (300 / chart.counts.length)"
-                  :y="
-                    150 -
+            <div
+              class="distribution-chart-title"
+              :class="{ expanded: isChartLabelExpanded(index) }"
+            >
+              {{ chart.label }}
+            </div>
+            <button
+              v-if="isChartLabelLong(chart.label)"
+              class="distribution-title-toggle"
+              type="button"
+              @click="toggleChartLabel(index)"
+            >
+              {{ isChartLabelExpanded(index) ? "收起" : "更多" }}
+            </button>
+            <div class="distribution-chart-subtitle">
+              {{ chart.type === "numeric" ? "直方圖" : "類別分布" }}
+            </div>
+            <div class="distribution-chart-meta">
+              <span>{{
+                chart.type === "numeric" ? "數值欄位" : "類別欄位"
+              }}</span>
+              <span>{{ chart.counts.length }} 個區間</span>
+            </div>
+            <div class="distribution-chart-plot">
+              <svg preserveAspectRatio="none" viewBox="0 0 320 170">
+                <g v-for="(item, idx) in chart.counts" :key="item.label">
+                  <rect
+                    fill="#2563eb"
+                    :height="
                       Math.max(4, Math.round((item.count / chart.maxCount) * 110))
-                  "
-                />
-                <text
-                  fill="#475569"
-                  font-size="10"
-                  text-anchor="middle"
-                  :x="
-                    12 +
-                      idx * (300 / chart.counts.length) +
-                      Math.max(24, 280 / chart.counts.length - 8) / 2
-                  "
-                  y="165"
-                >
-                  {{ item.label }}
-                </text>
-                <text
-                  fill="#0f172a"
-                  font-size="10"
-                  text-anchor="middle"
-                  :x="
-                    12 +
-                      idx * (300 / chart.counts.length) +
-                      Math.max(24, 280 / chart.counts.length - 8) / 2
-                  "
-                  :y="
-                    140 -
-                      Math.max(4, Math.round((item.count / chart.maxCount) * 110))
-                  "
-                >
-                  {{ item.count }}
-                </text>
-              </g>
-            </svg>
+                    "
+                    rx="6"
+                    :width="Math.max(24, 280 / chart.counts.length - 8)"
+                    :x="12 + idx * (300 / chart.counts.length)"
+                    :y="
+                      150 -
+                        Math.max(4, Math.round((item.count / chart.maxCount) * 110))
+                    "
+                  />
+                  <text
+                    fill="#475569"
+                    font-size="10"
+                    text-anchor="middle"
+                    :x="
+                      12 +
+                        idx * (300 / chart.counts.length) +
+                        Math.max(24, 280 / chart.counts.length - 8) / 2
+                    "
+                    y="165"
+                  >
+                    {{ item.label }}
+                  </text>
+                  <text
+                    fill="#0f172a"
+                    font-size="10"
+                    text-anchor="middle"
+                    :x="
+                      12 +
+                        idx * (300 / chart.counts.length) +
+                        Math.max(24, 280 / chart.counts.length - 8) / 2
+                    "
+                    :y="
+                      140 -
+                        Math.max(4, Math.round((item.count / chart.maxCount) * 110))
+                    "
+                  >
+                    {{ item.count }}
+                  </text>
+                </g>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </div></section>
 </template>
 
 <script setup lang="ts">
@@ -116,6 +120,7 @@
   const filePreviewRows = ref<string[][]>([])
   const errorMessage = ref('')
   const expandedCharts = ref<Record<number, boolean>>({})
+  const loading = ref(false)
 
   function isChartLabelLong (label: string): boolean {
     return label.length > 30
@@ -138,16 +143,21 @@
 
   watch(
     () => props.file,
-    file => {
-      if (file && file !== selectedFile.value) {
-        void loadFile(file)
-      }
+    async file => {
       if (!file) {
         selectedFile.value = null
         errorMessage.value = ''
         previewColumns.value = []
         allRows.value = []
         filePreviewRows.value = []
+        loading.value = false
+        return
+      }
+
+      if (file !== selectedFile.value) {
+        loading.value = true
+        await loadFile(file)
+        loading.value = false
       }
     },
     { immediate: true },
@@ -382,6 +392,17 @@
   .distribution-chart-grid::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.7);
     border-radius: 999px;
+  }
+
+  .distribution-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    border-radius: 16px;
+    background: rgba(248, 250, 252, 0.9);
+    color: #475569;
+    font-size: 14px;
   }
 
   .distribution-chart-card {

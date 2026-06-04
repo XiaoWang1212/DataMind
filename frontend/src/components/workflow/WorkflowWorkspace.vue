@@ -86,6 +86,13 @@
       {{ pausedAtNodeId === "dataTable" ? "繼續 Workflow" : "執行 Workflow" }}
     </button>
     <button
+      class="demo-btn model-more-btn"
+      type="button"
+      @click="openModelMorePanel"
+    >
+      更多模型
+    </button>
+    <button
       class="demo-btn json-upload-btn"
       type="button"
       @click="triggerJsonUpload"
@@ -139,18 +146,29 @@
 
         <!-- 設定內容區（可滾動） -->
         <div class="options-drawer__scroll">
-          <WorkflowOptionsPanel
-            :file="workflowDataFile"
-            :paused-node-id="pausedAtNodeId"
-            :selected-node="selectedNode"
-            :workflow-file-name="workflowDataFile?.name"
-            :workflow-result="workflowResult"
-            :workflow-summary="workflowSummary"
-            @apply-column-config="handleApplyColumnConfig"
-            @open-upload="openUploadDialog"
-            @update-config="handleUpdateConfig"
-            @update:file="handleDataFile"
-          />
+          <Transition mode="out-in" name="drawer-content">
+            <div
+              :key="selectedNode?.id ?? 'no-node'"
+              class="drawer-content-wrapper"
+            >
+              <WorkflowOptionsPanel
+                :available-models="availableModelOptions"
+                :file="workflowDataFile"
+                :model-options-loading="modelOptionsLoading"
+                :paused-node-id="pausedAtNodeId"
+                :selected-node="selectedNode"
+                :used-model-names="usedModelNames"
+                :workflow-file-name="workflowDataFile?.name"
+                :workflow-result="workflowResult"
+                :workflow-summary="workflowSummary"
+                @add-model="handleAddModel"
+                @apply-column-config="handleApplyColumnConfig"
+                @open-upload="openUploadDialog"
+                @update-config="handleUpdateConfig"
+                @update:file="handleDataFile"
+              />
+            </div>
+          </Transition>
         </div>
       </div>
     </Transition>
@@ -172,9 +190,8 @@
     onBeforeUnmount,
     onMounted,
     ref,
-    watch,
   } from 'vue'
-  import { executeWorkflowApi } from '@/api/workflow'
+  import { executeWorkflowApi, fetchAvailableModels } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
@@ -224,6 +241,8 @@
   const selectedJsonFile = ref<File | null>(null)
   const paperFileInput = ref<HTMLInputElement | null>(null)
   const paperUploading = ref(false)
+  const availableModels = ref<string[]>([])
+  const modelOptionsLoading = ref(false)
 
   // n8n webhook 路徑（analyze-paper workflow）
   const N8N_PAPER_WEBHOOK_URL
@@ -380,6 +399,18 @@
       && selectedTargetColumn.value !== undefined,
   )
 
+  async function loadAvailableModels (): Promise<void> {
+    modelOptionsLoading.value = true
+    try {
+      availableModels.value = await fetchAvailableModels()
+    } catch (error) {
+      console.warn('Unable to load available models', error)
+      availableModels.value = []
+    } finally {
+      modelOptionsLoading.value = false
+    }
+  }
+
   onMounted(async () => {
     const restoredDataFile = await loadWorkflowDataFileFromStorage()
     if (restoredDataFile) {
@@ -392,6 +423,8 @@
       selectedJsonFile.value = restoredJsonFile
       await loadJsonModels(restoredJsonFile)
     }
+
+    await loadAvailableModels()
   })
 
   const workflowSummary = computed(() => {
@@ -465,6 +498,7 @@
     style: drawerStyle,
     startDrag,
     reset: resetDrawer,
+    expand: expandDrawer,
   } = useDrawerDrag()
 
   // 目前被選取的節點（傳給 OptionsPanel）
@@ -473,6 +507,28 @@
     const node = nodes.value.find(item => item.id === selectedNodeId.value)
     return node ? { id: node.id, data: node.data } : null
   })
+
+  const usedModelNames = computed<string[]>(() =>
+    nodes.value
+      .filter(node => node.id.startsWith('model') && node.id !== 'modelMore')
+      .map(node =>
+        String(
+          node.data.config.modelName ?? node.data.label.replace(/\n/g, ' '),
+        ),
+      )
+      .filter(Boolean),
+  )
+
+  const availableModelOptions = computed<string[]>(() =>
+    availableModels.value.filter(
+      name => !usedModelNames.value.includes(name),
+    ),
+  )
+
+  function openModelMorePanel (): void {
+    selectedNodeId.value = 'modelMore'
+    expandDrawer()
+  }
 
   // 節點顏色：完成的節點改成黃色，其餘依 data.colorClass
   const canvasNodes = computed<FlowNode[]>(() =>
@@ -618,6 +674,7 @@
       return
     }
     selectedNodeId.value = nodeId
+    expandDrawer()
   }
 
   function openUploadDialog (): void {
@@ -941,6 +998,80 @@
         ?? testScoreNode?.data.config.targetCol
         ?? '是否跌倒',
     }
+  }
+
+  function getModelSourceNode (): string {
+    const featureNode = nodes.value.find(
+      node => node.id === 'featureEngineering',
+    )
+    const preprocessorNode = nodes.value.find(
+      node => node.id === 'preprocessor',
+    )
+    if (featureNode) return 'featureEngineering'
+    if (preprocessorNode) return 'preprocessor'
+    return 'dataTable'
+  }
+
+  function handleAddModel (modelName: string): void {
+    if (!modelName) return
+
+    const existing = nodes.value.find(
+      node =>
+        node.id.startsWith('model')
+        && node.id !== 'modelMore'
+        && String(
+          node.data.config.modelName ?? node.data.label.replace(/\n/g, ' '),
+        ) === modelName,
+    )
+    if (existing) return
+
+    const modelNodes = nodes.value.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+    const newId = `modelCustom${modelNodes.length + 1}`
+    const yPosition = 110 + modelNodes.length * 120
+    const newNode: FlowNode = {
+      id: newId,
+      type: 'iconNode',
+      position: { x: 420, y: yPosition },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      data: {
+        icon: 'mdi-cube-outline',
+        label: modelName,
+        colorClass: 'node-pending',
+        description: `動態新增模型：${modelName}`,
+        fields: [],
+        config: { modelName },
+      },
+    }
+
+    const testScoreIndex = nodes.value.findIndex(
+      node => node.id === 'testScore',
+    )
+    const hasTestScoreNode = testScoreIndex !== -1
+    if (hasTestScoreNode) {
+      nodes.value.splice(testScoreIndex, 0, newNode)
+    } else {
+      nodes.value.push(newNode)
+    }
+
+    const sourceNodeId = getModelSourceNode()
+    edges.value = [
+      ...edges.value,
+      {
+        id: `e_${sourceNodeId}_${newId}`,
+        source: sourceNodeId,
+        target: newId,
+        type: 'default',
+      },
+      {
+        id: `e_${newId}_testScore`,
+        source: newId,
+        target: 'testScore',
+        type: 'default',
+      },
+    ]
   }
 
   async function runWorkflowRequest (): Promise<void> {
@@ -1340,7 +1471,8 @@
     background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(16px);
     box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.05);
-    will-change: transform;
+    will-change: height, transform;
+    transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
   }
@@ -1632,5 +1764,43 @@
   .slide-up-leave-from {
     transform: translateY(0);
     opacity: 1;
+  }
+
+  .drawer-panel-enter-active,
+  .drawer-panel-leave-active {
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  .drawer-panel-enter-from,
+  .drawer-panel-leave-to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .drawer-panel-enter-to,
+  .drawer-panel-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .drawer-content-enter-active,
+  .drawer-content-leave-active {
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  .drawer-content-enter-from,
+  .drawer-content-leave-to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .drawer-content-enter-to,
+  .drawer-content-leave-from {
+    opacity: 1;
+    transform: translateY(0);
   }
 </style>

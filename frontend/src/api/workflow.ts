@@ -22,3 +22,19 @@ export async function executeWorkflowApi(params: {
 
   return result;
 }
+
+export async function fetchAvailableModels(): Promise<string[]> {
+  const response = await fetch("/api/models/available");
+  const result = (await response.json()) as {
+    success?: boolean;
+    models?: string[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(
+      result.error ? String(result.error) : `HTTP ${response.status}`,
+    );
+  }
+
+  return Array.isArray(result.models) ? result.models : [];
+}

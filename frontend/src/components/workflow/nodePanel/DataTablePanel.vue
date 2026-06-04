@@ -7,9 +7,11 @@
       </div>
     </div>
 
-    <div v-if="props.loading" class="data-table-loading-overlay">
+    <div v-if="props.loading || isLoading" class="data-table-loading-overlay">
       <div class="loader" />
-      <div>Data Table 正在等待目標變數...</div>
+      <div>
+        {{ props.loading ? "Data Table 正在等待目標變數..." : "資料載入中..." }}
+      </div>
     </div>
 
     <div v-if="!file" class="data-table-empty">
@@ -194,6 +196,7 @@
   const previewColumns = ref<string[]>([])
   const previewDataRows = ref<string[][]>([])
   const columnSettings = ref<ColumnSetting[]>([])
+  const isLoading = ref(false)
 
   const roleOptions = ['feature', 'target', 'meta', 'skip'] as const
   const typeOptions = ['numeric', 'categorial', 'text', 'datetime'] as const
@@ -371,15 +374,18 @@
 
   watch(
     () => props.file,
-    file => {
-      if (file) {
-        void loadFile(file)
-      } else {
+    async file => {
+      if (!file) {
         previewColumns.value = []
         previewDataRows.value = []
         columnSettings.value = []
         originalColumnSettings.value = []
+        isLoading.value = false
+        return
       }
+      isLoading.value = true
+      await loadFile(file)
+      isLoading.value = false
     },
     { immediate: true },
   )
@@ -511,6 +517,28 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+
+  .data-table-loading-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.88);
+    color: #475569;
+    font-size: 14px;
+    z-index: 10;
+  }
+
+  .data-table-panel {
+    position: relative;
   }
 
   .data-table-header {
