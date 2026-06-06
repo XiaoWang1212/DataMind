@@ -13,7 +13,7 @@
       <div class="upload-modal-line2">或點擊下方按鈕選擇 CSV 檔案</div>
       <input
         ref="fileInput"
-        accept=".csv,text/csv"
+        accept=".csv,.xlsx,.xls,text/csv"
         hidden
         type="file"
         @change="onFileChange"

@@ -11,28 +11,26 @@ from services.workflow.extraction_mapper import build_workflow_payload
 model_bp = Blueprint("model", __name__)
 
 ALLOWED_DATA_EXTENSIONS = {"json"}
-ALLOWED_CSV_EXTENSIONS = {"csv"}
+ALLOWED_DATA_FILE_EXTENSIONS = {"csv", "xlsx", "xls"}
 
 
 def _is_allowed_json_file(filename: str) -> bool:
     if "." not in filename:
         return False
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_DATA_EXTENSIONS
+    return filename.rsplit(".", 1)[1].lower() in ALLOWED_DATA_EXTENSIONS
 
 
-def _is_allowed_csv_file(filename: str) -> bool:
+def _is_allowed_data_file(filename: str) -> bool:
     if "." not in filename:
         return False
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_CSV_EXTENSIONS
+    return filename.rsplit(".", 1)[1].lower() in ALLOWED_DATA_FILE_EXTENSIONS
 
 
 def _save_uploaded_file(uploaded, upload_dir: Path) -> Path:
-    raw_name = uploaded.filename
-    safe_name = secure_filename(raw_name)
-    if not safe_name.lower().endswith(".csv"):
-        safe_name = f"{uploaded.filename}.csv"
+    raw_name = uploaded.filename or "data"
+    ext = raw_name.rsplit(".", 1)[1].lower() if "." in raw_name else "csv"
+    safe_stem = secure_filename(raw_name.rsplit(".", 1)[0]) or "data"
+    safe_name = f"{safe_stem}.{ext}"
 
     upload_dir.mkdir(parents=True, exist_ok=True)
     destination = upload_dir / safe_name
@@ -70,13 +68,8 @@ def extract_components():
     uploaded = request.files.get("file")
 
     if uploaded and uploaded.filename:
-        raw_name = uploaded.filename
-        if not _is_allowed_json_file(raw_name):
-            return (
-                jsonify({"error": "Unsupported file format. Only .json is allowed."}),
-                400,
-            )
-
+        if not _is_allowed_json_file(uploaded.filename):
+            return jsonify({"error": "Unsupported file format. Only .json is allowed."}), 400
         try:
             payload = json.load(uploaded)
         except json.JSONDecodeError as exc:
@@ -94,10 +87,7 @@ def extract_components():
         components = extract_model_components(payload, model_names=model_names)
         return jsonify({"success": True, "components": components})
     except Exception as exc:
-        return (
-            jsonify({"error": f"Failed to extract model components: {str(exc)}"}),
-            500,
-        )
+        return jsonify({"error": f"Failed to extract model components: {str(exc)}"}), 500
 
 
 @model_bp.post("/preprocess/variants")
@@ -109,10 +99,7 @@ def preprocess_variants():
         variants = WorkflowService.generate_preprocess_variants(step_groups)
         return jsonify({"success": True, "variants": variants})
     except Exception as exc:
-        return (
-            jsonify({"error": f"Failed to generate preprocess variants: {str(exc)}"}),
-            500,
-        )
+        return jsonify({"error": f"Failed to generate preprocess variants: {str(exc)}"}), 500
 
 
 @model_bp.get("/available")
@@ -121,10 +108,7 @@ def available_models():
         available = WorkflowService.list_registered_models()
         return jsonify({"success": True, "models": available})
     except Exception as exc:
-        return (
-            jsonify({"error": f"Failed to load available models: {str(exc)}"}),
-            500,
-        )
+        return jsonify({"error": f"Failed to load available models: {str(exc)}"}), 500
 
 
 @model_bp.post("/score/variants")
@@ -143,91 +127,73 @@ def score_variants():
 def execute_workflow():
     payload = _load_request_payload()
     uploaded = request.files.get("file")
+
+    # ── Base params from payload ────────────────────────────────────────────
     data_path = payload.get("data_path")
-    target_col = payload.get(
-        "target_col",
-        payload.get("targetCol", payload.get("target", "是否跌倒")),
-    )
+    target_col = payload.get("target_col") or payload.get("targetCol") or payload.get("target") or "是否跌倒"
+
     preprocess_pipelines = _parse_json_field(payload.get("preprocess_pipelines", []))
-    feature_engineering_pipelines = _parse_json_field(
-        payload.get("feature_engineering_pipelines", [])
-    )
-    model_names = payload.get("model_names", payload.get("models", []))
-    score_variants = _parse_json_field(payload.get("score_variants", []))
-    validation_config = _parse_json_field(
-        payload.get("validation_config", payload.get("validation", {}))
-    )
+    feature_engineering_pipelines = _parse_json_field(payload.get("feature_engineering_pipelines", []))
+    model_names = payload.get("model_names") or payload.get("models") or []
+    score_variants_raw = _parse_json_field(payload.get("score_variants", []))
+    validation_config = _parse_json_field(payload.get("validation_config") or payload.get("validation") or {})
+    column_config = _parse_json_field(payload.get("column_config") or payload.get("columnConfig") or [])
+
+    # ── New params ──────────────────────────────────────────────────────────
+    resampling_method = str(payload.get("resampling_method", "none"))
+    resampling_config = _parse_json_field(payload.get("resampling_config") or {})
+    tuning_method = str(payload.get("tuning_method", "none"))
+    tuning_cv = int(payload.get("tuning_cv", 3))
+    tuning_n_iter = int(payload.get("tuning_n_iter", 20))
+    tuning_scoring = str(payload.get("tuning_scoring", "roc_auc"))
+    compute_ci = bool(payload.get("compute_ci", False))
+    ci_n_bootstrap = int(payload.get("ci_n_bootstrap", 1000))
     train_size = float(payload.get("train_size", 0.7))
     random_state = int(payload.get("random_state", 42))
-    column_config = _parse_json_field(
-        payload.get("column_config", payload.get("columnConfig", []))
-    )
+
+    # ── If payload uses "menu" format (models/preprocessing/...), remap it ──
+    menu_keys = {"preprocessing", "featureEngineering", "feature_engineering", "models", "validation", "metrics"}
+    if any(k in payload for k in menu_keys):
+        mapped = build_workflow_payload(payload)
+        preprocess_pipelines = mapped.get("preprocess_pipelines") or preprocess_pipelines
+        feature_engineering_pipelines = mapped.get("feature_engineering_pipelines") or feature_engineering_pipelines
+        model_names = mapped.get("model_names") or model_names
+        validation_config = mapped.get("validation_config") or validation_config
+        score_variants_raw = mapped.get("score_variants") or score_variants_raw
+        column_config = mapped.get("column_config") or column_config
+        if mapped.get("target_col"):
+            target_col = mapped["target_col"]
+        # Prefer mapped values but fall back to direct payload values
+        resampling_method = mapped.get("resampling_method") or resampling_method
+        resampling_config = mapped.get("resampling_config") or resampling_config
+        tuning_method = mapped.get("tuning_method") or tuning_method
+        tuning_cv = mapped.get("tuning_cv") or tuning_cv
+        tuning_n_iter = mapped.get("tuning_n_iter") or tuning_n_iter
+        tuning_scoring = mapped.get("tuning_scoring") or tuning_scoring
+        compute_ci = mapped.get("compute_ci", compute_ci)
+        ci_n_bootstrap = mapped.get("ci_n_bootstrap", ci_n_bootstrap)
+
+    # ── Normalise column_config ─────────────────────────────────────────────
     if isinstance(column_config, dict):
         column_config = [column_config]
     if not isinstance(column_config, list):
         column_config = []
 
-    if any(
-        key in payload
-        for key in [
-            "preprocessing",
-            "featureEngineering",
-            "feature_engineering",
-            "models",
-            "validation",
-            "metrics",
-        ]
-    ):
-        mapped = build_workflow_payload(payload)
-        preprocess_pipelines = (
-            mapped.get("preprocess_pipelines", preprocess_pipelines)
-            or preprocess_pipelines
-        )
-        feature_engineering_pipelines = (
-            mapped.get("feature_engineering_pipelines", feature_engineering_pipelines)
-            or feature_engineering_pipelines
-        )
-        model_names = mapped.get("model_names", model_names) or model_names
-        validation_config = (
-            mapped.get("validation_config", validation_config) or validation_config
-        )
-        score_variants = mapped.get("score_variants", score_variants) or score_variants
-        if mapped.get("target_col") is not None:
-            payload["target_col"] = mapped["target_col"]
-            target_col = payload.get(
-                "target_col",
-                payload.get("targetCol", payload.get("target", "是否跌倒")),
-            )
-        column_config = mapped.get("column_config", [])
-
-    if uploaded and uploaded.filename:
-        if not _is_allowed_csv_file(uploaded.filename):
-            return (
-                jsonify(
-                    {
-                        "error": "Unsupported file format. Only .csv is allowed for workflow execution."
-                    }
-                ),
-                400,
-            )
-        data_path = str(_save_uploaded_file(uploaded, Path("uploads/workflow")))
-
-    if not data_path:
-        return jsonify({"error": "data_path or CSV file upload is required."}), 400
-
+    # ── Normalise model_names ───────────────────────────────────────────────
     if isinstance(model_names, list):
-        normalized_models = []
+        normalised = []
         for item in model_names:
             if isinstance(item, str):
-                normalized_models.append(item)
+                normalised.append(item)
             elif isinstance(item, dict):
                 name = item.get("name") or item.get("model") or item.get("type")
                 if name:
-                    normalized_models.append(name)
-        model_names = normalized_models
+                    normalised.append(name)
+        model_names = normalised
     else:
-        model_names = [model_names]
+        model_names = [model_names] if model_names else []
 
+    # ── Normalise preprocess_pipelines ─────────────────────────────────────
     if not preprocess_pipelines:
         preprocess_pipelines = _parse_json_field(payload.get("preprocessing", []))
     if isinstance(preprocess_pipelines, dict):
@@ -237,27 +203,34 @@ def execute_workflow():
     elif preprocess_pipelines and isinstance(preprocess_pipelines[0], dict):
         preprocess_pipelines = [preprocess_pipelines]
 
+    # ── Normalise feature_engineering_pipelines ─────────────────────────────
     if not feature_engineering_pipelines:
-        feature_engineering_pipelines = _parse_json_field(
-            payload.get("featureEngineering", [])
-        )
+        feature_engineering_pipelines = _parse_json_field(payload.get("featureEngineering", []))
     if isinstance(feature_engineering_pipelines, dict):
         feature_engineering_pipelines = [feature_engineering_pipelines]
     if not isinstance(feature_engineering_pipelines, list):
         feature_engineering_pipelines = []
-    elif feature_engineering_pipelines and isinstance(
-        feature_engineering_pipelines[0], dict
-    ):
+    elif feature_engineering_pipelines and isinstance(feature_engineering_pipelines[0], dict):
         feature_engineering_pipelines = [feature_engineering_pipelines]
 
-    if not score_variants:
-        score_variants = _parse_json_field(payload.get("metrics", []))
-    if isinstance(score_variants, dict):
-        score_variants = [score_variants]
-    if not isinstance(score_variants, list):
-        score_variants = []
+    # ── Normalise score_variants ────────────────────────────────────────────
+    if not score_variants_raw:
+        score_variants_raw = _parse_json_field(payload.get("metrics", []))
+    if isinstance(score_variants_raw, dict):
+        score_variants_raw = [score_variants_raw]
+    if not isinstance(score_variants_raw, list):
+        score_variants_raw = []
 
-    column_config = column_config if column_config is not None else []
+    # ── Save uploaded data file ─────────────────────────────────────────────
+    if uploaded and uploaded.filename:
+        if not _is_allowed_data_file(uploaded.filename):
+            return jsonify({
+                "error": "Unsupported file format. Accepted: .csv, .xlsx, .xls"
+            }), 400
+        data_path = str(_save_uploaded_file(uploaded, Path("uploads/workflow")))
+
+    if not data_path:
+        return jsonify({"error": "data_path or file upload is required."}), 400
 
     try:
         result = WorkflowService.execute_workflow(
@@ -266,11 +239,19 @@ def execute_workflow():
             preprocess_pipelines=preprocess_pipelines,
             feature_engineering_pipelines=feature_engineering_pipelines,
             model_names=model_names,
-            score_variants=score_variants,
+            score_variants=score_variants_raw,
             validation_config=validation_config,
+            column_config=column_config,
+            resampling_method=resampling_method,
+            resampling_config=resampling_config if isinstance(resampling_config, dict) else {},
+            tuning_method=tuning_method,
+            tuning_cv=tuning_cv,
+            tuning_n_iter=tuning_n_iter,
+            tuning_scoring=tuning_scoring,
+            compute_ci=compute_ci,
+            ci_n_bootstrap=ci_n_bootstrap,
             train_size=train_size,
             random_state=random_state,
-            column_config=column_config,
         )
         return jsonify(result)
     except FileNotFoundError as exc:

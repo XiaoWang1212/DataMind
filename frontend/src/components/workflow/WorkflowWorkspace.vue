@@ -123,6 +123,21 @@
       type="file"
       @change="handlePaperFileChange"
     >
+    <button
+      class="demo-btn gemini-upload-btn"
+      :disabled="geminiUploading"
+      type="button"
+      @click="triggerGeminiUpload"
+    >
+      {{ geminiUploading ? "AI 分析中..." : "AI 生成 Workflow" }}
+    </button>
+    <input
+      ref="geminiFileInput"
+      accept=".pdf,application/pdf"
+      hidden
+      type="file"
+      @change="handleGeminiFileChange"
+    >
 
     <div v-if="workflowError" class="workflow-result">
       <div class="workflow-error">{{ workflowError }}</div>
@@ -195,6 +210,7 @@
     toRaw,
     watch,
   } from 'vue'
+  import { analyzeWorkflowFromPdf } from '@/api/gemini'
   import { executeWorkflowApi, fetchAvailableModels } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
@@ -244,7 +260,9 @@
   const jsonFileInput = ref<HTMLInputElement | null>(null)
   const selectedJsonFile = ref<File | null>(null)
   const paperFileInput = ref<HTMLInputElement | null>(null)
+  const geminiFileInput = ref<HTMLInputElement | null>(null)
   const paperUploading = ref(false)
+  const geminiUploading = ref(false)
   const availableModels = ref<string[]>([])
   const modelOptionsLoading = ref(false)
 
@@ -252,6 +270,7 @@
   const N8N_PAPER_WEBHOOK_URL
     = (import.meta.env.VITE_N8N_PAPER_WEBHOOK_URL as string | undefined)
       ?? 'https://ideally-strewn-papyrus.ngrok-free.dev/webhook-test/analyze-paper'
+
   const workflowDataFile = ref<File | null>(null)
   const workflowResult = ref<null | Record<string, unknown>>(null)
   const workflowError = ref<string | null>(null)
@@ -920,6 +939,22 @@
       }
       : null
 
+    const rawResampling = (parsed as any).resampling
+    const rawTuning = (parsed as any).tuning
+    const resamplingMethod: string = typeof rawResampling === 'string'
+      ? rawResampling
+      : (rawResampling?.method ?? 'none')
+    const resamplingConfig: Record<string, unknown> = typeof rawResampling === 'object' && rawResampling !== null
+      ? (rawResampling.config ?? {})
+      : {}
+    const tuningMethod: string = typeof rawTuning === 'string'
+      ? rawTuning
+      : (rawTuning?.method ?? 'none')
+    const tuningCv: number = rawTuning?.cv ?? 3
+    const tuningNIter: number = rawTuning?.n_iter ?? 20
+    const tuningScoring: string = rawTuning?.scoring ?? 'roc_auc'
+    const computeCi: boolean = Boolean((parsed as any).compute_ci ?? false)
+
     const updatedTestScoreNode: FlowNode = {
       ...testScoreNode,
       data: {
@@ -933,6 +968,13 @@
             || '是否跌倒',
           validation: validation || { method: 'test_on_test', train_size: 0.7 },
           metrics: metrics.length > 0 ? metrics : [{ metric: 'accuracy' }],
+          resampling_method: resamplingMethod,
+          resampling_config: resamplingConfig,
+          tuning_method: tuningMethod,
+          tuning_cv: tuningCv,
+          tuning_n_iter: tuningNIter,
+          tuning_scoring: tuningScoring,
+          compute_ci: computeCi,
         },
       },
     }
@@ -1066,12 +1108,8 @@
 
   function buildWorkflowPayload (): Record<string, unknown> {
     const dataTableNode = nodes.value.find(node => node.id === 'dataTable')
-    const preprocessNode = nodes.value.find(
-      node => node.id === 'preprocessor',
-    )
-    const featureNode = nodes.value.find(
-      node => node.id === 'featureEngineering',
-    )
+    const preprocessNode = nodes.value.find(node => node.id === 'preprocessor')
+    const featureNode = nodes.value.find(node => node.id === 'featureEngineering')
     const testScoreNode = nodes.value.find(node => node.id === 'testScore')
     const modelNodes = nodes.value.filter(
       node => node.id.startsWith('model') && node.id !== 'modelMore',
@@ -1082,32 +1120,39 @@
     const validationConfig = testScoreNode?.data.config.validation ?? {}
     const metrics = testScoreNode?.data.config.metrics ?? []
 
+    // New execution params from testScore node config (populated by loadJsonModels)
+    const resamplingMethod = String(testScoreNode?.data.config.resampling_method ?? 'none')
+    const resamplingConfig = (testScoreNode?.data.config.resampling_config ?? {}) as Record<string, unknown>
+    const tuningMethod = String(testScoreNode?.data.config.tuning_method ?? 'none')
+    const tuningCv = Number(testScoreNode?.data.config.tuning_cv ?? 3)
+    const tuningNIter = Number(testScoreNode?.data.config.tuning_n_iter ?? 20)
+    const tuningScoring = String(testScoreNode?.data.config.tuning_scoring ?? 'roc_auc')
+    const computeCi = Boolean(testScoreNode?.data.config.compute_ci ?? false)
+
     return {
-      preprocess_pipelines: Array.isArray(preprocessPipelines)
-        ? [preprocessPipelines]
-        : [],
-      feature_engineering_pipelines: Array.isArray(featureEngineeringPipelines)
-        ? [featureEngineeringPipelines]
-        : [],
+      preprocess_pipelines: Array.isArray(preprocessPipelines) ? [preprocessPipelines] : [],
+      feature_engineering_pipelines: Array.isArray(featureEngineeringPipelines) ? [featureEngineeringPipelines] : [],
       model_names: modelNodes
-        .map(
-          node =>
-            node.data.config.modelName || node.data.label.replace(/\n/g, ' '),
-        )
+        .map(node => node.data.config.modelName || node.data.label.replace(/\n/g, ' '))
         .filter(Boolean),
       validation_config: validationConfig,
       score_variants: Array.isArray(metrics)
-        ? metrics.map(metric =>
-          typeof metric === 'string' ? { metric } : metric,
-        )
+        ? metrics.map(metric => typeof metric === 'string' ? { metric } : metric)
         : [],
       column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
         ? (dataTableNode?.data.config.columnConfig as ColumnConfig[])
         : [],
-      target_col:
-        selectedTargetColumn.value?.name
-        ?? testScoreNode?.data.config.targetCol
-        ?? '是否跌倒',
+      target_col: selectedTargetColumn.value?.name ?? testScoreNode?.data.config.targetCol ?? '是否跌倒',
+      // Resampling
+      resampling_method: resamplingMethod,
+      resampling_config: resamplingConfig,
+      // Hyperparameter tuning
+      tuning_method: tuningMethod,
+      tuning_cv: tuningCv,
+      tuning_n_iter: tuningNIter,
+      tuning_scoring: tuningScoring,
+      // Confidence intervals
+      compute_ci: computeCi,
     }
   }
 
@@ -1286,6 +1331,10 @@
     paperFileInput.value?.click()
   }
 
+  function triggerGeminiUpload (): void {
+    geminiFileInput.value?.click()
+  }
+
   // 上傳論文檔案，呼叫 n8n webhook，並將回傳的 workflow JSON 直接載入畫布
   async function handlePaperFileChange (event: Event): Promise<void> {
     const target = event.target as HTMLInputElement
@@ -1297,7 +1346,6 @@
     workflowError.value = null
 
     try {
-      // n8n Extract from File 預設讀取 binary 屬性名稱為 "data"
       const formData = new FormData()
       formData.append('data', file, file.name)
 
@@ -1308,18 +1356,14 @@
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '')
-        throw new Error(
-          `n8n webhook 回應錯誤：${response.status} ${errorText}`,
-        )
+        throw new Error(`n8n webhook 回應錯誤：${response.status} ${errorText}`)
       }
 
       const contentType = response.headers.get('content-type') ?? ''
       const result = contentType.includes('application/json')
         ? await response.json()
         : await response.text()
-      console.log('[n8n] analyze-paper response:', result)
 
-      // n8n Respond to Webhook 回傳陣列，取第一筆即為 workflow JSON
       const payload = Array.isArray(result) ? result[0] : result
       if (payload && typeof payload === 'object') {
         const jsonBlob = new File(
@@ -1330,11 +1374,41 @@
         await loadJsonModels(jsonBlob)
       }
     } catch (error) {
-      workflowError.value
-        = error instanceof Error ? error.message : '論文上傳失敗'
+      workflowError.value = error instanceof Error ? error.message : '論文上傳失敗'
       console.error('[n8n] analyze-paper error:', error)
     } finally {
       paperUploading.value = false
+    }
+  }
+
+  // 上傳論文 PDF → 呼叫 Gemini AI 分析 → 將回傳的 workflow JSON 載入畫布
+  async function handleGeminiFileChange (event: Event): Promise<void> {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0] ?? null
+    target.value = ''
+    if (!file) return
+
+    geminiUploading.value = true
+    workflowError.value = null
+
+    try {
+      const workflowJson = await analyzeWorkflowFromPdf({
+        file,
+        title: file.name.replace(/\.[^.]+$/, ''),
+      })
+
+      const jsonBlob = new File(
+        [JSON.stringify(workflowJson)],
+        `${file.name.replace(/\.[^.]+$/, '')}.json`,
+        { type: 'application/json' },
+      )
+      await loadJsonModels(jsonBlob)
+    } catch (error) {
+      workflowError.value
+        = error instanceof Error ? error.message : '論文 AI 分析失敗，請確認 PDF 是否正確'
+      console.error('[gemini] analyze-paper error:', error)
+    } finally {
+      geminiUploading.value = false
     }
   }
 
@@ -1549,6 +1623,39 @@
 
   .paper-upload-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.92);
+  }
+
+  .gemini-upload-btn {
+    position: absolute;
+    top: 14px;
+    right: 340px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 130px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(99, 102, 241, 0.3);
+    background: rgba(238, 242, 255, 0.85);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #4f46e5;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
+  .gemini-upload-btn:hover:not(:disabled) {
+    background: rgba(224, 231, 255, 0.95);
+  }
+
+  .gemini-upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .workflow-result {
