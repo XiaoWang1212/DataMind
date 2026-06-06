@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from itertools import product
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import (
+    GridSearchCV,
     GroupKFold,
     KFold,
     LeaveOneOut,
+    RandomizedSearchCV,
     RepeatedKFold,
     ShuffleSplit,
     StratifiedKFold,
@@ -18,15 +20,14 @@ from sklearn.model_selection import (
 )
 
 from services.model.registry import ModelRegistry
-from .feature_engineering_service import (
-    apply_feature_engineering_pipeline,
-    apply_feature_engineering_pipeline_for_split,
-)
-from .preprocess_service import apply_preprocess_pipeline, generate_preprocess_variants
+from .feature_engineering_service import apply_feature_engineering_pipeline_for_split
+from .preprocess_service import apply_preprocess_pipeline_for_split, generate_preprocess_variants
+from .resampling_service import apply_resampling, describe_class_distribution
 from .test_score_service import evaluate_metrics, generate_score_variants
 
 
 class WorkflowService:
+
     @staticmethod
     def generate_preprocess_variants(
         step_groups: List[Dict[str, Any]],
@@ -40,40 +41,52 @@ class WorkflowService:
         return generate_score_variants(score_groups)
 
     @staticmethod
-    def load_csv_data(data_path: str) -> pd.DataFrame:
+    def load_data(data_path: str) -> pd.DataFrame:
         file_path = Path(data_path)
         if not file_path.exists():
             raise FileNotFoundError(f"Data file not found: {data_path}")
 
+        suffix = file_path.suffix.lower()
+
+        if suffix in {".xlsx", ".xls"}:
+            return pd.read_excel(file_path)
+
+        # CSV with encoding fallback
         try:
             return pd.read_csv(file_path, encoding="utf-8-sig")
         except UnicodeDecodeError:
             return pd.read_csv(file_path, encoding="cp950")
 
-    @staticmethod
-    def _prepare_features(df: pd.DataFrame) -> pd.DataFrame:
-        object_columns = df.select_dtypes(
-            include=["object", "category"]
-        ).columns.tolist()
-        if object_columns:
-            df = pd.get_dummies(df, columns=object_columns, drop_first=True)
-        return df
+    # Keep legacy name as alias
+    @classmethod
+    def load_csv_data(cls, data_path: str) -> pd.DataFrame:
+        return cls.load_data(data_path)
 
     @staticmethod
-    def _safe_score_array(value: Optional[Any]) -> Optional[np.ndarray]:
-        if value is None:
-            return None
+    def _prepare_categorical(
+        train_df: pd.DataFrame, test_df: pd.DataFrame
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """One-hot encode any remaining object/category columns, fit on train only."""
+        object_cols = train_df.select_dtypes(include=["object", "category"]).columns.tolist()
+        if not object_cols:
+            return train_df, test_df
 
-        try:
-            arr = np.asarray(value, dtype=float)
-        except Exception:
-            return None
+        train_dummies = pd.get_dummies(train_df[object_cols], drop_first=True)
+        test_dummies = pd.get_dummies(test_df[object_cols], drop_first=True)
 
-        if arr.ndim == 1:
-            return arr
-        if arr.ndim == 2 and arr.shape[1] == 1:
-            return arr.ravel()
-        return None
+        # Align test to train columns
+        for col in train_dummies.columns:
+            if col not in test_dummies.columns:
+                test_dummies[col] = 0
+        test_dummies = test_dummies[train_dummies.columns]
+
+        train_out = pd.concat(
+            [train_df.drop(columns=object_cols), train_dummies], axis=1
+        )
+        test_out = pd.concat(
+            [test_df.drop(columns=object_cols), test_dummies], axis=1
+        )
+        return train_out, test_out
 
     @staticmethod
     def _normalize_validation_config(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,37 +134,26 @@ class WorkflowService:
             importance_values = np.asarray(getattr(estimator, "feature_importances_"))
         elif hasattr(estimator, "coef_"):
             coef = np.asarray(getattr(estimator, "coef_"))
-            if coef.ndim == 1:
-                importance_values = np.abs(coef)
-            elif coef.ndim == 2:
-                importance_values = np.mean(np.abs(coef), axis=0)
-        elif hasattr(estimator, "coef") and callable(getattr(estimator, "coef")):
-            try:
-                coef = np.asarray(estimator.coef_(feature_names))
-                if coef.ndim == 1:
-                    importance_values = np.abs(coef)
-                elif coef.ndim == 2:
-                    importance_values = np.mean(np.abs(coef), axis=0)
-            except Exception:
-                importance_values = None
+            importance_values = (
+                np.abs(coef) if coef.ndim == 1 else np.mean(np.abs(coef), axis=0)
+            )
 
-        if importance_values is None:
+        if importance_values is None or importance_values.shape[0] != len(feature_names):
             return None
 
-        if importance_values.shape[0] != len(feature_names):
-            return None
-
-        importance_list = [
-            {"feature": feature, "importance": float(value)}
-            for feature, value in zip(feature_names, importance_values)
-        ]
-        importance_list.sort(key=lambda item: item["importance"], reverse=True)
-        return importance_list
+        return sorted(
+            [
+                {"feature": f, "importance": float(v)}
+                for f, v in zip(feature_names, importance_values)
+            ],
+            key=lambda x: x["importance"],
+            reverse=True,
+        )
 
     @classmethod
     def _generate_resampling_splits(
         cls,
-        processed: pd.DataFrame,
+        X: pd.DataFrame,
         y: pd.Series,
         validation_config: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
@@ -171,18 +173,17 @@ class WorkflowService:
 
         groups = None
         if group_column:
-            if group_column in processed.columns:
-                groups = processed[group_column]
+            if group_column in X.columns:
+                groups = X[group_column]
             else:
                 raise ValueError(
-                    f"Group column '{group_column}' not found in features for group cross-validation"
+                    f"Group column '{group_column}' not found in features"
                 )
 
         if method in {"test_on_test", "test_on_train"}:
             try:
-                X_train, X_test, y_train, y_test = train_test_split(
-                    processed,
-                    y,
+                X_tr, X_te, y_tr, y_te = train_test_split(
+                    X, y,
                     train_size=train_size,
                     test_size=test_size,
                     stratify=y if stratified and len(pd.unique(y)) > 1 else None,
@@ -190,91 +191,72 @@ class WorkflowService:
                     random_state=random_state,
                 )
             except ValueError:
-                X_train, X_test, y_train, y_test = train_test_split(
-                    processed,
-                    y,
+                X_tr, X_te, y_tr, y_te = train_test_split(
+                    X, y,
                     train_size=train_size,
                     test_size=test_size,
                     shuffle=shuffle,
                     random_state=random_state,
                 )
 
-            if method == "test_on_train":
-                return [
-                    {
-                        "name": "test_on_train",
-                        "train_index": X_train.index.to_list(),
-                        "test_index": X_train.index.to_list(),
-                        "config": config,
-                    }
-                ]
-
+            eval_idx = X_tr.index.tolist() if method == "test_on_train" else X_te.index.tolist()
             return [
                 {
-                    "name": "test_on_test",
-                    "train_index": X_train.index.to_list(),
-                    "test_index": X_test.index.to_list(),
+                    "name": method,
+                    "train_index": X_tr.index.tolist(),
+                    "test_index": eval_idx,
                     "config": config,
                 }
             ]
 
         if method == "k_fold":
-            if stratified and len(pd.unique(y)) > 1:
-                splitter = StratifiedKFold(
-                    n_splits=n_splits,
-                    shuffle=shuffle,
-                    random_state=random_state,
-                )
-                split_source = y
-            else:
-                splitter = KFold(
-                    n_splits=n_splits,
-                    shuffle=shuffle,
-                    random_state=random_state,
-                )
-                split_source = processed
+            splitter = (
+                StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+                if stratified and len(pd.unique(y)) > 1
+                else KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+            )
+            split_source = y if stratified and len(pd.unique(y)) > 1 else X
         elif method == "group_k_fold":
             if groups is None:
                 raise ValueError("group_column is required for group cross-validation")
             splitter = GroupKFold(n_splits=n_splits)
-            split_source = processed
+            split_source = X
         elif method == "leave_one_out":
             splitter = LeaveOneOut()
-            split_source = processed
-        else:
-            if stratified and len(pd.unique(y)) > 1:
-                splitter = StratifiedShuffleSplit(
+            split_source = X
+        else:  # random_sampling
+            splitter = (
+                StratifiedShuffleSplit(
                     n_splits=n_repeats,
                     train_size=train_size,
                     test_size=test_size,
                     random_state=random_state,
                 )
-                split_source = y
-            else:
-                splitter = ShuffleSplit(
+                if stratified and len(pd.unique(y)) > 1
+                else ShuffleSplit(
                     n_splits=n_repeats,
                     train_size=train_size,
                     test_size=test_size,
                     random_state=random_state,
                 )
-                split_source = processed
+            )
+            split_source = y if stratified and len(pd.unique(y)) > 1 else X
 
         splits: List[Dict[str, Any]] = []
-        if method == "group_k_fold":
-            iterator = splitter.split(processed, processed, groups)
-        else:
-            iterator = splitter.split(processed, split_source)
-
-        for split_index, (train_index, test_index) in enumerate(iterator):
+        iterator = (
+            splitter.split(X, X, groups)
+            if method == "group_k_fold"
+            else splitter.split(X, split_source)
+        )
+        for i, (train_idx, test_idx) in enumerate(iterator):
             splits.append(
                 {
-                    "name": f"{method}_{split_index + 1}",
-                    "train_index": train_index.tolist(),
-                    "test_index": test_index.tolist(),
+                    "name": f"{method}_{i + 1}",
+                    "train_index": train_idx.tolist(),
+                    "test_index": test_idx.tolist(),
                     "config": config,
                 }
             )
-
         return splits
 
     @classmethod
@@ -288,10 +270,22 @@ class WorkflowService:
         validation_config: Optional[Dict[str, Any]] = None,
         feature_engineering_pipelines: Optional[List[List[Dict[str, Any]]]] = None,
         column_config: Optional[List[Dict[str, Any]]] = None,
+        # Resampling
+        resampling_method: str = "none",
+        resampling_config: Optional[Dict[str, Any]] = None,
+        # Hyperparameter tuning
+        tuning_method: str = "none",
+        tuning_cv: int = 3,
+        tuning_n_iter: int = 20,
+        tuning_scoring: str = "roc_auc",
+        # Confidence intervals
+        compute_ci: bool = False,
+        ci_n_bootstrap: int = 1000,
+        # Legacy
         train_size: float = 0.7,
         random_state: int = 42,
     ) -> Dict[str, Any]:
-        df = cls.load_csv_data(data_path)
+        df = cls.load_data(data_path)
 
         if target_col not in df.columns:
             raise ValueError(f"Target column not found: {target_col}")
@@ -299,42 +293,35 @@ class WorkflowService:
         y = df[target_col]
         X = df.drop(columns=[target_col])
 
+        # Drop columns marked as skip or meta in column_config
         if column_config:
-            skip_columns = [
-                item.get("name")
+            exclude_roles = {"skip", "meta"}
+            skip_cols = [
+                item["name"]
                 for item in column_config
-                if isinstance(item, dict) and item.get("role") == "skip"
+                if isinstance(item, dict) and item.get("role") in exclude_roles
+                and isinstance(item.get("name"), str)
             ]
-            skip_columns = [col for col in skip_columns if isinstance(col, str)]
-            if skip_columns:
-                X = X.drop(
-                    columns=[c for c in skip_columns if c in X.columns], errors="ignore"
-                )
+            X = X.drop(columns=[c for c in skip_cols if c in X.columns], errors="ignore")
 
         if X.empty:
             raise ValueError("Feature matrix is empty after dropping the target column")
 
-        results: List[Dict[str, Any]] = []
-        validation_config = validation_config or {"method": "test_on_test"}
-
         if not preprocess_pipelines:
             preprocess_pipelines = [[]]
-
         if not feature_engineering_pipelines:
             feature_engineering_pipelines = [[]]
 
+        validation_config = validation_config or {"method": "test_on_test"}
+        resampling_config = resampling_config or {}
+        results: List[Dict[str, Any]] = []
+
+        class_dist = describe_class_distribution(y)
+
+        # Generate splits once (on raw X to preserve indices)
+        split_definitions = cls._generate_resampling_splits(X, y, validation_config)
+
         for pipeline_index, pipeline_steps in enumerate(preprocess_pipelines):
-            processed = apply_preprocess_pipeline(X.copy(), pipeline_steps)
-            processed = cls._prepare_features(processed)
-
-            if processed.empty:
-                raise ValueError(
-                    f"Processed feature set is empty for pipeline {pipeline_index}"
-                )
-
-            split_definitions = cls._generate_resampling_splits(
-                processed, y, validation_config
-            )
             feature_steps = (
                 feature_engineering_pipelines[pipeline_index]
                 if pipeline_index < len(feature_engineering_pipelines)
@@ -348,117 +335,145 @@ class WorkflowService:
                         {
                             "preprocess_pipeline_index": pipeline_index,
                             "model_name": model_name,
-                            "error": "Unknown model name",
+                            "error": f"Unknown model name: {model_name}",
                         }
                     )
                     continue
 
-                for split_definition in split_definitions:
-                    estimator = model_config.create_estimator()
-                    train_idx = split_definition["train_index"]
-                    test_idx = split_definition["test_index"]
+                for split_def in split_definitions:
+                    train_idx = split_def["train_index"]
+                    test_idx = split_def["test_index"]
 
-                    X_train = processed.iloc[train_idx]
-                    X_test = processed.iloc[test_idx]
+                    X_train_raw = X.iloc[train_idx]
+                    X_test_raw = X.iloc[test_idx]
                     y_train = y.iloc[train_idx]
                     y_test = y.iloc[test_idx]
 
-                    overlap = len(set(train_idx).intersection(set(test_idx)))
-                    print(
-                        "[workflow debug] model=",
-                        model_name,
-                        "split=",
-                        split_definition["name"],
+                    # ── 1. Preprocessing (fit on train only — no leakage) ───────
+                    X_train, X_test = apply_preprocess_pipeline_for_split(
+                        X_train_raw, X_test_raw, pipeline_steps
                     )
-                    print("[workflow debug] overlap", overlap)
-                    print(
-                        "[workflow debug] X_train",
-                        X_train.shape,
-                        "X_test",
-                        X_test.shape,
-                    )
-                    print(
-                        "[workflow debug] y_train counts",
-                        y_train.value_counts(dropna=False).to_dict(),
-                    )
-                    print(
-                        "[workflow debug] y_test counts",
-                        y_test.value_counts(dropna=False).to_dict(),
-                    )
-                    print("[workflow debug] feature_steps", feature_steps)
 
+                    # ── 2. Encode remaining categoricals (fit on train only) ────
+                    X_train, X_test = cls._prepare_categorical(X_train, X_test)
+
+                    if X_train.empty:
+                        results.append(
+                            {
+                                "preprocess_pipeline_index": pipeline_index,
+                                "model_name": model_name,
+                                "split_name": split_def["name"],
+                                "error": "Feature matrix empty after preprocessing",
+                            }
+                        )
+                        continue
+
+                    # ── 3. Feature engineering (fit on train only) ─────────────
                     if feature_steps:
                         X_train, X_test = apply_feature_engineering_pipeline_for_split(
                             X_train, X_test, feature_steps, target_train=y_train
                         )
-                        print(
-                            "[workflow debug] after feature engineering",
-                            "X_train",
-                            X_train.shape,
-                            "X_test",
-                            X_test.shape,
-                        )
 
-                    estimator.fit(X_train, y_train)
+                    # ── 4. Resampling (train only) ─────────────────────────────
+                    if resampling_method != "none":
+                        try:
+                            X_train, y_train = apply_resampling(
+                                X_train, y_train,
+                                method=resampling_method,
+                                config=resampling_config,
+                            )
+                        except Exception as exc:
+                            results.append(
+                                {
+                                    "preprocess_pipeline_index": pipeline_index,
+                                    "model_name": model_name,
+                                    "split_name": split_def["name"],
+                                    "error": f"Resampling failed: {exc}",
+                                }
+                            )
+                            continue
+
+                    # ── 5. Hyperparameter tuning OR plain fit ──────────────────
+                    estimator = model_config.create_estimator()
+                    best_params: Dict[str, Any] = {}
+
+                    if tuning_method in {"grid", "random"}:
+                        param_grid = model_config.get_param_grid()
+                        if param_grid:
+                            inner_cv = StratifiedKFold(
+                                n_splits=tuning_cv, shuffle=True, random_state=42
+                            )
+                            if tuning_method == "grid":
+                                searcher = GridSearchCV(
+                                    estimator=estimator,
+                                    param_grid=param_grid,
+                                    cv=inner_cv,
+                                    scoring=tuning_scoring,
+                                    n_jobs=-1,
+                                    error_score="raise",
+                                )
+                            else:
+                                searcher = RandomizedSearchCV(
+                                    estimator=estimator,
+                                    param_distributions=param_grid,
+                                    n_iter=tuning_n_iter,
+                                    cv=inner_cv,
+                                    scoring=tuning_scoring,
+                                    n_jobs=-1,
+                                    random_state=42,
+                                    error_score="raise",
+                                )
+                            try:
+                                searcher.fit(X_train, y_train)
+                                estimator = searcher.best_estimator_
+                                best_params = searcher.best_params_
+                            except Exception as exc:
+                                # Tuning failed — fall back to default fit
+                                estimator = model_config.create_estimator()
+                                estimator.fit(X_train, y_train)
+                                best_params = {"tuning_error": str(exc)}
+                        else:
+                            estimator.fit(X_train, y_train)
+                    else:
+                        estimator.fit(X_train, y_train)
+
+                    # ── 6. Predict ─────────────────────────────────────────────
                     y_pred = pd.Series(estimator.predict(X_test), index=y_test.index)
-                    print("[workflow debug] y_pred sample", y_pred.head(10).tolist())
-                    print("[workflow debug] y_test sample", y_test.head(10).tolist())
-                    print(
-                        "[workflow debug] y_pred equals y_test all",
-                        (y_pred == y_test).all(),
-                    )
-                    print(
-                        "[workflow debug] y_pred unequal count",
-                        int((y_pred != y_test).sum()),
-                    )
-                    print(
-                        "[workflow debug] confusion",
-                        pd.crosstab(
-                            y_test,
-                            y_pred,
-                            rownames=["true"],
-                            colnames=["pred"],
-                            dropna=False,
-                        ).to_dict(),
-                    )
                     y_score = None
                     if hasattr(estimator, "predict_proba"):
                         try:
                             proba = estimator.predict_proba(X_test)
                             classes = getattr(estimator, "classes_", None)
-                            print(
-                                "[workflow debug] proba shape",
-                                getattr(proba, "shape", None),
-                                "classes",
-                                classes,
-                            )
                             y_score = {
                                 "proba": proba,
-                                "classes": (
-                                    classes.tolist() if classes is not None else None
-                                ),
+                                "classes": classes.tolist() if classes is not None else None,
                             }
-                        except Exception as exc:
-                            print("[workflow debug] predict_proba error", exc)
+                        except Exception:
                             y_score = None
 
-                    metrics = evaluate_metrics(y_test, y_pred, y_score, score_variants)
-                    print("[workflow debug] metrics", metrics)
+                    # ── 7. Evaluate metrics ────────────────────────────────────
+                    metrics = evaluate_metrics(
+                        y_test, y_pred, y_score, score_variants,
+                        compute_ci=compute_ci,
+                        ci_n_bootstrap=ci_n_bootstrap,
+                    )
+
                     results.append(
                         {
                             "preprocess_pipeline_index": pipeline_index,
                             "model_name": model_name,
                             "preprocess_steps": pipeline_steps,
                             "feature_engineering_steps": feature_steps,
-                            "split_name": split_definition["name"],
-                            "validation_config": split_definition["config"],
+                            "split_name": split_def["name"],
+                            "validation_config": split_def["config"],
+                            "resampling_method": resampling_method,
+                            "best_params": best_params,
                             "metrics": metrics,
                             "feature_importance": cls._extract_feature_importance(
-                                estimator,
-                                list(X_train.columns),
+                                estimator, list(X_train.columns)
                             ),
-                            "feature_count": int(processed.shape[1]),
-                            "row_count": int(processed.shape[0]),
+                            "feature_count": int(X_train.shape[1]),
+                            "row_count": int(X_train.shape[0]),
                         }
                     )
 
@@ -467,6 +482,7 @@ class WorkflowService:
             "results": results,
             "preprocess_variants": preprocess_pipelines,
             "score_variants": score_variants,
+            "class_distribution": class_dist,
         }
 
     @staticmethod

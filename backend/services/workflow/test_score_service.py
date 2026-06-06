@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
+    balanced_accuracy_score,
+    cohen_kappa_score,
     confusion_matrix,
     f1_score,
+    matthews_corrcoef,
     precision_score,
     recall_score,
     roc_auc_score,
@@ -17,11 +21,15 @@ from sklearn.preprocessing import LabelBinarizer
 
 SUPPORTED_METRICS = {
     "accuracy",
+    "balanced_accuracy",
     "precision",
     "recall",
     "f1",
     "auc",
+    "auprc",
     "specificity",
+    "mcc",
+    "kappa",
 }
 
 
@@ -51,15 +59,17 @@ def generate_score_variants(score_groups: List[Dict[str, Any]]) -> List[Dict[str
     return variants
 
 
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
 def _safe_float_array(value: Any) -> Optional[np.ndarray]:
     if value is None:
         return None
-
     try:
         arr = np.asarray(value, dtype=float)
     except Exception:
         return None
-
     if arr.ndim == 1:
         return arr
     if arr.ndim == 2 and arr.shape[1] == 1:
@@ -109,11 +119,9 @@ def _infer_positive_label(
 ) -> Optional[Any]:
     if labels is not None and len(labels) == 2:
         return labels[-1]
-
     unique_labels = pd.unique(y_true.dropna())
     if len(unique_labels) == 2:
         return sorted(unique_labels, key=str)[1]
-
     return None
 
 
@@ -158,19 +166,52 @@ def _to_binary_array(y_true: pd.Series, pos_label: Optional[Any] = None) -> np.n
         pos_label = sorted(unique_labels, key=str)[1]
 
     label_map = {label: 1 if label == pos_label else 0 for label in unique_labels}
-    if pos_label not in label_map:
-        raise ValueError(f"pos_label={pos_label} is not a valid label")
-
     return y_true.map(label_map).astype(int).to_numpy(dtype=int)
 
+
+# ---------------------------------------------------------------------------
+# Bootstrap confidence interval
+# ---------------------------------------------------------------------------
+
+def _bootstrap_ci(
+    y_true: np.ndarray,
+    y_score: np.ndarray,
+    metric_fn: Any,
+    n_bootstrap: int = 1000,
+    ci: float = 0.95,
+    random_state: int = 42,
+) -> Tuple[float, float]:
+    rng = np.random.RandomState(random_state)
+    scores = []
+    n = len(y_true)
+    for _ in range(n_bootstrap):
+        idx = rng.randint(0, n, n)
+        try:
+            scores.append(metric_fn(y_true[idx], y_score[idx]))
+        except Exception:
+            pass
+    if not scores:
+        return (float("nan"), float("nan"))
+    alpha = (1.0 - ci) / 2.0
+    lo = float(np.percentile(scores, alpha * 100))
+    hi = float(np.percentile(scores, (1.0 - alpha) * 100))
+    return lo, hi
+
+
+# ---------------------------------------------------------------------------
+# Public evaluation function
+# ---------------------------------------------------------------------------
 
 def evaluate_metrics(
     y_true: pd.Series,
     y_pred: pd.Series,
     y_score: Any,
     score_variants: List[Dict[str, Any]],
+    compute_ci: bool = False,
+    ci_n_bootstrap: int = 1000,
 ) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
+
     for variant in score_variants:
         metric = str(variant.get("metric", "")).lower()
         if metric not in SUPPORTED_METRICS:
@@ -179,7 +220,7 @@ def evaluate_metrics(
                     "id": variant.get("id"),
                     "metric": metric,
                     "value": None,
-                    "error": "Unsupported metric",
+                    "error": f"Unsupported metric. Available: {sorted(SUPPORTED_METRICS)}",
                 }
             )
             continue
@@ -195,38 +236,16 @@ def evaluate_metrics(
             )
 
         try:
-            if metric == "accuracy":
-                value = accuracy_score(y_true, y_pred_variant)
-            elif metric in {"precision", "recall", "f1"}:
-                kwargs: Dict[str, Any] = {"zero_division": 0}
-                effective_pos_label = pos_label
-                if effective_pos_label is None:
-                    effective_pos_label = _infer_positive_label(y_true, labels)
-                if effective_pos_label is not None:
-                    kwargs["pos_label"] = effective_pos_label
-                if labels is not None:
-                    kwargs["labels"] = labels
-
-                if metric == "precision":
-                    value = precision_score(y_true, y_pred_variant, **kwargs)
-                elif metric == "recall":
-                    value = recall_score(y_true, y_pred_variant, **kwargs)
-                else:
-                    value = f1_score(y_true, y_pred_variant, **kwargs)
-            elif metric == "auc":
-                if y_score is None:
-                    value = None
-                else:
-                    score_vec = _get_score_vector(y_score, pos_label)
-                    if score_vec is None:
-                        value = None
-                    else:
-                        binary = _to_binary_array(y_true, pos_label)
-                        value = roc_auc_score(binary, score_vec)
-            elif metric == "specificity":
-                value = _specificity(y_true, y_pred_variant, labels=labels)
-            else:
-                value = None
+            value, ci_lo, ci_hi = _compute_metric(
+                metric=metric,
+                y_true=y_true,
+                y_pred=y_pred_variant,
+                y_score=y_score,
+                pos_label=pos_label,
+                labels=labels,
+                compute_ci=compute_ci,
+                ci_n_bootstrap=ci_n_bootstrap,
+            )
         except Exception as exc:
             results.append(
                 {
@@ -238,14 +257,122 @@ def evaluate_metrics(
             )
             continue
 
-        results.append(
-            {
-                "id": variant.get("id"),
-                "metric": metric,
-                "value": float(value) if value is not None else None,
-                "threshold": threshold,
-                "pos_label": pos_label,
-            }
-        )
+        entry: Dict[str, Any] = {
+            "id": variant.get("id"),
+            "metric": metric,
+            "value": float(value) if value is not None else None,
+            "threshold": threshold,
+            "pos_label": pos_label,
+        }
+        if compute_ci and ci_lo is not None:
+            entry["ci_lower"] = ci_lo
+            entry["ci_upper"] = ci_hi
+            entry["ci_level"] = 0.95
+
+        results.append(entry)
 
     return results
+
+
+def _compute_metric(
+    metric: str,
+    y_true: pd.Series,
+    y_pred: pd.Series,
+    y_score: Any,
+    pos_label: Optional[Any],
+    labels: Optional[List[Any]],
+    compute_ci: bool,
+    ci_n_bootstrap: int,
+) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    ci_lo: Optional[float] = None
+    ci_hi: Optional[float] = None
+    value: Optional[float] = None
+
+    if metric == "accuracy":
+        value = accuracy_score(y_true, y_pred)
+        if compute_ci:
+            ci_lo, ci_hi = _bootstrap_ci(
+                y_true.to_numpy(), y_pred.to_numpy(),
+                accuracy_score, ci_n_bootstrap,
+            )
+
+    elif metric == "balanced_accuracy":
+        value = balanced_accuracy_score(y_true, y_pred)
+        if compute_ci:
+            ci_lo, ci_hi = _bootstrap_ci(
+                y_true.to_numpy(), y_pred.to_numpy(),
+                balanced_accuracy_score, ci_n_bootstrap,
+            )
+
+    elif metric == "mcc":
+        value = matthews_corrcoef(y_true, y_pred)
+        if compute_ci:
+            ci_lo, ci_hi = _bootstrap_ci(
+                y_true.to_numpy(), y_pred.to_numpy(),
+                matthews_corrcoef, ci_n_bootstrap,
+            )
+
+    elif metric == "kappa":
+        value = cohen_kappa_score(y_true, y_pred)
+        if compute_ci:
+            ci_lo, ci_hi = _bootstrap_ci(
+                y_true.to_numpy(), y_pred.to_numpy(),
+                cohen_kappa_score, ci_n_bootstrap,
+            )
+
+    elif metric in {"precision", "recall", "f1"}:
+        kwargs: Dict[str, Any] = {"zero_division": 0}
+        effective_pos = pos_label or _infer_positive_label(y_true, labels)
+        if effective_pos is not None:
+            kwargs["pos_label"] = effective_pos
+        if labels is not None:
+            kwargs["labels"] = labels
+
+        fn_map = {
+            "precision": precision_score,
+            "recall": recall_score,
+            "f1": f1_score,
+        }
+        fn = fn_map[metric]
+        value = fn(y_true, y_pred, **kwargs)
+        if compute_ci:
+            ci_lo, ci_hi = _bootstrap_ci(
+                y_true.to_numpy(), y_pred.to_numpy(),
+                lambda yt, yp: fn(yt, yp, **kwargs),
+                ci_n_bootstrap,
+            )
+
+    elif metric == "specificity":
+        value = _specificity(y_true, y_pred, labels=labels)
+
+    elif metric == "auc":
+        if y_score is None:
+            value = None
+        else:
+            score_vec = _get_score_vector(y_score, pos_label)
+            if score_vec is None:
+                value = None
+            else:
+                binary = _to_binary_array(y_true, pos_label)
+                value = roc_auc_score(binary, score_vec)
+                if compute_ci:
+                    ci_lo, ci_hi = _bootstrap_ci(
+                        binary, score_vec, roc_auc_score, ci_n_bootstrap,
+                    )
+
+    elif metric == "auprc":
+        if y_score is None:
+            value = None
+        else:
+            score_vec = _get_score_vector(y_score, pos_label)
+            if score_vec is None:
+                value = None
+            else:
+                binary = _to_binary_array(y_true, pos_label)
+                value = average_precision_score(binary, score_vec)
+                if compute_ci:
+                    ci_lo, ci_hi = _bootstrap_ci(
+                        binary, score_vec, average_precision_score, ci_n_bootstrap,
+                    )
+
+    return value, ci_lo, ci_hi
