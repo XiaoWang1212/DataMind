@@ -2,7 +2,14 @@
   <!-- 畫布容器：專注顯示 Vue Flow，不承擔狀態管理 -->
   <section class="canvas">
     <!-- 真正的 flow 可視區 -->
-    <section ref="flowAreaRef" class="flow-area">
+    <section
+      ref="flowAreaRef"
+      class="flow-area"
+      :style="{
+        minHeight: canvasMinHeight ? `${canvasMinHeight}px` : undefined,
+        minWidth: canvasMinWidth ? `${canvasMinWidth}px` : undefined,
+      }"
+    >
       <VueFlow
         id="main-flow"
         :edges="edges"
@@ -16,7 +23,11 @@
         :nodes-connectable="false"
         :nodes-draggable="false"
         :pan-on-drag="true"
-        :translate-extent="[[-280, -150], [1240, 900]]"
+        :style="{ width: '100%', height: '100%' }"
+        :translate-extent="[
+          [-640, -360],
+          [1600, 1600],
+        ]"
         :zoom-on-double-click="false"
         :zoom-on-scroll="true"
         @node-click="onNodeClick"
@@ -30,15 +41,17 @@
   import type { Component } from 'vue'
   import type { FlowNode } from '@/types/workflow'
   import { type Edge, useVueFlow, VueFlow } from '@vue-flow/core'
-  import { onBeforeUnmount, onMounted, ref } from 'vue'
+  import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import '@vue-flow/core/dist/style.css'
   import '@vue-flow/core/dist/theme-default.css'
 
   // 由父層 Workspace 傳入資料
-  defineProps<{
+  const props = defineProps<{
     nodes: FlowNode[]
     edges: Edge[]
     nodeTypes: Record<string, Component>
+    canvasMinHeight?: number
+    canvasMinWidth?: number
   }>()
 
   // 這個元件只往外通知事件，不直接改資料
@@ -54,11 +67,17 @@
   const flowAreaRef = ref<HTMLElement | null>(null)
 
   // 取得 VueFlow 操作函式（fitView 在容器 resize 時重新對齊）
-  const { fitView, getViewport } = useVueFlow('main-flow')
+  const { fitView, getViewport, setNodes, setEdges } = useVueFlow('main-flow')
 
   // 視窗尺寸改變時重新判斷是否手機模式
   function updateViewportMode () {
     isMobile.value = window.innerWidth < 768
+  }
+
+  function refreshFitView (): void {
+    nextTick(() => {
+      fitView({ padding: isMobile.value ? 0.18 : 0.3 })
+    })
   }
 
   // 容器 ResizeObserver：當畫布容器寬/高改變時（例如 sidebar 展開）自動重新 fitView
@@ -73,7 +92,7 @@
     // 監聽畫布容器大小變動，確保節點始終置中
     if (flowAreaRef.value) {
       resizeObserver = new ResizeObserver(() => {
-        fitView({ padding: isMobile.value ? 0.18 : 0.3 })
+        refreshFitView()
       })
       resizeObserver.observe(flowAreaRef.value)
     }
@@ -84,6 +103,33 @@
     window.removeEventListener('resize', updateViewportMode)
     resizeObserver?.disconnect()
   })
+
+  watch(
+    () => props.nodes,
+    newNodes => {
+      setNodes(newNodes)
+      nextTick(() => {
+        setEdges(props.edges)
+        refreshFitView()
+      })
+    },
+    { deep: true },
+  )
+
+  watch(
+    () => props.edges,
+    newEdges => {
+      setEdges(newEdges)
+    },
+    { deep: true },
+  )
+
+  watch(
+    () => [props.canvasMinHeight, props.canvasMinWidth],
+    () => {
+      refreshFitView()
+    },
+  )
 
   // 計算底部節點（flowY）有沒有被 options panel 遮住，回傳需要往上抬幾 px
   function computeRequiredRaise (flowY: number): number {
@@ -112,62 +158,66 @@
 </script>
 
 <style scoped>
-.canvas {
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  padding-top: 6px;
-  min-height: 0;
-  height: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.flow-area {
-  flex: 1;
-  min-height: 300px;
-  border: none;
-  border-radius: 12px;
-  background-color: #f8fbff;
-  background-image: radial-gradient(rgba(0, 93, 255, 0.08) 0.9px, transparent 0.9px);
-  background-size: 14px 14px;
-  overflow: hidden;
-  padding-top: 6px;
-}
-
-/* 拖曳時顯示手掌游標 */
-:deep(.vue-flow__pane) {
-  cursor: grab;
-}
-
-:deep(.vue-flow__pane.dragging) {
-  cursor: grabbing;
-}
-
-:deep(.vue-flow__edge-path) {
-  stroke: #005DFF;
-  stroke-width: 2.4;
-}
-
-@media (max-width: 1024px) {
-  /* 平板：畫布高度加高，避免節點擠在一起 */
-  .flow-area {
-    min-height: 360px;
-  }
-}
-
-@media (max-width: 768px) {
-  /* 手機：外層邊距縮小、圓角縮小、高度再拉高 */
   .canvas {
-    padding: 2px 0;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    padding-top: 6px;
+    min-height: 0;
+    min-width: 0;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .flow-area {
-    min-height: 420px;
-    border-radius: 10px;
+    flex: 1;
+    min-height: 300px;
+    min-width: 0;
+    border: none;
+    border-radius: 12px;
+    background-color: #f8fbff;
+    background-image: radial-gradient(
+      rgba(0, 93, 255, 0.08) 0.9px,
+      transparent 0.9px
+    );
+    background-size: 14px 14px;
+    overflow: auto;
+    padding-top: 6px;
   }
-}
+
+  /* 拖曳時顯示手掌游標 */
+  :deep(.vue-flow__pane) {
+    cursor: grab;
+  }
+
+  :deep(.vue-flow__pane.dragging) {
+    cursor: grabbing;
+  }
+
+  :deep(.vue-flow__edge-path) {
+    stroke: #005dff;
+    stroke-width: 2.4;
+  }
+
+  @media (max-width: 1024px) {
+    /* 平板：畫布高度加高，避免節點擠在一起 */
+    .flow-area {
+      min-height: 360px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    /* 手機：外層邊距縮小、圓角縮小、高度再拉高 */
+    .canvas {
+      padding: 2px 0;
+    }
+
+    .flow-area {
+      min-height: 420px;
+      border-radius: 10px;
+    }
+  }
 </style>

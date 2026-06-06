@@ -3,6 +3,8 @@
   <section class="workspace">
     <!-- 畫布區：顯示節點與連線 -->
     <WorkflowCanvas
+      :canvas-min-height="canvasMinHeight"
+      :canvas-min-width="canvasMinWidth"
       class="workspace-canvas"
       :edges="canvasEdges"
       :node-types="nodeTypes"
@@ -190,6 +192,8 @@
     onBeforeUnmount,
     onMounted,
     ref,
+    toRaw,
+    watch,
   } from 'vue'
   import { executeWorkflowApi, fetchAvailableModels } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
@@ -253,9 +257,11 @@
   const workflowError = ref<string | null>(null)
   const pausedAtNodeId = ref<string | null>(null)
   const dataTableApplied = ref(false)
+  const isInitializing = ref(true)
 
   const WORKFLOW_DATA_FILE_STORAGE_KEY = 'workflowDataFile'
   const WORKFLOW_JSON_FILE_STORAGE_KEY = 'workflowJsonFile'
+  const WORKFLOW_STATE_STORAGE_KEY = 'workflowState'
 
   function arrayBufferToBase64 (buffer: ArrayBuffer): string {
     let binary = ''
@@ -363,6 +369,40 @@
     }
   }
 
+  function saveWorkflowStateToStorage (): void {
+    try {
+      const rawNodes = toRaw(nodes.value)
+      const rawEdges = toRaw(edges.value)
+      const payload = JSON.stringify({ nodes: rawNodes, edges: rawEdges })
+      localStorage.setItem(WORKFLOW_STATE_STORAGE_KEY, payload)
+      console.log('[WF-SAVE] saved', rawNodes.length, 'nodes,', rawEdges.length, 'edges, caller:', new Error('trace').stack?.split('\n')[2]?.trim())
+    } catch (error) {
+      console.error('[WF-SAVE] FAILED:', error)
+    }
+  }
+
+  function loadWorkflowStateFromStorage (): {
+    nodes: FlowNode[]
+    edges: EdgeBase[]
+  } | null {
+    const raw = localStorage.getItem(WORKFLOW_STATE_STORAGE_KEY)
+    console.log('[WF-LOAD] localStorage raw length:', raw?.length ?? 'null (nothing saved)')
+    if (!raw) return null
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        nodes: FlowNode[]
+        edges: EdgeBase[]
+      }
+      console.log('[WF-LOAD] parsed', parsed.nodes?.length, 'nodes,', parsed.edges?.length, 'edges')
+      return parsed
+    } catch (error) {
+      console.error('[WF-LOAD] JSON.parse FAILED:', error)
+      localStorage.removeItem(WORKFLOW_STATE_STORAGE_KEY)
+      return null
+    }
+  }
+
   function updateFileNodeConfig (fileName: string | null): void {
     nodes.value = nodes.value.map(node => {
       if (node.id !== 'file') return node
@@ -411,20 +451,54 @@
     }
   }
 
+  watch(
+    [nodes, edges],
+    () => {
+      if (isInitializing.value) {
+        console.log('[WF-SAVE] 正在初始化中，跳過自動儲存，防止覆蓋')
+        return
+      }
+      saveWorkflowStateToStorage()
+    },
+    { deep: true },
+  )
+
   onMounted(async () => {
-    const restoredDataFile = await loadWorkflowDataFileFromStorage()
-    if (restoredDataFile) {
-      workflowDataFile.value = restoredDataFile
-      updateFileNodeConfig(restoredDataFile.name)
-    }
+    try {
+      // 3. 優先還原工作流狀態
+      const restoredState = loadWorkflowStateFromStorage()
+      if (restoredState && restoredState.nodes?.length > 0) {
+        nodes.value = restoredState.nodes
+        edges.value = restoredState.edges
+        console.log('[WF-INIT] 成功從儲存還原 nodes & edges')
+      } else {
+        // 如果沒有整體狀態，再嘗試還原 JSON
+        const restoredJsonFile = await loadWorkflowJsonFileFromStorage()
+        if (restoredJsonFile) {
+          selectedJsonFile.value = restoredJsonFile
+          await loadJsonModels(restoredJsonFile)
+        }
+      }
 
-    const restoredJsonFile = await loadWorkflowJsonFileFromStorage()
-    if (restoredJsonFile) {
-      selectedJsonFile.value = restoredJsonFile
-      await loadJsonModels(restoredJsonFile)
-    }
+      // 4. 還原實體 CSV 檔案狀態
+      const restoredDataFile = await loadWorkflowDataFileFromStorage()
+      if (restoredDataFile) {
+        workflowDataFile.value = restoredDataFile
+        updateFileNodeConfig(restoredDataFile.name)
+      }
 
-    await loadAvailableModels()
+      // 5. 載入外部模型選項
+      await loadAvailableModels()
+
+      // 6. 確保 DOM 與畫布元件都跟上最新資料
+      await nextTick()
+    } catch (error) {
+      console.error('[WF-INIT] 初始化過程出錯:', error)
+    } finally {
+      // 7. 解開鎖定！從現在開始，使用者的任何改動才會被存入 localStorage
+      isInitializing.value = false
+      console.log('[WF-INIT] 初始化完成，自動儲存鎖已解開')
+    }
   })
 
   const workflowSummary = computed(() => {
@@ -561,6 +635,22 @@
       }
     }),
   )
+
+  const canvasMinHeight = computed<number>(() => {
+    if (canvasNodes.value.length === 0) return 520
+    const maxBottom = Math.max(
+      ...canvasNodes.value.map(node => node.position.y + 140),
+    )
+    return Math.max(520, maxBottom + 120)
+  })
+
+  const canvasMinWidth = computed<number>(() => {
+    if (canvasNodes.value.length === 0) return 860
+    const maxRight = Math.max(
+      ...canvasNodes.value.map(node => node.position.x + 180),
+    )
+    return Math.max(860, maxRight + 160)
+  })
 
   // 重置 demo 全部狀態並清除所有計時器
   function resetDemo (): void {
@@ -847,6 +937,25 @@
       },
     }
 
+    const modelMoreNode: FlowNode = {
+      id: 'modelMore',
+      type: 'iconNode',
+      position: {
+        x: 420,
+        y: 120 + dynamicModelNodes.length * 110,
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      data: {
+        icon: 'mdi-dots-horizontal-circle-outline',
+        label: 'More\nModels',
+        colorClass: 'node-pending',
+        description: '新增更多模型或動態匯入模型節點',
+        fields: [],
+        config: {},
+      },
+    }
+
     nodes.value = [
       fileNode,
       dataTableNode,
@@ -856,6 +965,7 @@
         : []),
       ...(featureNode ? [featureNode] : []),
       ...dynamicModelNodes,
+      modelMoreNode,
       updatedTestScoreNode,
       featureImportanceNode,
       confusionMatrixNode,
@@ -869,15 +979,15 @@
         ? 'preprocessor'
         : 'dataTable')
 
-    const modelEdges = dynamicModelNodes.flatMap((node, index) => [
+    const modelEdges = dynamicModelNodes.flatMap(node => [
       {
-        id: `e_${modelSourceNode}_model_${index}`,
+        id: `e_${modelSourceNode}_${node.id}`,
         source: modelSourceNode,
         target: node.id,
         type: 'default',
       },
       {
-        id: `e_model_testScore_${index}`,
+        id: `e_${node.id}_testScore`,
         source: node.id,
         target: 'testScore',
         type: 'default',
@@ -934,6 +1044,7 @@
 
     selectedJsonFile.value = file
     saveWorkflowJsonFileToStorage(file)
+    saveWorkflowStateToStorage()
   }
 
   function handleDataFile (file: File): void {
@@ -1012,7 +1123,65 @@
     return 'dataTable'
   }
 
-  function handleAddModel (modelName: string): void {
+  function layoutModelNodes (nodeList: FlowNode[]): FlowNode[] {
+    const modelNodes = nodeList.filter(
+      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    )
+    const baseX = 420
+    const baseY = 120
+    const spacingY = 120
+
+    const positionedModels = modelNodes.map((node, index) => ({
+      ...node,
+      position: { x: baseX, y: baseY + index * spacingY },
+    }))
+
+    return nodeList.map(node => {
+      if (node.id === 'modelMore') {
+        return {
+          ...node,
+          position: {
+            x: baseX,
+            y: baseY + positionedModels.length * spacingY,
+          },
+        }
+      }
+      const updated = positionedModels.find(model => model.id === node.id)
+      return updated ?? node
+    })
+  }
+
+  function buildModelEdges (nodeList: FlowNode[]): EdgeBase[] {
+    const modelSourceNode = getModelSourceNode()
+
+    return nodeList
+      .filter(node => node.id.startsWith('model') && node.id !== 'modelMore')
+      .flatMap(node => [
+        {
+          id: `e_${modelSourceNode}_${node.id}`,
+          source: modelSourceNode,
+          target: node.id,
+          type: 'default',
+        },
+        {
+          id: `e_${node.id}_testScore`,
+          source: node.id,
+          target: 'testScore',
+          type: 'default',
+        },
+      ])
+  }
+
+  function isModelEdge (edge: EdgeBase): boolean {
+    return (
+      edge.source.startsWith('model')
+      || edge.source === 'modelMore'
+      || edge.target.startsWith('model')
+      || edge.target === 'modelMore'
+    )
+  }
+
+  async function handleAddModel (modelName: string): Promise<void> {
     if (!modelName) return
 
     const existing = nodes.value.find(
@@ -1046,32 +1215,27 @@
       },
     }
 
+    const modelMoreIndex = nodes.value.findIndex(
+      node => node.id === 'modelMore',
+    )
     const testScoreIndex = nodes.value.findIndex(
       node => node.id === 'testScore',
     )
-    const hasTestScoreNode = testScoreIndex !== -1
-    if (hasTestScoreNode) {
-      nodes.value.splice(testScoreIndex, 0, newNode)
-    } else {
-      nodes.value.push(newNode)
+    let insertIndex = nodes.value.length
+    if (modelMoreIndex !== -1) {
+      insertIndex = modelMoreIndex
+    } else if (testScoreIndex !== -1) {
+      insertIndex = testScoreIndex
     }
 
-    const sourceNodeId = getModelSourceNode()
-    edges.value = [
-      ...edges.value,
-      {
-        id: `e_${sourceNodeId}_${newId}`,
-        source: sourceNodeId,
-        target: newId,
-        type: 'default',
-      },
-      {
-        id: `e_${newId}_testScore`,
-        source: newId,
-        target: 'testScore',
-        type: 'default',
-      },
-    ]
+    nodes.value.splice(insertIndex, 0, newNode)
+    nodes.value = layoutModelNodes(nodes.value)
+
+    await nextTick()
+
+    const preservedEdges = edges.value.filter(edge => !isModelEdge(edge))
+    edges.value = [...preservedEdges, ...buildModelEdges(nodes.value)]
+    saveWorkflowStateToStorage()
   }
 
   async function runWorkflowRequest (): Promise<void> {
@@ -1240,18 +1404,24 @@
         },
       }
     })
+    saveWorkflowStateToStorage()
   }
 
-  // 元件卸載時確保清除 demo 計時器
-  onBeforeUnmount(resetDemo)
+  // 元件卸載時確保儲存狀態並清除 demo 計時器
+  onBeforeUnmount(() => {
+    saveWorkflowStateToStorage()
+    resetDemo()
+  })
 </script>
 
 <style scoped>
   .workspace {
     position: relative;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: auto;
     border-radius: 16px 16px 0 0;
     background-color: #f9fbff;
     background-image: radial-gradient(
@@ -1262,7 +1432,9 @@
   }
 
   .workspace-canvas {
-    height: 100%;
+    flex: 1;
+    min-height: 520px;
+    width: 100%;
   }
 
   /* Demo 執行按鈕：浮在畫布右上角 */
