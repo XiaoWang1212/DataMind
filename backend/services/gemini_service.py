@@ -148,8 +148,21 @@ class GeminiService:
 
     def _normalize_to_json(self, raw_text: str) -> Optional[dict]:
         normalize_prompt = (
-            "請把下面內容轉為『合法 JSON』，只輸出 JSON 本體，不要 markdown。"
-            "若欄位缺失請保留原有結構並用 unknown 或空陣列。\n\n"
+            "請把下面內容轉為『合法 JSON』，只輸出 JSON 本體，不要 markdown、不要任何說明。\n"
+            "規則：\n"
+            "1. 若某個陣列欄位無法確認內容，請用空陣列 [] 代替，絕不使用 unknown 或任何猜測值。\n"
+            "2. 必須包含以下所有 key（缺少者補預設值）：\n"
+            "   target_col（string）, models（array）, preprocessing（array）, "
+            "featureEngineering（array）, features（array）,\n"
+            "   validation（object）, metrics（array）, resampling（object）, "
+            "tuning（object）, compute_ci（boolean）\n"
+            "3. preprocessing 的 type 只能是：fill_na, knn_impute, iterative_impute, "
+            "standardize, normalize, one_hot, label_encode, drop_columns, "
+            "remove_outliers_iqr, remove_outliers_zscore\n"
+            "4. featureEngineering 的 type 只能是：select_relevant_features, pca, "
+            "discretize_continuous, continuize_discrete, normalize_features, "
+            "remove_sparse_features\n"
+            "   若原始內容有不合法的 type，請從陣列中移除該筆，不要替換成 unknown。\n\n"
             "--- 原始內容開始 ---\n"
             f"{raw_text}\n"
             "--- 原始內容結束 ---"

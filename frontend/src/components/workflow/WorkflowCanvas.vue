@@ -17,17 +17,14 @@
         fit-view-on-init
         :fit-view-on-init-options="{ padding: isMobile ? 0.18 : 0.3 }"
         :max-zoom="isMobile ? 1.5 : 1.6"
-        :min-zoom="isMobile ? 0.6 : 0.75"
+        :min-zoom="minZoom"
         :node-types="nodeTypes"
         :nodes="nodes"
         :nodes-connectable="false"
         :nodes-draggable="false"
         :pan-on-drag="true"
         :style="{ width: '100%', height: '100%' }"
-        :translate-extent="[
-          [-640, -360],
-          [1600, 1600],
-        ]"
+        :translate-extent="translateExtent"
         :zoom-on-double-click="false"
         :zoom-on-scroll="true"
         @node-click="onNodeClick"
@@ -41,7 +38,7 @@
   import type { Component } from 'vue'
   import type { FlowNode } from '@/types/workflow'
   import { type Edge, useVueFlow, VueFlow } from '@vue-flow/core'
-  import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import '@vue-flow/core/dist/style.css'
   import '@vue-flow/core/dist/theme-default.css'
 
@@ -62,6 +59,20 @@
 
   // 手機模式旗標：根據視窗寬度判斷
   const isMobile = ref(false)
+
+  // min-zoom 和 translate-extent 根據畫布大小動態調整
+  const minZoom = computed(() => {
+    const ref = 860
+    const w = props.canvasMinWidth ?? ref
+    const suggested = Math.max(0.2, 0.75 * (ref / w))
+    return isMobile.value ? Math.max(0.15, suggested * 0.8) : suggested
+  })
+
+  const translateExtent = computed<[[number, number], [number, number]]>(() => {
+    const w = Math.max(2400, (props.canvasMinWidth ?? 860) + 1200)
+    const h = Math.max(2400, (props.canvasMinHeight ?? 520) + 1200)
+    return [[-800, -600], [w, h]]
+  })
 
   // 畫布容器 ref：用於監聽容器尺寸變化（支援 sidebar 伸縮）
   const flowAreaRef = ref<HTMLElement | null>(null)
@@ -113,7 +124,7 @@
         refreshFitView()
       })
     },
-    { deep: true },
+    { deep: true, immediate: true },
   )
 
   watch(

@@ -79,20 +79,18 @@
 
     <button
       class="demo-btn execute-workflow-btn"
-      :disabled="pausedAtNodeId === 'dataTable' && !dataTableCanContinue"
+      :disabled="
+        (pausedAtNodeId === 'dataTable' && !dataTableCanContinue)
+          || (pausedAtNodeId === 'settings' && !settingsCanContinue)
+      "
       type="button"
       @click="
-        pausedAtNodeId === 'dataTable' ? continueWorkflow() : executeWorkflow()
+        pausedAtNodeId === 'dataTable' || pausedAtNodeId === 'settings'
+          ? continueWorkflow()
+          : executeWorkflow()
       "
     >
-      {{ pausedAtNodeId === "dataTable" ? "繼續 Workflow" : "執行 Workflow" }}
-    </button>
-    <button
-      class="demo-btn model-more-btn"
-      type="button"
-      @click="openModelMorePanel"
-    >
-      更多模型
+      {{ pausedAtNodeId === "dataTable" || pausedAtNodeId === "settings" ? "繼續 Workflow" : "執行 Workflow" }}
     </button>
     <button
       class="demo-btn json-upload-btn"
@@ -150,6 +148,7 @@
         class="options-drawer"
         :class="{ 'options-drawer--expanded': isExpanded }"
         :style="drawerStyle"
+        @wheel.stop
       >
         <!-- 拖曳區：上拉展開、下拉三段式操作 -->
         <div
@@ -181,6 +180,7 @@
                 @add-model="handleAddModel"
                 @apply-column-config="handleApplyColumnConfig"
                 @open-upload="openUploadDialog"
+                @remove-model="handleRemoveModel"
                 @update-config="handleUpdateConfig"
                 @update:file="handleDataFile"
               />
@@ -215,7 +215,6 @@
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import {
     DEMO_FINISH_LINGER,
-    DEMO_STEPS,
     INITIAL_EDGES,
     INITIAL_NODES,
     NODE_RUN_DURATION,
@@ -458,6 +457,12 @@
       && selectedTargetColumn.value !== undefined,
   )
 
+  const settingsCanContinue = computed(
+    () =>
+      pausedAtNodeId.value === 'settings'
+      && nodes.value.some(n => n.id.startsWith('model-')),
+  )
+
   async function loadAvailableModels (): Promise<void> {
     modelOptionsLoading.value = true
     try {
@@ -482,6 +487,294 @@
     { deep: true },
   )
 
+  const DYNAMIC_NODE_IDS = ['preprocessor', 'featureEngineering'] as const
+  const RESULT_NODE_IDS = ['featureImportance', 'confusionMatrix', 'computeCi'] as const
+  const MODEL_Y_GAP = 110
+
+  // 回傳 model 節點前最後一個節點的 id（featureEngineering → preprocessor → settings）
+  function getLastPreModelNodeId (): string {
+    if (nodes.value.some(n => n.id === 'featureEngineering')) return 'featureEngineering'
+    if (nodes.value.some(n => n.id === 'preprocessor')) return 'preprocessor'
+    return 'settings'
+  }
+
+  // 以 modelList 為準重建畫布上的 model 節點與相關 edges
+  function syncModelCanvasNodes (modelList: Array<unknown>): void {
+    const preDynCount = (DYNAMIC_NODE_IDS as readonly string[]).filter(id =>
+      nodes.value.some(n => n.id === id),
+    ).length
+    const modelX = 460 + preDynCount * 200
+    const testScoreX = modelX + 200
+    const resultX = testScoreX + 200
+
+    const newModelNodes: FlowNode[] = modelList.map((m, i) => {
+      const name = typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? '')
+      const purposeZh = typeof m === 'object' && m !== null
+        ? String((m as Record<string, unknown>).purpose_zh ?? '')
+        : ''
+      const startY = 290 - ((modelList.length - 1) * MODEL_Y_GAP) / 2
+      return {
+        id: `model-${i}`,
+        type: 'iconNode',
+        position: { x: modelX, y: startY + i * MODEL_Y_GAP },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+          icon: 'mdi-brain',
+          label: name,
+          colorClass: 'node-pending',
+          description: purposeZh || name,
+          fields: [],
+          config: { modelName: name },
+        },
+      }
+    })
+
+    const lastPreId = getLastPreModelNodeId()
+    const nonModelNodes = nodes.value
+      .filter(n => !n.id.startsWith('model-'))
+      .map(n => {
+        if (n.id === 'testScore') return { ...n, position: { ...n.position, x: testScoreX } }
+        if ((RESULT_NODE_IDS as readonly string[]).includes(n.id)) return { ...n, position: { ...n.position, x: resultX } }
+        return n
+      })
+
+    const insertAfterIdx = nonModelNodes.findIndex(n => n.id === lastPreId)
+    const rebuilt = [...nonModelNodes]
+    rebuilt.splice(insertAfterIdx + 1, 0, ...newModelNodes)
+    nodes.value = rebuilt
+
+    // 過濾 model-related edges 與 lastPreId→testScore；e5 依 computeCi 節點是否存在決定
+    const nonModelEdges = edges.value.filter(e =>
+      !e.id.startsWith('etm') && !e.id.startsWith('emts')
+      && !e.source.startsWith('model-') && !e.target.startsWith('model-')
+      && !(e.source === lastPreId && e.target === 'testScore')
+      && e.id !== 'e5',
+    )
+    const hasComputeCi = nodes.value.some(n => n.id === 'computeCi')
+    const e5Edges: EdgeBase[] = hasComputeCi
+      ? [{ id: 'e5', source: 'testScore', target: 'computeCi', type: 'default' }]
+      : []
+
+    if (newModelNodes.length === 0) {
+      const noModelEdgeId = preDynCount === 0 ? 'e2' : `e2${String.fromCodePoint(96 + preDynCount)}`
+      edges.value = [
+        ...nonModelEdges,
+        { id: noModelEdgeId, source: lastPreId, target: 'testScore', type: 'default' },
+        ...e5Edges,
+      ]
+      return
+    }
+
+    edges.value = [
+      ...nonModelEdges,
+      ...newModelNodes.map((m, i) => ({ id: `etm${i}`, source: lastPreId, target: m.id, type: 'default' })),
+      ...newModelNodes.map((m, i) => ({ id: `emts${i}`, source: m.id, target: 'testScore', type: 'default' })),
+      ...e5Edges,
+    ]
+  }
+
+  // 還原舊 workflowState 後，補上因 code 更新而缺少的動態節點
+  function ensureDynamicNodes (): void {
+    const settingsNode = nodes.value.find(n => n.id === 'settings')
+    if (!settingsNode) return
+
+    const preprocessing = Array.isArray(settingsNode.data.config.preprocessing)
+      ? (settingsNode.data.config.preprocessing as Array<Record<string, unknown>>)
+      : []
+    const featureEng = Array.isArray(settingsNode.data.config.featureEngineering)
+      ? (settingsNode.data.config.featureEngineering as Array<Record<string, unknown>>)
+      : []
+
+    // ── 1. 補上缺少的 pipeline 節點（preprocessor / featureEngineering）──
+    const expectedPipelineIds: string[] = [
+      ...(preprocessing.length > 0 ? ['preprocessor'] : []),
+      ...(featureEng.length > 0 ? ['featureEngineering'] : []),
+    ]
+    const currentPipelineIds = nodes.value
+      .filter(n => (DYNAMIC_NODE_IDS as readonly string[]).includes(n.id))
+      .map(n => n.id)
+
+    const pipelineNeedsRebuild = !(
+      expectedPipelineIds.length === currentPipelineIds.length
+      && expectedPipelineIds.every((id, i) => id === currentPipelineIds[i])
+    )
+
+    if (pipelineNeedsRebuild) {
+      const xShift = expectedPipelineIds.length * 200
+      const pipelineNodes: FlowNode[] = expectedPipelineIds.map((id, index) => ({
+        id,
+        type: 'iconNode',
+        position: { x: 460 + index * 200, y: 290 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: id === 'preprocessor'
+          ? { icon: 'mdi-filter-cog-outline', label: 'Preprocessor', colorClass: 'node-pending', description: '資料前處理', fields: [], config: { pipeline: preprocessing } }
+          : { icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', colorClass: 'node-pending', description: '特徵工程', fields: [], config: { pipeline: featureEng } },
+      }))
+
+      const base = nodes.value.filter(n =>
+        !(DYNAMIC_NODE_IDS as readonly string[]).includes(n.id) && !n.id.startsWith('model-'),
+      )
+      const settingsIdx = base.findIndex(n => n.id === 'settings')
+      const rebuilt = base.map(n => {
+        const orig = INITIAL_NODES.find(b => b.id === n.id)
+        return orig && (['testScore', ...(RESULT_NODE_IDS as readonly string[])] as string[]).includes(n.id)
+          ? { ...n, position: { ...n.position, x: orig.position.x + xShift } }
+          : n
+      })
+      rebuilt.splice(settingsIdx + 1, 0, ...pipelineNodes)
+      nodes.value = rebuilt
+
+      edges.value = edges.value.filter(e => ['e0', 'e0a', 'e1', 'e3', 'e4'].includes(e.id))
+    }
+
+    // ── 2. 補上缺少的 model 節點 ──
+    const settingsModels = Array.isArray(settingsNode.data.config.models)
+      ? settingsNode.data.config.models as Array<unknown>
+      : []
+    const currentModelCount = nodes.value.filter(n => n.id.startsWith('model-')).length
+    if (settingsModels.length > 0 && currentModelCount !== settingsModels.length) {
+      syncModelCanvasNodes(settingsModels)
+    } else if (settingsModels.length === 0 && currentModelCount === 0) {
+      // 沒有 model 也要確保 settings/pipeline → testScore 的 edge 存在
+      const lastPreId = getLastPreModelNodeId()
+      if (!edges.value.some(e => e.source === lastPreId && e.target === 'testScore')) {
+        const preDynCount = (DYNAMIC_NODE_IDS as readonly string[]).filter(id =>
+          nodes.value.some(n => n.id === id),
+        ).length
+        const edgeId = preDynCount === 0 ? 'e2' : `e2${String.fromCodePoint(96 + preDynCount)}`
+        edges.value = [...edges.value, { id: edgeId, source: lastPreId, target: 'testScore', type: 'default' }]
+      }
+    }
+  }
+
+  // 重建 preprocessor / featureEngineering canvas 節點（由 settings.config 驅動）
+  function syncPipelineCanvasNodes (): void {
+    const settingsNode = nodes.value.find(n => n.id === 'settings')
+    if (!settingsNode) return
+
+    const preprocessing = Array.isArray(settingsNode.data.config.preprocessing)
+      ? (settingsNode.data.config.preprocessing as Array<Record<string, unknown>>)
+      : []
+    const featureEng = Array.isArray(settingsNode.data.config.featureEngineering)
+      ? (settingsNode.data.config.featureEngineering as Array<Record<string, unknown>>)
+      : []
+
+    const preDynDefs = [
+      ...(preprocessing.length > 0
+        ? [{ id: 'preprocessor', icon: 'mdi-filter-cog-outline', label: 'Preprocessor', desc: '資料前處理', pipeline: preprocessing }]
+        : []),
+      ...(featureEng.length > 0
+        ? [{ id: 'featureEngineering', icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', desc: '特徵工程', pipeline: featureEng }]
+        : []),
+    ]
+
+    const pipelineNodes: FlowNode[] = preDynDefs.map((def, i) => {
+      const existing = nodes.value.find(n => n.id === def.id)
+      return {
+        id: def.id,
+        type: 'iconNode',
+        position: { x: 460 + i * 200, y: 290 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+          icon: def.icon,
+          label: def.label,
+          colorClass: existing?.data.colorClass ?? 'node-pending',
+          description: def.desc,
+          fields: [],
+          config: { pipeline: def.pipeline },
+        },
+      }
+    })
+
+    const modelNodes = nodes.value.filter(n => n.id.startsWith('model-'))
+    const modelX = 460 + preDynDefs.length * 200
+    const testScoreX = modelX + 200
+    const resultX = testScoreX + 200
+
+    const updatedModelNodes = modelNodes.map((n, i) => {
+      const startY = 290 - ((modelNodes.length - 1) * MODEL_Y_GAP) / 2
+      return { ...n, position: { x: modelX, y: startY + i * MODEL_Y_GAP } }
+    })
+
+    const baseNodes = nodes.value
+      .filter(n => !(DYNAMIC_NODE_IDS as readonly string[]).includes(n.id) && !n.id.startsWith('model-'))
+      .map(n => {
+        if (n.id === 'testScore') return { ...n, position: { ...n.position, x: testScoreX } }
+        if ((RESULT_NODE_IDS as readonly string[]).includes(n.id)) return { ...n, position: { ...n.position, x: resultX } }
+        return n
+      })
+
+    nodes.value = [...baseNodes, ...pipelineNodes, ...updatedModelNodes]
+
+    const lastPreId = preDynDefs.length > 0 ? preDynDefs.at(-1)!.id : 'settings'
+    const fullPreChain = ['settings', ...preDynDefs.map(d => d.id)]
+    const innerChainEdges: EdgeBase[] = fullPreChain.slice(0, -1).map((src, i) => ({
+      id: i === 0 ? 'e2' : `e2${String.fromCodePoint(96 + i)}`,
+      source: src,
+      target: fullPreChain[i + 1]!,
+      type: 'default',
+    }))
+
+    const midEdges: EdgeBase[] = updatedModelNodes.length > 0
+      ? [
+        ...updatedModelNodes.map((m, i) => ({ id: `etm${i}`, source: lastPreId, target: m.id, type: 'default' })),
+        ...updatedModelNodes.map((m, i) => ({ id: `emts${i}`, source: m.id, target: 'testScore', type: 'default' })),
+      ]
+      : [{ id: preDynDefs.length === 0 ? 'e2' : `e2${String.fromCodePoint(96 + preDynDefs.length)}`, source: lastPreId, target: 'testScore', type: 'default' }]
+
+    const e5Edges: EdgeBase[] = nodes.value.some(n => n.id === 'computeCi')
+      ? [{ id: 'e5', source: 'testScore', target: 'computeCi', type: 'default' }]
+      : []
+
+    edges.value = [
+      { id: 'e0', source: 'file', target: 'dataTable', type: 'default' },
+      { id: 'e0a', source: 'file', target: 'distribution', type: 'default' },
+      { id: 'e1', source: 'dataTable', target: 'settings', type: 'default' },
+      ...innerChainEdges,
+      ...midEdges,
+      { id: 'e3', source: 'testScore', target: 'featureImportance', type: 'default' },
+      { id: 'e4', source: 'testScore', target: 'confusionMatrix', type: 'default' },
+      ...e5Edges,
+    ]
+  }
+
+  // 依 settings.compute_ci 新增或移除 computeCi 動態節點與 e5 edge
+  function syncComputeCiNode (): void {
+    const settingsNode = nodes.value.find(n => n.id === 'settings')
+    const enabled = Boolean(settingsNode?.data.config.compute_ci)
+    const hasComputeCi = nodes.value.some(n => n.id === 'computeCi')
+
+    if (enabled === hasComputeCi) return
+
+    if (enabled) {
+      const resultX = nodes.value.find(n => n.id === 'featureImportance')?.position.x
+        ?? nodes.value.find(n => n.id === 'confusionMatrix')?.position.x
+        ?? ((nodes.value.find(n => n.id === 'testScore')?.position.x ?? 460) + 200)
+      nodes.value = [...nodes.value, {
+        id: 'computeCi',
+        type: 'iconNode',
+        position: { x: resultX, y: 560 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+          icon: 'mdi-chart-areaspline-variant',
+          label: 'Compute\nCI',
+          colorClass: 'node-pending',
+          description: 'Bootstrap 信賴區間',
+          fields: [],
+          config: {},
+        },
+      }]
+      edges.value = [...edges.value, { id: 'e5', source: 'testScore', target: 'computeCi', type: 'default' }]
+    } else {
+      nodes.value = nodes.value.filter(n => n.id !== 'computeCi')
+      edges.value = edges.value.filter(e => e.id !== 'e5')
+    }
+  }
+
   onMounted(async () => {
     try {
       // 3. 優先還原工作流狀態
@@ -489,6 +782,20 @@
       if (restoredState && restoredState.nodes?.length > 0) {
         nodes.value = restoredState.nodes
         edges.value = restoredState.edges
+        // 補齊缺少的靜態節點
+        for (const initNode of INITIAL_NODES) {
+          if (!nodes.value.some(n => n.id === initNode.id)) {
+            nodes.value = [...nodes.value, initNode]
+          }
+        }
+        for (const initEdge of INITIAL_EDGES) {
+          if (!edges.value.some(e => e.id === initEdge.id)) {
+            edges.value = [...edges.value, initEdge]
+          }
+        }
+        ensureDynamicNodes()
+        // 確保 computeCi 動態節點與 settings.compute_ci 一致
+        syncComputeCiNode()
         console.log('[WF-INIT] 成功從儲存還原 nodes & edges')
       } else {
         // 如果沒有整體狀態，再嘗試還原 JSON
@@ -601,27 +908,17 @@
     return node ? { id: node.id, data: node.data } : null
   })
 
+  // 讀取畫布上的 model 節點名稱（canvas nodes 是唯一 source of truth）
   const usedModelNames = computed<string[]>(() =>
     nodes.value
-      .filter(node => node.id.startsWith('model') && node.id !== 'modelMore')
-      .map(node =>
-        String(
-          node.data.config.modelName ?? node.data.label.replace(/\n/g, ' '),
-        ),
-      )
+      .filter(n => n.id.startsWith('model-'))
+      .map(n => String(n.data.config.modelName ?? n.data.label ?? ''))
       .filter(Boolean),
   )
 
   const availableModelOptions = computed<string[]>(() =>
-    availableModels.value.filter(
-      name => !usedModelNames.value.includes(name),
-    ),
+    availableModels.value.filter(name => !usedModelNames.value.includes(name)),
   )
-
-  function openModelMorePanel (): void {
-    selectedNodeId.value = 'modelMore'
-    expandDrawer()
-  }
 
   // 節點顏色：完成的節點改成黃色，其餘依 data.colorClass
   const canvasNodes = computed<FlowNode[]>(() =>
@@ -718,30 +1015,64 @@
   }
 
   function continueWorkflow (): void {
-    if (!dataTableCanContinue.value) {
-      workflowError.value = selectedTargetColumn.value
-        ? '請先按 Apply，再繼續 Workflow。'
-        : '請先選擇 target 欄位，再按 Apply。'
+    if (pausedAtNodeId.value === 'dataTable') {
+      if (!dataTableCanContinue.value) {
+        workflowError.value = selectedTargetColumn.value
+          ? '請先按 Apply，再繼續 Workflow。'
+          : '請先選擇 target 欄位，再按 Apply。'
+        return
+      }
+
+      pausedAtNodeId.value = null
+      isDemoRunning.value = true
+
+      const steps = buildDemoSteps()
+      const dataTableStep = steps.find(step => step.nodeIds.includes('dataTable'))
+      const settingsStep = steps.find(step => step.nodeIds.includes('settings'))
+      if (!dataTableStep || !settingsStep) return
+
+      const current = new Map(nodeStatuses.value)
+      current.set('dataTable', 'finished')
+      nodeStatuses.value = current
+
+      // 動畫跑到 settings 後暫停，自動開啟 settings panel
+      const runAt = settingsStep.delay - dataTableStep.delay
+      demoTimers.push(
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          next.set('settings', 'running')
+          nodeStatuses.value = next
+        }, runAt),
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          next.set('settings', 'finished')
+          nodeStatuses.value = next
+          isDemoRunning.value = false
+          pausedAtNodeId.value = 'settings'
+          selectedNodeId.value = 'settings'
+          expandDrawer()
+        }, runAt + NODE_RUN_DURATION),
+      )
       return
     }
 
-    pausedAtNodeId.value = null
-    isDemoRunning.value = true
+    if (pausedAtNodeId.value === 'settings') {
+      if (!settingsCanContinue.value) {
+        workflowError.value = '請至少新增一個模型，再繼續 Workflow。'
+        return
+      }
 
-    const dataTableStep = buildDemoSteps().find(step =>
-      step.nodeIds.includes('dataTable'),
-    )
-    if (!dataTableStep) return
+      pausedAtNodeId.value = null
+      isDemoRunning.value = true
 
-    const current = new Map(nodeStatuses.value)
-    current.set('dataTable', 'finished')
-    nodeStatuses.value = current
+      const steps = buildDemoSteps()
+      const settingsStep = steps.find(step => step.nodeIds.includes('settings'))
+      if (!settingsStep) return
 
-    const remainingSteps = buildDemoSteps().filter(
-      step => step.delay > dataTableStep.delay,
-    )
-    scheduleWorkflowSteps(remainingSteps, dataTableStep.delay)
-    runWorkflowRequest()
+      const remainingSteps = steps.filter(step => step.delay > settingsStep.delay)
+      scheduleWorkflowSteps(remainingSteps, settingsStep.delay)
+      runWorkflowRequest()
+    }
   }
 
   type DemoStep = {
@@ -750,29 +1081,39 @@
   }
 
   function buildDemoSteps (): DemoStep[] {
-    let steps = DEMO_STEPS.slice(0, 3) as DemoStep[]
-
-    if (nodes.value.some(node => node.id === 'featureEngineering')) {
-      steps = [...steps, { nodeIds: ['featureEngineering'], delay: 2400 }]
-    }
-
-    const modelNodes = nodes.value.filter(
-      node => node.id.startsWith('model') && node.id !== 'modelMore',
+    const common: DemoStep[] = [
+      { nodeIds: ['file'], delay: 800 },
+      { nodeIds: ['distribution'], delay: 1400 },
+      { nodeIds: ['dataTable'], delay: 1800 },
+      { nodeIds: ['settings'], delay: 2800 },
+    ]
+    const presentPipeline = (DYNAMIC_NODE_IDS as readonly string[]).filter(id =>
+      nodes.value.some(n => n.id === id),
     )
+    const modelNodeIds = nodes.value.filter(n => n.id.startsWith('model-')).map(n => n.id)
 
-    let nextDelay = (steps.at(-1)?.delay ?? 2400) + 500
-    for (const node of modelNodes) {
-      steps = [...steps, { nodeIds: [node.id], delay: nextDelay }]
-      nextDelay += 500
+    if (presentPipeline.length === 0 && modelNodeIds.length === 0) {
+      return [
+        ...common,
+        { nodeIds: ['testScore'], delay: 4200 },
+        { nodeIds: ['featureImportance', 'confusionMatrix'], delay: 5400 },
+      ]
     }
 
+    let delay = 3600
+    const pipelineSteps: DemoStep[] = presentPipeline.map(id => {
+      const step: DemoStep = { nodeIds: [id], delay }
+      delay += 1400
+      return step
+    })
+    const modelStep: DemoStep[] = modelNodeIds.length > 0
+      ? [{ nodeIds: modelNodeIds, delay }, { nodeIds: ['testScore'], delay: (delay += 1400) }]
+      : [{ nodeIds: ['testScore'], delay }]
     return [
-      ...steps,
-      { nodeIds: ['testScore'], delay: nextDelay + 200 },
-      {
-        nodeIds: ['featureImportance', 'confusionMatrix'],
-        delay: nextDelay + 900,
-      },
+      ...common,
+      ...pipelineSteps,
+      ...modelStep,
+      { nodeIds: ['featureImportance', 'confusionMatrix'], delay: delay + 1200 },
     ]
   }
 
@@ -815,7 +1156,7 @@
     if (!file.name.toLowerCase().endsWith('.json')) return
 
     const rawText = await file.text()
-    let parsed
+    let parsed: Record<string, unknown>
     try {
       parsed = JSON.parse(rawText) as Record<string, unknown>
     } catch (error) {
@@ -823,265 +1164,148 @@
       return
     }
 
+    const VALID_PREPROCESS_TYPES = new Set([
+      'fill_na', 'knn_impute', 'iterative_impute', 'normalize', 'standardize',
+      'one_hot', 'label_encode', 'drop_columns', 'remove_outliers_iqr', 'remove_outliers_zscore',
+    ])
+    const VALID_FE_TYPES = new Set([
+      'select_relevant_features', 'pca', 'discretize_continuous', 'continuize_discrete',
+      'normalize_features', 'remove_sparse_features',
+    ])
+
     const models = Array.isArray(parsed.models) ? parsed.models : []
-    const featureEngineering = Array.isArray(parsed.featureEngineering)
+    const featureEngineering = (Array.isArray(parsed.featureEngineering)
       ? (parsed.featureEngineering as Array<Record<string, unknown>>)
       : []
-    const preprocessing = Array.isArray(parsed.preprocessing)
+    ).filter(s => typeof s.type === 'string' && VALID_FE_TYPES.has(s.type as string))
+    const preprocessing = (Array.isArray(parsed.preprocessing)
       ? (parsed.preprocessing as Array<Record<string, unknown>>)
       : []
+    ).filter(s => typeof s.type === 'string' && VALID_PREPROCESS_TYPES.has(s.type as string))
     const validation = parsed.validation as Record<string, unknown> | undefined
-    const metrics = Array.isArray(parsed.metrics)
-      ? (parsed.metrics as Array<Record<string, unknown>>)
-      : []
+    const metrics = Array.isArray(parsed.metrics) ? parsed.metrics : []
 
-    const modelEntries = models.filter(
-      (
-        model,
-      ): model is {
-        name: string
-        type?: string
-        purpose_zh?: string
-        purpose_en?: string
-      } =>
-        model !== null
-        && typeof model === 'object'
-        && typeof model.name === 'string'
-        && model.name.trim().length > 0,
-    )
+    const fileNode = INITIAL_NODES.find(n => n.id === 'file')!
+    const dataTableNode = INITIAL_NODES.find(n => n.id === 'dataTable')!
+    const distributionNode = INITIAL_NODES.find(n => n.id === 'distribution')!
+    const settingsNode = INITIAL_NODES.find(n => n.id === 'settings')!
+    const testScoreNode = INITIAL_NODES.find(n => n.id === 'testScore')!
+    const featureImportanceNode = INITIAL_NODES.find(n => n.id === 'featureImportance')!
+    const confusionMatrixNode = INITIAL_NODES.find(n => n.id === 'confusionMatrix')!
 
-    if (modelEntries.length === 0) {
-      console.warn('JSON does not contain a valid models array')
-      return
-    }
-
-    const dynamicModelNodes: FlowNode[] = modelEntries.map((model, index) => ({
-      id: `modelJson${index}`,
-      type: 'iconNode',
-      position: { x: 420, y: 120 + index * 110 },
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
+    const updatedSettingsNode: FlowNode = {
+      ...settingsNode,
       data: {
-        icon: 'mdi-cube-outline',
-        label: model.name.trim(),
-        colorClass: 'node-pending',
-        description: model.purpose_zh || model.purpose_en || 'JSON 匯入模型',
-        fields: [],
-        config: {
-          modelName: model.name.trim(),
-          type: model.type || 'classification',
-        },
+        ...settingsNode.data,
+        config: { preprocessing, featureEngineering, models, compute_ci: Boolean(parsed.compute_ci ?? false) },
       },
-    }))
-
-    const fileNode = INITIAL_NODES.find(node => node.id === 'file')
-    const dataTableNode = INITIAL_NODES.find(node => node.id === 'dataTable')
-    const distributionNode = INITIAL_NODES.find(
-      node => node.id === 'distribution',
-    )
-    const preprocessorNode = INITIAL_NODES.find(
-      node => node.id === 'preprocessor',
-    )
-    const testScoreNode = INITIAL_NODES.find(node => node.id === 'testScore')
-    const featureImportanceNode = INITIAL_NODES.find(
-      node => node.id === 'featureImportance',
-    )
-    const confusionMatrixNode = INITIAL_NODES.find(
-      node => node.id === 'confusionMatrix',
-    )
-
-    if (
-      !fileNode
-      || !dataTableNode
-      || !distributionNode
-      || !preprocessorNode
-      || !testScoreNode
-      || !featureImportanceNode
-      || !confusionMatrixNode
-    ) {
-      return
     }
-
-    const featureNode: FlowNode | null
-      = featureEngineering.length > 0
-        ? {
-          id: 'featureEngineering',
-          type: 'iconNode',
-          position: { x: 330, y: 170 },
-          sourcePosition: Position.Right,
-          targetPosition: Position.Left,
-          data: {
-            icon: 'mdi-brain',
-            label: 'Feature\nEngineering',
-            colorClass: 'node-pending',
-            description: '根據論文擷取的特徵工程步驟',
-            fields: [],
-            config: {
-              pipeline: featureEngineering,
-            },
-          },
-        }
-        : null
-
-    const preprocessorNodeIncluded = preprocessing.length > 0
-
-    const updatedPreprocessorNode: FlowNode | null = preprocessorNodeIncluded
-      ? {
-        ...preprocessorNode,
-        data: {
-          ...preprocessorNode.data,
-          description: '從論文擷取的前處理設定',
-          fields: [],
-          config: {
-            pipeline: preprocessing,
-          },
-        },
-      }
-      : null
-
-    const rawResampling = (parsed as any).resampling
-    const rawTuning = (parsed as any).tuning
-    const resamplingMethod: string = typeof rawResampling === 'string'
-      ? rawResampling
-      : (rawResampling?.method ?? 'none')
-    const resamplingConfig: Record<string, unknown> = typeof rawResampling === 'object' && rawResampling !== null
-      ? (rawResampling.config ?? {})
-      : {}
-    const tuningMethod: string = typeof rawTuning === 'string'
-      ? rawTuning
-      : (rawTuning?.method ?? 'none')
-    const tuningCv: number = rawTuning?.cv ?? 3
-    const tuningNIter: number = rawTuning?.n_iter ?? 20
-    const tuningScoring: string = rawTuning?.scoring ?? 'roc_auc'
-    const computeCi: boolean = Boolean((parsed as any).compute_ci ?? false)
 
     const updatedTestScoreNode: FlowNode = {
       ...testScoreNode,
       data: {
         ...testScoreNode.data,
-        description: '切分資料與評估指標設定',
-        fields: [],
         config: {
-          targetCol:
-            (parsed as any).target_col
-            || (parsed as any).targetCol
-            || '是否跌倒',
-          validation: validation || { method: 'test_on_test', train_size: 0.7 },
-          metrics: metrics.length > 0 ? metrics : [{ metric: 'accuracy' }],
-          resampling_method: resamplingMethod,
-          resampling_config: resamplingConfig,
-          tuning_method: tuningMethod,
-          tuning_cv: tuningCv,
-          tuning_n_iter: tuningNIter,
-          tuning_scoring: tuningScoring,
-          compute_ci: computeCi,
+          ...testScoreNode.data.config,
+          targetCol: (parsed.target_col ?? parsed.targetCol ?? '是否跌倒') as string,
+          validation: validation ?? { method: 'k_fold', n_splits: 10, stratified: true, train_size: 0.8 },
+          metrics: metrics.length > 0 ? metrics : ['balanced_accuracy', 'auc', 'auprc', 'mcc', 'f1'],
+          resampling_method: (() => {
+            const r = parsed.resampling as any
+            return typeof r === 'string' ? r : (r?.method ?? 'none')
+          })(),
+          resampling_config: (() => {
+            const r = parsed.resampling as any
+            return (typeof r === 'object' && r !== null) ? (r.config ?? {}) : {}
+          })(),
+          tuning_method: (() => {
+            const t = parsed.tuning as any
+            return typeof t === 'string' ? t : (t?.method ?? 'none')
+          })(),
+          tuning_cv: (parsed.tuning as any)?.cv ?? 3,
+          tuning_n_iter: (parsed.tuning as any)?.n_iter ?? 20,
+          tuning_scoring: (parsed.tuning as any)?.scoring ?? 'roc_auc',
+          compute_ci: Boolean(parsed.compute_ci ?? false),
         },
       },
     }
 
-    const modelMoreNode: FlowNode = {
-      id: 'modelMore',
+    // ── pipeline 節點（preprocessor / featureEngineering）──
+    const preDynDefs = [
+      ...(preprocessing.length > 0 ? [{ id: 'preprocessor', icon: 'mdi-filter-cog-outline', label: 'Preprocessor', desc: '資料前處理', pipeline: preprocessing }] : []),
+      ...(featureEngineering.length > 0 ? [{ id: 'featureEngineering', icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', desc: '特徵工程', pipeline: featureEngineering }] : []),
+    ]
+    const preDynNodes: FlowNode[] = preDynDefs.map((def, i) => ({
+      id: def.id,
       type: 'iconNode',
-      position: {
-        x: 420,
-        y: 120 + dynamicModelNodes.length * 110,
-      },
+      position: { x: 460 + i * 200, y: 290 },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      data: {
-        icon: 'mdi-dots-horizontal-circle-outline',
-        label: 'More\nModels',
-        colorClass: 'node-pending',
-        description: '新增更多模型或動態匯入模型節點',
-        fields: [],
-        config: {},
-      },
-    }
+      data: { icon: def.icon, label: def.label, colorClass: 'node-pending', description: def.desc, fields: [], config: { pipeline: def.pipeline } },
+    }))
+
+    // ── model 節點（垂直排列）──
+    const modelX = 460 + preDynDefs.length * 200
+    const modelStartY = 290 - ((models.length - 1) * MODEL_Y_GAP) / 2
+    const modelNodes: FlowNode[] = (models as Array<unknown>).map((m, i) => {
+      const name = typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? '')
+      const purposeZh = typeof m === 'object' && m !== null
+        ? String((m as Record<string, unknown>).purpose_zh ?? '')
+        : ''
+      return {
+        id: `model-${i}`,
+        type: 'iconNode',
+        position: { x: modelX, y: modelStartY + i * MODEL_Y_GAP },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+          icon: 'mdi-brain',
+          label: name,
+          colorClass: 'node-pending',
+          description: purposeZh || name,
+          fields: [],
+          config: { modelName: name },
+        },
+      }
+    })
+
+    const testScoreX = modelX + 200
+    const resultX = testScoreX + 200
 
     nodes.value = [
-      fileNode,
-      dataTableNode,
-      distributionNode,
-      ...(preprocessorNodeIncluded && updatedPreprocessorNode
-        ? [updatedPreprocessorNode]
-        : []),
-      ...(featureNode ? [featureNode] : []),
-      ...dynamicModelNodes,
-      modelMoreNode,
-      updatedTestScoreNode,
-      featureImportanceNode,
-      confusionMatrixNode,
+      fileNode, dataTableNode, distributionNode, updatedSettingsNode,
+      ...preDynNodes, ...modelNodes,
+      { ...updatedTestScoreNode, position: { ...testScoreNode.position, x: testScoreX } },
+      { ...featureImportanceNode, position: { ...featureImportanceNode.position, x: resultX } },
+      { ...confusionMatrixNode, position: { ...confusionMatrixNode.position, x: resultX } },
+      { ...updatedComputeCiNode, position: { ...computeCiNode.position, x: resultX } },
     ]
 
-    await nextTick()
+    // ── edges ──
+    const fullPreChain = ['settings', ...preDynDefs.map(d => d.id)]
+    const lastPreId = fullPreChain.at(-1)!
+    const innerChainEdges: EdgeBase[] = fullPreChain.slice(0, -1).map((src, i) => ({
+      id: i === 0 ? 'e2' : `e2${String.fromCodePoint(96 + i)}`,
+      source: src,
+      target: fullPreChain[i + 1]!,
+      type: 'default',
+    }))
 
-    const modelSourceNode = featureNode
-      ? 'featureEngineering'
-      : (preprocessorNodeIncluded
-        ? 'preprocessor'
-        : 'dataTable')
-
-    const modelEdges = dynamicModelNodes.flatMap(node => [
-      {
-        id: `e_${modelSourceNode}_${node.id}`,
-        source: modelSourceNode,
-        target: node.id,
-        type: 'default',
-      },
-      {
-        id: `e_${node.id}_testScore`,
-        source: node.id,
-        target: 'testScore',
-        type: 'default',
-      },
-    ])
+    const midEdges: EdgeBase[] = modelNodes.length > 0
+      ? [
+        ...modelNodes.map((m, i) => ({ id: `etm${i}`, source: lastPreId, target: m.id, type: 'default' })),
+        ...modelNodes.map((m, i) => ({ id: `emts${i}`, source: m.id, target: 'testScore', type: 'default' })),
+      ]
+      : [{ id: preDynDefs.length === 0 ? 'e2' : `e2${String.fromCodePoint(96 + preDynDefs.length)}`, source: lastPreId, target: 'testScore', type: 'default' }]
 
     edges.value = [
-      {
-        id: 'e0',
-        source: 'file',
-        target: 'dataTable',
-        type: 'default',
-      },
-      {
-        id: 'e0a',
-        source: 'file',
-        target: 'distribution',
-        type: 'default',
-      },
-      ...(preprocessorNodeIncluded
-        ? [
-          {
-            id: 'e1',
-            source: 'dataTable',
-            target: 'preprocessor',
-            type: 'default',
-          },
-        ]
-        : []),
-      ...(featureNode
-        ? [
-          {
-            id: 'e2_feature',
-            source: preprocessorNodeIncluded ? 'preprocessor' : 'dataTable',
-            target: 'featureEngineering',
-            type: 'default',
-          },
-        ]
-        : []),
-      ...modelEdges,
-      {
-        id: 'e4a',
-        source: 'testScore',
-        target: 'featureImportance',
-        type: 'default',
-      },
-      {
-        id: 'e4',
-        source: 'testScore',
-        target: 'confusionMatrix',
-        type: 'default',
-      },
+      { id: 'e0', source: 'file', target: 'dataTable', type: 'default' },
+      { id: 'e0a', source: 'file', target: 'distribution', type: 'default' },
+      { id: 'e1', source: 'dataTable', target: 'settings', type: 'default' },
+      ...innerChainEdges, ...midEdges,
+      { id: 'e3', source: 'testScore', target: 'featureImportance', type: 'default' },
+      { id: 'e4', source: 'testScore', target: 'confusionMatrix', type: 'default' },
+      { id: 'e5', source: 'testScore', target: 'computeCi', type: 'default' },
     ]
 
     selectedJsonFile.value = file
@@ -1107,180 +1331,58 @@
   }
 
   function buildWorkflowPayload (): Record<string, unknown> {
-    const dataTableNode = nodes.value.find(node => node.id === 'dataTable')
-    const preprocessNode = nodes.value.find(node => node.id === 'preprocessor')
-    const featureNode = nodes.value.find(node => node.id === 'featureEngineering')
-    const testScoreNode = nodes.value.find(node => node.id === 'testScore')
-    const modelNodes = nodes.value.filter(
-      node => node.id.startsWith('model') && node.id !== 'modelMore',
-    )
+    const dataTableNode = nodes.value.find(n => n.id === 'dataTable')
+    const settingsNode = nodes.value.find(n => n.id === 'settings')
+    const testScoreNode = nodes.value.find(n => n.id === 'testScore')
 
-    const preprocessPipelines = preprocessNode?.data.config.pipeline ?? []
-    const featureEngineeringPipelines = featureNode?.data.config.pipeline ?? []
+    const preprocessing = settingsNode?.data.config.preprocessing ?? []
+    const featureEngineering = settingsNode?.data.config.featureEngineering ?? []
+    const modelNames = nodes.value
+      .filter(n => n.id.startsWith('model-'))
+      .map(n => String(n.data.config.modelName ?? n.data.label ?? ''))
+      .filter(Boolean)
+
     const validationConfig = testScoreNode?.data.config.validation ?? {}
     const metrics = testScoreNode?.data.config.metrics ?? []
 
-    // New execution params from testScore node config (populated by loadJsonModels)
-    const resamplingMethod = String(testScoreNode?.data.config.resampling_method ?? 'none')
-    const resamplingConfig = (testScoreNode?.data.config.resampling_config ?? {}) as Record<string, unknown>
-    const tuningMethod = String(testScoreNode?.data.config.tuning_method ?? 'none')
-    const tuningCv = Number(testScoreNode?.data.config.tuning_cv ?? 3)
-    const tuningNIter = Number(testScoreNode?.data.config.tuning_n_iter ?? 20)
-    const tuningScoring = String(testScoreNode?.data.config.tuning_scoring ?? 'roc_auc')
-    const computeCi = Boolean(testScoreNode?.data.config.compute_ci ?? false)
-
     return {
-      preprocess_pipelines: Array.isArray(preprocessPipelines) ? [preprocessPipelines] : [],
-      feature_engineering_pipelines: Array.isArray(featureEngineeringPipelines) ? [featureEngineeringPipelines] : [],
-      model_names: modelNodes
-        .map(node => node.data.config.modelName || node.data.label.replace(/\n/g, ' '))
-        .filter(Boolean),
+      preprocess_pipelines: Array.isArray(preprocessing) ? [preprocessing] : [],
+      feature_engineering_pipelines: Array.isArray(featureEngineering) ? [featureEngineering] : [],
+      model_names: modelNames,
       validation_config: validationConfig,
       score_variants: Array.isArray(metrics)
-        ? metrics.map(metric => typeof metric === 'string' ? { metric } : metric)
+        ? metrics.map(m => typeof m === 'string' ? { metric: m } : m)
         : [],
       column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
         ? (dataTableNode?.data.config.columnConfig as ColumnConfig[])
         : [],
       target_col: selectedTargetColumn.value?.name ?? testScoreNode?.data.config.targetCol ?? '是否跌倒',
-      // Resampling
-      resampling_method: resamplingMethod,
-      resampling_config: resamplingConfig,
-      // Hyperparameter tuning
-      tuning_method: tuningMethod,
-      tuning_cv: tuningCv,
-      tuning_n_iter: tuningNIter,
-      tuning_scoring: tuningScoring,
-      // Confidence intervals
-      compute_ci: computeCi,
+      resampling_method: String(testScoreNode?.data.config.resampling_method ?? 'none'),
+      resampling_config: (testScoreNode?.data.config.resampling_config ?? {}) as Record<string, unknown>,
+      tuning_method: String(testScoreNode?.data.config.tuning_method ?? 'none'),
+      tuning_cv: Number(testScoreNode?.data.config.tuning_cv ?? 3),
+      tuning_n_iter: Number(testScoreNode?.data.config.tuning_n_iter ?? 20),
+      tuning_scoring: String(testScoreNode?.data.config.tuning_scoring ?? 'roc_auc'),
+      compute_ci: Boolean(nodes.value.find(n => n.id === 'computeCi')?.data.config.enabled ?? settingsNode?.data.config.compute_ci ?? false),
     }
   }
 
-  function getModelSourceNode (): string {
-    const featureNode = nodes.value.find(
-      node => node.id === 'featureEngineering',
-    )
-    const preprocessorNode = nodes.value.find(
-      node => node.id === 'preprocessor',
-    )
-    if (featureNode) return 'featureEngineering'
-    if (preprocessorNode) return 'preprocessor'
-    return 'dataTable'
-  }
-
-  function layoutModelNodes (nodeList: FlowNode[]): FlowNode[] {
-    const modelNodes = nodeList.filter(
-      node => node.id.startsWith('model') && node.id !== 'modelMore',
-    )
-    const baseX = 420
-    const baseY = 120
-    const spacingY = 120
-
-    const positionedModels = modelNodes.map((node, index) => ({
-      ...node,
-      position: { x: baseX, y: baseY + index * spacingY },
-    }))
-
-    return nodeList.map(node => {
-      if (node.id === 'modelMore') {
-        return {
-          ...node,
-          position: {
-            x: baseX,
-            y: baseY + positionedModels.length * spacingY,
-          },
-        }
-      }
-      const updated = positionedModels.find(model => model.id === node.id)
-      return updated ?? node
-    })
-  }
-
-  function buildModelEdges (nodeList: FlowNode[]): EdgeBase[] {
-    const modelSourceNode = getModelSourceNode()
-
-    return nodeList
-      .filter(node => node.id.startsWith('model') && node.id !== 'modelMore')
-      .flatMap(node => [
-        {
-          id: `e_${modelSourceNode}_${node.id}`,
-          source: modelSourceNode,
-          target: node.id,
-          type: 'default',
-        },
-        {
-          id: `e_${node.id}_testScore`,
-          source: node.id,
-          target: 'testScore',
-          type: 'default',
-        },
-      ])
-  }
-
-  function isModelEdge (edge: EdgeBase): boolean {
-    return (
-      edge.source.startsWith('model')
-      || edge.source === 'modelMore'
-      || edge.target.startsWith('model')
-      || edge.target === 'modelMore'
-    )
-  }
-
-  async function handleAddModel (modelName: string): Promise<void> {
+  function handleAddModel (modelName: string): void {
     if (!modelName) return
+    if (nodes.value.some(n => n.id.startsWith('model-') && n.data.config.modelName === modelName)) return
+    const current = nodes.value
+      .filter(n => n.id.startsWith('model-'))
+      .map(n => ({ name: String(n.data.config.modelName ?? n.data.label ?? ''), type: 'Classification' }))
+    syncModelCanvasNodes([...current, { name: modelName, type: 'Classification' }])
+  }
 
-    const existing = nodes.value.find(
-      node =>
-        node.id.startsWith('model')
-        && node.id !== 'modelMore'
-        && String(
-          node.data.config.modelName ?? node.data.label.replace(/\n/g, ' '),
-        ) === modelName,
-    )
-    if (existing) return
-
-    const modelNodes = nodes.value.filter(
-      node => node.id.startsWith('model') && node.id !== 'modelMore',
-    )
-    const newId = `modelCustom${modelNodes.length + 1}`
-    const yPosition = 110 + modelNodes.length * 120
-    const newNode: FlowNode = {
-      id: newId,
-      type: 'iconNode',
-      position: { x: 420, y: yPosition },
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-      data: {
-        icon: 'mdi-cube-outline',
-        label: modelName,
-        colorClass: 'node-pending',
-        description: `動態新增模型：${modelName}`,
-        fields: [],
-        config: { modelName },
-      },
-    }
-
-    const modelMoreIndex = nodes.value.findIndex(
-      node => node.id === 'modelMore',
-    )
-    const testScoreIndex = nodes.value.findIndex(
-      node => node.id === 'testScore',
-    )
-    let insertIndex = nodes.value.length
-    if (modelMoreIndex !== -1) {
-      insertIndex = modelMoreIndex
-    } else if (testScoreIndex !== -1) {
-      insertIndex = testScoreIndex
-    }
-
-    nodes.value.splice(insertIndex, 0, newNode)
-    nodes.value = layoutModelNodes(nodes.value)
-
-    await nextTick()
-
-    const preservedEdges = edges.value.filter(edge => !isModelEdge(edge))
-    edges.value = [...preservedEdges, ...buildModelEdges(nodes.value)]
-    saveWorkflowStateToStorage()
+  function handleRemoveModel (modelName: string): void {
+    if (!modelName) return
+    const current = nodes.value
+      .filter(n => n.id.startsWith('model-'))
+      .map(n => ({ name: String(n.data.config.modelName ?? n.data.label ?? ''), type: 'Classification' }))
+      .filter(m => m.name !== modelName)
+    syncModelCanvasNodes(current)
   }
 
   async function runWorkflowRequest (): Promise<void> {
@@ -1463,7 +1565,7 @@
     resetDrawer()
   }
 
-  // 面板儲存：只更新對應 node 的 config
+  // 面板儲存：更新對應 node 的 config，若是 settings 的 pipeline 欄位則同步畫布
   function handleUpdateConfig (payload: {
     nodeId: string
     config: Record<string, ConfigValue>
@@ -1478,6 +1580,16 @@
         },
       }
     })
+
+    if (payload.nodeId === 'settings') {
+      if ('preprocessing' in payload.config || 'featureEngineering' in payload.config) {
+        syncPipelineCanvasNodes()
+      }
+      if ('compute_ci' in payload.config) {
+        syncComputeCiNode()
+      }
+    }
+
     saveWorkflowStateToStorage()
   }
 
@@ -1765,6 +1877,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+    padding-bottom: 16px;
   }
 
   .options-drawer__scroll::-webkit-scrollbar {
