@@ -38,3 +38,4 @@ ml_models/
 
 # Logs
 *.log
+logs.log

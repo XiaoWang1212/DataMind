@@ -77,18 +77,18 @@
         <!-- Settings 節點：前處理 + 特徵工程 + 模型 -->
         <template v-else-if="selectedNode.id === 'settings'">
           <SettingsPanel
-            :preprocessing="settingsPreprocessing"
-            :feature-engineering="settingsFeatureEngineering"
-            :models="settingsModels"
-            :compute-ci="settingsComputeCi"
             :available-models="availableModels"
-            :used-model-names="(props.usedModelNames ?? [])"
+            :compute-ci="settingsComputeCi"
+            :feature-engineering="settingsFeatureEngineering"
             :model-options-loading="props.modelOptionsLoading"
+            :models="settingsModels"
+            :preprocessing="settingsPreprocessing"
+            :used-model-names="(props.usedModelNames ?? [])"
             @add-model="name => emit('add-model', name)"
             @remove-model="name => emit('remove-model', name)"
-            @update-preprocessing="handleSettingsPreprocessingUpdate"
-            @update-feature-engineering="handleSettingsFEUpdate"
             @update-compute-ci="handleSettingsComputeCiUpdate"
+            @update-feature-engineering="handleSettingsFEUpdate"
+            @update-preprocessing="handleSettingsPreprocessingUpdate"
           />
         </template>
 
@@ -99,7 +99,7 @@
 
         <!-- Compute CI 節點：唯讀介紹面板 -->
         <template v-else-if="selectedNode.id === 'computeCi'">
-          <ComputeCiPanel />
+          <ComputeCiPanel :workflow-result="props.workflowResult ?? undefined" />
         </template>
 
         <!-- Test & Score 節點：顯示評分摘要 -->
@@ -279,8 +279,7 @@
     ): void
     (e: 'open-upload' | 'apply-column-config'): void
     (e: 'update:file', file: File): void
-    (e: 'add-model', modelName: string): void
-    (e: 'remove-model', modelName: string): void
+    (e: 'add-model' | 'remove-model', modelName: string): void
   }>()
 
   // localConfig：面板內可編輯的暫存設定，按下「儲存設定」才同步給父層

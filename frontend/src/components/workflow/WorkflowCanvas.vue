@@ -9,6 +9,9 @@
         minHeight: canvasMinHeight ? `${canvasMinHeight}px` : undefined,
         minWidth: canvasMinWidth ? `${canvasMinWidth}px` : undefined,
       }"
+      @mousedown="userHasPanned = true"
+      @touchstart.passive="userHasPanned = true"
+      @wheel.passive="userHasPanned = true"
     >
       <VueFlow
         id="main-flow"
@@ -80,12 +83,16 @@
   // 取得 VueFlow 操作函式（fitView 在容器 resize 時重新對齊）
   const { fitView, getViewport, setNodes, setEdges } = useVueFlow('main-flow')
 
+  // 使用者手動移動過視角後，不再自動 fitView（避免打斷操作）
+  const userHasPanned = ref(false)
+
   // 視窗尺寸改變時重新判斷是否手機模式
   function updateViewportMode () {
     isMobile.value = window.innerWidth < 768
   }
 
-  function refreshFitView (): void {
+  function refreshFitView (force = false): void {
+    if (!force && userHasPanned.value) return
     nextTick(() => {
       fitView({ padding: isMobile.value ? 0.18 : 0.3 })
     })
@@ -115,14 +122,25 @@
     resizeObserver?.disconnect()
   })
 
+  // 只記錄節點的結構特徵（id + position），colorClass 變動不算結構改變
+  function nodeStructureKey (nodes: typeof props.nodes): string {
+    return nodes.map(n => `${n.id}:${n.position.x},${n.position.y}`).join('|')
+  }
+
+  let prevStructureKey = ''
+
   watch(
     () => props.nodes,
     newNodes => {
       setNodes(newNodes)
-      nextTick(() => {
-        setEdges(props.edges)
-        refreshFitView()
-      })
+      const key = nodeStructureKey(newNodes)
+      if (key !== prevStructureKey) {
+        prevStructureKey = key
+        nextTick(() => {
+          setEdges(props.edges)
+          refreshFitView()
+        })
+      }
     },
     { deep: true, immediate: true },
   )

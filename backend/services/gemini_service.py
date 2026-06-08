@@ -61,7 +61,7 @@ _WORKFLOW_EXAMPLE = """{
 }"""
 
 _WORKFLOW_SYSTEM_PROMPT = f"""你是醫學研究自動化 ML workflow 設計助手。
-請根據論文內容輸出一份 workflow JSON 設定檔。只輸出 JSON，不要 markdown，不要任何說明。
+請根據論文內容輸出一份 workflow JSON 設定檔。輸出格式為純 JSON 物件，不得包含任何 markdown、程式碼區塊、說明文字或其他非 JSON 內容。
 
 【重要】輸出必須包含以下所有 key，一個都不能少：
 target_col, models, preprocessing, featureEngineering, validation, metrics, resampling, tuning, compute_ci, features
@@ -181,6 +181,7 @@ class GeminiService:
         return genai.GenerationConfig(
             temperature=0.2,
             max_output_tokens=8192,
+            response_mime_type="application/json",
         )
 
     @staticmethod
@@ -224,8 +225,16 @@ class GeminiService:
         answer = getattr(response, "text", "") or ""
         workflow_json = self._safe_parse_json(answer)
         if workflow_json is None and answer.strip():
-            logger.warning("workflow JSON parse failed, trying normalization pass")
+            logger.warning(
+                "workflow JSON parse failed (first pass), trying normalization.\n"
+                "Raw response (first 500 chars): %s",
+                answer[:500],
+            )
             workflow_json = self._normalize_to_json(answer)
+            if workflow_json is not None:
+                logger.info("normalization pass succeeded")
+            else:
+                logger.error("normalization pass also failed — using defaults")
         raw = answer.strip() if workflow_json is None else None
         usage = getattr(response, "usage_metadata", None)
         return workflow_json, raw, usage

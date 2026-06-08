@@ -28,11 +28,6 @@ const router = createRouter({
       name: "results",
       component: () => import("@/views/ResultsPage.vue"),
     },
-    {
-      path: "/pycaret",
-      name: "pycaret",
-      component: () => import("@/views/PyCaretTestPage.vue"),
-    }
   ],
 });
 

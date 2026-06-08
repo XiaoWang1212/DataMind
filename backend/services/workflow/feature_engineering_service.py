@@ -37,12 +37,17 @@ def _discretize_continuous(df: pd.DataFrame, step: Dict[str, Any]) -> pd.DataFra
 
     result = df.copy()
     for column in numeric_columns:
-        result[column] = pd.cut(
-            result[column],
-            bins=bins,
-            labels=labels,
-            duplicates="drop",
-        )
+        if labels is not None:
+            # User-supplied labels (strings); keep as category for _continuize_discrete
+            result[column] = pd.cut(
+                result[column], bins=bins, labels=labels, duplicates="drop"
+            )
+        else:
+            # labels=False → integer bin codes; avoids Interval objects that
+            # break float() in downstream sklearn estimators
+            result[column] = pd.cut(
+                result[column], bins=bins, labels=False, duplicates="drop"
+            ).astype("Int64")
     return result
 
 
