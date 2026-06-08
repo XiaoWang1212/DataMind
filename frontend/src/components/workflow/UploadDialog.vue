@@ -79,22 +79,25 @@
   const selectedFile = ref<File | null>(null)
   const dragActive = ref(false)
 
-  watch(() => props.visible, (v) => {
-    if (!v) { selectedFile.value = null; dragActive.value = false }
+  watch(() => props.visible, v => {
+    if (!v) {
+      selectedFile.value = null
+      dragActive.value = false
+    }
   })
 
-  function handleFileChange(event: Event): void {
+  function handleFileChange (event: Event): void {
     const target = event.target as HTMLInputElement
     selectedFile.value = target.files?.[0] ?? null
   }
 
-  function handleDrop(event: DragEvent): void {
+  function handleDrop (event: DragEvent): void {
     dragActive.value = false
     const files = event.dataTransfer?.files
     if (files && files.length > 0) selectedFile.value = files.item(0) ?? null
   }
 
-  function handleConfirm(): void {
+  function handleConfirm (): void {
     if (!selectedFile.value) return
     emit('confirm', selectedFile.value)
     selectedFile.value = null
