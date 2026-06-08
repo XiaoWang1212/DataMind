@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from werkzeug.utils import secure_filename
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request, stream_with_context
 from services.model.registry import extract_model_components
 from services.workflow import WorkflowService
 from services.workflow.extraction_mapper import build_workflow_payload
@@ -121,6 +121,122 @@ def score_variants():
         return jsonify({"success": True, "variants": variants})
     except Exception as exc:
         return jsonify({"error": f"Failed to generate score variants: {str(exc)}"}), 500
+
+
+def _parse_execute_params() -> Tuple[Optional[str], Dict[str, Any]]:
+    """解析 workflow 執行共用的 request 參數，回傳 (data_path, kwargs)。"""
+    payload = _load_request_payload()
+    uploaded = request.files.get("file")
+
+    data_path = payload.get("data_path")
+    target_col = payload.get("target_col") or payload.get("targetCol") or payload.get("target") or "是否跌倒"
+
+    preprocess_pipelines = _parse_json_field(payload.get("preprocess_pipelines", []))
+    feature_engineering_pipelines = _parse_json_field(payload.get("feature_engineering_pipelines", []))
+    model_names = payload.get("model_names") or payload.get("models") or []
+    score_variants_raw = _parse_json_field(payload.get("score_variants", []))
+    validation_config = _parse_json_field(payload.get("validation_config") or payload.get("validation") or {})
+    column_config = _parse_json_field(payload.get("column_config") or payload.get("columnConfig") or [])
+
+    resampling_method = str(payload.get("resampling_method", "none"))
+    resampling_config = _parse_json_field(payload.get("resampling_config") or {})
+    tuning_method = str(payload.get("tuning_method", "none"))
+    tuning_cv = int(payload.get("tuning_cv", 3))
+    tuning_n_iter = int(payload.get("tuning_n_iter", 20))
+    tuning_scoring = str(payload.get("tuning_scoring", "roc_auc"))
+    compute_ci = bool(payload.get("compute_ci", False))
+    ci_n_bootstrap = int(payload.get("ci_n_bootstrap", 1000))
+    train_size = float(payload.get("train_size", 0.7))
+    random_state = int(payload.get("random_state", 42))
+
+    menu_keys = {"preprocessing", "featureEngineering", "feature_engineering", "models", "validation", "metrics"}
+    if any(k in payload for k in menu_keys):
+        mapped = build_workflow_payload(payload)
+        preprocess_pipelines = mapped.get("preprocess_pipelines") or preprocess_pipelines
+        feature_engineering_pipelines = mapped.get("feature_engineering_pipelines") or feature_engineering_pipelines
+        model_names = mapped.get("model_names") or model_names
+        validation_config = mapped.get("validation_config") or validation_config
+        score_variants_raw = mapped.get("score_variants") or score_variants_raw
+        column_config = mapped.get("column_config") or column_config
+        if mapped.get("target_col"):
+            target_col = mapped["target_col"]
+        resampling_method = mapped.get("resampling_method") or resampling_method
+        resampling_config = mapped.get("resampling_config") or resampling_config
+        tuning_method = mapped.get("tuning_method") or tuning_method
+        tuning_cv = mapped.get("tuning_cv") or tuning_cv
+        tuning_n_iter = mapped.get("tuning_n_iter") or tuning_n_iter
+        tuning_scoring = mapped.get("tuning_scoring") or tuning_scoring
+        compute_ci = mapped.get("compute_ci", compute_ci)
+        ci_n_bootstrap = mapped.get("ci_n_bootstrap", ci_n_bootstrap)
+
+    if isinstance(column_config, dict):
+        column_config = [column_config]
+    if not isinstance(column_config, list):
+        column_config = []
+
+    if isinstance(model_names, list):
+        normalised = []
+        for item in model_names:
+            if isinstance(item, str):
+                normalised.append(item)
+            elif isinstance(item, dict):
+                name = item.get("name") or item.get("model") or item.get("type")
+                if name:
+                    normalised.append(name)
+        model_names = normalised
+    else:
+        model_names = [model_names] if model_names else []
+
+    if not preprocess_pipelines:
+        preprocess_pipelines = _parse_json_field(payload.get("preprocessing", []))
+    if isinstance(preprocess_pipelines, dict):
+        preprocess_pipelines = [preprocess_pipelines]
+    if not isinstance(preprocess_pipelines, list):
+        preprocess_pipelines = []
+    elif preprocess_pipelines and isinstance(preprocess_pipelines[0], dict):
+        preprocess_pipelines = [preprocess_pipelines]
+
+    if not feature_engineering_pipelines:
+        feature_engineering_pipelines = _parse_json_field(payload.get("featureEngineering", []))
+    if isinstance(feature_engineering_pipelines, dict):
+        feature_engineering_pipelines = [feature_engineering_pipelines]
+    if not isinstance(feature_engineering_pipelines, list):
+        feature_engineering_pipelines = []
+    elif feature_engineering_pipelines and isinstance(feature_engineering_pipelines[0], dict):
+        feature_engineering_pipelines = [feature_engineering_pipelines]
+
+    if not score_variants_raw:
+        score_variants_raw = _parse_json_field(payload.get("metrics", []))
+    if isinstance(score_variants_raw, dict):
+        score_variants_raw = [score_variants_raw]
+    if not isinstance(score_variants_raw, list):
+        score_variants_raw = []
+
+    if uploaded and uploaded.filename:
+        if not _is_allowed_data_file(uploaded.filename):
+            raise ValueError("Unsupported file format. Accepted: .csv, .xlsx, .xls")
+        data_path = str(_save_uploaded_file(uploaded, Path("uploads/workflow")))
+
+    kwargs: Dict[str, Any] = dict(
+        target_col=target_col,
+        preprocess_pipelines=preprocess_pipelines,
+        feature_engineering_pipelines=feature_engineering_pipelines,
+        model_names=model_names,
+        score_variants=score_variants_raw,
+        validation_config=validation_config,
+        column_config=column_config,
+        resampling_method=resampling_method,
+        resampling_config=resampling_config if isinstance(resampling_config, dict) else {},
+        tuning_method=tuning_method,
+        tuning_cv=tuning_cv,
+        tuning_n_iter=tuning_n_iter,
+        tuning_scoring=tuning_scoring,
+        compute_ci=compute_ci,
+        ci_n_bootstrap=ci_n_bootstrap,
+        train_size=train_size,
+        random_state=random_state,
+    )
+    return data_path, kwargs
 
 
 @model_bp.post("/workflow/execute")
@@ -260,3 +376,36 @@ def execute_workflow():
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": f"Workflow execution failed: {str(exc)}"}), 500
+
+
+@model_bp.post("/workflow/execute-stream")
+def execute_workflow_stream():
+    """SSE endpoint：每個 model 跑完後立即 push 結果，前端即時更新 loading 狀態。"""
+    try:
+        data_path, kwargs = _parse_execute_params()
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    if not data_path:
+        return jsonify({"error": "data_path or file upload is required."}), 400
+
+    def generate():
+        try:
+            for event in WorkflowService.execute_workflow_stream(data_path=data_path, **kwargs):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        except FileNotFoundError as exc:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)}, ensure_ascii=False)}\n\n"
+        except ValueError as exc:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)}, ensure_ascii=False)}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Workflow execution failed: {exc}'}, ensure_ascii=False)}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )

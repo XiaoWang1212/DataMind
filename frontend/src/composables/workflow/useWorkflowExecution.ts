@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 import { computed, ref } from 'vue'
-import { executeWorkflowApi } from '@/api/workflow'
+import { executeWorkflowApi, executeWorkflowApiStream } from '@/api/workflow'
 import type { DemoStep } from '@/constants/workflowData'
 import type { FlowNode } from '@/types/workflow'
 
@@ -13,7 +13,9 @@ export function useWorkflowExecution(deps: {
   nodeStatuses: Ref<Map<string, 'running' | 'finished'>>
   isDemoRunning: Ref<boolean>
   buildDemoSteps: (nodes: FlowNode[]) => DemoStep[]
-  scheduleWorkflowSteps: (steps: DemoStep[], baseDelay?: number) => void
+  scheduleWorkflowSteps: (steps: DemoStep[], baseDelay?: number, skipEndMarker?: boolean) => void
+  scheduleGatedStart: (steps: DemoStep[], baseDelay?: number) => void
+  finishGatedSteps: (steps: DemoStep[]) => void
   selectedNodeId: Ref<string | null>
   expandDrawer: () => void
 }) {
@@ -25,6 +27,8 @@ export function useWorkflowExecution(deps: {
     isDemoRunning,
     buildDemoSteps,
     scheduleWorkflowSteps,
+    scheduleGatedStart,
+    finishGatedSteps,
     selectedNodeId,
     expandDrawer,
   } = deps
@@ -205,17 +209,70 @@ export function useWorkflowExecution(deps: {
         workflowError.value = '請至少新增一個模型，再繼續 Workflow。'
         return
       }
+      if (!workflowDataFile.value) {
+        workflowError.value = '請先在 File 節點上傳 CSV 資料檔案。'
+        return
+      }
 
       pausedAtNodeId.value = null
       isDemoRunning.value = true
+      workflowError.value = null
+      workflowResult.value = null
 
       const steps = buildDemoSteps(nodes.value)
       const settingsStep = steps.find(s => s.nodeIds.includes('settings'))
       if (!settingsStep) return
 
       const remainingSteps = steps.filter(s => s.delay > settingsStep.delay)
-      scheduleWorkflowSteps(remainingSteps, settingsStep.delay)
-      runWorkflowRequest()
+
+      // model 步驟：等後端逐一回傳才 finish；其餘前置 pipeline 用固定時長
+      const modelGatedStep = remainingSteps.find(s => s.nodeIds.some(id => id.startsWith('model-')))
+      const apiGatedSteps = modelGatedStep
+        ? remainingSteps.filter(s => s.delay >= modelGatedStep.delay)
+        : []
+      const postModelSteps = modelGatedStep
+        ? apiGatedSteps.filter(s => s !== modelGatedStep)
+        : apiGatedSteps
+      const preModelSteps = remainingSteps.filter(s => !apiGatedSteps.includes(s))
+
+      scheduleWorkflowSteps(preModelSteps, settingsStep.delay, apiGatedSteps.length > 0)
+      // 只讓 model nodes 在預定時間開始 running；testScore/results 由 finishGatedSteps 控制
+      if (modelGatedStep) scheduleGatedStart([modelGatedStep], settingsStep.delay)
+
+      // model name → node ID 對照表
+      const modelNameToNodeId = new Map(
+        nodes.value
+          .filter(n => n.id.startsWith('model-'))
+          .map(n => [String(n.data.config.modelName ?? ''), n.id]),
+      )
+
+      const payload = buildWorkflowPayload()
+      const file = workflowDataFile.value
+
+      ;(async () => {
+        try {
+          await executeWorkflowApiStream({
+            file,
+            workflowPayload: payload,
+            onModelDone: (modelName) => {
+              // 該 model 跑完 → 立即把它的 node 設為 finished
+              const nodeId = modelNameToNodeId.get(modelName)
+              if (nodeId) {
+                const next = new Map(nodeStatuses.value)
+                next.set(nodeId, 'finished')
+                nodeStatuses.value = next
+              }
+            },
+            onDone: (result) => {
+              workflowResult.value = result
+              finishGatedSteps(postModelSteps)
+            },
+          })
+        } catch (error) {
+          workflowError.value = error instanceof Error ? error.message : 'Workflow 執行失敗'
+          finishGatedSteps(postModelSteps)
+        }
+      })()
     }
   }
 

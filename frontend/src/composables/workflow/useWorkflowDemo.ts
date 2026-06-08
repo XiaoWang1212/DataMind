@@ -19,7 +19,7 @@ export function useWorkflowDemo() {
     demoTimers.length = 0
   }
 
-  function scheduleWorkflowSteps(steps: DemoStep[], baseDelay = 0): void {
+  function scheduleWorkflowSteps(steps: DemoStep[], baseDelay = 0, skipEndMarker = false): void {
     if (steps.length === 0) return
 
     for (const { nodeIds, delay } of steps) {
@@ -40,13 +40,56 @@ export function useWorkflowDemo() {
       )
     }
 
-    const lastDelay = steps.at(-1)!.delay
-    const endTime = lastDelay - baseDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
+    if (!skipEndMarker) {
+      const lastDelay = steps.at(-1)!.delay
+      const endTime = lastDelay - baseDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
+      demoTimers.push(
+        window.setTimeout(() => {
+          isDemoRunning.value = false
+          isDemoFinished.value = true
+        }, endTime),
+      )
+    }
+  }
+
+  /** 只把節點設為 running（不自動 finish），等後端回應後再呼叫 finishGatedSteps */
+  function scheduleGatedStart(steps: DemoStep[], baseDelay = 0): void {
+    for (const { nodeIds, delay } of steps) {
+      const offset = delay - baseDelay
+      if (offset < 0) continue
+      demoTimers.push(
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'running')
+          nodeStatuses.value = next
+        }, offset),
+      )
+    }
+  }
+
+  /** 後端回應後，依序讓每組節點跑完 running → finished 動畫，再結束整體流程 */
+  function finishGatedSteps(steps: DemoStep[]): void {
+    let seqDelay = 0
+    for (const { nodeIds } of steps) {
+      demoTimers.push(
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'running')
+          nodeStatuses.value = next
+        }, seqDelay),
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of nodeIds) next.set(id, 'finished')
+          nodeStatuses.value = next
+        }, seqDelay + NODE_RUN_DURATION),
+      )
+      seqDelay += NODE_RUN_DURATION + 200
+    }
     demoTimers.push(
       window.setTimeout(() => {
         isDemoRunning.value = false
         isDemoFinished.value = true
-      }, endTime),
+      }, seqDelay + DEMO_FINISH_LINGER),
     )
   }
 
@@ -101,6 +144,8 @@ export function useWorkflowDemo() {
     demoTimers,
     resetDemo,
     scheduleWorkflowSteps,
+    scheduleGatedStart,
+    finishGatedSteps,
     buildDemoSteps,
   }
 }

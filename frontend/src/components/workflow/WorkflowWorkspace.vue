@@ -186,7 +186,7 @@
 
   const { isExpanded, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
 
-  const { nodeStatuses, isDemoRunning, isDemoFinished, resetDemo, scheduleWorkflowSteps, buildDemoSteps } = useWorkflowDemo()
+  const { nodeStatuses, isDemoRunning, isDemoFinished, resetDemo, scheduleWorkflowSteps, scheduleGatedStart, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
   const {
     nodes,
@@ -226,6 +226,8 @@
     isDemoRunning,
     buildDemoSteps,
     scheduleWorkflowSteps,
+    scheduleGatedStart,
+    finishGatedSteps,
     selectedNodeId,
     expandDrawer,
   })
