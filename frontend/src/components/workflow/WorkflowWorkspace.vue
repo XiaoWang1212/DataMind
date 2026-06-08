@@ -1278,7 +1278,6 @@
       { ...updatedTestScoreNode, position: { ...testScoreNode.position, x: testScoreX } },
       { ...featureImportanceNode, position: { ...featureImportanceNode.position, x: resultX } },
       { ...confusionMatrixNode, position: { ...confusionMatrixNode.position, x: resultX } },
-      { ...updatedComputeCiNode, position: { ...computeCiNode.position, x: resultX } },
     ]
 
     // ── edges ──
@@ -1305,8 +1304,10 @@
       ...innerChainEdges, ...midEdges,
       { id: 'e3', source: 'testScore', target: 'featureImportance', type: 'default' },
       { id: 'e4', source: 'testScore', target: 'confusionMatrix', type: 'default' },
-      { id: 'e5', source: 'testScore', target: 'computeCi', type: 'default' },
     ]
+
+    // 依 compute_ci 決定是否顯示 computeCi 動態節點
+    syncComputeCiNode()
 
     selectedJsonFile.value = file
     saveWorkflowJsonFileToStorage(file)

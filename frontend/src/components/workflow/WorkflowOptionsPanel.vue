@@ -97,37 +97,9 @@
           <FeatureEngineeringPanel :pipeline="featureEngineeringPipeline" />
         </template>
 
-        <!-- Compute CI 節點：Bootstrap 信賴區間開關 -->
+        <!-- Compute CI 節點：唯讀介紹面板 -->
         <template v-else-if="selectedNode.id === 'computeCi'">
-          <div class="ci-card">
-            <div class="ci-card__header">
-              <div class="ci-card__info">
-                <span class="ci-card__title">Bootstrap 信賴區間</span>
-                <span class="ci-card__sub">對每個評估指標計算 95% CI</span>
-              </div>
-              <button
-                class="ci-toggle"
-                :class="{ 'ci-toggle--on': Boolean(localConfig.enabled) }"
-                type="button"
-                @click="handleComputeCiToggle"
-              >
-                <span class="ci-toggle__thumb" />
-              </button>
-            </div>
-            <div class="ci-card__desc">
-              <p>開啟後，系統將使用 Bootstrap 重抽樣對模型評估指標（如 AUC、F1 等）估算信賴區間。</p>
-              <ul>
-                <li>結果更具統計意義，適合論文報告</li>
-                <li>計算時間顯著增加，建議模型確認後再開啟</li>
-              </ul>
-            </div>
-            <div
-              class="ci-card__status"
-              :class="Boolean(localConfig.enabled) ? 'ci-card__status--on' : 'ci-card__status--off'"
-            >
-              {{ Boolean(localConfig.enabled) ? '已啟用：執行時將計算 Bootstrap CI' : '已停用：不計算信賴區間' }}
-            </div>
-          </div>
+          <ComputeCiPanel />
         </template>
 
         <!-- Test & Score 節點：顯示評分摘要 -->
@@ -262,6 +234,7 @@
 <script setup lang="ts">
   import type { ConfigValue, SimpleNode } from '@/types/workflow'
   import { computed, reactive, ref, watch } from 'vue'
+  import ComputeCiPanel from './nodePanel/ComputeCiPanel.vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
   import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
@@ -409,13 +382,6 @@
     localConfig.compute_ci = value
     if (!props.selectedNode) return
     emit('update-config', { nodeId: props.selectedNode.id, config: { compute_ci: value } })
-  }
-
-  function handleComputeCiToggle (): void {
-    const newVal = !Boolean(localConfig.enabled)
-    localConfig.enabled = newVal
-    if (!props.selectedNode) return
-    emit('update-config', { nodeId: props.selectedNode.id, config: { enabled: newVal } })
   }
 
   // 當切換節點時，把該節點 config 複製到本地表單狀態
@@ -834,106 +800,4 @@
     }
   }
 
-  /* Compute CI 節點面板 */
-  .ci-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-    background: rgba(0, 93, 255, 0.04);
-    border: 1px solid rgba(0, 93, 255, 0.12);
-    border-radius: 10px;
-  }
-
-  .ci-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .ci-card__info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .ci-card__title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1e293b;
-  }
-
-  .ci-card__sub {
-    font-size: 11px;
-    color: #64748b;
-  }
-
-  .ci-card__desc {
-    font-size: 12px;
-    color: #475569;
-    line-height: 1.55;
-  }
-
-  .ci-card__desc p {
-    margin: 0 0 6px;
-  }
-
-  .ci-card__desc ul {
-    margin: 0;
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .ci-card__status {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 6px;
-    text-align: center;
-  }
-
-  .ci-card__status--on {
-    background: rgba(0, 93, 255, 0.1);
-    color: #005dff;
-  }
-
-  .ci-card__status--off {
-    background: rgba(100, 116, 139, 0.1);
-    color: #64748b;
-  }
-
-  .ci-toggle {
-    flex-shrink: 0;
-    width: 36px;
-    height: 20px;
-    border-radius: 999px;
-    border: none;
-    background: #e2e8f0;
-    cursor: pointer;
-    padding: 2px;
-    transition: background 0.2s;
-    position: relative;
-  }
-
-  .ci-toggle--on {
-    background: #005dff;
-  }
-
-  .ci-toggle__thumb {
-    display: block;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s;
-    transform: translateX(0);
-  }
-
-  .ci-toggle--on .ci-toggle__thumb {
-    transform: translateX(16px);
-  }
 </style>
