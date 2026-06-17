@@ -1,10 +1,12 @@
 import type { ComputedRef, Ref } from 'vue'
 import { computed, ref } from 'vue'
-import { executeWorkflowApi, executeWorkflowApiStream } from '@/api/workflow'
+import { executeWorkflowApi, fetchWorkflowJob, startWorkflowJob } from '@/api/workflow'
 import type { DemoStep } from '@/constants/workflowData'
 import type { FlowNode } from '@/types/workflow'
 
 type ColumnConfig = { name: string; type: string; role: string }
+
+const JOB_POLL_INTERVAL_MS = 1500
 
 export function useWorkflowExecution(deps: {
   nodes: Ref<FlowNode[]>
@@ -12,12 +14,14 @@ export function useWorkflowExecution(deps: {
   selectedTargetColumn: ComputedRef<ColumnConfig | undefined>
   nodeStatuses: Ref<Map<string, 'running' | 'finished'>>
   isDemoRunning: Ref<boolean>
+  isDemoFinished: Ref<boolean>
   buildDemoSteps: (nodes: FlowNode[]) => DemoStep[]
   scheduleWorkflowSteps: (steps: DemoStep[], baseDelay?: number, skipEndMarker?: boolean) => void
-  scheduleGatedStart: (steps: DemoStep[], baseDelay?: number) => void
   finishGatedSteps: (steps: DemoStep[]) => void
   selectedNodeId: Ref<string | null>
   expandDrawer: () => void
+  onProgress?: (pct: number) => void
+  onJobActive?: (jobId: string) => void
 }) {
   const {
     nodes,
@@ -25,18 +29,21 @@ export function useWorkflowExecution(deps: {
     selectedTargetColumn,
     nodeStatuses,
     isDemoRunning,
+    isDemoFinished,
     buildDemoSteps,
     scheduleWorkflowSteps,
-    scheduleGatedStart,
     finishGatedSteps,
     selectedNodeId,
     expandDrawer,
+    onProgress,
+    onJobActive,
   } = deps
 
   const workflowResult = ref<null | Record<string, unknown>>(null)
   const workflowError = ref<string | null>(null)
   const pausedAtNodeId = ref<string | null>(null)
   const dataTableApplied = ref(false)
+  const activeJobId = ref<string | null>(null)
 
   const dataTableCanContinue = computed(
     () =>
@@ -127,6 +134,79 @@ export function useWorkflowExecution(deps: {
         ?? false,
       ),
     }
+  }
+
+  /** 從目前的 nodes 推算 model 節點順序與「所有 model 跑完後」要播放的後續步驟 */
+  function getModelPhaseInfo (): { modelNodeIdsOrdered: string[], postModelSteps: DemoStep[] } {
+    const steps = buildDemoSteps(nodes.value)
+    const modelGatedStep = steps.find(s => s.nodeIds.some(id => id.startsWith('model-')))
+    const modelNodeIdsOrdered = modelGatedStep ? modelGatedStep.nodeIds : []
+    const apiGatedSteps = modelGatedStep ? steps.filter(s => s.delay >= modelGatedStep.delay) : []
+    const postModelSteps = modelGatedStep ? apiGatedSteps.filter(s => s !== modelGatedStep) : apiGatedSteps
+    return { modelNodeIdsOrdered, postModelSteps }
+  }
+
+  /** 立即把後置步驟標記為完成，不經過動畫；用於重新打開頁面或輪詢時才發現 job 早已跑完／出錯的情境，
+   * 避免動畫用的 setTimeout 鏈被使用者離開頁面打斷，導致 isDemoFinished 永遠卡在 false，
+   * 進而讓下次打開頁面時誤判成「需要退回 checkpoint」而把已完成的節點狀態清空 */
+  function finishStepsImmediately (steps: DemoStep[]): void {
+    const next = new Map(nodeStatuses.value)
+    for (const step of steps) {
+      for (const id of step.nodeIds) {
+        next.set(id, 'finished')
+      }
+    }
+    nodeStatuses.value = next
+    isDemoRunning.value = false
+    isDemoFinished.value = true
+  }
+
+  /** 輪詢後端背景 job：依真實完成數推進節點動畫與專案進度，刷新後也能用同一個 job_id 接續呼叫 */
+  function pollJob (
+    jobId: string,
+    modelNodeIdsOrdered: string[],
+    postModelSteps: DemoStep[],
+    seenInit = 0,
+  ): void {
+    let seen = seenInit
+    const intervalId = window.setInterval(() => {
+      ;(async () => {
+        try {
+          const job = await fetchWorkflowJob(jobId)
+
+          if (job.completedModels.length > seen) {
+            const next = new Map(nodeStatuses.value)
+            for (let i = seen; i < job.completedModels.length; i += 1) {
+              next.set(modelNodeIdsOrdered[i]!, 'finished')
+              const nextNodeId = modelNodeIdsOrdered[i + 1]
+              if (nextNodeId) {
+                next.set(nextNodeId, 'running')
+              }
+            }
+            nodeStatuses.value = next
+            seen = job.completedModels.length
+          }
+
+          if (modelNodeIdsOrdered.length > 0) {
+            onProgress?.(Math.round((seen / modelNodeIdsOrdered.length) * 100))
+          }
+
+          if (job.status === 'done') {
+            window.clearInterval(intervalId)
+            activeJobId.value = null
+            workflowResult.value = job.result
+            window.setTimeout(() => finishGatedSteps(postModelSteps), 200)
+          } else if (job.status === 'error') {
+            window.clearInterval(intervalId)
+            activeJobId.value = null
+            workflowError.value = job.error ?? 'Workflow 執行失敗'
+            window.setTimeout(() => finishGatedSteps(postModelSteps), 200)
+          }
+        } catch {
+          // 輪詢暫時失敗（網路抖動等），下一輪再試，不中斷整個流程
+        }
+      })()
+    }, JOB_POLL_INTERVAL_MS)
   }
 
   async function runWorkflowRequest(): Promise<void> {
@@ -235,44 +315,119 @@ export function useWorkflowExecution(deps: {
         : apiGatedSteps
       const preModelSteps = remainingSteps.filter(s => !apiGatedSteps.includes(s))
 
-      scheduleWorkflowSteps(preModelSteps, settingsStep.delay, apiGatedSteps.length > 0)
-      // 只讓 model nodes 在預定時間開始 running；testScore/results 由 finishGatedSteps 控制
-      if (modelGatedStep) scheduleGatedStart([modelGatedStep], settingsStep.delay)
+      // 依序播放前處理動畫（緊接，每步 1s）
+      const PIPELINE_STEP_MS = 1000
+      let seqOffset = 0
+      for (const step of preModelSteps) {
+        const start = seqOffset
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of step.nodeIds) {
+            next.set(id, 'running')
+          }
+          nodeStatuses.value = next
+        }, start)
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          for (const id of step.nodeIds) {
+            next.set(id, 'finished')
+          }
+          nodeStatuses.value = next
+        }, start + PIPELINE_STEP_MS)
+        seqOffset += PIPELINE_STEP_MS + 100
+      }
 
-      // model name → node ID 對照表
-      const modelNameToNodeId = new Map(
-        nodes.value
-          .filter(n => n.id.startsWith('model-'))
-          .map(n => [String(n.data.config.modelName ?? ''), n.id]),
-      )
+      // 前處理全部完成後才啟動 model loading 和 API 呼叫
+      const postPipelineDelay = seqOffset
+
+      // 依序執行：一次只讓一個 model 進入 running，該 model API 回傳後才讓下一個開始
+      const modelNodeIdsOrdered = modelGatedStep ? modelGatedStep.nodeIds : []
+      if (modelNodeIdsOrdered.length > 0) {
+        window.setTimeout(() => {
+          const next = new Map(nodeStatuses.value)
+          next.set(modelNodeIdsOrdered[0]!, 'running')
+          nodeStatuses.value = next
+        }, postPipelineDelay)
+      }
 
       const payload = buildWorkflowPayload()
       const file = workflowDataFile.value
 
-      ;(async () => {
-        try {
-          await executeWorkflowApiStream({
-            file,
-            workflowPayload: payload,
-            onModelDone: (modelName) => {
-              // 該 model 跑完 → 立即把它的 node 設為 finished
-              const nodeId = modelNameToNodeId.get(modelName)
-              if (nodeId) {
-                const next = new Map(nodeStatuses.value)
-                next.set(nodeId, 'finished')
-                nodeStatuses.value = next
-              }
-            },
-            onDone: (result) => {
-              workflowResult.value = result
+      window.setTimeout(() => {
+        ;(async () => {
+          try {
+            const { jobId } = await startWorkflowJob({ file, workflowPayload: payload })
+            activeJobId.value = jobId
+            onJobActive?.(jobId)
+            pollJob(jobId, modelNodeIdsOrdered, postModelSteps)
+          } catch (error) {
+            workflowError.value = error instanceof Error ? error.message : 'Workflow 執行失敗'
+            window.setTimeout(() => {
               finishGatedSteps(postModelSteps)
-            },
-          })
-        } catch (error) {
-          workflowError.value = error instanceof Error ? error.message : 'Workflow 執行失敗'
-          finishGatedSteps(postModelSteps)
+            }, 200)
+          }
+        })()
+      }, postPipelineDelay)
+    }
+  }
+
+  /** 刷新後若有上次留下的 job_id，先確認後端 job 的真實狀態再決定怎麼接續 */
+  async function resumeJob (): Promise<'resumed' | 'completed' | 'missing'> {
+    if (!activeJobId.value) {
+      // activeJobId 可能在「結尾動畫」播完前就被清空了（例如即時輪詢時 job 一跑完就立刻
+      // 清空 activeJobId，但動畫還要再跑個 1~2 秒才會把 isDemoFinished 設成 true；如果使用者
+      // 這時候離開頁面，動畫就會被中斷）。只要 workflowResult 已經拿到，就代表 job 真的跑完了，
+      // 直接補上完成狀態即可，不能誤判成「job 找不到」而退回 checkpoint 把已完成的節點清空
+      if (workflowResult.value) {
+        const { postModelSteps } = getModelPhaseInfo()
+        finishStepsImmediately(postModelSteps)
+        return 'completed'
+      }
+      return 'missing'
+    }
+    const jobId = activeJobId.value
+
+    try {
+      const job = await fetchWorkflowJob(jobId)
+      const { modelNodeIdsOrdered, postModelSteps } = getModelPhaseInfo()
+
+      if (job.status === 'error') {
+        activeJobId.value = null
+        return 'missing'
+      }
+
+      if (job.status === 'done') {
+        activeJobId.value = null
+        workflowResult.value = job.result
+        const next = new Map(nodeStatuses.value)
+        for (const id of modelNodeIdsOrdered) {
+          next.set(id, 'finished')
         }
-      })()
+        nodeStatuses.value = next
+        onProgress?.(100)
+        finishStepsImmediately(postModelSteps)
+        return 'completed'
+      }
+
+      const next = new Map(nodeStatuses.value)
+      for (let i = 0; i < job.completedModels.length; i += 1) {
+        const id = modelNodeIdsOrdered[i]
+        if (id) {
+          next.set(id, 'finished')
+        }
+      }
+      const runningId = modelNodeIdsOrdered[job.completedModels.length]
+      if (runningId) {
+        next.set(runningId, 'running')
+      }
+      nodeStatuses.value = next
+      isDemoRunning.value = true
+      onJobActive?.(jobId)
+      pollJob(jobId, modelNodeIdsOrdered, postModelSteps, job.completedModels.length)
+      return 'resumed'
+    } catch {
+      activeJobId.value = null
+      return 'missing'
     }
   }
 
@@ -281,6 +436,7 @@ export function useWorkflowExecution(deps: {
     workflowError,
     pausedAtNodeId,
     dataTableApplied,
+    activeJobId,
     dataTableCanContinue,
     settingsCanContinue,
     workflowSummary,
@@ -288,5 +444,6 @@ export function useWorkflowExecution(deps: {
     runWorkflowRequest,
     executeWorkflow,
     continueWorkflow,
+    resumeJob,
   }
 }

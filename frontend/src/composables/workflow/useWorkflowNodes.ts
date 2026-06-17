@@ -54,7 +54,17 @@ export function useWorkflowNodes(
 
   const canvasEdges = computed<Edge[]>(() =>
     edges.value.map((edge): Edge => {
-      const done = nodeStatuses.value.get(String(edge.source)) === 'finished'
+      const id = String(edge.id)
+      let done: boolean
+      if (id.startsWith('etm')) {
+        // pipeline → model：該 model 開始 running 才連線（逐一連接）
+        done = nodeStatuses.value.has(String(edge.target))
+      } else if (id.startsWith('emts')) {
+        // model → testScore：等全部 model 完成、testScore 開始才一起連線
+        done = nodeStatuses.value.has(String(edge.target))
+      } else {
+        done = nodeStatuses.value.get(String(edge.source)) === 'finished'
+      }
       return {
         ...edge,
         animated: done && !isDemoFinished.value,

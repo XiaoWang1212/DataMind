@@ -1,107 +1,157 @@
 import type { EdgeBase, FlowNode } from '@/types/workflow'
 
-export const WORKFLOW_DATA_FILE_STORAGE_KEY = 'workflowDataFile'
-export const WORKFLOW_JSON_FILE_STORAGE_KEY = 'workflowJsonFile'
-export const WORKFLOW_STATE_STORAGE_KEY = 'workflowState'
+const WORKFLOW_DATA_FILE_KEY = 'workflowDataFile'
+const WORKFLOW_JSON_FILE_KEY = 'workflowJsonFile'
+const WORKFLOW_STATE_KEY = 'workflowState'
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = ''
-  const bytes = new Uint8Array(buffer)
-  for (let i = 0; i < bytes.byteLength; i += 1) {
-    binary += String.fromCodePoint(bytes[i]!)
-  }
-  return btoa(binary)
+const DB_NAME = 'datamindWorkflowFiles'
+const DB_STORE = 'files'
+
+function k (base: string, projectId?: string): string {
+  return projectId ? `${base}_${projectId}` : base
 }
 
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.codePointAt(i) ?? 0
-  }
-  return bytes
-}
-
-export async function saveWorkflowDataFileToStorage(file: File | null): Promise<void> {
-  if (!file) {
-    localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
-    return
-  }
-  try {
-    const buffer = await file.arrayBuffer()
-    const payload = {
-      name: file.name,
-      type: file.type || 'text/csv',
-      contentBase64: arrayBufferToBase64(buffer),
+// 一次性清掉舊版（base64 存 localStorage）留下的資料檔案，
+// 這些殘留可能就是當初把 localStorage 配額塞滿、導致存檔靜默失敗的原因
+function purgeLegacyDataFileEntries (): void {
+  const staleKeys: string[] = []
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i)
+    if (key && (key === WORKFLOW_DATA_FILE_KEY || key.startsWith(`${WORKFLOW_DATA_FILE_KEY}_`))) {
+      staleKeys.push(key)
     }
-    localStorage.setItem(WORKFLOW_DATA_FILE_STORAGE_KEY, JSON.stringify(payload))
-  } catch (error) {
-    console.warn('Unable to persist workflow file to localStorage', error)
+  }
+  for (const key of staleKeys) {
+    localStorage.removeItem(key)
   }
 }
 
-export async function loadWorkflowDataFileFromStorage(): Promise<File | null> {
-  const raw = localStorage.getItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
-  if (!raw) return null
+purgeLegacyDataFileEntries()
+
+// CSV 資料檔案改用 IndexedDB 儲存：localStorage 容量通常只有 5~10MB，
+// 累積多個專案的資料檔很容易超過上限導致 setItem 靜默失敗，造成刷新後資料消失
+function openFileDb (): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1)
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(DB_STORE)) {
+        request.result.createObjectStore(DB_STORE)
+      }
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.addEventListener('error', () => reject(request.error))
+  })
+}
+
+export async function saveWorkflowDataFileToStorage (file: File | null, projectId?: string): Promise<void> {
+  const key = k(WORKFLOW_DATA_FILE_KEY, projectId)
   try {
-    const parsed = JSON.parse(raw) as { name: string; type: string; contentBase64: string }
-    const bytes = base64ToUint8Array(parsed.contentBase64)
-    return new File([bytes.buffer as ArrayBuffer], parsed.name, { type: parsed.type })
+    const db = await openFileDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, 'readwrite')
+      if (file) {
+        tx.objectStore(DB_STORE).put({ name: file.name, type: file.type || 'text/csv', blob: file }, key)
+      } else {
+        tx.objectStore(DB_STORE).delete(key)
+      }
+      tx.oncomplete = () => resolve()
+      tx.addEventListener('error', () => reject(tx.error))
+    })
+    db.close()
   } catch (error) {
-    console.warn('Unable to restore workflow file from localStorage', error)
-    localStorage.removeItem(WORKFLOW_DATA_FILE_STORAGE_KEY)
+    console.error('[WF-SAVE] 無法將資料檔案存入 IndexedDB:', error)
+  }
+}
+
+export async function loadWorkflowDataFileFromStorage (projectId?: string): Promise<File | null> {
+  const key = k(WORKFLOW_DATA_FILE_KEY, projectId)
+  try {
+    const db = await openFileDb()
+    const record = await new Promise<{ name: string, type: string, blob: Blob } | undefined>((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, 'readonly')
+      const req = tx.objectStore(DB_STORE).get(key)
+      req.onsuccess = () => resolve(req.result)
+      req.addEventListener('error', () => reject(req.error))
+    })
+    db.close()
+    if (!record) {
+      return null
+    }
+    return new File([record.blob], record.name, { type: record.type })
+  } catch (error) {
+    console.error('[WF-LOAD] 無法從 IndexedDB 還原資料檔案:', error)
     return null
   }
 }
 
-export async function saveWorkflowJsonFileToStorage(file: File | null): Promise<void> {
+export async function saveWorkflowJsonFileToStorage (file: File | null, projectId?: string): Promise<void> {
+  const key = k(WORKFLOW_JSON_FILE_KEY, projectId)
   if (!file) {
-    localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+    localStorage.removeItem(key)
     return
   }
   try {
     const text = await file.text()
     const payload = { name: file.name, type: file.type || 'application/json', text }
-    localStorage.setItem(WORKFLOW_JSON_FILE_STORAGE_KEY, JSON.stringify(payload))
+    localStorage.setItem(key, JSON.stringify(payload))
   } catch (error) {
     console.warn('Unable to persist workflow JSON to localStorage', error)
   }
 }
 
-export async function loadWorkflowJsonFileFromStorage(): Promise<File | null> {
-  const raw = localStorage.getItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
-  if (!raw) return null
+export async function loadWorkflowJsonFileFromStorage (projectId?: string): Promise<File | null> {
+  const key = k(WORKFLOW_JSON_FILE_KEY, projectId)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return null
+  }
   try {
-    const parsed = JSON.parse(raw) as { name: string; type: string; text: string }
+    const parsed = JSON.parse(raw) as { name: string, type: string, text: string }
     return new File([parsed.text], parsed.name, { type: parsed.type })
   } catch (error) {
     console.warn('Unable to restore workflow JSON from localStorage', error)
-    localStorage.removeItem(WORKFLOW_JSON_FILE_STORAGE_KEY)
+    localStorage.removeItem(key)
     return null
   }
 }
 
-export function saveWorkflowStateToStorage(nodes: FlowNode[], edges: EdgeBase[]): void {
+export interface WorkflowExecutionState {
+  nodeStatuses?: Record<string, 'running' | 'finished'>
+  pausedAtNodeId?: string | null
+  dataTableApplied?: boolean
+  selectedNodeId?: string | null
+  isDemoFinished?: boolean
+  workflowResult?: Record<string, unknown> | null
+  activeJobId?: string | null
+}
+
+export function saveWorkflowStateToStorage (
+  nodes: FlowNode[],
+  edges: EdgeBase[],
+  projectId?: string,
+  execution?: WorkflowExecutionState,
+): void {
+  const key = k(WORKFLOW_STATE_KEY, projectId)
   try {
-    const payload = JSON.stringify({ nodes, edges })
-    localStorage.setItem(WORKFLOW_STATE_STORAGE_KEY, payload)
-    console.log('[WF-SAVE] saved', nodes.length, 'nodes,', edges.length, 'edges, caller:', new Error('trace').stack?.split('\n')[2]?.trim())
+    localStorage.setItem(key, JSON.stringify({ nodes, edges, ...execution }))
   } catch (error) {
     console.error('[WF-SAVE] FAILED:', error)
   }
 }
 
-export function loadWorkflowStateFromStorage(): { nodes: FlowNode[]; edges: EdgeBase[] } | null {
-  const raw = localStorage.getItem(WORKFLOW_STATE_STORAGE_KEY)
-  console.log('[WF-LOAD] localStorage raw length:', raw?.length ?? 'null (nothing saved)')
-  if (!raw) return null
+export function loadWorkflowStateFromStorage (
+  projectId?: string,
+): ({ nodes: FlowNode[], edges: EdgeBase[] } & WorkflowExecutionState) | null {
+  const key = k(WORKFLOW_STATE_KEY, projectId)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return null
+  }
   try {
-    const parsed = JSON.parse(raw) as { nodes: FlowNode[]; edges: EdgeBase[] }
-    console.log('[WF-LOAD] parsed', parsed.nodes?.length, 'nodes,', parsed.edges?.length, 'edges')
-    return parsed
+    return JSON.parse(raw) as { nodes: FlowNode[], edges: EdgeBase[] } & WorkflowExecutionState
   } catch (error) {
     console.error('[WF-LOAD] JSON.parse FAILED:', error)
-    localStorage.removeItem(WORKFLOW_STATE_STORAGE_KEY)
+    localStorage.removeItem(key)
     return null
   }
 }

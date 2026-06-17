@@ -9,14 +9,14 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="search-wrap">
-        <v-icon icon="mdi-magnify" size="17" class="search-icon" />
+        <v-icon class="search-icon" icon="mdi-magnify" size="17" />
         <input
           v-model="searchQuery"
           class="search-input"
           placeholder="搜尋框架..."
-        />
+        >
       </div>
-      <RouterLink to="/hub/library/extract" class="upload-btn">
+      <RouterLink class="upload-btn" to="/hub/library/extract">
         <v-icon icon="mdi-upload" size="16" />
         上傳論文
       </RouterLink>
@@ -33,7 +33,7 @@
       >
         <div class="fw-card-top">
           <div class="fw-icon-wrap">
-            <v-icon icon="mdi-book-open-outline" size="19" color="#4f46e5" />
+            <v-icon color="#4f46e5" icon="mdi-book-open-outline" size="19" />
           </div>
           <div class="fw-info">
             <div class="fw-title" :title="fw.title">{{ fw.title }}</div>
@@ -42,11 +42,11 @@
         </div>
         <div class="fw-meta">
           <div class="fw-meta-row">
-            <v-icon icon="mdi-tag-outline" size="13" class="meta-icon" />
+            <v-icon class="meta-icon" icon="mdi-tag-outline" size="13" />
             <span>{{ fw.tag }}</span>
           </div>
           <div class="fw-meta-row">
-            <v-icon icon="mdi-calendar-outline" size="13" class="meta-icon" />
+            <v-icon class="meta-icon" icon="mdi-calendar-outline" size="13" />
             <span>{{ fw.date }}</span>
           </div>
         </div>
@@ -78,7 +78,7 @@
         <!-- Paper title -->
         <div class="panel-section">
           <div class="panel-section-head">
-            <v-icon icon="mdi-file-document-outline" size="16" class="section-icon" />
+            <v-icon class="section-icon" icon="mdi-file-document-outline" size="16" />
             <span class="panel-section-label">論文標題</span>
           </div>
           <div class="panel-text-muted">{{ selectedFramework.paperTitle }}</div>
@@ -93,7 +93,7 @@
         <!-- Independent variables -->
         <div class="panel-section">
           <div class="panel-section-head">
-            <v-icon icon="mdi-account-multiple-outline" size="15" class="section-icon" />
+            <v-icon class="section-icon" icon="mdi-account-multiple-outline" size="15" />
             <span class="panel-section-label">自變數</span>
           </div>
           <div class="var-list">
@@ -106,7 +106,7 @@
         <!-- Dependent variables -->
         <div class="panel-section">
           <div class="panel-section-head">
-            <v-icon icon="mdi-target" size="15" class="section-icon" />
+            <v-icon class="section-icon" icon="mdi-target" size="15" />
             <span class="panel-section-label">因變數</span>
           </div>
           <div class="var-list">
@@ -146,8 +146,8 @@
       <!-- Use in project button -->
       <div class="panel-action">
         <RouterLink
-          :to="`/hub/projects/new`"
           class="use-btn"
+          :to="`/hub/projects/new`"
         >
           用於專案
         </RouterLink>
@@ -157,75 +157,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
+  import { computed, ref } from 'vue'
+  import { RouterLink } from 'vue-router'
+  import { useFrameworkStore } from '@/store/frameworkStore'
 
-const searchQuery = ref('')
-const selectedId = ref<number | null>(null)
+  const store = useFrameworkStore()
+  const searchQuery = ref('')
+  const selectedId = ref<number | null>(null)
 
-const frameworks = [
-  {
-    id: 1,
-    title: 'CNN 圖像分類',
-    subtitle: '深度殘差學習圖像識別',
-    tag: 'CNN 架構',
-    date: '2026-05-28',
-    variables: 12,
-    paperTitle: 'Deep Residual Learning for Image Recognition',
-    description: 'A deep residual learning framework for image recognition tasks using convolutional neural networks with skip connections.',
-    independentVars: ['network_depth', 'residual_blocks', 'learning_rate', 'batch_size', 'dropout_rate'],
-    dependentVars: ['classification_accuracy', 'training_loss', 'validation_loss'],
-    hypotheses: [
-      'H1: Deeper networks with residual connections will achieve higher accuracy',
-      'H2: Skip connections prevent gradient vanishing in deep networks',
-    ],
-  },
-  {
-    id: 2,
-    title: '市場情緒回歸',
-    subtitle: '使用社群媒體預測股市走勢',
-    tag: '線性回歸',
-    date: '2026-05-25',
-    variables: 8,
-    paperTitle: 'Predicting Stock Market Movements using Social Media',
-    description: 'A regression model that predicts stock market movements based on sentiment analysis of social media posts.',
-    independentVars: ['sentiment_score', 'post_volume', 'engagement_rate', 'user_influence'],
-    dependentVars: ['stock_price_change', 'trading_volume'],
-    hypotheses: [
-      'H1: Positive sentiment correlates with stock price increases',
-      'H2: High post volume predicts increased trading activity',
-    ],
-  },
-  {
-    id: 3,
-    title: '用戶行為 RNN',
-    subtitle: '用戶導航中的序列模式',
-    tag: '遞歸神經網絡',
-    date: '2026-05-20',
-    variables: 15,
-    paperTitle: 'Sequential Patterns in User Navigation',
-    description: 'An RNN-based model for predicting user navigation patterns and next-page visits on websites.',
-    independentVars: ['page_sequence', 'time_on_page', 'click_depth', 'session_duration', 'device_type'],
-    dependentVars: ['next_page_prediction', 'bounce_probability', 'conversion_likelihood'],
-    hypotheses: [
-      'H1: Longer session duration increases conversion probability',
-      'H2: Sequential patterns can predict user intent',
-      'H3: Device type influences navigation behavior',
-    ],
-  },
-]
+  const filteredFrameworks = computed(() => {
+    if (!searchQuery.value) return store.frameworks
+    const q = searchQuery.value.toLowerCase()
+    return store.frameworks.filter(
+      f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
+    )
+  })
 
-const filteredFrameworks = computed(() => {
-  if (!searchQuery.value) return frameworks
-  const q = searchQuery.value.toLowerCase()
-  return frameworks.filter(
-    f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
+  const selectedFramework = computed(() =>
+    selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
   )
-})
-
-const selectedFramework = computed(() =>
-  selectedId.value !== null ? frameworks.find(f => f.id === selectedId.value) ?? null : null,
-)
 </script>
 
 <style scoped>

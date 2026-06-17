@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from werkzeug.utils import secure_filename
 
-from flask import Blueprint, Response, jsonify, request, stream_with_context
+from flask import Blueprint, jsonify, request
 from services.model.registry import extract_model_components
 from services.workflow import WorkflowService
 from services.workflow.extraction_mapper import build_workflow_payload
+from services.workflow.job_manager import get_job, start_job
 
 model_bp = Blueprint("model", __name__)
 
@@ -378,9 +379,9 @@ def execute_workflow():
         return jsonify({"error": f"Workflow execution failed: {str(exc)}"}), 500
 
 
-@model_bp.post("/workflow/execute-stream")
-def execute_workflow_stream():
-    """SSE endpoint：每個 model 跑完後立即 push 結果，前端即時更新 loading 狀態。"""
+@model_bp.post("/workflow/jobs")
+def create_workflow_job():
+    """背景執行 workflow：立即回傳 job_id，模型訓練在獨立 thread 跑，不綁定這條 HTTP 連線。"""
     try:
         data_path, kwargs = _parse_execute_params()
     except ValueError as exc:
@@ -389,23 +390,21 @@ def execute_workflow_stream():
     if not data_path:
         return jsonify({"error": "data_path or file upload is required."}), 400
 
-    def generate():
-        try:
-            for event in WorkflowService.execute_workflow_stream(data_path=data_path, **kwargs):
-                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-        except FileNotFoundError as exc:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)}, ensure_ascii=False)}\n\n"
-        except ValueError as exc:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)}, ensure_ascii=False)}\n\n"
-        except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'message': f'Workflow execution failed: {exc}'}, ensure_ascii=False)}\n\n"
+    job_id = start_job(data_path=data_path, **kwargs)
+    job = get_job(job_id)
+    return jsonify({"job_id": job_id, "total_models": job.total_models if job else 0})
 
-    return Response(
-        stream_with_context(generate()),
-        mimetype="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-            "Connection": "keep-alive",
-        },
-    )
+
+@model_bp.get("/workflow/jobs/<job_id>")
+def get_workflow_job(job_id: str):
+    job = get_job(job_id)
+    if job is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "status": job.status,
+        "total_models": job.total_models,
+        "completed_models": [c["model_name"] for c in job.completed],
+        "result": job.result if job.status == "done" else None,
+        "error": job.error,
+    })

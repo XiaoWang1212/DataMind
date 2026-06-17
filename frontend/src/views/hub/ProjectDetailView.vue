@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Back link -->
-    <RouterLink to="/hub/projects" class="back-link">
+    <RouterLink class="back-link" to="/hub/projects">
       <v-icon icon="mdi-arrow-left" size="15" />
       返回專案
     </RouterLink>
@@ -14,7 +14,7 @@
           {{ statusLabel[project.status] }}
         </span>
       </div>
-      <div class="framework-link">框架：{{ project.framework }}</div>
+      <div class="framework-link">框架：{{ project.frameworkName }}</div>
     </div>
 
     <!-- Detail panels -->
@@ -40,8 +40,8 @@
         <template v-else-if="project.status === 'running'">
           <div class="running-state">
             <v-progress-circular
-              indeterminate
               color="#d97706"
+              indeterminate
               size="52"
               width="4"
             />
@@ -53,6 +53,14 @@
         <template v-else>
           <div class="draft-state">尚未執行此專案</div>
         </template>
+
+        <!-- Open in Workflow button -->
+        <div class="open-workflow-wrap">
+          <button class="open-workflow-btn" @click="openInWorkflow">
+            <v-icon icon="mdi-sitemap-outline" size="16" />
+            在 Workflow 中開啟
+          </button>
+        </div>
       </div>
 
       <!-- Project info -->
@@ -64,7 +72,7 @@
         </div>
         <div class="info-row">
           <div class="info-label">資料集</div>
-          <div class="info-value">{{ project.dataset }}</div>
+          <div class="info-value">{{ project.datasetName || '（未上傳）' }}</div>
         </div>
         <div class="info-row">
           <div class="info-label">變數</div>
@@ -79,59 +87,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+  import { computed } from 'vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import { useProjectStore } from '@/store/projectStore'
 
-const route = useRoute()
+  const route = useRoute()
+  const router = useRouter()
+  const store = useProjectStore()
 
-const statusLabel: Record<string, string> = {
-  completed: '已完成',
-  running: '進行中',
-  draft: '草稿',
-}
+  const statusLabel: Record<string, string> = {
+    completed: '已完成',
+    running: '進行中',
+    draft: '草稿',
+  }
 
-const projectsData = [
-  {
-    id: '1',
-    name: '市場情緒研究',
-    status: 'completed',
-    framework: '市場情緒回歸',
-    date: '2026-05-29',
-    accuracy: '87.3%',
-    keyFinding: '購買頻率是流失率最強的預測因子（p < 0.001）',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 100,
-  },
-  {
-    id: '2',
-    name: '圖像分類實驗',
-    status: 'running',
-    framework: 'CNN 圖像分類',
-    date: '2026-06-01',
-    accuracy: '',
-    keyFinding: '',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 67,
-  },
-  {
-    id: '3',
-    name: '用戶導航分析',
-    status: 'draft',
-    framework: '用戶行為 RNN',
-    date: '2026-06-02',
-    accuracy: '',
-    keyFinding: '',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 0,
-  },
-]
+  const project = computed(() =>
+    store.projects.find(p => p.id === route.params.id),
+  )
 
-const project = computed(() =>
-  projectsData.find(p => p.id === route.params.id),
-)
+  // 這裡是打開「已存在」的專案，畫布狀態要從 localStorage 還原；
+  // 不能像 CreateProjectView 一樣呼叫 setActiveContext，否則 WorkflowWorkspace
+  // 會誤判成全新專案而呼叫 executeWorkflow() 把已完成的 workflow 整個清空重來
+  function openInWorkflow (): void {
+    if (!project.value) return
+    router.push(`/workflow?project=${project.value.id}`)
+  }
 </script>
 
 <style scoped>
@@ -270,6 +250,33 @@ const project = computed(() =>
   min-height: 120px;
   font-size: 14px;
   color: #9ca3af;
+}
+
+/* ── Open workflow button ── */
+.open-workflow-wrap {
+  padding-top: 20px;
+  margin-top: 4px;
+  border-top: 1px solid #f0f1f3;
+}
+
+.open-workflow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 18px;
+  height: 38px;
+  background: #2347c5;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.open-workflow-btn:hover {
+  background: #1b3ca0;
 }
 
 /* ── Project info ── */

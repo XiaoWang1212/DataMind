@@ -22,9 +22,10 @@ export function useWorkflowDemo() {
   function scheduleWorkflowSteps(steps: DemoStep[], baseDelay = 0, skipEndMarker = false): void {
     if (steps.length === 0) return
 
-    for (const { nodeIds, delay } of steps) {
+    for (const { nodeIds, delay, duration } of steps) {
       const offset = delay - baseDelay
       if (offset < 0) continue
+      const runDuration = duration ?? NODE_RUN_DURATION
 
       demoTimers.push(
         window.setTimeout(() => {
@@ -36,13 +37,14 @@ export function useWorkflowDemo() {
           const next = new Map(nodeStatuses.value)
           for (const id of nodeIds) next.set(id, 'finished')
           nodeStatuses.value = next
-        }, offset + NODE_RUN_DURATION),
+        }, offset + runDuration),
       )
     }
 
     if (!skipEndMarker) {
-      const lastDelay = steps.at(-1)!.delay
-      const endTime = lastDelay - baseDelay + NODE_RUN_DURATION + DEMO_FINISH_LINGER
+      const lastStep = steps.at(-1)!
+      const lastRunDuration = lastStep.duration ?? NODE_RUN_DURATION
+      const endTime = lastStep.delay - baseDelay + lastRunDuration + DEMO_FINISH_LINGER
       demoTimers.push(
         window.setTimeout(() => {
           isDemoRunning.value = false
@@ -94,11 +96,12 @@ export function useWorkflowDemo() {
   }
 
   function buildDemoSteps(nodes: FlowNode[]): DemoStep[] {
+    const FILE_DURATION = 1000
     const common: DemoStep[] = [
-      { nodeIds: ['file'], delay: 800 },
-      { nodeIds: ['distribution'], delay: 1400 },
-      { nodeIds: ['dataTable'], delay: 1800 },
-      { nodeIds: ['settings'], delay: 2800 },
+      { nodeIds: ['file'], delay: 0, duration: FILE_DURATION },
+      { nodeIds: ['distribution'], delay: FILE_DURATION + 100 },
+      { nodeIds: ['dataTable'], delay: FILE_DURATION + 500 },
+      { nodeIds: ['settings'], delay: FILE_DURATION + 1500 },
     ]
     const presentPipeline = (DYNAMIC_NODE_IDS as readonly string[]).filter(id =>
       nodes.some(n => n.id === id),
@@ -111,15 +114,18 @@ export function useWorkflowDemo() {
       ...(hasComputeCiNode ? ['computeCi'] : []),
     ]
 
+    const SETTINGS_END = FILE_DURATION + 1500 + NODE_RUN_DURATION
+    const PIPELINE_BASE = SETTINGS_END + 200
+
     if (presentPipeline.length === 0 && modelNodeIds.length === 0) {
       return [
         ...common,
-        { nodeIds: ['testScore'], delay: 4200 },
-        { nodeIds: resultNodeIds, delay: 5400 },
+        { nodeIds: ['testScore'], delay: PIPELINE_BASE },
+        { nodeIds: resultNodeIds, delay: PIPELINE_BASE + 1200 },
       ]
     }
 
-    let delay = 3600
+    let delay = PIPELINE_BASE
     const pipelineSteps: DemoStep[] = presentPipeline.map(id => {
       const step: DemoStep = { nodeIds: [id], delay }
       delay += 1400

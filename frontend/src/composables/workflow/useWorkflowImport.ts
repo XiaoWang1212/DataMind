@@ -31,6 +31,7 @@ export function useWorkflowImport (
     paperFileInput: Ref<HTMLInputElement | null>
     geminiFileInput: Ref<HTMLInputElement | null>
   },
+  getProjectId?: () => string | undefined,
 ) {
   const { jsonFileInput, paperFileInput, geminiFileInput } = fileInputRefs
   const paperUploading = ref(false)
@@ -191,7 +192,7 @@ export function useWorkflowImport (
 
     syncComputeCiNode()
     selectedJsonFile.value = file
-    await saveWorkflowJsonFileToStorage(file)
+    await saveWorkflowJsonFileToStorage(file, getProjectId?.())
     saveState()
   }
 

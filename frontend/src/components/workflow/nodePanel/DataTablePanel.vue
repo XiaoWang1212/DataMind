@@ -98,67 +98,16 @@
           <button class="btn-reset" type="button" @click="resetColumnSettings">
             Reset
           </button>
-          <button class="btn-apply" type="button" @click="applyColumnSettings">
-            Apply
+          <button
+            class="btn-apply"
+            :class="{ 'btn-apply--disabled': !hasTarget }"
+            :disabled="!hasTarget"
+            type="button"
+            @click="applyColumnSettings"
+          >
+            繼續
           </button>
         </div>
-      </div>
-
-      <div class="data-table-scroll" :style="tableScrollStyle">
-        <table>
-          <thead>
-            <tr>
-              <th
-                v-for="(header, index) in previewColumns"
-                :key="header"
-                class="data-table-header-cell"
-              >
-                <div
-                  class="cell-inner"
-                  :class="{ 'cell-inner--expanded': isHeaderExpanded(index) }"
-                >
-                  {{ getDisplayText(header, isHeaderExpanded(index)) }}
-                </div>
-                <button
-                  v-if="shouldShowToggle(header)"
-                  class="toggle-expand"
-                  type="button"
-                  @click="toggleHeaderExpand(index)"
-                >
-                  {{ isHeaderExpanded(index) ? "less" : "more..." }}
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, rowIndex) in displayRows" :key="rowIndex">
-              <td
-                v-for="(cell, cellIndex) in row"
-                :key="`${rowIndex}-${cellIndex}`"
-                class="data-table-cell"
-              >
-                <div
-                  class="cell-inner"
-                  :class="{
-                    'cell-inner--expanded': isCellExpanded(rowIndex, cellIndex),
-                  }"
-                >
-                  {{
-                    getDisplayText(cell, isCellExpanded(rowIndex, cellIndex))
-                  }}
-                </div>
-                <button
-                  v-if="shouldShowToggle(cell)"
-                  class="toggle-expand"
-                  type="button"
-                  @click="toggleCellExpand(rowIndex, cellIndex)"
-                >
-                  {{ isCellExpanded(rowIndex, cellIndex) ? "less" : "more..." }}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   </section>
@@ -214,50 +163,10 @@
     skip: 'Skip',
   }
 
-  const rowCount = 10
-  const displayRows = computed(() => previewDataRows.value.slice(0, rowCount))
-  const tableScrollStyle = computed(() => ({
-    maxHeight: `${rowCount * 48 + 80}px`,
-  }))
-
   const originalColumnSettings = ref<ColumnSetting[]>([])
   const nameMaxLength = 32
-  const expandedHeaders = ref(new Set<number>())
-  const expandedCells = ref(new Set<string>())
-  const textLimit = 24
 
-  function shouldShowToggle (value: string): boolean {
-    return value.includes('\n') || value.length > textLimit
-  }
-
-  function isHeaderExpanded (index: number): boolean {
-    return expandedHeaders.value.has(index)
-  }
-
-  function toggleHeaderExpand (index: number): void {
-    if (expandedHeaders.value.has(index)) {
-      expandedHeaders.value.delete(index)
-    } else {
-      expandedHeaders.value.add(index)
-    }
-  }
-
-  function cellKey (rowIndex: number, cellIndex: number): string {
-    return `${rowIndex}-${cellIndex}`
-  }
-
-  function isCellExpanded (rowIndex: number, cellIndex: number): boolean {
-    return expandedCells.value.has(cellKey(rowIndex, cellIndex))
-  }
-
-  function toggleCellExpand (rowIndex: number, cellIndex: number): void {
-    const key = cellKey(rowIndex, cellIndex)
-    if (expandedCells.value.has(key)) {
-      expandedCells.value.delete(key)
-    } else {
-      expandedCells.value.add(key)
-    }
-  }
+  const hasTarget = computed(() => columnSettings.value.some(c => c.role === 'target'))
 
   function isLikelyDate (value: string): boolean {
     if (!value || value.trim().length === 0) return false
@@ -401,11 +310,6 @@
     },
     { immediate: true, deep: true },
   )
-
-  function getDisplayText (value: string, expanded: boolean): string {
-    if (expanded || value.length <= textLimit) return value
-    return value.slice(0, textLimit) + '...'
-  }
 
   async function loadFile (file: File): Promise<void> {
     try {
@@ -672,6 +576,11 @@
   .btn-apply {
     background: #2563eb;
     color: #fff;
+  }
+
+  .btn-apply--disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
   }
 
   .column-settings-table th {

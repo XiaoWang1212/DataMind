@@ -20,30 +20,7 @@
       @confirm="confirmUpload"
     />
 
-    <!-- 工具列按鈕 -->
-    <button
-      class="demo-btn execute-workflow-btn"
-      :disabled="
-        (pausedAtNodeId === 'dataTable' && !dataTableCanContinue)
-          || (pausedAtNodeId === 'settings' && !settingsCanContinue)
-      "
-      type="button"
-      @click="
-        pausedAtNodeId === 'dataTable' || pausedAtNodeId === 'settings'
-          ? continueWorkflow()
-          : executeWorkflow()
-      "
-    >
-      {{ pausedAtNodeId === "dataTable" || pausedAtNodeId === "settings" ? "繼續 Workflow" : "執行 Workflow" }}
-    </button>
-
-    <button
-      class="demo-btn json-upload-btn"
-      type="button"
-      @click="triggerJsonUpload"
-    >
-      上傳 JSON
-    </button>
+    <!-- 隱藏 file inputs（由 useWorkflowImport 內部使用） -->
     <input
       ref="jsonFileInput"
       accept=".json,application/json"
@@ -51,15 +28,6 @@
       type="file"
       @change="handleJsonFileChange"
     >
-
-    <button
-      class="demo-btn paper-upload-btn"
-      :disabled="paperUploading"
-      type="button"
-      @click="triggerPaperUpload"
-    >
-      {{ paperUploading ? "上傳中..." : "上傳論文" }}
-    </button>
     <input
       ref="paperFileInput"
       accept=".pdf,.doc,.docx,.txt"
@@ -67,15 +35,6 @@
       type="file"
       @change="handlePaperFileChange"
     >
-
-    <button
-      class="demo-btn gemini-upload-btn"
-      :disabled="geminiUploading"
-      type="button"
-      @click="triggerGeminiUpload"
-    >
-      {{ geminiUploading ? "AI 分析中..." : "AI 生成 Workflow" }}
-    </button>
     <input
       ref="geminiFileInput"
       accept=".pdf,application/pdf"
@@ -124,6 +83,7 @@
                 :workflow-summary="workflowSummary"
                 @add-model="handleAddModel"
                 @apply-column-config="handleApplyColumnConfig"
+                @continue-settings="handleContinueSettings"
                 @open-upload="uploadDialogVisible = true"
                 @remove-model="handleRemoveModel"
                 @update-config="handleUpdateConfig"
@@ -149,6 +109,7 @@
     toRaw,
     watch,
   } from 'vue'
+  import { useRoute } from 'vue-router'
   import { fetchAvailableModels } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import { useWorkflowDemo } from '@/composables/workflow/useWorkflowDemo.ts'
@@ -163,12 +124,19 @@
     saveWorkflowStateToStorage,
   } from '@/composables/workflow/useWorkflowStorage.ts'
   import { INITIAL_EDGES, INITIAL_NODES } from '@/constants/workflowData'
+  import { useFrameworkStore } from '@/store/frameworkStore'
+  import { useProjectStore } from '@/store/projectStore'
   import IconNode from './IconNode.vue'
   import UploadDialog from './UploadDialog.vue'
   import WorkflowCanvas from './WorkflowCanvas.vue'
   import WorkflowOptionsPanel from './WorkflowOptionsPanel.vue'
 
   const nodeTypes = { iconNode: markRaw(IconNode) }
+  const route = useRoute()
+  const projectId = computed(() => route.query.project as string | undefined)
+
+  const projectStore = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
   const isInitializing = ref(true)
   const workflowDataFile = ref<File | null>(null)
@@ -186,7 +154,7 @@
 
   const { isExpanded, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
 
-  const { nodeStatuses, isDemoRunning, isDemoFinished, resetDemo, scheduleWorkflowSteps, scheduleGatedStart, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
+  const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
   const {
     nodes,
@@ -205,7 +173,15 @@
   } = useWorkflowNodes(nodeStatuses, isDemoFinished)
 
   function saveState (): void {
-    saveWorkflowStateToStorage(toRaw(nodes.value), toRaw(edges.value))
+    saveWorkflowStateToStorage(toRaw(nodes.value), toRaw(edges.value), projectId.value, {
+      nodeStatuses: Object.fromEntries(nodeStatuses.value),
+      pausedAtNodeId: pausedAtNodeId.value,
+      dataTableApplied: dataTableApplied.value,
+      selectedNodeId: selectedNodeId.value,
+      isDemoFinished: isDemoFinished.value,
+      workflowResult: workflowResult.value,
+      activeJobId: activeJobId.value,
+    })
   }
 
   const {
@@ -213,41 +189,42 @@
     workflowError,
     pausedAtNodeId,
     dataTableApplied,
-    dataTableCanContinue,
-    settingsCanContinue,
+    activeJobId,
     workflowSummary,
     executeWorkflow,
     continueWorkflow,
+    resumeJob,
   } = useWorkflowExecution({
     nodes,
     workflowDataFile,
     selectedTargetColumn,
     nodeStatuses,
     isDemoRunning,
+    isDemoFinished,
     buildDemoSteps,
     scheduleWorkflowSteps,
-    scheduleGatedStart,
     finishGatedSteps,
     selectedNodeId,
     expandDrawer,
+    onProgress: pct => {
+      if (projectId.value) projectStore.updateProjectProgress(projectId.value, pct)
+    },
+    onJobActive: jobId => {
+      if (projectId.value) projectStore.pollProjectJob(projectId.value, jobId)
+    },
   })
 
   const {
-    paperUploading,
-    geminiUploading,
     workflowError: importError,
     loadJsonModels,
-    triggerJsonUpload,
     handleJsonFileChange,
-    triggerPaperUpload,
     handlePaperFileChange,
-    triggerGeminiUpload,
     handleGeminiFileChange,
   } = useWorkflowImport(nodes, edges, syncComputeCiNode, saveState, {
     jsonFileInput,
     paperFileInput,
     geminiFileInput,
-  })
+  }, () => projectId.value)
 
   // ─── computed ─────────────────────────────────────────────────────────────
 
@@ -281,12 +258,30 @@
     workflowDataFile.value = file
     workflowError.value = null
     updateFileNodeConfig(file.name)
-    saveWorkflowDataFileToStorage(file)
+    saveWorkflowDataFileToStorage(file, projectId.value)
+  }
+
+  // 專案狀態：草稿建立後從未變動過，這裡讓它跟著 workflow 實際進度走
+  function markProjectRunning (): void {
+    if (!projectId.value) return
+    const target = projectStore.projects.find(p => p.id === projectId.value)
+    if (target && target.status !== 'running') {
+      projectStore.updateProjectStatus(projectId.value, 'running')
+    }
   }
 
   function handleApplyColumnConfig (): void {
     dataTableApplied.value = true
     workflowError.value = null
+    markProjectRunning()
+    continueWorkflow()
+    closeMenu()
+  }
+
+  function handleContinueSettings (): void {
+    markProjectRunning()
+    continueWorkflow()
+    closeMenu()
   }
 
   function handleAddModel (modelName: string): void {
@@ -344,7 +339,7 @@
   // ─── lifecycle ───────────────────────────────────────────────────────────
 
   watch(
-    [nodes, edges],
+    [nodes, edges, nodeStatuses, pausedAtNodeId, dataTableApplied, selectedNodeId, isDemoFinished, workflowResult, activeJobId],
     () => {
       if (isInitializing.value) {
         console.log('[WF-SAVE] 正在初始化中，跳過自動儲存，防止覆蓋')
@@ -355,30 +350,100 @@
     { deep: true },
   )
 
+  // workflow 真正跑出結果才算「已完成」；調整設定後重新執行會在 markProjectRunning() 退回「進行中」
+  watch(workflowResult, val => {
+    if (val && projectId.value) {
+      projectStore.updateProjectStatus(projectId.value, 'completed')
+    }
+  })
+
   onMounted(async () => {
     try {
-      const restoredState = loadWorkflowStateFromStorage()
-      if (restoredState && restoredState.nodes?.length > 0) {
-        nodes.value = restoredState.nodes
-        edges.value = restoredState.edges
-        for (const initNode of INITIAL_NODES) {
-          if (!nodes.value.some(n => n.id === initNode.id)) nodes.value = [...nodes.value, initNode]
-        }
-        for (const initEdge of INITIAL_EDGES) {
-          if (!edges.value.some(e => e.id === initEdge.id)) edges.value = [...edges.value, initEdge]
-        }
-        ensureDynamicNodes()
-        syncComputeCiNode()
-        console.log('[WF-INIT] 成功從儲存還原 nodes & edges')
-      } else {
-        const restoredJsonFile = await loadWorkflowJsonFileFromStorage()
-        if (restoredJsonFile) await loadJsonModels(restoredJsonFile)
+      if (projectId.value) {
+        const target = projectStore.projects.find(p => p.id === projectId.value)
+        if (target && target.status !== 'completed') markProjectRunning()
       }
 
-      const restoredDataFile = await loadWorkflowDataFileFromStorage()
-      if (restoredDataFile) {
-        workflowDataFile.value = restoredDataFile
-        updateFileNodeConfig(restoredDataFile.name)
+      const ctx = projectStore.activeContext
+      if (ctx) {
+        projectStore.clearActiveContext()
+        if (ctx.datasetFile) handleDataFile(ctx.datasetFile)
+        if (ctx.frameworkId !== null) {
+          const fw = frameworkStore.frameworks.find(f => f.id === ctx.frameworkId)
+          if (fw?.workflowJson) {
+            const jsonBlob = new File(
+              [JSON.stringify(fw.workflowJson)],
+              `${fw.title}.json`,
+              { type: 'application/json' },
+            )
+            await loadJsonModels(jsonBlob)
+          }
+        }
+        await nextTick()
+        executeWorkflow()
+      } else {
+        const restoredState = loadWorkflowStateFromStorage(projectId.value)
+        if (restoredState && restoredState.nodes?.length > 0) {
+          nodes.value = restoredState.nodes
+          edges.value = restoredState.edges
+          for (const initNode of INITIAL_NODES) {
+            if (!nodes.value.some(n => n.id === initNode.id)) nodes.value = [...nodes.value, initNode]
+          }
+          for (const initEdge of INITIAL_EDGES) {
+            if (!edges.value.some(e => e.id === initEdge.id)) edges.value = [...edges.value, initEdge]
+          }
+          ensureDynamicNodes()
+          syncComputeCiNode()
+
+          if (restoredState.nodeStatuses) {
+            nodeStatuses.value = new Map(Object.entries(restoredState.nodeStatuses))
+          }
+          if (restoredState.pausedAtNodeId !== undefined) pausedAtNodeId.value = restoredState.pausedAtNodeId
+          if (restoredState.dataTableApplied !== undefined) dataTableApplied.value = restoredState.dataTableApplied
+          if (restoredState.selectedNodeId !== undefined) selectedNodeId.value = restoredState.selectedNodeId
+          if (restoredState.isDemoFinished !== undefined) isDemoFinished.value = restoredState.isDemoFinished
+          if (restoredState.workflowResult !== undefined) workflowResult.value = restoredState.workflowResult
+          if (restoredState.activeJobId !== undefined) activeJobId.value = restoredState.activeJobId
+
+          // model 訓練已經搬到後端背景 job 執行，刷新後用存下來的 job_id 接續輪詢即可恢復；
+          // 只有在 job 真的找不到（例如後端重啟）時才退回最近一次「暫停等待使用者」的關卡，
+          // 避免畫面卡在某個 model 的 loading 狀態動彈不得
+          if (pausedAtNodeId.value === null && !isDemoFinished.value) {
+            const resumeOutcome = await resumeJob()
+
+            if (resumeOutcome === 'missing') {
+              let checkpoint: 'settings' | 'dataTable' | null = null
+              if (nodeStatuses.value.get('settings') === 'finished') checkpoint = 'settings'
+              else if (nodeStatuses.value.get('dataTable') === 'finished') checkpoint = 'dataTable'
+
+              if (checkpoint) {
+                const keepIds = checkpoint === 'settings'
+                  ? ['file', 'distribution', 'dataTable', 'settings']
+                  : ['file', 'distribution', 'dataTable']
+                const next = new Map(nodeStatuses.value)
+                for (const id of next.keys()) {
+                  if (!keepIds.includes(id)) next.delete(id)
+                }
+                nodeStatuses.value = next
+                pausedAtNodeId.value = checkpoint
+                selectedNodeId.value = checkpoint
+                workflowError.value = '偵測到上次的執行因刷新而中斷，請重新按「繼續」。'
+              }
+            }
+          }
+
+          if (selectedNodeId.value) expandDrawer()
+          console.log('[WF-INIT] 成功從儲存還原 nodes & edges 與執行狀態')
+        } else {
+          const restoredJsonFile = await loadWorkflowJsonFileFromStorage(projectId.value)
+          if (restoredJsonFile) await loadJsonModels(restoredJsonFile)
+        }
+
+        const restoredDataFile = await loadWorkflowDataFileFromStorage(projectId.value)
+        if (restoredDataFile) {
+          workflowDataFile.value = restoredDataFile
+          updateFileNodeConfig(restoredDataFile.name)
+        }
       }
 
       await loadAvailableModels()
@@ -387,13 +452,27 @@
       console.error('[WF-INIT] 初始化過程出錯:', error)
     } finally {
       isInitializing.value = false
-      console.log('[WF-INIT] 初始化完成，自動儲存鎖已解開')
+      // 初始化期間的狀態變化（例如新建專案時 executeWorkflow() 設定的暫停狀態）
+      // 因為鎖住自動儲存而從未被存下，這裡強制存一次基準狀態，避免之後刷新頁面時無資料可還原
+      saveState()
+      console.log('[WF-INIT] 初始化完成，自動儲存鎖已解開，並已存下基準狀態')
     }
   })
 
-  onBeforeUnmount(() => {
+  // 瀏覽器刷新／關閉頁籤時 Vue 的 onBeforeUnmount 不會被觸發，
+  // 必須額外監聽 pagehide 才能確保最新狀態在頁面卸載前被寫入 localStorage
+  function handlePageHide (): void {
     saveState()
-    resetDemo()
+  }
+
+  window.addEventListener('pagehide', handlePageHide)
+
+  // 離開頁面時不能再呼叫 resetDemo() 清空 nodeStatuses：onBeforeUnmount 執行的當下，
+  // 元件的 watch 還沒被 Vue 停掉，清空動作可能被該 watch 偵測到並把「清空後」的狀態存進
+  // localStorage，導致下次打開專案時整個 workflow 看起來被清掉
+  onBeforeUnmount(() => {
+    window.removeEventListener('pagehide', handlePageHide)
+    saveState()
   })
 </script>
 

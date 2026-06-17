@@ -1,61 +1,47 @@
-export async function executeWorkflowApiStream(params: {
+export async function startWorkflowJob (params: {
   file: File
   workflowPayload: Record<string, unknown>
-  onModelDone: (modelName: string, results: unknown[]) => void
-  onDone: (result: Record<string, unknown>) => void
-}): Promise<void> {
-  const { file, workflowPayload, onModelDone, onDone } = params
+}): Promise<{ jobId: string, totalModels: number }> {
+  const { file, workflowPayload } = params
 
   const formData = new FormData()
   formData.append('file', file, file.name || 'data.csv')
   formData.append('workflow_payload', JSON.stringify(workflowPayload))
 
-  const response = await fetch('/api/models/workflow/execute-stream', {
+  const response = await fetch('/api/models/workflow/jobs', {
     method: 'POST',
     body: formData,
   })
 
+  const result = (await response.json()) as Record<string, unknown>
   if (!response.ok) {
-    const result = (await response.json()) as Record<string, unknown>
     throw new Error(result.error ? String(result.error) : `HTTP ${response.status}`)
   }
 
-  if (!response.body) throw new Error('Streaming not supported by this environment')
+  return { jobId: String(result.job_id ?? ''), totalModels: Number(result.total_models ?? 0) }
+}
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
+export interface WorkflowJobStatus {
+  status: 'running' | 'done' | 'error'
+  totalModels: number
+  completedModels: string[]
+  result: Record<string, unknown> | null
+  error: string | null
+}
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        try {
-          const event = JSON.parse(line.slice(6)) as Record<string, unknown>
-          if (event.type === 'model_done') {
-            onModelDone(
-              String(event.model_name ?? ''),
-              Array.isArray(event.results) ? event.results : [],
-            )
-          } else if (event.type === 'done') {
-            onDone(event)
-          } else if (event.type === 'error') {
-            throw new Error(String(event.message ?? 'Workflow stream error'))
-          }
-        } catch (parseErr) {
-          if (parseErr instanceof Error && parseErr.message !== 'Workflow stream error')
-            continue
-          throw parseErr
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock()
+export async function fetchWorkflowJob (jobId: string): Promise<WorkflowJobStatus> {
+  const response = await fetch(`/api/models/workflow/jobs/${jobId}`)
+  const result = (await response.json()) as Record<string, unknown>
+  if (!response.ok) {
+    throw new Error(result.error ? String(result.error) : `HTTP ${response.status}`)
+  }
+
+  return {
+    status: result.status as WorkflowJobStatus['status'],
+    totalModels: Number(result.total_models ?? 0),
+    completedModels: Array.isArray(result.completed_models) ? result.completed_models.map(String) : [],
+    result: (result.result as Record<string, unknown> | null) ?? null,
+    error: result.error ? String(result.error) : null,
   }
 }
 
