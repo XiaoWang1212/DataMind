@@ -1,4 +1,4 @@
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 import { type Edge, Position } from '@vue-flow/core'
 import { INITIAL_EDGES, INITIAL_NODES } from '@/constants/workflowData'
@@ -358,7 +358,10 @@ export function useWorkflowNodes(
       ? settingsNode.data.config.models as Array<unknown>
       : []
     const currentModelCount = nodes.value.filter(n => n.id.startsWith('model-')).length
-    if (settingsModels.length > 0 && currentModelCount !== settingsModels.length) {
+    // 只有在畫布上完全沒有 model 節點時才從 settings 補齊（例如首次從框架 JSON 建立）；
+    // 若 model 節點已存在（由 localStorage 還原），就以它們為準，不用 settings 舊清單覆寫，
+    // 否則使用者透過 UI 增刪的模型會在重新整理後被還原成框架預設清單
+    if (settingsModels.length > 0 && currentModelCount === 0) {
       syncModelCanvasNodes(settingsModels)
     } else if (settingsModels.length === 0 && currentModelCount === 0) {
       const lastPreId = getLastPreModelNodeId()
