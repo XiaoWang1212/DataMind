@@ -87,6 +87,7 @@
             @add-model="name => emit('add-model', name)"
             @continue="emit('continue-settings')"
             @remove-model="name => emit('remove-model', name)"
+            @step-change="step => emit('settings-step-change', step)"
             @update-compute-ci="handleSettingsComputeCiUpdate"
             @update-feature-engineering="handleSettingsFEUpdate"
             @update-preprocessing="handleSettingsPreprocessingUpdate"
@@ -281,6 +282,7 @@
     (e: 'open-upload' | 'apply-column-config' | 'continue-settings'): void
     (e: 'update:file', file: File): void
     (e: 'add-model' | 'remove-model', modelName: string): void
+    (e: 'settings-step-change', step: number): void
   }>()
 
   // localConfig：面板內可編輯的暫存設定，按下「儲存設定」才同步給父層

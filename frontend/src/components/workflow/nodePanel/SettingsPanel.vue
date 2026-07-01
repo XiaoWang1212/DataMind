@@ -219,10 +219,13 @@
     (e: 'update-preprocessing' | 'update-feature-engineering', steps: Array<Record<string, unknown>>): void
     (e: 'update-compute-ci', value: boolean): void
     (e: 'continue'): void
+    (e: 'step-change', step: number): void
   }>()
 
   const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
   const currentStep = ref(0)
+
+  watch(currentStep, step => emit('step-change', step), { immediate: true })
 
   const PREPROCESS_LABELS: Record<string, string> = {
     fill_na: '缺值填補',

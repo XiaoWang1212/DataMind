@@ -114,6 +114,14 @@
       })
       resizeObserver.observe(flowAreaRef.value)
     }
+
+    // 初始 fitView（由 fit-view-on-init 觸發）完成後鎖定視角；
+    // 之後新增/刪除節點不會因為 canvasMinWidth 改變而重置
+    nextTick(() => {
+      window.setTimeout(() => {
+        userHasPanned.value = true
+      }, 800)
+    })
   })
 
   onBeforeUnmount(() => {
@@ -135,10 +143,12 @@
       setNodes(newNodes)
       const key = nodeStructureKey(newNodes)
       if (key !== prevStructureKey) {
+        const isFirstLoad = prevStructureKey === ''
         prevStructureKey = key
         nextTick(() => {
           setEdges(props.edges)
-          refreshFitView()
+          // 只有第一次載入才 fitView；後續新增/刪除節點不重置視角
+          if (isFirstLoad) refreshFitView()
         })
       }
     },
@@ -151,13 +161,6 @@
       setEdges(newEdges)
     },
     { deep: true },
-  )
-
-  watch(
-    () => [props.canvasMinHeight, props.canvasMinWidth],
-    () => {
-      refreshFitView()
-    },
   )
 
   // 計算底部節點（flowY）有沒有被 options panel 遮住，回傳需要往上抬幾 px
@@ -175,8 +178,9 @@
   }
   defineExpose({ computeRequiredRaise })
 
-  // 將點擊節點 id 傳回父層
+  // 將點擊節點 id 傳回父層（同時視為使用者已確立視角，不再自動 fitView）
   function onNodeClick (event: { node: { id: string } }) {
+    userHasPanned.value = true
     emit('select-node', event.node.id)
   }
 

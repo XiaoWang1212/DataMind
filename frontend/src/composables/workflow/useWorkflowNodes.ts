@@ -8,9 +8,14 @@ export const DYNAMIC_NODE_IDS = ['preprocessor', 'featureEngineering'] as const
 export const RESULT_NODE_IDS = ['featureImportance', 'confusionMatrix', 'computeCi'] as const
 export const MODEL_Y_GAP = 110
 
+const STEP_HIGHLIGHT_COLORS = ['#f0e274', '#f0e274', '#f0e274', '#f0e274'] as const
+
 export function useWorkflowNodes(
   nodeStatuses: Ref<Map<string, 'running' | 'finished'>>,
   isDemoFinished: Ref<boolean>,
+  selectedNodeId: Ref<string | null>,
+  settingsStep: Ref<number>,
+  nodeFlash: Ref<Map<string, 'add' | 'remove'>>,
 ) {
   const nodes = ref<FlowNode[]>(INITIAL_NODES)
   const edges = ref<EdgeBase[]>(INITIAL_EDGES)
@@ -37,9 +42,22 @@ export function useWorkflowNodes(
       .filter(Boolean),
   )
 
-  const canvasNodes = computed<FlowNode[]>(() =>
-    nodes.value.map(node => {
+  function getHighlightedIds(): Set<string> {
+    if (selectedNodeId.value !== 'settings') return new Set()
+    const step = settingsStep.value
+    if (step === 0) return new Set(['preprocessor'])
+    if (step === 1) return new Set(['featureEngineering'])
+    if (step === 2) return new Set(nodes.value.filter(n => n.id.startsWith('model-')).map(n => n.id))
+    if (step === 3) return new Set(['computeCi'])
+    return new Set()
+  }
+
+  const canvasNodes = computed<FlowNode[]>(() => {
+    const highlightedIds = getHighlightedIds()
+    const color: string | null = STEP_HIGHLIGHT_COLORS[settingsStep.value] ?? null
+    return nodes.value.map(node => {
       const status = nodeStatuses.value.get(node.id) ?? null
+      const highlighted = highlightedIds.has(node.id)
       return {
         ...node,
         class: '',
@@ -47,10 +65,13 @@ export function useWorkflowNodes(
           ...node.data,
           status,
           colorClass: status === 'finished' ? 'node-yellow' : node.data.colorClass,
+          highlighted,
+          highlightColor: highlighted ? color : null,
+          flashType: nodeFlash.value.get(node.id) ?? null,
         },
       }
-    }),
-  )
+    })
+  })
 
   const canvasEdges = computed<Edge[]>(() =>
     edges.value.map((edge): Edge => {

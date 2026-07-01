@@ -86,6 +86,7 @@
                 @continue-settings="handleContinueSettings"
                 @open-upload="uploadDialogVisible = true"
                 @remove-model="handleRemoveModel"
+                @settings-step-change="step => { settingsStep = step }"
                 @update-config="handleUpdateConfig"
                 @update:file="handleDataFile"
               />
@@ -144,6 +145,17 @@
   const availableModels = ref<string[]>([])
   const modelOptionsLoading = ref(false)
   const selectedNodeId = ref<string | null>(null)
+  const settingsStep = ref(0)
+  const nodeFlash = ref<Map<string, 'add' | 'remove'>>(new Map())
+
+  function flashNode (nodeId: string, type: 'add' | 'remove', duration = 1200): void {
+    nodeFlash.value = new Map(nodeFlash.value).set(nodeId, type)
+    window.setTimeout(() => {
+      const next = new Map(nodeFlash.value)
+      next.delete(nodeId)
+      nodeFlash.value = next
+    }, duration)
+  }
 
   // file input refs（需在 component 層宣告才能被 template ref binding 綁定）
   const jsonFileInput = ref<HTMLInputElement | null>(null)
@@ -170,7 +182,7 @@
     syncPipelineCanvasNodes,
     syncComputeCiNode,
     ensureDynamicNodes,
-  } = useWorkflowNodes(nodeStatuses, isDemoFinished)
+  } = useWorkflowNodes(nodeStatuses, isDemoFinished, selectedNodeId, settingsStep, nodeFlash)
 
   function saveState (): void {
     saveWorkflowStateToStorage(toRaw(nodes.value), toRaw(edges.value), projectId.value, {
@@ -290,29 +302,93 @@
     const current = nodes.value
       .filter(n => n.id.startsWith('model-'))
       .map(n => ({ name: String(n.data.config.modelName ?? n.data.label ?? ''), type: 'Classification' }))
+    const newModelId = `model-${current.length}`
     syncModelCanvasNodes([...current, { name: modelName, type: 'Classification' }])
+    flashNode(newModelId, 'add')
   }
 
   function handleRemoveModel (modelName: string): void {
     if (!modelName) return
-    const current = nodes.value
-      .filter(n => n.id.startsWith('model-'))
+    const allModels = nodes.value.filter(n => n.id.startsWith('model-'))
+    const removedNode = allModels.find(n => String(n.data.config.modelName ?? n.data.label ?? '') === modelName)
+    const next = allModels
       .map(n => ({ name: String(n.data.config.modelName ?? n.data.label ?? ''), type: 'Classification' }))
       .filter(m => m.name !== modelName)
-    syncModelCanvasNodes(current)
+    if (removedNode) {
+      flashNode(removedNode.id, 'remove')
+      window.setTimeout(() => syncModelCanvasNodes(next), 450)
+    } else {
+      syncModelCanvasNodes(next)
+    }
   }
 
   function handleUpdateConfig (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
+    if (payload.nodeId === 'settings' && ('preprocessing' in payload.config || 'featureEngineering' in payload.config)) {
+      const settingsNode = nodes.value.find(n => n.id === 'settings')
+
+      let prevPreLen = 0
+      if (Array.isArray(settingsNode?.data.config.preprocessing)) {
+        prevPreLen = (settingsNode.data.config.preprocessing as unknown[]).length
+      }
+      let newPreLen = prevPreLen
+      if (Array.isArray(payload.config.preprocessing)) {
+        newPreLen = (payload.config.preprocessing as unknown[]).length
+      }
+      let prevFeLen = 0
+      if (Array.isArray(settingsNode?.data.config.featureEngineering)) {
+        prevFeLen = (settingsNode.data.config.featureEngineering as unknown[]).length
+      }
+      let newFeLen = prevFeLen
+      if (Array.isArray(payload.config.featureEngineering)) {
+        newFeLen = (payload.config.featureEngineering as unknown[]).length
+      }
+
+      let pipelineFlashId: string | null = null
+      let pipelineFlashType: 'add' | 'remove' | null = null
+      if (newPreLen !== prevPreLen) {
+        pipelineFlashId = 'preprocessor'
+        pipelineFlashType = newPreLen > prevPreLen ? 'add' : 'remove'
+      } else if (newFeLen !== prevFeLen) {
+        pipelineFlashId = 'featureEngineering'
+        pipelineFlashType = newFeLen > prevFeLen ? 'add' : 'remove'
+      }
+
+      let needsDelay = false
+      if (pipelineFlashType === 'remove' && nodes.value.some(n => n.id === pipelineFlashId)) {
+        needsDelay = pipelineFlashId === 'preprocessor' ? newPreLen === 0 : newFeLen === 0
+      }
+
+      nodes.value = nodes.value.map(node => {
+        if (node.id !== payload.nodeId) return node
+        return { ...node, data: { ...node.data, config: { ...node.data.config, ...payload.config } } }
+      })
+      if ('compute_ci' in payload.config) {
+        syncComputeCiNode()
+      }
+
+      if (needsDelay && pipelineFlashId && pipelineFlashType) {
+        flashNode(pipelineFlashId, pipelineFlashType)
+        window.setTimeout(() => {
+          syncPipelineCanvasNodes()
+          saveState()
+        }, 450)
+        return
+      }
+      syncPipelineCanvasNodes()
+      if (pipelineFlashId && pipelineFlashType) {
+        flashNode(pipelineFlashId, pipelineFlashType)
+      }
+      saveState()
+      return
+    }
+
     nodes.value = nodes.value.map(node => {
       if (node.id !== payload.nodeId) return node
       return { ...node, data: { ...node.data, config: { ...node.data.config, ...payload.config } } }
     })
-
-    if (payload.nodeId === 'settings') {
-      if ('preprocessing' in payload.config || 'featureEngineering' in payload.config) syncPipelineCanvasNodes()
-      if ('compute_ci' in payload.config) syncComputeCiNode()
+    if (payload.nodeId === 'settings' && 'compute_ci' in payload.config) {
+      syncComputeCiNode()
     }
-
     saveState()
   }
 
