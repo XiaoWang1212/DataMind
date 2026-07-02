@@ -82,6 +82,10 @@ export function useDrawerDrag() {
   let dragStartY = 0;
   let dragStartHeight = 0;
 
+  // 區分「點擊」與「拖曳」：拖曳位移小於門檻就視為點擊（tap）
+  const TAP_THRESHOLD_PX = 5;
+  let moved = false;
+
   function getClientY(event: MouseEvent | TouchEvent): number {
     return "touches" in event
       ? (event.touches[0]?.clientY ?? 0)
@@ -94,6 +98,7 @@ export function useDrawerDrag() {
     dragStartHeight = heightPx.value;
     liveHeight.value = dragStartHeight;
     isDragging.value = true;
+    moved = false;
     velBuf.length = 0;
     velBuf.push({ y: dragStartY, t: performance.now() });
 
@@ -110,6 +115,8 @@ export function useDrawerDrag() {
     const currentY = getClientY(event);
     const delta = currentY - dragStartY;
 
+    if (Math.abs(delta) > TAP_THRESHOLD_PX) moved = true;
+
     // 往下拖 delta 正 → 高度縮小；往上拖 delta 負 → 高度增大
     const newH = dragStartHeight - delta;
     liveHeight.value = Math.max(PEEKED_PX, Math.min(newH, expandedPx.value));
@@ -122,6 +129,19 @@ export function useDrawerDrag() {
   function endDrag(): void {
     if (!isDragging.value) return;
     removeListeners();
+
+    // 沒有明顯位移 → 視為點擊 handle：只切換「關（peeked）」與「開到最大（expanded）」
+    // 關著時點 → 開到最大；其餘狀態（collapsed / expanded）點 → 關閉
+    if (!moved) {
+      const next: Stage = stage.value === "peeked" ? "expanded" : "peeked";
+      if (next === "expanded") expandedPx.value = getExpandedPx();
+      isDragging.value = false;
+      requestAnimationFrame(() => {
+        stage.value = next;
+        liveHeight.value = null;
+      });
+      return;
+    }
 
     const currentH = liveHeight.value ?? stagePx(stage.value);
     const velocity = computeVelocity(velBuf);

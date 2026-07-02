@@ -21,18 +21,8 @@
           />
         </template>
 
-        <!-- File 節點：顯示上傳區塊 -->
-        <template v-if="selectedNode.id === 'file'">
-          <WorkflowFileUploadPanel
-            :file="props.file"
-            :file-name="fileName"
-            @update:file="(file) => emit('update:file', file)"
-            @update:file-name="(value) => (localConfig.fileName = value)"
-          />
-        </template>
-
         <!-- Distribution 節點：顯示當前資料視覺化 -->
-        <template v-else-if="selectedNode.id === 'distribution'">
+        <template v-if="selectedNode.id === 'distribution'">
           <DistributionPanel :file="props.file" :file-name="fileName" />
         </template>
 
@@ -244,7 +234,6 @@
   import PreprocessorPanel from './nodePanel/PreprocessorPanel.vue'
   import SettingsPanel from './nodePanel/SettingsPanel.vue'
   import TestScorePanel from './nodePanel/TestScorePanel.vue'
-  import WorkflowFileUploadPanel from './nodePanel/WorkflowFileUploadPanel.vue'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
