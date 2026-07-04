@@ -13,6 +13,11 @@
       >
         <span class="wizard-tab__num">{{ i + 1 }}</span>
         <span class="wizard-tab__text">{{ label }}</span>
+        <span
+          v-if="label === '模型' && props.models.length === 0"
+          class="wizard-tab__required"
+          title="必須新增至少一個模型"
+        >必填</span>
       </button>
     </div>
 
@@ -424,6 +429,16 @@
     white-space: nowrap;
   }
 
+  .wizard-tab__required {
+    font-size: 9px;
+    font-weight: 700;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border-radius: 6px;
+    padding: 1px 4px;
+    white-space: nowrap;
+  }
+
   /* Step 內容 */
   .step-body {
     display: flex;
@@ -701,7 +716,9 @@
 
   .settings-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 10px;
     padding-top: 4px;
   }
 
