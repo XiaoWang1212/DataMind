@@ -760,6 +760,8 @@
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    /* 永遠保留捲軸空間（兩側等寬），避免捲軸出現/消失時內容寬度跳動、且左右留白對稱 */
+    scrollbar-gutter: stable both-edges;
     overscroll-behavior: contain;
     padding-bottom: 16px;
     scrollbar-width: thin;
