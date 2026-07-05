@@ -163,7 +163,7 @@
 
       <div v-if="props.models.length > 0" class="item-list">
         <div v-for="model in props.models" :key="modelName(model)" class="item-row">
-          <div class="item-head">
+          <div class="item-head item-head--top">
             <span class="item-idx item-idx--dot" />
             <span class="item-name">{{ modelName(model) }}</span>
             <button class="del-btn" title="移除" type="button" @click="emit('remove-model', modelName(model))">✕</button>
@@ -533,6 +533,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  /* 模型卡片：名稱換行時，圓圈與叉叉維持在最上面一行對齊 */
+  .item-head--top {
+    align-items: flex-start;
+  }
+
+  /* 圓圈(18px)與叉叉(22px)高度不同，微調上緣讓兩者中線對齊名稱首行 */
+  .item-head--top .item-idx {
+    margin-top: 2px;
   }
 
   .item-idx {
