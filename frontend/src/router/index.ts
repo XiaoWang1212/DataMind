@@ -19,15 +19,57 @@ const router = createRouter({
       component: () => import("@/views/WorkflowPage.vue"),
     },
     {
+      path: "/sidebar",
+      name: "sidebar",
+      component: () => import("@/components/Sidebar.vue"),
+    },
+    {
       path: "/results",
       name: "results",
       component: () => import("@/views/ResultsPage.vue"),
     },
     {
-      path: "/pycaret",
-      name: "pycaret",
-      component: () => import("@/views/PyCaretTestPage.vue"),
-    }
+      path: "/hub",
+      component: () => import("@/layouts/HubLayout.vue"),
+      redirect: "/hub/dashboard",
+      children: [
+        {
+          path: "dashboard",
+          name: "hub-dashboard",
+          component: () => import("@/views/hub/DashboardView.vue"),
+        },
+        {
+          path: "library",
+          name: "hub-library",
+          component: () => import("@/views/hub/FrameworkLibraryView.vue"),
+        },
+        {
+          path: "library/extract",
+          name: "hub-extract",
+          component: () => import("@/views/hub/ExtractFrameworkView.vue"),
+        },
+        {
+          path: "projects",
+          name: "hub-projects",
+          component: () => import("@/views/hub/ProjectsView.vue"),
+        },
+        {
+          path: "projects/new",
+          name: "hub-projects-new",
+          component: () => import("@/views/hub/CreateProjectView.vue"),
+        },
+        {
+          path: "projects/:id",
+          name: "hub-project-detail",
+          component: () => import("@/views/hub/ProjectDetailView.vue"),
+        },
+        {
+          path: "settings",
+          name: "hub-settings",
+          component: () => import("@/views/hub/SettingsView.vue"),
+        },
+      ],
+    },  
   ],
 });
 

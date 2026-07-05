@@ -1,5 +1,4 @@
 import logging
-import os
 import json
 from datetime import datetime
 from pathlib import Path
@@ -13,15 +12,14 @@ logger = logging.getLogger(__name__)
 
 gemini_bp = Blueprint("gemini", __name__)
 
-UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "gemini"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR = Path(__file__).parent.parent / "artifacts" / "gemini"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"txt", "md", "pdf"}
+MAX_PDF_BYTES = 20 * 1024 * 1024  # 20 MB — Gemini inline_data limit
 
 
-def parse_bool(value, default: bool = False) -> bool:
+def _parse_bool(value, default: bool = False) -> bool:
     if value is None:
         return default
     if isinstance(value, bool):
@@ -29,163 +27,134 @@ def parse_bool(value, default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-def extract_text_from_file(file_path: Path) -> str:
-    suffix = file_path.suffix.lower()
-
-    if suffix in [".txt", ".md"]:
-        return file_path.read_text(encoding="utf-8")
-
-    if suffix == ".pdf":
-        try:
-            import fitz
-
-            doc = fitz.open(str(file_path))
-            text = ""
-            for page in doc:
-                text += page.get_text()
-            doc.close()
-            return text
-        except ImportError:
-            logger.warning("PyMuPDF not installed, trying pdfplumber")
-            try:
-                import pdfplumber
-
-                with pdfplumber.open(file_path) as pdf:
-                    text = ""
-                    for page in pdf.pages:
-                        text += page.extract_text() or ""
-                return text
-            except ImportError as e:
-                raise ImportError(
-                    "PDF extraction requires PyMuPDF or pdfplumber. "
-                    "Install with: pip install pymupdf or pip install pdfplumber"
-                ) from e
-
-    raise ValueError(f"Unsupported file format: {suffix}")
+def _save_result(title: str, result: dict, filename: str | None) -> Path:
+    default_name = f"workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    safe_name = secure_filename(filename or default_name)
+    if not safe_name.endswith(".json"):
+        safe_name = f"{safe_name}.json"
+    output_path = OUTPUT_DIR / safe_name
+    payload = {
+        "saved_at": datetime.now().isoformat(),
+        "title": title,
+        "result": result,
+    }
+    output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return output_path
 
 
-@gemini_bp.route("/ai-analyze", methods=["POST"])
+@gemini_bp.post("/ai-analyze")
 def ai_analyze_paper():
-    """純 AI 論文技術解讀（使用 Gemini，不使用 RAG）
+    """論文 → Workflow JSON 生成
 
-    支援 mode:
-    - summary: 一般技術摘要（預設）
-    - extract: 結構化抽取「變數定義 + 模型使用」
+    輸入方式（擇一）：
+    - multipart/form-data，欄位 `file`（.pdf / .txt / .md）
+    - application/json，欄位 `content`（純文字）
+
+    選用參數：
+    - `title`：論文標題（輔助 prompt）
+    - `focus`：特別關注的面向（如「特徵選擇」「類別不平衡」）
+    - `save_output`：true 時把結果存到 artifacts/gemini/
+    - `output_filename`：儲存檔名（預設自動生成）
+
+    回傳：
+    - `workflow_json`：可直接上傳到前端 workflow 的 JSON
+    - `raw`：若 JSON 解析失敗時的原始輸出（方便除錯）
     """
     try:
         service = GeminiService()
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
 
     title = ""
-    content = ""
     focus = None
-    language = "zh-TW"
-    mode = "summary"
     save_output = False
     output_filename = None
+    result: dict | None = None
 
+    # ── PDF or text file upload ──────────────────────────────────────────────
     if "file" in request.files:
         file = request.files["file"]
-        if file.filename == "":
+        if not file.filename:
             return jsonify({"success": False, "error": "No file selected"}), 400
 
-        original_name = file.filename
-        ext = os.path.splitext(original_name)[1].lower() if original_name else ""
-        if ext and ext[1:] not in ALLOWED_EXTENSIONS:
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": f"Unsupported file format. Allowed: {ALLOWED_EXTENSIONS}",
-                    }
-                ),
-                400,
-            )
+        ext = Path(file.filename).suffix.lower().lstrip(".")
+        if ext not in ALLOWED_EXTENSIONS:
+            return jsonify({
+                "success": False,
+                "error": f"Unsupported format. Allowed: {sorted(ALLOWED_EXTENSIONS)}",
+            }), 400
 
-        safe_name = secure_filename(original_name) or f"paper{ext}"
-        file_path = UPLOAD_DIR / safe_name
-        file.save(file_path)
+        title = request.form.get("title", file.filename)
+        focus = request.form.get("focus") or None
+        save_output = _parse_bool(request.form.get("save_output"))
+        output_filename = request.form.get("output_filename") or None
 
-        try:
-            content = extract_text_from_file(file_path)
-            title = request.form.get("title", original_name)
-            focus = request.form.get("focus")
-            language = request.form.get("language", "zh-TW")
-            mode = request.form.get("mode", "summary")
-            save_output = parse_bool(request.form.get("save_output"), default=False)
-            output_filename = request.form.get("output_filename")
-        finally:
-            if file_path.exists():
-                file_path.unlink()
+        pdf_bytes = file.read()
+
+        if ext == "pdf":
+            if len(pdf_bytes) > MAX_PDF_BYTES:
+                return jsonify({
+                    "success": False,
+                    "error": f"PDF exceeds {MAX_PDF_BYTES // 1024 // 1024} MB limit for inline processing.",
+                }), 413
+
+            try:
+                result = service.analyze_pdf(pdf_bytes, title=title, focus=focus)
+            except Exception as exc:
+                logger.exception("analyze_pdf failed")
+                return jsonify({"success": False, "error": str(exc)}), 500
+        else:
+            # txt / md — decode and pass as text
+            try:
+                content = pdf_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                content = pdf_bytes.decode("latin-1")
+
+            if not content.strip():
+                return jsonify({"success": False, "error": "File is empty"}), 400
+
+            try:
+                result = service.analyze(AnalysisInput(
+                    title=title,
+                    content=truncate_content(content),
+                    focus=focus,
+                ))
+            except Exception as exc:
+                logger.exception("analyze failed")
+                return jsonify({"success": False, "error": str(exc)}), 500
+
+    # ── JSON body (plain text content) ──────────────────────────────────────
     else:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         if not data:
-            return (
-                jsonify({"success": False, "error": "No file or JSON data provided"}),
-                400,
-            )
+            return jsonify({"success": False, "error": "Provide a file upload or JSON body"}), 400
 
         title = data.get("title", "Untitled Paper")
         content = data.get("content", "")
-        focus = data.get("focus")
-        language = data.get("language", "zh-TW")
-        mode = data.get("mode", "summary")
-        save_output = parse_bool(data.get("save_output"), default=False)
-        output_filename = data.get("output_filename")
+        focus = data.get("focus") or None
+        save_output = _parse_bool(data.get("save_output"))
+        output_filename = data.get("output_filename") or None
 
-    if not content.strip():
-        return jsonify({"success": False, "error": "content is required"}), 400
+        if not content.strip():
+            return jsonify({"success": False, "error": "content is required"}), 400
 
-    if mode not in {"summary", "extract"}:
-        return (
-            jsonify({"success": False, "error": "mode must be 'summary' or 'extract'"}),
-            400,
-        )
+        try:
+            result = service.analyze(AnalysisInput(
+                title=title,
+                content=truncate_content(content),
+                focus=focus,
+            ))
+        except Exception as exc:
+            logger.exception("analyze failed")
+            return jsonify({"success": False, "error": str(exc)}), 500
 
-    try:
-        analysis_input = AnalysisInput(
-            title=title,
-            content=truncate_content(content),
-            focus=focus,
-            language=language,
-            mode=mode,
-        )
-        result = service.analyze(analysis_input)
+    # ── Save output if requested ─────────────────────────────────────────────
+    if save_output and result:
+        output_path = _save_result(title, result, output_filename)
+        return jsonify({
+            "success": True,
+            "result": result,
+            "saved_file": str(output_path),
+        })
 
-        if save_output:
-            default_name = (
-                f"gemini_{mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            )
-            safe_output_name = secure_filename(output_filename or default_name)
-            if not safe_output_name.endswith(".json"):
-                safe_output_name = f"{safe_output_name}.json"
-
-            output_path = OUTPUT_DIR / safe_output_name
-            payload = {
-                "success": True,
-                "saved_at": datetime.now().isoformat(),
-                "title": title,
-                "mode": mode,
-                "result": result,
-            }
-            output_path.write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-
-            return jsonify(
-                {
-                    "success": True,
-                    "result": result,
-                    "saved_file": {
-                        "filename": safe_output_name,
-                        "path": str(output_path),
-                    },
-                }
-            )
-
-        return jsonify({"success": True, "result": result})
-    except Exception as e:
-        logger.exception("Gemini analysis failed")
-        return jsonify({"success": False, "error": str(e)}), 500
+    return jsonify({"success": True, "result": result})

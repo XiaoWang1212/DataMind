@@ -1,16 +1,30 @@
 <template>
   <!-- 自訂節點 UI：左 target / 右 source + 圓形 icon + label -->
-  <div class="icon-node-wrap">
+  <div
+    class="icon-node-wrap"
+    :style="highlightColor ? { '--highlight-color': highlightColor } : {}"
+  >
     <!-- 右側輸出點：連到下一個節點 -->
-    <Handle class="invisible-handle handle-right" :position="Position.Right" type="source" />
+    <Handle
+      class="invisible-handle handle-right"
+      :position="Position.Right"
+      type="source"
+    />
     <!-- 左側輸入點：接收前一個節點 -->
-    <Handle class="invisible-handle handle-left" :position="Position.Left" type="target" />
+    <Handle
+      class="invisible-handle handle-left"
+      :position="Position.Left"
+      type="target"
+    />
 
     <!-- 節點主體 -->
-    <div class="icon-node" :class="colorClass">
+    <div
+      class="icon-node"
+      :class="[colorClass, { 'node-highlighted': highlighted, 'flash-add': flashType === 'add', 'flash-remove': flashType === 'remove' }]"
+    >
       <!-- running 時顯示 spinner，其餘顯示 icon -->
       <div v-if="status === 'running'" class="node-spinner" />
-      <v-icon v-else :icon="icon" size="26" />
+      <span v-else class="node-icon"><v-icon :icon="icon" size="26" /></span>
     </div>
 
     <!-- 節點標籤（支援換行） -->
@@ -38,6 +52,13 @@
 
   // demo 動畫狀態（running 時顯示 spinner）
   const status = computed(() => props.data?.status ?? null)
+
+  // Settings 步驟高亮外框
+  const highlighted = computed(() => Boolean(props.data?.highlighted))
+  const highlightColor = computed(() => props.data?.highlightColor as string | null ?? null)
+
+  // 增刪元素時的閃色特效
+  const flashType = computed(() => props.data?.flashType as 'add' | 'remove' | null ?? null)
 </script>
 
 <style scoped>
@@ -54,6 +75,8 @@
   }
 
   .icon-node {
+    position: relative;
+    overflow: hidden;
     width: var(--icon-size);
     height: var(--icon-size);
     border-radius: 999px;
@@ -61,6 +84,52 @@
     align-items: center;
     justify-content: center;
     color: #fff;
+  }
+
+  .flash-add::before,
+  .flash-remove::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    animation: flash-overlay 1.2s linear forwards;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .flash-add::before {
+    background: #10b981;
+  }
+
+  .flash-remove::before {
+    background: #ef4444;
+  }
+
+  @keyframes flash-overlay {
+    0%   { opacity: 0; }
+    8%   { opacity: 0.85; }
+    30%  { opacity: 0.85; }
+    42%  { opacity: 0; }
+    58%  { opacity: 0; }
+    70%  { opacity: 0.85; }
+    92%  { opacity: 0.85; }
+    100% { opacity: 0; }
+  }
+
+  .node-highlighted {
+    box-shadow: 0 0 0 4px var(--highlight-color, #005dff);
+    animation: highlight-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes highlight-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--highlight-color, #005dff); }
+    50% { box-shadow: 0 0 0 6px var(--highlight-color, #005dff); }
+  }
+
+  .node-spinner,
+  .node-icon {
+    position: relative;
+    z-index: 1;
   }
 
   .node-spinner {
@@ -89,16 +158,16 @@
   }
 
   .node-yellow {
-    background: #F0E274;
+    background: #f0e274;
     color: #fdfdfd;
   }
 
   .node-pending {
-    background: #CED3E9;
+    background: #ced3e9;
   }
 
   .node-purple {
-    background: linear-gradient(165deg, #005DFF 0%, #4c8cff 100%);
+    background: linear-gradient(165deg, #005dff 0%, #4c8cff 100%);
   }
 
   .invisible-handle {

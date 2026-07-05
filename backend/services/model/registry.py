@@ -13,21 +13,28 @@ from .defaults import (
     EasyEnsembleModel,
     ExtraTreesModel,
     GaussianNBModel,
+    GaussianProcessModel,
     GradientBoostingModel,
     HistGradientBoostingModel,
     KNNModel,
     LinearDiscriminantAnalysisModel,
+    LinearSVCModel,
     LightGBMModel,
     LogisticRegressionModel,
+    LogisticRegressionCVModel,
     MLPModel,
     MultinomialNBModel,
+    NuSVCModel,
     QuadraticDiscriminantAnalysisModel,
     RadiusNeighborsModel,
     RidgeClassifierModel,
+    RidgeClassifierCVModel,
     SGDClassifierModel,
     PassiveAggressiveModel,
     RandomForestModel,
+    StackingModel,
     SVMModel,
+    VotingModel,
     XGBoostModel,
 )
 
@@ -60,10 +67,14 @@ class ModelRegistry:
 
 def register_default_models() -> None:
     ModelRegistry.register_model(LogisticRegressionModel())
+    ModelRegistry.register_model(LogisticRegressionCVModel())
     ModelRegistry.register_model(KNNModel())
     ModelRegistry.register_model(SVMModel())
+    ModelRegistry.register_model(LinearSVCModel())
+    ModelRegistry.register_model(NuSVCModel())
     ModelRegistry.register_model(DecisionTreeModel())
     ModelRegistry.register_model(RidgeClassifierModel())
+    ModelRegistry.register_model(RidgeClassifierCVModel())
     ModelRegistry.register_model(LinearDiscriminantAnalysisModel())
     ModelRegistry.register_model(QuadraticDiscriminantAnalysisModel())
     ModelRegistry.register_model(MLPModel())
@@ -77,10 +88,13 @@ def register_default_models() -> None:
     ModelRegistry.register_model(PassiveAggressiveModel())
     ModelRegistry.register_model(CalibratedClassifierModel())
     ModelRegistry.register_model(GaussianNBModel())
+    ModelRegistry.register_model(GaussianProcessModel())
     ModelRegistry.register_model(MultinomialNBModel())
     ModelRegistry.register_model(ComplementNBModel())
     ModelRegistry.register_model(BernoulliNBModel())
     ModelRegistry.register_model(RadiusNeighborsModel())
+    ModelRegistry.register_model(VotingModel())
+    ModelRegistry.register_model(StackingModel())
     ModelRegistry.register_model(XGBoostModel())
     ModelRegistry.register_model(LightGBMModel())
     ModelRegistry.register_model(CatBoostModel())

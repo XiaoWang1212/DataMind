@@ -1,0 +1,394 @@
+{
+  "preprocessing": [],
+  "featureEngineering": [
+    {
+      "type": "select_relevant_features",
+      "k": 10
+    }
+  ],
+  "models": [
+    {
+      "name": "Decision Tree",
+      "type": "Classification",
+      "purpose_zh": "分類模型",
+      "purpose_en": "Classification Model"
+    },
+    {
+      "name": "SVM",
+      "type": "Classification",
+      "purpose_zh": "分類模型",
+      "purpose_en": "Classification Model"
+    },
+    {
+      "name": "Random Forest",
+      "type": "Ensemble Learning",
+      "purpose_zh": "集成學習分類模型",
+      "purpose_en": "Ensemble Learning Classification Model"
+    },
+    {
+      "name": "Bagging",
+      "type": "Ensemble Learning",
+      "purpose_zh": "集成學習分類模型",
+      "purpose_en": "Ensemble Learning Classification Model"
+    },
+    {
+      "name": "AdaBoost",
+      "type": "Ensemble Learning",
+      "purpose_zh": "集成學習分類模型",
+      "purpose_en": "Ensemble Learning Classification Model"
+    }
+  ],
+  "features": [
+    {
+      "name": "性別",
+      "type": "categorical",
+      "description_zh": "患者性別",
+      "description_en": "Patient's gender"
+    },
+    {
+      "name": "年齡",
+      "type": "numerical",
+      "description_zh": "患者年齡（入院時）",
+      "description_en": "Patient's age (at admission)"
+    },
+    {
+      "name": "入院科別",
+      "type": "categorical",
+      "description_zh": "患者入院時的科別",
+      "description_en": "Patient's department at admission"
+    },
+    {
+      "name": "失智症診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為失智症",
+      "description_en": "Diagnosis of dementia"
+    },
+    {
+      "name": "憂鬱症診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為憂鬱症",
+      "description_en": "Diagnosis of depression"
+    },
+    {
+      "name": "糖尿病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為糖尿病",
+      "description_en": "Diagnosis of diabetes mellitus"
+    },
+    {
+      "name": "癌症診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為癌症",
+      "description_en": "Diagnosis of cancer"
+    },
+    {
+      "name": "心血管疾病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為心血管疾病",
+      "description_en": "Diagnosis of cardiovascular diseases"
+    },
+    {
+      "name": "神經系統疾病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為神經系統疾病",
+      "description_en": "Diagnosis of neurologic diseases"
+    },
+    {
+      "name": "中風診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為中風",
+      "description_en": "Diagnosis of stroke"
+    },
+    {
+      "name": "肌肉骨骼疾病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為肌肉骨骼疾病",
+      "description_en": "Diagnosis of musculoskeletal diseases"
+    },
+    {
+      "name": "眼部疾病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為眼部疾病",
+      "description_en": "Diagnosis of eye diseases"
+    },
+    {
+      "name": "耳部疾病診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為耳部疾病",
+      "description_en": "Diagnosis of ear diseases"
+    },
+    {
+      "name": "貧血診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為貧血",
+      "description_en": "Diagnosis of anemia"
+    },
+    {
+      "name": "姿勢性低血壓診斷",
+      "type": "categorical",
+      "description_zh": "是否診斷為姿勢性低血壓",
+      "description_en": "Diagnosis of orthostatic hypotension"
+    },
+    {
+      "name": "洗澡自理能力",
+      "type": "numerical",
+      "description_zh": "患者洗澡的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for showering (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "穿衣自理能力",
+      "type": "numerical",
+      "description_zh": "患者穿衣的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for changing clothes (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "如廁自理能力",
+      "type": "numerical",
+      "description_zh": "患者如廁的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for toileting (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "移動功能自理能力",
+      "type": "numerical",
+      "description_zh": "患者執行移動功能的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for performing mobility functions (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "排泄功能自理能力",
+      "type": "numerical",
+      "description_zh": "患者使用排泄功能的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for using excretion function (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "進食自理能力",
+      "type": "numerical",
+      "description_zh": "患者進食的自理能力程度（1=完全依賴, 3=自理）",
+      "description_en": "Patient's self-care ability for eating (1=complete dependence, 3=self-care)"
+    },
+    {
+      "name": "Karnofsky體能狀態量表",
+      "type": "numerical",
+      "description_zh": "Karnofsky體能狀態量表評分（0=完全失能, 4=完全活動）",
+      "description_en": "Karnofsky Performance Scale score (0=completely disabled, 4=fully active)"
+    },
+    {
+      "name": "巴氏量表",
+      "type": "numerical",
+      "description_zh": "巴氏量表評分（0-20=完全依賴, 91-99=輕度依賴）",
+      "description_en": "Barthel Index score (0-20=total dependence, 91-99=slight dependence)"
+    },
+    {
+      "name": "意識狀態",
+      "type": "categorical",
+      "description_zh": "患者的意識狀態（例如：清醒、嗜睡、昏迷）",
+      "description_en": "Patient's consciousness state (e.g., alert, drowsiness, comatose)"
+    },
+    {
+      "name": "情緒狀態",
+      "type": "categorical",
+      "description_zh": "患者的情緒狀態（例如：平靜、焦慮、憂鬱）",
+      "description_en": "Patient's emotional state (e.g., calm, anxiety, depression)"
+    },
+    {
+      "name": "視力障礙",
+      "type": "categorical",
+      "description_zh": "患者是否有視力障礙",
+      "description_en": "Presence of visual impairment"
+    },
+    {
+      "name": "營養不良",
+      "type": "categorical",
+      "description_zh": "患者是否有營養不良",
+      "description_en": "Presence of malnutrition"
+    },
+    {
+      "name": "睡眠障礙",
+      "type": "categorical",
+      "description_zh": "患者是否有睡眠障礙",
+      "description_en": "Presence of sleep disorder"
+    },
+    {
+      "name": "義肢",
+      "type": "categorical",
+      "description_zh": "患者是否裝有義肢",
+      "description_en": "Presence of prosthetic limb"
+    },
+    {
+      "name": "下肢肌力",
+      "type": "categorical",
+      "description_zh": "患者下肢肌力等級（0=無移動, 5=正常）",
+      "description_en": "Patient's lower limb muscle strength grade (0=no movement, 5=normal)"
+    },
+    {
+      "name": "手術紀錄",
+      "type": "categorical",
+      "description_zh": "患者是否有手術紀錄",
+      "description_en": "Presence of surgical records"
+    },
+    {
+      "name": "周邊靜脈導管",
+      "type": "categorical",
+      "description_zh": "患者是否裝有周邊靜脈導管",
+      "description_en": "Presence of peripheral intravenous catheter"
+    },
+    {
+      "name": "頭暈",
+      "type": "categorical",
+      "description_zh": "患者是否有頭暈現象",
+      "description_en": "Presence of dizziness"
+    },
+    {
+      "name": "頭痛",
+      "type": "categorical",
+      "description_zh": "患者是否有頭痛現象",
+      "description_en": "Presence of headache"
+    },
+    {
+      "name": "腹瀉",
+      "type": "categorical",
+      "description_zh": "患者是否有腹瀉現象",
+      "description_en": "Presence of diarrhea"
+    },
+    {
+      "name": "頻尿",
+      "type": "categorical",
+      "description_zh": "患者是否有頻尿現象",
+      "description_en": "Presence of pollakiuria"
+    },
+    {
+      "name": "虛弱",
+      "type": "categorical",
+      "description_zh": "患者是否有虛弱現象",
+      "description_en": "Presence of weakness"
+    },
+    {
+      "name": "跌倒高風險群",
+      "type": "categorical",
+      "description_zh": "患者是否被歸類為跌倒高風險群",
+      "description_en": "Classification in the high-risk group for fall incidents"
+    },
+    {
+      "name": "中樞神經系統藥物-抗癲癇藥",
+      "type": "categorical",
+      "description_zh": "患者是否服用抗癲癇藥",
+      "description_en": "Use of central nervous system drugs - anticonvulsants"
+    },
+    {
+      "name": "血液製劑-抗血栓藥",
+      "type": "categorical",
+      "description_zh": "患者是否服用抗血栓藥",
+      "description_en": "Use of hematological agents - antithrombotic agents"
+    },
+    {
+      "name": "中樞神經系統藥物-全身麻醉劑",
+      "type": "categorical",
+      "description_zh": "患者是否服用全身麻醉劑",
+      "description_en": "Use of central nervous system drugs - general anesthetics"
+    },
+    {
+      "name": "皮膚及黏膜製劑-止癢及局部麻醉劑",
+      "type": "categorical",
+      "description_zh": "患者是否服用止癢及局部麻醉劑",
+      "description_en": "Use of skin and mucous membranes preparations - antipruritic and local anesthetics"
+    },
+    {
+      "name": "中樞神經系統藥物-麻醉性止痛劑",
+      "type": "categorical",
+      "description_zh": "患者是否服用麻醉性止痛劑",
+      "description_en": "Use of central nervous system drugs - narcotic analgesics"
+    },
+    {
+      "name": "中樞神經系統藥物-鎮靜安眠藥",
+      "type": "categorical",
+      "description_zh": "患者是否服用鎮靜安眠藥",
+      "description_en": "Use of central nervous system drugs - sedatives and hypnotics"
+    },
+    {
+      "name": "中樞神經系統藥物-鎮定劑",
+      "type": "categorical",
+      "description_zh": "患者是否服用鎮定劑",
+      "description_en": "Use of central nervous system drugs - tranquilizers"
+    },
+    {
+      "name": "抗組織胺及抗過敏藥",
+      "type": "categorical",
+      "description_zh": "患者是否服用抗組織胺及抗過敏藥",
+      "description_en": "Use of antihistamines and antiallergy agents"
+    },
+    {
+      "name": "電解質、熱量及水份平衡藥物-利尿劑",
+      "type": "categorical",
+      "description_zh": "患者是否服用利尿劑",
+      "description_en": "Use of electrolytic, caloric, and water balance drugs - diuretics"
+    },
+    {
+      "name": "跌倒分數",
+      "type": "numerical",
+      "description_zh": "跌倒風險評估分數（0-7分）",
+      "description_en": "Fall risk assessment score (0-7 points)"
+    },
+    {
+      "name": "年齡分組",
+      "type": "categorical",
+      "description_zh": "患者年齡分組（<65歲或≧65歲）",
+      "description_en": "Patient's age group (<65 years or >=65 years)"
+    },
+    {
+      "name": "跌倒量表意識狀態",
+      "type": "categorical",
+      "description_zh": "跌倒量表中的意識狀態（清醒/昏迷或意識障礙）",
+      "description_en": "Consciousness state in fall scale (alert/coma or disturbance of consciousness)"
+    },
+    {
+      "name": "跌倒病史",
+      "type": "categorical",
+      "description_zh": "患者是否有跌倒病史",
+      "description_en": "History of falls"
+    },
+    {
+      "name": "行走能力",
+      "type": "categorical",
+      "description_zh": "患者的行走能力（穩定步態/臥床或不穩定步態/輔助設備）",
+      "description_en": "Patient's walking ability (stable gaits/bed rest or unstable gaits/assistive devices)"
+    },
+    {
+      "name": "跌倒量表如廁能力",
+      "type": "categorical",
+      "description_zh": "跌倒量表中的如廁能力（自理或如廁失能）",
+      "description_en": "Toileting ability in fall scale (self-care or toileting disability)"
+    },
+    {
+      "name": "服用增加跌倒風險藥物",
+      "type": "categorical",
+      "description_zh": "患者是否服用與跌倒風險增加相關的藥物",
+      "description_en": "Taking medications associated with increased fall risk"
+    },
+    {
+      "name": "其他跌倒相關因素",
+      "type": "categorical",
+      "description_zh": "跌倒量表中其他自由文字記錄的因素",
+      "description_en": "Other factors recorded in free text in the fall scale"
+    }
+  ],
+  "validation": {
+    "method": "random_sampling",
+    "n_repeats": 10,
+    "train_size": 0.66,
+    "shuffle": true,
+    "random_state": 42
+  },
+  "metrics": [
+    {
+      "metric": "accuracy"
+    },
+    {
+      "metric": "recall"
+    },
+    {
+      "metric": "specificity"
+    },
+    {
+      "metric": "auc"
+    }
+  ]
+}
