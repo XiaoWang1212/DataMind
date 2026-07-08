@@ -7,13 +7,18 @@
       class="section-paragraph"
     >
       <template v-for="(segment, sIndex) in paragraph" :key="sIndex">
+        <!-- data-citation-id 是 PaperPage 捲動定位用的 DOM 契約,改動需同步 PaperPage -->
         <mark
           v-if="segment.citationId"
           class="cite-highlight"
           :class="{ 'cite-highlight--active': segment.citationId === activeCitationId }"
           :data-citation-id="segment.citationId"
+          role="button"
+          tabindex="0"
           @click="$emit('citation-click', segment.citationId)"
-        >{{ segment.text }}</mark>
+          @keydown.enter.prevent="$emit('citation-click', segment.citationId)"
+          @keydown.space.prevent="$emit('citation-click', segment.citationId)"
+        >{{ segment.text }} [{{ citationIndex[segment.citationId] }}]</mark>
         <template v-else>{{ segment.text }}</template>
       </template>
     </p>
@@ -26,6 +31,7 @@
   defineProps<{
     section: PaperSection
     activeCitationId: string | null
+    citationIndex: Record<string, number>
   }>()
 
   defineEmits<{
@@ -64,6 +70,11 @@
 
   .cite-highlight:hover {
     background: #fae57e;
+  }
+
+  .cite-highlight:focus-visible {
+    outline: 2px solid #c9ad2a;
+    outline-offset: 1px;
   }
 
   .cite-highlight--active {

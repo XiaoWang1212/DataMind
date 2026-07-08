@@ -20,6 +20,7 @@
             v-for="section in report.sections"
             :key="section.heading"
             :active-citation-id="activeCitationId"
+            :citation-index="citationIndex"
             :section="section"
             @citation-click="onCitationClick"
           />
@@ -47,6 +48,10 @@
   const router = useRouter()
   const report = mockPaperReport
 
+  const citationIndex = Object.fromEntries(
+    report.citations.map((citation, index) => [citation.id, index + 1]),
+  )
+
   const activeCitationId = ref<string | null>(null)
   const sheetRef = ref<HTMLElement | null>(null)
 
@@ -61,7 +66,7 @@
   function onPanelSelect (citationId: string) {
     activeCitationId.value = citationId
     sheetRef.value
-      ?.querySelector(`[data-citation-id="${citationId}"]`)
+      ?.querySelector(`[data-citation-id="${CSS.escape(citationId)}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 </script>
@@ -147,6 +152,8 @@
     position: sticky;
     top: 0;
     align-self: flex-start;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
   }
 
   @media (max-width: 1100px) {
@@ -157,6 +164,8 @@
     .paper-citations {
       width: 100%;
       position: static;
+      max-height: none;
+      overflow-y: visible;
     }
   }
 </style>

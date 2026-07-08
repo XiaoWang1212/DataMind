@@ -4,9 +4,14 @@
       v-for="(citation, index) in citations"
       :key="citation.id"
       :ref="el => setCardRef(citation.id, el)"
+      :aria-current="citation.id === activeCitationId ? 'true' : undefined"
       class="citation-card"
       :class="{ 'citation-card--active': citation.id === activeCitationId }"
+      role="button"
+      tabindex="0"
       @click="$emit('select', citation.id)"
+      @keydown.enter.prevent="$emit('select', citation.id)"
+      @keydown.space.prevent="$emit('select', citation.id)"
     >
       <p class="citation-label">
         <v-icon icon="mdi-book-open-variant-outline" size="13" />
@@ -81,6 +86,11 @@
   .citation-card--active {
     border-color: #c9ad2a;
     box-shadow: 0 2px 10px rgba(180, 150, 30, 0.22);
+  }
+
+  .citation-card:focus-visible {
+    outline: 2px solid #c9ad2a;
+    outline-offset: 2px;
   }
 
   .citation-label {
