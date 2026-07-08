@@ -1,50 +1,7 @@
 <template>
   <section class="results-page">
 
-    <aside class="results-sidebar">
-      <div class="sidebar-brand">
-        <v-icon class="brand-icon" icon="mdi-shimmer" size="20" />
-        <span class="brand-text">DataMind</span>
-      </div>
-
-      <v-btn
-        class="add-btn"
-        color="primary"
-        prepend-icon="mdi-plus"
-        rounded="lg"
-      >新增</v-btn>
-
-      <p class="section-title">最近使用</p>
-      <div class="recent-list">
-        <article
-          v-for="item in recentRuns"
-          :key="item.id"
-          class="recent-item"
-          :class="{ 'recent-item--active': item.active }"
-        >
-          <div>
-            <p class="run-name">{{ item.name }}</p>
-            <p class="run-time">{{ item.time }}</p>
-          </div>
-          <v-btn
-            v-if="item.active"
-            icon="mdi-dots-vertical"
-            size="x-small"
-            variant="text"
-          />
-        </article>
-      </div>
-
-      <div class="profile-box">
-        <v-avatar color="primary" size="40">
-          <v-icon icon="mdi-account" size="20" />
-        </v-avatar>
-        <div>
-          <p class="profile-name">使用者帳號</p>
-          <p class="profile-email">user123@email.com</p>
-        </div>
-      </div>
-    </aside>
+    <Sidebar />
 
     <main class="results-main">
       <header class="results-toolbar">
@@ -138,17 +95,11 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
+  import Sidebar from '@/components/Sidebar.vue'
 
   onMounted(() => {
     document.title = 'DataMind'
   })
-
-  interface RecentRun {
-    id: string
-    name: string
-    time: string
-    active?: boolean
-  }
 
   interface MetricCard {
     title: string
@@ -173,15 +124,6 @@
     icon: string
     active?: boolean
   }
-
-  const recentRuns: RecentRun[] = [
-    { id: 'r1', name: 'XXXXXX', time: 'XX天前', active: true },
-    { id: 'r2', name: 'XXXXXX', time: 'XX天前' },
-    { id: 'r3', name: 'XXXXXX', time: 'XX天前' },
-    { id: 'r4', name: 'XXXXXX', time: 'XX天前' },
-    { id: 'r5', name: 'XXXXXX', time: 'XX天前' },
-    { id: 'r6', name: 'XXXXXX', time: 'XX天前' },
-  ]
 
   const tabs = ref<ToolbarTab[]>([
     { key: 'report', label: '報告', icon: 'mdi-file-document-outline', active: true },
@@ -262,103 +204,6 @@
       linear-gradient(180deg, #d7d9df 0%, #dedfe4 100%);
     font-family: 'Noto Sans TC', 'Segoe UI', sans-serif;
     color: var(--text-main);
-  }
-
-  .results-sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    border: 1px solid var(--line);
-    border-right: none;
-    border-radius: 12px 0 0 12px;
-    background: linear-gradient(180deg, #f3f4f8 0%, #eceef4 100%);
-    padding: 18px 14px 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--brand);
-    font-weight: 700;
-    font-size: 31px;
-  }
-
-  .brand-icon {
-    color: var(--brand);
-  }
-
-  .add-btn {
-    margin-top: 14px;
-    max-width: 100%;
-    font-weight: 700;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-
-  .section-title {
-    margin: 18px 2px 10px;
-    color: var(--text-secondary);
-    font-size: 13px;
-  }
-
-  .recent-list {
-    flex: 1;
-    overflow: auto;
-    padding-right: 4px;
-  }
-
-  .recent-item {
-    border-radius: 10px;
-    margin-bottom: 10px;
-    padding: 10px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    border: 1px solid transparent;
-  }
-
-  .recent-item--active {
-    border-color: #8bb3ed;
-    background: #dce9fb;
-  }
-
-  .run-name {
-    margin: 0;
-    font-size: 30px;
-    line-height: 1.15;
-    font-weight: 700;
-    color: #1051b8;
-  }
-
-  .run-time {
-    margin: 2px 0 0;
-    font-size: 24px;
-    line-height: 1.1;
-    color: #1b5cc2;
-  }
-
-  .profile-box {
-    margin: 0 -14px;
-    padding: 12px 14px;
-    border-top: 1px solid var(--line);
-    background: #f2f3f8;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .profile-name {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .profile-email {
-    margin: 0;
-    font-size: 11px;
-    color: #9ca1aa;
   }
 
   .results-main {
@@ -610,42 +455,12 @@
     .metric-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .results-sidebar {
-      width: 220px;
-    }
   }
 
   @media (max-width: 920px) {
     .results-page {
       display: block;
       padding: 12px;
-    }
-    .results-sidebar {
-      width: 100%;
-      border-radius: 12px;
-      border-right: 1px solid var(--line);
-      padding-bottom: 12px;
-    }
-
-    .recent-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      max-height: 220px;
-      padding-right: 0;
-    }
-
-    .recent-item {
-      margin-bottom: 0;
-    }
-
-    .profile-box {
-      margin-top: 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      margin-left: 0;
-      margin-right: 0;
     }
 
     .results-main {
@@ -656,15 +471,12 @@
 
     .insight-title,
     .comparison-head h3,
-    .metric-value,
-    .run-name,
-    .run-time {
+    .metric-value {
       font-size: clamp(20px, 4.2vw, 30px);
     }
   }
 
   @media (max-width: 640px) {
-    .recent-list,
     .metric-grid {
       grid-template-columns: 1fr;
     }
