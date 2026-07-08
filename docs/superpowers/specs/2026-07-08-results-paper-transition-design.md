@@ -67,11 +67,12 @@ interface PaperSegment {
 }
 
 interface PaperSection {
-  heading: string          // 例:「4.1 模型效能評估」
-  segments: PaperSegment[]
+  heading: string              // 例:「4.1 模型效能評估」
+  paragraphs: PaperSegment[][] // 每個段落是一組 segment
 }
 
 interface PaperReport {
+  title: string
   sections: PaperSection[]
   citations: Citation[]
 }
@@ -83,7 +84,7 @@ interface PaperReport {
 
 - 點內文黃底 highlight → 右側面板捲動至對應文獻卡片並高亮該卡。
 - 點側欄卡片 → 內文捲動至對應段落。
-- 側欄固定寬約 280px;內文維持閱讀行寬。窄螢幕(< ~1100px)側欄收合,點 highlight 以彈出層顯示卡片。
+- 側欄固定寬約 280px;內文維持閱讀行寬。窄螢幕(< ~1100px)側欄移至內文下方直向排列。
 
 ## 5. 轉場
 
