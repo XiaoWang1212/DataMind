@@ -56,105 +56,75 @@ MOCK_DATAMIND_OUTPUT = {
     "results": [
         {
             "preprocess_pipeline_index": 0,
-            "model_name": "Logistic Regression",
-            "split_name": "k_fold_avg",
+            "model_name": "Decision Tree",
+            "split_name": "split_0",
             "validation_config": {
-                "method": "k_fold",
-                "n_splits": 10,
+                "method": "train_test_split",
+                "n_splits": 1,
                 "stratified": True,
                 "train_size": 0.8,
-                "test_size": None,
+                "test_size": 0.2,
                 "shuffle": True,
                 "random_state": 42
             },
-            "resampling_method": "smote",
+            "resampling_method": "none",
             "best_params": {},
             "metrics": [
-                {"id": "s0", "metric": "auc",               "value": 0.8124, "ci_lower": 0.7980, "ci_upper": 0.8268, "ci_level": 0.95},
-                {"id": "s1", "metric": "auprc",             "value": 0.6341, "ci_lower": None,   "ci_upper": None},
-                {"id": "s2", "metric": "f1",                "value": 0.7012, "ci_lower": None,   "ci_upper": None},
-                {"id": "s3", "metric": "balanced_accuracy", "value": 0.7234, "ci_lower": None,   "ci_upper": None},
-                {"id": "s4", "metric": "recall",            "value": 0.7560, "ci_lower": None,   "ci_upper": None},
-                {"id": "s5", "metric": "specificity",       "value": 0.7908, "ci_lower": None,   "ci_upper": None},
-                {"id": "s6", "metric": "mcc",               "value": 0.4890, "ci_lower": None,   "ci_upper": None},
+                {"id": "s0", "metric": "balanced_accuracy", "value": 0.5510, "ci_lower": None, "ci_upper": None},
+                {"id": "s1", "metric": "auc",               "value": 0.5510, "ci_lower": None, "ci_upper": None},
+                {"id": "s2", "metric": "precision",         "value": 0.0505, "ci_lower": None, "ci_upper": None},
+                {"id": "s3", "metric": "recall",            "value": 0.1375, "ci_lower": None, "ci_upper": None},
+                {"id": "s4", "metric": "specificity",       "value": 0.9645, "ci_lower": None, "ci_upper": None},
+                {"id": "s5", "metric": "f1",                "value": 0.0738, "ci_lower": None, "ci_upper": None},
             ],
-            "feature_importance": [
-                {"feature": "SOFA_score",    "importance": 0.1423},
-                {"feature": "age",           "importance": 0.0982},
-                {"feature": "lactate",       "importance": 0.0874},
-                {"feature": "GCS_total",     "importance": 0.0761},
-                {"feature": "creatinine",    "importance": 0.0643},
+        },
+        {
+            "preprocess_pipeline_index": 0,
+            "model_name": "Logistic Regression",
+            "split_name": "split_0",
+            "validation_config": {
+                "method": "train_test_split",
+                "n_splits": 1,
+                "stratified": True,
+                "train_size": 0.8,
+                "test_size": 0.2,
+                "shuffle": True,
+                "random_state": 42
+            },
+            "resampling_method": "none",
+            "best_params": {},
+            "metrics": [
+                {"id": "s0", "metric": "balanced_accuracy", "value": 0.7388, "ci_lower": None, "ci_upper": None},
+                {"id": "s1", "metric": "auc",               "value": 0.8035, "ci_lower": None, "ci_upper": None},
+                {"id": "s2", "metric": "precision",         "value": 0.0429, "ci_lower": None, "ci_upper": None},
+                {"id": "s3", "metric": "recall",            "value": 0.6875, "ci_lower": None, "ci_upper": None},
+                {"id": "s4", "metric": "specificity",       "value": 0.7900, "ci_lower": None, "ci_upper": None},
+                {"id": "s5", "metric": "f1",                "value": 0.0808, "ci_lower": None, "ci_upper": None},
             ],
-            "feature_count": 20,
-            "row_count": 9600
         },
         {
             "preprocess_pipeline_index": 0,
             "model_name": "Random Forest",
-            "split_name": "k_fold_avg",
+            "split_name": "split_0",
             "validation_config": {
-                "method": "k_fold",
-                "n_splits": 10,
+                "method": "train_test_split",
+                "n_splits": 1,
                 "stratified": True,
                 "train_size": 0.8,
-                "test_size": None,
+                "test_size": 0.2,
                 "shuffle": True,
                 "random_state": 42
             },
-            "resampling_method": "smote",
-            "best_params": {"n_estimators": 200, "max_depth": 12},
+            "resampling_method": "none",
+            "best_params": {},
             "metrics": [
-                {"id": "s0", "metric": "auc",               "value": 0.8912, "ci_lower": 0.8810, "ci_upper": 0.9014, "ci_level": 0.95},
-                {"id": "s1", "metric": "auprc",             "value": 0.7541, "ci_lower": None,   "ci_upper": None},
-                {"id": "s2", "metric": "f1",                "value": 0.8034, "ci_lower": None,   "ci_upper": None},
-                {"id": "s3", "metric": "balanced_accuracy", "value": 0.8123, "ci_lower": None,   "ci_upper": None},
-                {"id": "s4", "metric": "recall",            "value": 0.8120, "ci_lower": None,   "ci_upper": None},
-                {"id": "s5", "metric": "specificity",       "value": 0.8710, "ci_lower": None,   "ci_upper": None},
-                {"id": "s6", "metric": "mcc",               "value": 0.6230, "ci_lower": None,   "ci_upper": None},
+                {"id": "s0", "metric": "balanced_accuracy", "value": 0.5217, "ci_lower": None, "ci_upper": None},
+                {"id": "s1", "metric": "auc",               "value": 0.8186, "ci_lower": None, "ci_upper": None},
+                {"id": "s2", "metric": "precision",         "value": 0.0952, "ci_lower": None, "ci_upper": None},
+                {"id": "s3", "metric": "recall",            "value": 0.0500, "ci_lower": None, "ci_upper": None},
+                {"id": "s4", "metric": "specificity",       "value": 0.9935, "ci_lower": None, "ci_upper": None},
+                {"id": "s5", "metric": "f1",                "value": 0.0656, "ci_lower": None, "ci_upper": None},
             ],
-            "feature_importance": [
-                {"feature": "SOFA_score",    "importance": 0.1789},
-                {"feature": "lactate",       "importance": 0.1234},
-                {"feature": "age",           "importance": 0.1012},
-                {"feature": "GCS_total",     "importance": 0.0891},
-                {"feature": "creatinine",    "importance": 0.0712},
-            ],
-            "feature_count": 20,
-            "row_count": 9600
-        },
-        {
-            "preprocess_pipeline_index": 0,
-            "model_name": "XGBoost",
-            "split_name": "k_fold_avg",
-            "validation_config": {
-                "method": "k_fold",
-                "n_splits": 10,
-                "stratified": True,
-                "train_size": 0.8,
-                "test_size": None,
-                "shuffle": True,
-                "random_state": 42
-            },
-            "resampling_method": "smote",
-            "best_params": {"n_estimators": 300, "max_depth": 6, "learning_rate": 0.05},
-            "metrics": [
-                {"id": "s0", "metric": "auc",               "value": 0.9123, "ci_lower": 0.9031, "ci_upper": 0.9215, "ci_level": 0.95},
-                {"id": "s1", "metric": "auprc",             "value": 0.7812, "ci_lower": None,   "ci_upper": None},
-                {"id": "s2", "metric": "f1",                "value": 0.8341, "ci_lower": None,   "ci_upper": None},
-                {"id": "s3", "metric": "balanced_accuracy", "value": 0.8456, "ci_lower": None,   "ci_upper": None},
-                {"id": "s4", "metric": "recall",            "value": 0.8412, "ci_lower": None,   "ci_upper": None},
-                {"id": "s5", "metric": "specificity",       "value": 0.8890, "ci_lower": None,   "ci_upper": None},
-                {"id": "s6", "metric": "mcc",               "value": 0.6680, "ci_lower": None,   "ci_upper": None},
-            ],
-            "feature_importance": [
-                {"feature": "SOFA_score",    "importance": 0.1956},
-                {"feature": "lactate",       "importance": 0.1423},
-                {"feature": "GCS_total",     "importance": 0.1187},
-                {"feature": "age",           "importance": 0.0934},
-                {"feature": "creatinine",    "importance": 0.0821},
-            ],
-            "feature_count": 20,
-            "row_count": 9600
         }
     ]
 }
@@ -261,15 +231,15 @@ def main():
     print(f"\n[論文庫狀態] {status['total_papers']} 篇論文，{status['total_chunks']} 個 chunks")
     print(f"  Embedding 後端：{status['embedding_backend']}")
 
-    # ── Step 3：生成論文（僅生成摘要和前言，縮短測試時間）────────────────────
+    # ── Step 3：生成論文（僅生成研究方法和實驗結果，聚焦於 DataMind 探勘結果）──
     print("\n[Step 3] 開始生成論文...")
     print("  研究主題：以機器學習預測 ICU 病患院內死亡率")
-    print("  生成章節：摘要、前言、結論（完整測試請移除 structure 參數）")
+    print("  生成章節：研究方法、實驗結果（完整測試請移除 structure 參數）")
 
     result = service.generate_paper(
         topic="以機器學習預測加護病房病患院內死亡率：比較研究",
         mining_results=MOCK_DATAMIND_OUTPUT,
-        structure=["摘要", "前言", "結論"],  # 完整版：移除此行使用預設六章
+        structure=["研究方法", "實驗結果"],  # 完整版：移除此行使用預設六章
         language="zh-TW",
     )
 
@@ -290,13 +260,18 @@ def main():
     )
     print(f"  引用地圖：{citation_map_path}")
 
-    # 參考文獻清單
+    # 參考文獻清單（僅含實際被引用的文獻）
     refs_path = output_dir / "references.json"
     refs_path.write_text(
         json.dumps(result["references"], ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print(f"  引用清單：{refs_path}")
+
+    # 引用對照報告（記錄文章內文對應到參考論文的哪一部分）
+    citation_report_path = output_dir / "citation_report.md"
+    citation_report_path.write_text(result["citation_report"], encoding="utf-8")
+    print(f"  引用對照報告：{citation_report_path}")
 
     # ── 摘要輸出 ─────────────────────────────────────────────────────────────
     print("\n" + "=" * 60)

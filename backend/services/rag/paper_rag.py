@@ -148,8 +148,9 @@ class PaperRAGService:
 
         回傳：
           paper_markdown  - 完整論文（Markdown 格式）
-          citation_map    - 引用地圖（逐段記錄引用來源，供前端使用）
-          references      - 全域引用清單（APA 格式）
+          citation_map    - 引用地圖（逐段記錄引用來源，供前端使用；僅含實際被引用的文獻）
+          references      - 全域引用清單（APA 格式；僅含實際被引用的文獻，已重新連續編號）
+          citation_report - 引用對照報告（Markdown，依參考文獻分組列出對應段落與原文摘錄）
           sections_generated - 實際生成的章節清單
           usage           - Gemini token 用量統計
         """
@@ -208,13 +209,37 @@ class PaperRAGService:
                 section_name, section_text_global, local_refs, global_ref_list, citation_map
             )
 
-        # 6. 組合完整論文
+        # 6. 過濾未被實際引用的參考文獻，並重新連續編號
+        cited_old_ids = sorted({rid for entry in citation_map for rid in entry["cited_ref_ids"]})
+        old_to_new = {old_id: new_id for new_id, old_id in enumerate(cited_old_ids, 1)}
+
+        global_ref_list = [
+            {**ref, "ref_id": old_to_new[ref["ref_id"]]}
+            for ref in global_ref_list
+            if ref["ref_id"] in old_to_new
+        ]
+
+        for entry in citation_map:
+            entry["cited_ref_ids"] = [old_to_new[rid] for rid in entry["cited_ref_ids"]]
+            for src in entry["sources"]:
+                src["ref_id"] = old_to_new[src["ref_id"]]
+
+        for section_name in list(sections_text.keys()):
+            sections_text[section_name] = re.sub(
+                r"\[(\d+)\]",
+                lambda m: f"[{old_to_new.get(int(m.group(1)), int(m.group(1)))}]",
+                sections_text[section_name],
+            )
+
+        # 7. 組合完整論文 + 引用對照報告
         paper_markdown = self._assemble_paper(topic, structure, sections_text, global_ref_list)
+        citation_report = self._build_citation_report(global_ref_list, citation_map)
 
         return {
             "paper_markdown": paper_markdown,
             "citation_map": citation_map,
             "references": global_ref_list,
+            "citation_report": citation_report,
             "sections_generated": [s for s in structure if s in sections_text],
             "usage": usage_total,
         }
@@ -314,7 +339,7 @@ class PaperRAGService:
                 prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.4,
-                    max_output_tokens=4096,
+                    max_output_tokens=8192,
                 ),
             )
             text = getattr(resp, "text", "") or ""
@@ -370,10 +395,17 @@ class PaperRAGService:
             f"【撰寫要求】\n"
             f"- 語言：繁體中文\n"
             f"- 目標字數：約 {target} 字\n"
-            f"- 學術寫作風格，使用正式用語與被動語態\n"
-            f"- 引用規則：陳述現有方法、背景、比較結果時必須加 [n] 標記\n"
+            f"- 格式比照國際學術期刊論文（IMRaD）之標準寫作方式：以連貫的正式書面語段落敘述，"
+            f"段落內部須為連續文字，不可插入條列項目、編號清單或子標題\n"
+            f"- 學術寫作風格，使用正式用語與被動語態，避免口語化表達\n"
+            f"- 禁止使用任何 Markdown 語法符號，包括 *、-、#、反引號、粗體標記；"
+            f"提及資料前處理步驟或參數名稱時，請以中文敘述融入句子（例如「以平均值填補缺失值」），"
+            f"不要直接照抄英文程式碼識別字或加上反引號\n"
+            f"- 引用規則：陳述現有方法、背景、比較結果時，須於句末加入 [n] 引用標記；"
+            f"如需引用多篇文獻，請以相鄰獨立括號表示（如 [1][2]），"
+            f"禁止在同一括號內以逗號列出多個編號（如 [1, 2] 為不允許的格式）\n"
             f"- 僅輸出「{section_name}」的段落內文，不需要章節標題\n"
-            f"- 輸出純文字段落，段落間以空行分隔，禁止使用 Markdown 格式符號\n\n"
+            f"- 段落間以空行分隔\n\n"
             f"請直接輸出文章內容："
         )
 
@@ -381,15 +413,18 @@ class PaperRAGService:
 
     @staticmethod
     def _localref_to_global(text: str, local_refs: Dict[int, dict]) -> str:
-        """將章節內的本地 [n] 替換成全域 [n]。"""
+        """將章節內的本地 [n]（含 [n, m] 組合引用）替換成全域 [n]，並去除相鄰重複引用。"""
         def replace(m: re.Match) -> str:
-            local_id = int(m.group(1))
-            info = local_refs.get(local_id)
-            if info:
-                return f"[{info['global_ref_id']}]"
-            return m.group(0)
+            local_ids = [int(n) for n in re.findall(r"\d+", m.group(1))]
+            global_ids: List[str] = []
+            for local_id in local_ids:
+                info = local_refs.get(local_id)
+                global_ids.append(str(info["global_ref_id"]) if info else str(local_id))
+            return "".join(f"[{gid}]" for gid in global_ids)
 
-        return re.sub(r"\[(\d+)\]", replace, text)
+        text = re.sub(r"\[(\d+(?:\s*,\s*\d+)*)\]", replace, text)
+        # 去除相鄰重複引用，如 [1][1] → [1]
+        return re.sub(r"(\[\d+\])(?:\1)+", r"\1", text)
 
     @staticmethod
     def _build_citation_map(
@@ -445,6 +480,45 @@ class PaperRAGService:
                 "cited_ref_ids": cited_gids,
                 "sources": sources,
             })
+
+    # ── 引用對照報告 ──────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _build_citation_report(
+        global_ref_list: List[dict],
+        citation_map: List[dict],
+    ) -> str:
+        """
+        依參考文獻分組，記錄文章中每一段引用內文對應到該文獻的哪一段原文摘錄。
+        僅包含實際被引用（citation_map 中出現過）的文獻。
+        """
+        if not global_ref_list:
+            return "（本文未實際引用任何參考文獻）"
+
+        parts = ["# 引用對照報告", "", "記錄論文正文中每一處引用，對應到參考文獻原文的哪一段內容。", ""]
+
+        for ref in global_ref_list:
+            rid = ref["ref_id"]
+            author = ref.get("author", "Unknown Author")
+            year = ref.get("year", "n.d.")
+            title = ref.get("title", "Untitled")
+            parts.append(f"## [{rid}] {author} ({year}). {title}")
+            parts.append("")
+
+            entries = [
+                entry for entry in citation_map if rid in entry["cited_ref_ids"]
+            ]
+            for entry in entries:
+                src = next((s for s in entry["sources"] if s["ref_id"] == rid), None)
+                parts.append(f"### {entry['section']} · 第 {entry['paragraph_index']} 段")
+                parts.append(f"**引用內文：** {entry['text']}")
+                if src and src.get("relevant_chunk"):
+                    parts.append(f"**對應原文摘錄：** {src['relevant_chunk']}")
+                if src and src.get("similarity_score") is not None:
+                    parts.append(f"**相似度：** {src['similarity_score']}")
+                parts.append("")
+
+        return "\n".join(parts)
 
     # ── 論文組裝 ──────────────────────────────────────────────────────────────
 
