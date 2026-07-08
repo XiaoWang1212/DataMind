@@ -184,6 +184,18 @@
       </div>
     </div>
 
+    <div class="settings-footer">
+      <button
+        class="btn-continue"
+        :class="{ 'btn-continue--disabled': props.models.length === 0 }"
+        :disabled="props.models.length === 0"
+        type="button"
+        @click="emit('continue')"
+      >
+        繼續
+      </button>
+    </div>
+
   </section>
 </template>
 
@@ -206,10 +218,14 @@
     (e: 'add-model' | 'remove-model', name: string): void
     (e: 'update-preprocessing' | 'update-feature-engineering', steps: Array<Record<string, unknown>>): void
     (e: 'update-compute-ci', value: boolean): void
+    (e: 'continue'): void
+    (e: 'step-change', step: number): void
   }>()
 
   const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
   const currentStep = ref(0)
+
+  watch(currentStep, step => emit('step-change', step), { immediate: true })
 
   const PREPROCESS_LABELS: Record<string, string> = {
     fill_na: '缺值填補',
@@ -681,5 +697,27 @@
 
   .ci-toggle--on .ci-toggle__thumb {
     transform: translateX(16px);
+  }
+
+  .settings-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+
+  .btn-continue {
+    min-width: 88px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .btn-continue--disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
   }
 </style>

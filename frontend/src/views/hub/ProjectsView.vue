@@ -7,7 +7,7 @@
     </div>
 
     <!-- New project button -->
-    <RouterLink to="/hub/projects/new" class="new-btn">
+    <RouterLink class="new-btn" to="/hub/projects/new">
       <v-icon icon="mdi-folder-plus-outline" size="17" />
       新專案
     </RouterLink>
@@ -15,10 +15,10 @@
     <!-- Project list -->
     <div class="project-list">
       <RouterLink
-        v-for="project in projects"
+        v-for="project in store.projects"
         :key="project.id"
-        :to="`/hub/projects/${project.id}`"
         class="project-card"
+        :to="projectLink(project)"
       >
         <div class="project-main">
           <div class="project-title-row">
@@ -27,9 +27,9 @@
               {{ statusLabel[project.status] }}
             </span>
           </div>
-          <div class="project-meta">框架：{{ project.framework }}</div>
+          <div class="project-meta">框架：{{ project.frameworkName }}</div>
           <div class="project-date">
-            <v-icon icon="mdi-calendar-outline" size="13" class="date-icon" />
+            <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
             {{ project.date }}
           </div>
           <div v-if="project.status === 'running'" class="progress-wrap">
@@ -42,47 +42,31 @@
             </div>
           </div>
         </div>
-        <v-icon icon="mdi-chevron-right" size="18" class="project-arrow" />
+        <v-icon class="project-arrow" icon="mdi-chevron-right" size="18" />
       </RouterLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+  import type { Project } from '@/store/projectStore'
+  import { RouterLink } from 'vue-router'
+  import { useProjectStore } from '@/store/projectStore'
 
-const statusLabel: Record<string, string> = {
-  completed: '已完成',
-  running: '進行中',
-  draft: '草稿',
-}
+  const store = useProjectStore()
 
-const projects = [
-  {
-    id: '1',
-    name: '市場情緒研究',
-    status: 'completed',
-    framework: '市場情緒回歸',
-    date: '2026-05-29',
-    progress: 100,
-  },
-  {
-    id: '2',
-    name: '圖像分類實驗',
-    status: 'running',
-    framework: 'CNN 圖像分類',
-    date: '2026-06-01',
-    progress: 67,
-  },
-  {
-    id: '3',
-    name: '用戶導航分析',
-    status: 'draft',
-    framework: '用戶行為 RNN',
-    date: '2026-06-02',
-    progress: 0,
-  },
-]
+  const statusLabel: Record<string, string> = {
+    completed: '已完成',
+    running: '進行中',
+    draft: '草稿',
+  }
+
+  // 進行中代表 workflow 還沒跑完，直接點進去繼續；其他狀態先進詳情頁
+  function projectLink (project: Project): string {
+    return project.status === 'running'
+      ? `/workflow?project=${project.id}`
+      : `/hub/projects/${project.id}`
+  }
 </script>
 
 <style scoped>

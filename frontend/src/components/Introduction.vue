@@ -102,7 +102,7 @@
 }
 
 .hero-card {
-  @apply md:col-span-2 md:py-4 sm:pr-[120px] w-full bg-primary-100 dark:bg-primary-900
+  @apply md:col-span-2 md:py-4 sm:pr-30 w-full bg-primary-100 dark:bg-primary-900
 }
 
 .v-card-subtitle {

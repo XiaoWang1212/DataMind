@@ -1,4 +1,4 @@
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 import { type Edge, Position } from '@vue-flow/core'
 import { INITIAL_EDGES, INITIAL_NODES } from '@/constants/workflowData'
@@ -8,9 +8,14 @@ export const DYNAMIC_NODE_IDS = ['preprocessor', 'featureEngineering'] as const
 export const RESULT_NODE_IDS = ['featureImportance', 'confusionMatrix', 'computeCi'] as const
 export const MODEL_Y_GAP = 110
 
+const STEP_HIGHLIGHT_COLORS = ['#f0e274', '#f0e274', '#f0e274', '#f0e274'] as const
+
 export function useWorkflowNodes(
   nodeStatuses: Ref<Map<string, 'running' | 'finished'>>,
   isDemoFinished: Ref<boolean>,
+  selectedNodeId: Ref<string | null>,
+  settingsStep: Ref<number>,
+  nodeFlash: Ref<Map<string, 'add' | 'remove'>>,
 ) {
   const nodes = ref<FlowNode[]>(INITIAL_NODES)
   const edges = ref<EdgeBase[]>(INITIAL_EDGES)
@@ -37,9 +42,22 @@ export function useWorkflowNodes(
       .filter(Boolean),
   )
 
-  const canvasNodes = computed<FlowNode[]>(() =>
-    nodes.value.map(node => {
+  function getHighlightedIds(): Set<string> {
+    if (selectedNodeId.value !== 'settings') return new Set()
+    const step = settingsStep.value
+    if (step === 0) return new Set(['preprocessor'])
+    if (step === 1) return new Set(['featureEngineering'])
+    if (step === 2) return new Set(nodes.value.filter(n => n.id.startsWith('model-')).map(n => n.id))
+    if (step === 3) return new Set(['computeCi'])
+    return new Set()
+  }
+
+  const canvasNodes = computed<FlowNode[]>(() => {
+    const highlightedIds = getHighlightedIds()
+    const color: string | null = STEP_HIGHLIGHT_COLORS[settingsStep.value] ?? null
+    return nodes.value.map(node => {
       const status = nodeStatuses.value.get(node.id) ?? null
+      const highlighted = highlightedIds.has(node.id)
       return {
         ...node,
         class: '',
@@ -47,14 +65,27 @@ export function useWorkflowNodes(
           ...node.data,
           status,
           colorClass: status === 'finished' ? 'node-yellow' : node.data.colorClass,
+          highlighted,
+          highlightColor: highlighted ? color : null,
+          flashType: nodeFlash.value.get(node.id) ?? null,
         },
       }
-    }),
-  )
+    })
+  })
 
   const canvasEdges = computed<Edge[]>(() =>
     edges.value.map((edge): Edge => {
-      const done = nodeStatuses.value.get(String(edge.source)) === 'finished'
+      const id = String(edge.id)
+      let done: boolean
+      if (id.startsWith('etm')) {
+        // pipeline → model：該 model 開始 running 才連線（逐一連接）
+        done = nodeStatuses.value.has(String(edge.target))
+      } else if (id.startsWith('emts')) {
+        // model → testScore：等全部 model 完成、testScore 開始才一起連線
+        done = nodeStatuses.value.has(String(edge.target))
+      } else {
+        done = nodeStatuses.value.get(String(edge.source)) === 'finished'
+      }
       return {
         ...edge,
         animated: done && !isDemoFinished.value,
@@ -348,7 +379,10 @@ export function useWorkflowNodes(
       ? settingsNode.data.config.models as Array<unknown>
       : []
     const currentModelCount = nodes.value.filter(n => n.id.startsWith('model-')).length
-    if (settingsModels.length > 0 && currentModelCount !== settingsModels.length) {
+    // 只有在畫布上完全沒有 model 節點時才從 settings 補齊（例如首次從框架 JSON 建立）；
+    // 若 model 節點已存在（由 localStorage 還原），就以它們為準，不用 settings 舊清單覆寫，
+    // 否則使用者透過 UI 增刪的模型會在重新整理後被還原成框架預設清單
+    if (settingsModels.length > 0 && currentModelCount === 0) {
       syncModelCanvasNodes(settingsModels)
     } else if (settingsModels.length === 0 && currentModelCount === 0) {
       const lastPreId = getLastPreModelNodeId()

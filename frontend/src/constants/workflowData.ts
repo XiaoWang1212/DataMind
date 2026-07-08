@@ -128,8 +128,8 @@ export const INITIAL_EDGES: Pick<Edge, "id" | "source" | "target" | "type">[] = 
   { id: "e4",  source: "testScore", target: "confusionMatrix",   type: "default" },
 ];
 
-/** Demo 動畫每一步的資料結構 */
-export type DemoStep = { nodeIds: string[]; delay: number };
+/** Demo 動畫每一步的資料結構；duration 可覆蓋 NODE_RUN_DURATION */
+export type DemoStep = { nodeIds: string[]; delay: number; duration?: number };
 
 export const DEMO_STEPS: DemoStep[] = [
   { nodeIds: ["file"],                            delay: 800  },

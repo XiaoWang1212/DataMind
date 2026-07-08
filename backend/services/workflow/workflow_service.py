@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import product
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -480,6 +480,210 @@ class WorkflowService:
         return {
             "success": True,
             "results": results,
+            "preprocess_variants": preprocess_pipelines,
+            "score_variants": score_variants,
+            "class_distribution": class_dist,
+        }
+
+    @classmethod
+    def execute_workflow_stream(
+        cls,
+        data_path: str,
+        target_col: str,
+        preprocess_pipelines: List[List[Dict[str, Any]]],
+        model_names: List[str],
+        score_variants: List[Dict[str, Any]],
+        validation_config: Optional[Dict[str, Any]] = None,
+        feature_engineering_pipelines: Optional[List[List[Dict[str, Any]]]] = None,
+        column_config: Optional[List[Dict[str, Any]]] = None,
+        resampling_method: str = "none",
+        resampling_config: Optional[Dict[str, Any]] = None,
+        tuning_method: str = "none",
+        tuning_cv: int = 3,
+        tuning_n_iter: int = 20,
+        tuning_scoring: str = "roc_auc",
+        compute_ci: bool = False,
+        ci_n_bootstrap: int = 1000,
+        train_size: float = 0.7,
+        random_state: int = 42,
+    ) -> Generator[Dict[str, Any], None, None]:
+        """每個 model 跑完所有 splits 後立即 yield 結果，最後 yield 完整摘要。"""
+        df = cls.load_data(data_path)
+
+        if target_col not in df.columns:
+            raise ValueError(f"Target column not found: {target_col}")
+
+        y = df[target_col]
+        X = df.drop(columns=[target_col])
+
+        if column_config:
+            exclude_roles = {"skip", "meta"}
+            skip_cols = [
+                item["name"]
+                for item in column_config
+                if isinstance(item, dict) and item.get("role") in exclude_roles
+                and isinstance(item.get("name"), str)
+            ]
+            X = X.drop(columns=[c for c in skip_cols if c in X.columns], errors="ignore")
+
+        if X.empty:
+            raise ValueError("Feature matrix is empty after dropping the target column")
+
+        if not preprocess_pipelines:
+            preprocess_pipelines = [[]]
+        if not feature_engineering_pipelines:
+            feature_engineering_pipelines = [[]]
+
+        validation_config = validation_config or {"method": "test_on_test"}
+        resampling_config = resampling_config or {}
+        class_dist = describe_class_distribution(y)
+        split_definitions = cls._generate_resampling_splits(X, y, validation_config)
+
+        all_results: List[Dict[str, Any]] = []
+
+        for pipeline_index, pipeline_steps in enumerate(preprocess_pipelines):
+            feature_steps = (
+                feature_engineering_pipelines[pipeline_index]
+                if pipeline_index < len(feature_engineering_pipelines)
+                else []
+            )
+
+            for model_name in model_names:
+                model_results: List[Dict[str, Any]] = []
+
+                model_config = ModelRegistry.get_model_config(model_name)
+                if model_config is None:
+                    model_results.append({
+                        "preprocess_pipeline_index": pipeline_index,
+                        "model_name": model_name,
+                        "error": f"Unknown model name: {model_name}",
+                    })
+                    all_results.extend(model_results)
+                    yield {"type": "model_done", "model_name": model_name, "results": model_results}
+                    continue
+
+                for split_def in split_definitions:
+                    train_idx = split_def["train_index"]
+                    test_idx = split_def["test_index"]
+
+                    X_train_raw = X.iloc[train_idx]
+                    X_test_raw = X.iloc[test_idx]
+                    y_train = y.iloc[train_idx]
+                    y_test = y.iloc[test_idx]
+
+                    X_train, X_test = apply_preprocess_pipeline_for_split(
+                        X_train_raw, X_test_raw, pipeline_steps
+                    )
+                    X_train, X_test = cls._prepare_categorical(X_train, X_test)
+
+                    if X_train.empty:
+                        model_results.append({
+                            "preprocess_pipeline_index": pipeline_index,
+                            "model_name": model_name,
+                            "split_name": split_def["name"],
+                            "error": "Feature matrix empty after preprocessing",
+                        })
+                        continue
+
+                    if feature_steps:
+                        X_train, X_test = apply_feature_engineering_pipeline_for_split(
+                            X_train, X_test, feature_steps, target_train=y_train
+                        )
+
+                    if resampling_method != "none":
+                        try:
+                            X_train, y_train = apply_resampling(
+                                X_train, y_train,
+                                method=resampling_method,
+                                config=resampling_config,
+                            )
+                        except Exception as exc:
+                            model_results.append({
+                                "preprocess_pipeline_index": pipeline_index,
+                                "model_name": model_name,
+                                "split_name": split_def["name"],
+                                "error": f"Resampling failed: {exc}",
+                            })
+                            continue
+
+                    estimator = model_config.create_estimator()
+                    best_params: Dict[str, Any] = {}
+
+                    if tuning_method in {"grid", "random"}:
+                        param_grid = model_config.get_param_grid()
+                        if param_grid:
+                            inner_cv = StratifiedKFold(n_splits=tuning_cv, shuffle=True, random_state=42)
+                            SearchClass = GridSearchCV if tuning_method == "grid" else RandomizedSearchCV
+                            search_kwargs: Dict[str, Any] = dict(
+                                estimator=estimator,
+                                cv=inner_cv,
+                                scoring=tuning_scoring,
+                                n_jobs=-1,
+                                error_score="raise",
+                            )
+                            if tuning_method == "grid":
+                                search_kwargs["param_grid"] = param_grid
+                            else:
+                                search_kwargs["param_distributions"] = param_grid
+                                search_kwargs["n_iter"] = tuning_n_iter
+                                search_kwargs["random_state"] = 42
+                            try:
+                                searcher = SearchClass(**search_kwargs)
+                                searcher.fit(X_train, y_train)
+                                estimator = searcher.best_estimator_
+                                best_params = searcher.best_params_
+                            except Exception as exc:
+                                estimator = model_config.create_estimator()
+                                estimator.fit(X_train, y_train)
+                                best_params = {"tuning_error": str(exc)}
+                        else:
+                            estimator.fit(X_train, y_train)
+                    else:
+                        estimator.fit(X_train, y_train)
+
+                    y_pred = pd.Series(estimator.predict(X_test), index=y_test.index)
+                    y_score = None
+                    if hasattr(estimator, "predict_proba"):
+                        try:
+                            proba = estimator.predict_proba(X_test)
+                            classes = getattr(estimator, "classes_", None)
+                            y_score = {
+                                "proba": proba,
+                                "classes": classes.tolist() if classes is not None else None,
+                            }
+                        except Exception:
+                            y_score = None
+
+                    metrics = evaluate_metrics(
+                        y_test, y_pred, y_score, score_variants,
+                        compute_ci=compute_ci,
+                        ci_n_bootstrap=ci_n_bootstrap,
+                    )
+
+                    model_results.append({
+                        "preprocess_pipeline_index": pipeline_index,
+                        "model_name": model_name,
+                        "preprocess_steps": pipeline_steps,
+                        "feature_engineering_steps": feature_steps,
+                        "split_name": split_def["name"],
+                        "validation_config": split_def["config"],
+                        "resampling_method": resampling_method,
+                        "best_params": best_params,
+                        "metrics": metrics,
+                        "feature_importance": cls._extract_feature_importance(
+                            estimator, list(X_train.columns)
+                        ),
+                        "feature_count": int(X_train.shape[1]),
+                        "row_count": int(X_train.shape[0]),
+                    })
+
+                all_results.extend(model_results)
+                yield {"type": "model_done", "model_name": model_name, "results": model_results}
+
+        yield {
+            "type": "done",
+            "success": True,
+            "results": all_results,
             "preprocess_variants": preprocess_pipelines,
             "score_variants": score_variants,
             "class_distribution": class_dist,
