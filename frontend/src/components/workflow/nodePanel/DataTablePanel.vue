@@ -1,7 +1,6 @@
 <template>
   <section class="data-table-panel">
     <div class="data-table-header">
-      <div class="data-table-title">Data Table</div>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
       </div>
@@ -478,17 +477,12 @@
 
   .data-table-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 12px;
   }
 
-  .data-table-title {
-    font-weight: 700;
-    font-size: 16px;
-  }
-
   .data-table-file {
+    margin-left: auto;
     color: #475569;
     font-size: 13px;
   }
