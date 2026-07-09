@@ -1,6 +1,18 @@
 <template>
   <section class="data-table-panel">
     <div class="data-table-header">
+      <div
+        v-if="props.loading && previewColumns.length > 0"
+        class="data-table-guide"
+        :class="{ 'data-table-guide--ready': hasTarget }"
+      >
+        <span v-if="hasTarget">
+          已選定目標變數「{{ targetColumnName }}」，按右下角「繼續」即可進入下一步。
+        </span>
+        <span v-else>
+          請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
+        </span>
+      </div>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
       </div>
@@ -20,19 +32,6 @@
     </div>
 
     <div v-else>
-      <div
-        v-if="props.loading"
-        class="data-table-guide"
-        :class="{ 'data-table-guide--ready': hasTarget }"
-      >
-        <span v-if="hasTarget">
-          已選定目標變數「{{ targetColumnName }}」，按右下角「繼續」即可進入下一步。
-        </span>
-        <span v-else>
-          請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
-        </span>
-      </div>
-
       <div class="data-table-summary">
         <span>{{ previewColumns.length }} 個欄位</span>
         <span>{{ previewDataRows.length }} 筆已讀取</span>
@@ -482,6 +481,7 @@
   }
 
   .data-table-file {
+    flex-shrink: 0;
     margin-left: auto;
     color: #475569;
     font-size: 13px;
@@ -503,14 +503,14 @@
   }
 
   .data-table-guide {
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 93, 255, 0.18);
-    background: rgba(0, 93, 255, 0.05);
-    color: #1e293b;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #005dff;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.4;
   }
 
   .data-table-guide strong {
@@ -518,8 +518,7 @@
   }
 
   .data-table-guide--ready {
-    border-color: rgba(16, 185, 129, 0.35);
-    background: rgba(16, 185, 129, 0.08);
+    color: #10b981;
   }
 
   .data-table-column-settings {
