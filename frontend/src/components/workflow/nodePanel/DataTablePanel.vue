@@ -82,6 +82,7 @@
                       :class="{
                         'role-select--attention': props.loading && !hasTarget,
                       }"
+                      @focus="handleRoleSelectFocus"
                     >
                       <option
                         v-for="role in roleOptions"
@@ -97,7 +98,7 @@
                       </option>
                     </select>
                     <span
-                      v-if="props.loading && !hasTarget && index === 0"
+                      v-if="props.loading && !roleSelectTouched && index === 0"
                       aria-hidden="true"
                       class="tap-hint"
                     >
@@ -172,6 +173,12 @@
   const previewDataRows = ref<string[][]>([])
   const columnSettings = ref<ColumnSetting[]>([])
   const isLoading = ref(false)
+
+  const roleSelectTouched = ref(false)
+
+  function handleRoleSelectFocus (): void {
+    roleSelectTouched.value = true
+  }
 
   const roleOptions = ['feature', 'target', 'meta', 'skip'] as const
   const typeOptions = ['numeric', 'categorial', 'text', 'datetime'] as const
