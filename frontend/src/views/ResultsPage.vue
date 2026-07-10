@@ -1,7 +1,7 @@
 <template>
   <section class="results-page">
 
-    <Sidebar />
+    <HubSidebar />
 
     <main class="results-main">
       <header class="results-toolbar">
@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
-  import Sidebar from '@/components/Sidebar.vue'
+  import HubSidebar from '@/components/hub/HubSidebar.vue'
 
   onMounted(() => {
     document.title = 'DataMind'
