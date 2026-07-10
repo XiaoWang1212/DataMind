@@ -53,9 +53,6 @@ export function useDrawerDrag() {
   const expandedPx = ref(getExpandedPx());
   const fullPx = ref(getFullPx());
 
-  const isExpanded = computed(() => stage.value === "expanded");
-  const isFull = computed(() => stage.value === "full");
-
   function stagePx(s: Stage): number {
     if (s === "full") return fullPx.value;
     if (s === "expanded") return expandedPx.value;
@@ -129,10 +126,13 @@ export function useDrawerDrag() {
     if (!isDragging.value) return;
     removeListeners();
 
-    // 沒有明顯位移 → 視為點擊 handle：只切換「關（peeked）」與「開到 expanded（54vh）」
-    // 關著時點 → 開到 expanded；其餘狀態（collapsed / expanded / full）點 → 關閉
+    // 沒有明顯位移 → 視為點擊 handle
+    // 關著時點 → 開到 expanded；collapsed / expanded 時點 → 關閉；full 時點 → 縮回 expanded
     if (!moved) {
-      const next: Stage = stage.value === "peeked" ? "expanded" : "peeked";
+      let next: Stage;
+      if (stage.value === "peeked") next = "expanded";
+      else if (stage.value === "full") next = "expanded";
+      else next = "peeked";
       if (next === "expanded") expandedPx.value = getExpandedPx();
       isDragging.value = false;
       requestAnimationFrame(() => {
@@ -212,5 +212,5 @@ export function useDrawerDrag() {
 
   onBeforeUnmount(removeListeners);
 
-  return { isExpanded, isFull, style, startDrag, reset, expand };
+  return { style, startDrag, reset, expand };
 }

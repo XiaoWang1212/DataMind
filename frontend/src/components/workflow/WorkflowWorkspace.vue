@@ -52,7 +52,6 @@
       <div
         v-if="selectedNode"
         class="options-drawer"
-        :class="{ 'options-drawer--expanded': isExpanded, 'options-drawer--full': isFull }"
         :style="drawerStyle"
         @wheel.stop
       >
@@ -164,7 +163,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { isExpanded, isFull, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
+  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
@@ -747,13 +746,9 @@
     transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-  }
-
-  .options-drawer--expanded {
-    max-height: 54vh;
-  }
-
-  .options-drawer--full {
+    /* 安全上限：實際高度由 useDrawerDrag 精確控制各段大小，
+       這裡固定用 full 段（90vh）當唯一上限，避免用分段 class
+       卡高度時，收合到比自己上限還小的段落會被瞬間夾住而不是平滑動畫 */
     max-height: 90vh;
   }
 
