@@ -410,3 +410,31 @@ function getExpandedPx(): number {
 git add frontend/src/composables/useDrawerDrag.ts
 git commit -m "feat: expand drawer's third stage to 90vh"
 ```
+
+## 實際實作差異
+
+Task 4 實際做完的結果跟本節原始計畫差異很大，記錄如下。
+
+### 1. 哪裡跟原計畫不一樣
+
+- **原計畫**：把既有的 `expanded` 段從 54vh 直接改成 90vh（單純替換一個常數），只動 `useDrawerDrag.ts` 一個檔案。
+- **實際結果**：drawer 變成四段式 —— `peeked`（100px）→ `collapsed`（280px）→ `expanded`（**保留 54vh，不變**）→ `full`（**新增，90vh**）。使用者可以從 `expanded` 繼續往上拖到 `full`；點擊 handle 在 `full` 時會縮回 `expanded`（54vh），而不是直接關到 `peeked`。
+- 另外還動了計畫完全沒提到的 `frontend/src/components/workflow/WorkflowWorkspace.vue`：
+  - 拿掉原本各自獨立、寫死在兩個 CSS class 裡的 `max-height`（`.options-drawer--expanded: 54vh` / `.options-drawer--full: 90vh`），改成單一固定的 `max-height: 90vh` 安全上限，直接寫在 `.options-drawer` 上，不再依 stage 切換 class。
+  - 因此 `isExpanded` / `isFull` / `isDragging` 這幾個原本只為了驅動這兩個 class 存在的狀態，最後從 `useDrawerDrag()` 的回傳值裡整個移除。
+- 過程中還連帶修正了 Task 2 / Task 3 完成後在 `DataTablePanel.vue` 裡新發現的問題（詳見「對其他 task 有沒有影響」）。
+
+### 2. 為什麼要改
+
+- **需求理解錯誤**：brainstorming 階段設計文件與本計畫都寫成「把 expanded 從 54vh 換成 90vh」，但套用後在瀏覽器實測時，使用者澄清實際想要的是「保留 54vh，額外新增一段可以繼續往上拉的 90vh」，而不是取代。
+- **計畫疏漏（技術限制被漏看）**：第一次只照原計畫改 `useDrawerDrag.ts` 的比例並 commit 後，使用者實測回報「拉不到 90，且收合時會先跳到 90vh 才收起」。追查後發現 `WorkflowWorkspace.vue` 有一個計畫完全沒發現的第二個高度上限來源（獨立寫死的 CSS `max-height: 54vh`），跟 `useDrawerDrag.ts` 的 JS 高度計算是兩個各自維護、沒有同步的常數。這個 commit（`feat: expand drawer's third stage to 90vh` 的第一版）因此被 `git reset --hard` 撤銷重做。
+- **後續執行 `/code-review` 又抓到新 bug**：改成四段式之後，`stage` 這個值只在放開手（`endDrag` 的 `requestAnimationFrame`）才更新，但拖曳中即時高度已經可以拉到 90vh，造成「CSS class 還沒切換、拖曳中途卡在 54vh 直到放開才彈到真正高度」的視覺 bug。第一輪修法是拖曳中強制套用 `full` 的 90vh 上限；後來使用者又要求新增「90vh 時點擊 handle 縮回 54vh」的互動，這個新收合動畫又會因為「目標值剛好等於新的 class 上限」而被瞬間夾住、失去平滑動畫——**發現更好的做法**：既然實際高度本來就完全由 JS 精確控制，兩段式 CSS 上限本身就是不必要的重複來源，於是直接合併成一個固定的 90vh 安全上限，從根本消除這整類「CSS 上限與 JS 高度不同步」的 bug，而不是繼續針對個別觸發情境打補丁。
+
+### 3. 對其他 task 有沒有影響
+
+- Task 1–3 都在 `DataTablePanel.vue`，Task 4 的核心改動在 `useDrawerDrag.ts` / `WorkflowWorkspace.vue`，檔案上沒有直接衝突。
+- 但 Task 4 做完後跑 `/code-review`，在既有的 `DataTablePanel.vue`（Task 2、Task 3 的成果）裡額外抓到幾個問題並一併修掉，屬於「review 期間發現、回頭補強」而非重新變更 Task 2/3 的原始需求：
+  - Task 3 新增的 tap-hint 判斷式補回 `!hasTarget`，修掉「已選 Target 但點擊提示圈圈又重新出現」的矛盾。
+  - `role-select--attention` 灰邊框也補上 `!roleSelectTouched`，讓它跟提示圈圈重新綁在一起消失/出現。
+  - Task 2 新增的 header 引導文字判斷式（`previewColumns.length > 0`）改用跟下方空狀態共用的 `columnsReady` computed，避免同一個條件兩處各寫一次。
+- 過程中還額外發現一個**跟本計畫無關的既有問題**：Role/Target 選擇在使用者按下「繼續」之前只存在元件本地狀態，若在按繼續前切去別的節點，選擇會遺失。這個問題在本次計畫執行前就存在，使用者確認後明確排除在本次範圍外，已記錄到專案 memory，留待之後另外處理，不影響本計畫四個 task 的完成度。
