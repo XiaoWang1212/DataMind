@@ -2,7 +2,7 @@
   <section class="data-table-panel">
     <div class="data-table-header">
       <div
-        v-if="props.loading && previewColumns.length > 0"
+        v-if="props.loading && columnsReady"
         class="data-table-guide"
         :class="{ 'data-table-guide--ready': hasTarget }"
       >
@@ -27,7 +27,7 @@
       請先在 File 節點上傳 CSV 檔案，才能顯示資料表。
     </div>
 
-    <div v-else-if="previewColumns.length === 0" class="data-table-empty">
+    <div v-else-if="!columnsReady" class="data-table-empty">
       無法解析 CSV 檔案內容。
     </div>
 
@@ -80,7 +80,7 @@
                       v-model="column.role"
                       class="role-select"
                       :class="{
-                        'role-select--attention': props.loading && !hasTarget,
+                        'role-select--attention': props.loading && !hasTarget && !roleSelectTouched,
                       }"
                       @focus="handleRoleSelectFocus"
                     >
@@ -97,9 +97,9 @@
                         {{ roleLabels[role] }}
                       </option>
                     </select>
-                    <Transition name="tap-hint-fade">
+                    <Transition v-if="index === 0" name="tap-hint-fade">
                       <span
-                        v-if="props.loading && !roleSelectTouched && index === 0"
+                        v-if="props.loading && !roleSelectTouched && !hasTarget"
                         aria-hidden="true"
                         class="tap-hint"
                       >
@@ -172,6 +172,7 @@
 
   const fileName = computed(() => props.fileName ?? props.file?.name ?? '')
   const previewColumns = ref<string[]>([])
+  const columnsReady = computed(() => previewColumns.value.length > 0)
   const previewDataRows = ref<string[][]>([])
   const columnSettings = ref<ColumnSetting[]>([])
   const isLoading = ref(false)

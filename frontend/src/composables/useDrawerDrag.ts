@@ -11,11 +11,11 @@ import { computed, onBeforeUnmount, ref } from "vue";
 // ─── 各段高度（px）──────────────────────────────────────────────
 const PEEKED_PX = 100;
 const COLLAPSED_PX = 280;
-function getExpandedPx(): number {
-  return Math.round(window.innerHeight * 0.54);
-}
-function getFullPx(): number {
-  return Math.round(window.innerHeight * 0.9);
+const EXPANDED_RATIO = 0.54;
+const FULL_RATIO = 0.9;
+
+function ratioPx(ratio: number): number {
+  return Math.round(window.innerHeight * ratio);
 }
 
 // 吸附動畫時長（ms）
@@ -50,14 +50,27 @@ export function useDrawerDrag() {
   const liveHeight = ref<number | null>(null);
 
   // expanded / full 的像素高度：每次 startDrag 時重新取視窗高度
-  const expandedPx = ref(getExpandedPx());
-  const fullPx = ref(getFullPx());
+  const expandedPx = ref(ratioPx(EXPANDED_RATIO));
+  const fullPx = ref(ratioPx(FULL_RATIO));
+
+  // 兩個像素值一定要一起刷新，避免其中一個用到舊視窗高度算出來的值
+  function refreshViewportPx(): void {
+    expandedPx.value = ratioPx(EXPANDED_RATIO);
+    fullPx.value = ratioPx(FULL_RATIO);
+  }
+
+  // 各段對應高度，stagePx() 與 resolveTarget() 共用同一份，避免兩邊各寫一次、改一邊忘了改另一邊
+  function stageEntries(): Array<{ target: Stage; px: number }> {
+    return [
+      { target: "peeked", px: PEEKED_PX },
+      { target: "collapsed", px: COLLAPSED_PX },
+      { target: "expanded", px: expandedPx.value },
+      { target: "full", px: fullPx.value },
+    ];
+  }
 
   function stagePx(s: Stage): number {
-    if (s === "full") return fullPx.value;
-    if (s === "expanded") return expandedPx.value;
-    if (s === "collapsed") return COLLAPSED_PX;
-    return PEEKED_PX;
+    return stageEntries().find(entry => entry.target === s)!.px;
   }
 
   const heightPx = computed<number>(() => {
@@ -88,8 +101,7 @@ export function useDrawerDrag() {
   }
 
   function startDrag(event: MouseEvent | TouchEvent): void {
-    expandedPx.value = getExpandedPx();
-    fullPx.value = getFullPx();
+    refreshViewportPx();
     dragStartY = getClientY(event);
     dragStartHeight = heightPx.value;
     liveHeight.value = dragStartHeight;
@@ -133,7 +145,7 @@ export function useDrawerDrag() {
       if (stage.value === "peeked") next = "expanded";
       else if (stage.value === "full") next = "expanded";
       else next = "peeked";
-      if (next === "expanded") expandedPx.value = getExpandedPx();
+      if (next === "expanded") refreshViewportPx();
       isDragging.value = false;
       requestAnimationFrame(() => {
         stage.value = next;
@@ -170,12 +182,7 @@ export function useDrawerDrag() {
     const LOOKAHEAD_MS = 150;
     const projectedH = currentH - velocity * LOOKAHEAD_MS;
 
-    const candidates: Array<{ target: Stage; px: number }> = [
-      { target: "peeked", px: PEEKED_PX },
-      { target: "collapsed", px: COLLAPSED_PX },
-      { target: "expanded", px: expandedPx.value },
-      { target: "full", px: fullPx.value },
-    ];
+    const candidates = stageEntries();
 
     let nearest: { target: Stage; px: number } = candidates[0]!;
     let minDist = Infinity;
@@ -197,7 +204,7 @@ export function useDrawerDrag() {
   }
 
   function expand(): void {
-    expandedPx.value = getExpandedPx();
+    refreshViewportPx();
     stage.value = "expanded";
     liveHeight.value = null;
     isDragging.value = false;
