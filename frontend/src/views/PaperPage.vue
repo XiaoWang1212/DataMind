@@ -1,6 +1,6 @@
 <template>
   <section class="paper-page">
-    <Sidebar />
+    <HubSidebar />
 
     <main class="paper-main">
       <header class="paper-toolbar">
@@ -40,9 +40,9 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPanel from '@/components/paper/CitationPanel.vue'
   import PaperSection from '@/components/paper/PaperSection.vue'
-  import Sidebar from '@/components/Sidebar.vue'
   import { mockPaperReport } from '@/constants/reportData'
 
   const router = useRouter()
