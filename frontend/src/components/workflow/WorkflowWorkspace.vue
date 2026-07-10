@@ -52,7 +52,7 @@
       <div
         v-if="selectedNode"
         class="options-drawer"
-        :class="{ 'options-drawer--expanded': isExpanded }"
+        :class="{ 'options-drawer--expanded': isExpanded, 'options-drawer--full': isFull }"
         :style="drawerStyle"
         @wheel.stop
       >
@@ -164,7 +164,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { isExpanded, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
+  const { isExpanded, isFull, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
@@ -751,6 +751,10 @@
 
   .options-drawer--expanded {
     max-height: 54vh;
+  }
+
+  .options-drawer--full {
+    max-height: 90vh;
   }
 
   .options-drawer__scroll {

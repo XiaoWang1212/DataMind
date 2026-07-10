@@ -1,10 +1,11 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 
 /**
- * 抽屜有三個段落喔
+ * 抽屜有四個段落喔
  *   peeked (100px)    → 關閉的時候沒有完全關閉，還看得到title
  *   collapsed (280px) → 預設打開的高度，剛好能看到大部分的欄位
  *   expanded (54vh)   → 內容比較多時（e.g. dataTable）可以往上拉到更大
+ *   full (90vh)       → 從 expanded 繼續往上拖，可以拉到接近整頁
  */
 
 // ─── 各段高度（px）──────────────────────────────────────────────
@@ -13,11 +14,14 @@ const COLLAPSED_PX = 280;
 function getExpandedPx(): number {
   return Math.round(window.innerHeight * 0.54);
 }
+function getFullPx(): number {
+  return Math.round(window.innerHeight * 0.9);
+}
 
 // 吸附動畫時長（ms）
 const SNAP_DURATION = 260;
 
-type Stage = "peeked" | "collapsed" | "expanded";
+type Stage = "peeked" | "collapsed" | "expanded" | "full";
 
 // ─── 速度緩衝（ring buffer）──────────────────────────────────────
 interface VelPoint {
@@ -45,12 +49,15 @@ export function useDrawerDrag() {
   // 拖曳中的即時高度（null = 使用 stage 對應高度）
   const liveHeight = ref<number | null>(null);
 
-  // expanded 的像素高度：每次 startDrag 時重新取視窗高度
+  // expanded / full 的像素高度：每次 startDrag 時重新取視窗高度
   const expandedPx = ref(getExpandedPx());
+  const fullPx = ref(getFullPx());
 
   const isExpanded = computed(() => stage.value === "expanded");
+  const isFull = computed(() => stage.value === "full");
 
   function stagePx(s: Stage): number {
+    if (s === "full") return fullPx.value;
     if (s === "expanded") return expandedPx.value;
     if (s === "collapsed") return COLLAPSED_PX;
     return PEEKED_PX;
@@ -61,21 +68,12 @@ export function useDrawerDrag() {
     return stagePx(stage.value);
   });
 
-  const style = computed(() => {
-    if (stage.value === "expanded" && !isDragging.value) {
-      return {
-        height: `${expandedPx.value}px`,
-        transition: `height ${SNAP_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-      };
-    }
-
-    return {
-      height: `${heightPx.value}px`,
-      transition: isDragging.value
-        ? "none"
-        : `height ${SNAP_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-    };
-  });
+  const style = computed(() => ({
+    height: `${heightPx.value}px`,
+    transition: isDragging.value
+      ? "none"
+      : `height ${SNAP_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+  }));
 
   // ─── 拖曳狀態 ─────────────────────────────────────────────────
   const velBuf: VelPoint[] = [];
@@ -94,6 +92,7 @@ export function useDrawerDrag() {
 
   function startDrag(event: MouseEvent | TouchEvent): void {
     expandedPx.value = getExpandedPx();
+    fullPx.value = getFullPx();
     dragStartY = getClientY(event);
     dragStartHeight = heightPx.value;
     liveHeight.value = dragStartHeight;
@@ -119,7 +118,7 @@ export function useDrawerDrag() {
 
     // 往下拖 delta 正 → 高度縮小；往上拖 delta 負 → 高度增大
     const newH = dragStartHeight - delta;
-    liveHeight.value = Math.max(PEEKED_PX, Math.min(newH, expandedPx.value));
+    liveHeight.value = Math.max(PEEKED_PX, Math.min(newH, fullPx.value));
 
     const now = performance.now();
     velBuf.push({ y: currentY, t: now });
@@ -130,8 +129,8 @@ export function useDrawerDrag() {
     if (!isDragging.value) return;
     removeListeners();
 
-    // 沒有明顯位移 → 視為點擊 handle：只切換「關（peeked）」與「開到最大（expanded）」
-    // 關著時點 → 開到最大；其餘狀態（collapsed / expanded）點 → 關閉
+    // 沒有明顯位移 → 視為點擊 handle：只切換「關（peeked）」與「開到 expanded（54vh）」
+    // 關著時點 → 開到 expanded；其餘狀態（collapsed / expanded / full）點 → 關閉
     if (!moved) {
       const next: Stage = stage.value === "peeked" ? "expanded" : "peeked";
       if (next === "expanded") expandedPx.value = getExpandedPx();
@@ -175,6 +174,7 @@ export function useDrawerDrag() {
       { target: "peeked", px: PEEKED_PX },
       { target: "collapsed", px: COLLAPSED_PX },
       { target: "expanded", px: expandedPx.value },
+      { target: "full", px: fullPx.value },
     ];
 
     let nearest: { target: Stage; px: number } = candidates[0]!;
@@ -212,5 +212,5 @@ export function useDrawerDrag() {
 
   onBeforeUnmount(removeListeners);
 
-  return { isExpanded, style, startDrag, reset, expand };
+  return { isExpanded, isFull, style, startDrag, reset, expand };
 }
