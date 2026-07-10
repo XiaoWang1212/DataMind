@@ -392,6 +392,7 @@
 
 <style scoped>
   .setting-area {
+    flex: 1;
     border: none;
     border-radius: 0;
     min-height: 0;

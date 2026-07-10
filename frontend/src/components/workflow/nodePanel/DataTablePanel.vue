@@ -31,7 +31,7 @@
       無法解析 CSV 檔案內容。
     </div>
 
-    <div v-else>
+    <div v-else class="data-table-body">
       <div class="data-table-summary">
         <span>{{ previewColumns.length }} 個欄位</span>
         <span>{{ previewDataRows.length }} 筆已讀取</span>
@@ -459,6 +459,8 @@
   .data-table-panel {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
     gap: 14px;
   }
 
@@ -482,6 +484,13 @@
 
   .data-table-panel {
     position: relative;
+  }
+
+  .data-table-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .data-table-header {
@@ -538,7 +547,8 @@
     border-radius: 12px;
     border: 1px solid rgba(0, 93, 255, 0.12);
     background: #ffffff;
-    max-height: 380px;
+    flex: 1 1 380px;
+    min-height: 380px;
     overflow: hidden;
   }
 

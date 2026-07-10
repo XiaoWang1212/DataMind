@@ -767,6 +767,13 @@
     scrollbar-color: rgba(255, 255, 255, 0.72) transparent;
   }
 
+  .drawer-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
   .options-drawer__scroll::-webkit-scrollbar {
     width: 8px;
     height: 8px;
