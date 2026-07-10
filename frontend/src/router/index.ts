@@ -19,11 +19,6 @@ const router = createRouter({
       component: () => import("@/views/WorkflowPage.vue"),
     },
     {
-      path: "/sidebar",
-      name: "sidebar",
-      component: () => import("@/components/Sidebar.vue"),
-    },
-    {
       path: "/results",
       name: "results",
       component: () => import("@/views/ResultsPage.vue"),
