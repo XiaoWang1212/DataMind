@@ -97,15 +97,17 @@
                         {{ roleLabels[role] }}
                       </option>
                     </select>
-                    <span
-                      v-if="props.loading && !roleSelectTouched && index === 0"
-                      aria-hidden="true"
-                      class="tap-hint"
-                    >
-                      <span class="tap-hint__ring" />
-                      <span class="tap-hint__ring tap-hint__ring--delay" />
-                      <span class="tap-hint__dot" />
-                    </span>
+                    <Transition name="tap-hint-fade">
+                      <span
+                        v-if="props.loading && !roleSelectTouched && index === 0"
+                        aria-hidden="true"
+                        class="tap-hint"
+                      >
+                        <span class="tap-hint__ring" />
+                        <span class="tap-hint__ring tap-hint__ring--delay" />
+                        <span class="tap-hint__dot" />
+                      </span>
+                    </Transition>
                   </div>
                 </td>
                 <td
@@ -681,6 +683,15 @@
     height: 24px;
     pointer-events: none;
     z-index: 2;
+  }
+
+  /* 點過 Role 選單後，圈圈淡出消失，而不是瞬間不見 */
+  .tap-hint-fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  .tap-hint-fade-leave-to {
+    opacity: 0;
   }
 
   .tap-hint__dot {
