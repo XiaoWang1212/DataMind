@@ -12,6 +12,7 @@ from typing import List, Optional
 
 _ATOM_NS = "{http://www.w3.org/2005/Atom}"
 _ARXIV_API_URL = "http://export.arxiv.org/api/query"
+_ALLOWED_PDF_HOST_SUFFIX = "arxiv.org"
 
 
 def search_arxiv(query: str, max_results: int = 8) -> List[dict]:
@@ -71,6 +72,15 @@ def fetch_pdf_text(pdf_url: str) -> str:
     決定要跳過這一篇還是中止。
     """
     import fitz  # PyMuPDF
+
+    parsed = urllib.parse.urlparse(pdf_url)
+    hostname = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or not (
+        hostname == _ALLOWED_PDF_HOST_SUFFIX or hostname.endswith(f".{_ALLOWED_PDF_HOST_SUFFIX}")
+    ):
+        raise ValueError(
+            f"不允許下載的 PDF 網址(僅接受 https 且主機為 arxiv.org 或其子網域): {pdf_url!r}"
+        )
 
     tmp_path: Optional[Path] = None
     try:
