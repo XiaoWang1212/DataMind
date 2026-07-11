@@ -16,6 +16,7 @@ from typing import Dict, List, Optional
 
 import google.generativeai as genai
 
+from . import arxiv_source
 from .chunker import Chunk, TextChunker
 from .embedder import Embedder
 from .vector_store import VectorStore
@@ -243,6 +244,85 @@ class PaperRAGService:
             "sections_generated": [s for s in structure if s in sections_text],
             "usage": usage_total,
         }
+
+    def classify_topic(self, mining_results: dict) -> dict:
+        """讀 mining_results 摘要，用 Gemini 產生研究主題與 arXiv 查詢字串。"""
+        results_text = self._format_datamind_output(mining_results)
+        prompt = (
+            "你是學術論文寫作助手。請根據以下資料探勘實驗結果，"
+            "判斷這份研究適合的研究主題與 arXiv 查詢關鍵字。\n\n"
+            f"【資料探勘實驗結果】\n{results_text}\n\n"
+            "請「只」輸出以下兩行，不要有其他文字：\n"
+            "TOPIC: <繁體中文的研究主題，一句話，供論文標題使用>\n"
+            "QUERY: <2 到 6 個英文關鍵字，空白分隔，適合直接拿去查 arXiv，"
+            "不要加引號或布林運算子>"
+        )
+        usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        text = self._call_gemini(prompt, usage_total)
+
+        topic_match = re.search(r"TOPIC:\s*(.+)", text)
+        query_match = re.search(r"QUERY:\s*(.+)", text)
+
+        topic = topic_match.group(1).strip() if topic_match else "資料探勘實驗研究"
+        arxiv_query = query_match.group(1).strip() if query_match else topic
+
+        return {"topic": topic, "arxiv_query": arxiv_query}
+
+    def search_arxiv_candidates(self, mining_results: dict) -> dict:
+        """分類 mining_results 產生查詢字，查詢 arXiv 取得候選論文清單（不寫入向量庫）。"""
+        classification = self.classify_topic(mining_results)
+        candidates = arxiv_source.search_arxiv(classification["arxiv_query"])
+        return {
+            "topic": classification["topic"],
+            "arxiv_query": classification["arxiv_query"],
+            "candidates": candidates,
+        }
+
+    def ingest_arxiv_selection(self, candidates: List[dict]) -> dict:
+        """清空向量庫，下載選中的 arXiv 論文全文並加入索引。
+
+        單篇下載/解析失敗時跳過並記錄，不中斷整體流程；若全部失敗則回傳錯誤。
+        """
+        self.clear()
+
+        ingested: List[str] = []
+        failed: List[str] = []
+
+        for candidate in candidates:
+            title = candidate.get("title", "")
+            pdf_url = candidate.get("pdf_url", "")
+            try:
+                content = arxiv_source.fetch_pdf_text(pdf_url)
+                if not content.strip():
+                    raise ValueError("PDF 未解析出任何文字")
+            except Exception as e:
+                logger.warning("下載/解析 arXiv PDF 失敗：%s (%s)", title, e)
+                failed.append(title)
+                continue
+
+            result = self.add_paper(
+                title=title,
+                content=content,
+                metadata={
+                    "author": candidate.get("authors", ""),
+                    "year": candidate.get("year", ""),
+                    "journal": f"arXiv:{candidate.get('arxiv_id', '')}",
+                },
+            )
+            if result.get("success"):
+                ingested.append(title)
+            else:
+                failed.append(title)
+
+        if not ingested:
+            return {
+                "success": False,
+                "error": "所有候選論文皆下載/解析失敗，無法建立參考文獻庫",
+                "ingested": ingested,
+                "failed": failed,
+            }
+
+        return {"success": True, "ingested": ingested, "failed": failed}
 
     def get_status(self) -> dict:
         return self._store.get_status()
