@@ -44,9 +44,12 @@
   import CitationPanel from '@/components/paper/CitationPanel.vue'
   import PaperSection from '@/components/paper/PaperSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
+  import { usePaperStore } from '@/store/paperStore'
 
   const router = useRouter()
-  const report = mockPaperReport
+  const paperStore = usePaperStore()
+  const report = paperStore.generatedReport ?? mockPaperReport
+  paperStore.clearGeneratedReport()
 
   const citationIndex = Object.fromEntries(
     report.citations.map((citation, index) => [citation.id, index + 1]),
