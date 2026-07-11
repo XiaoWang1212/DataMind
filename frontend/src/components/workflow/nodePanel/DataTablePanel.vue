@@ -2,7 +2,7 @@
   <section class="data-table-panel">
     <div class="data-table-header">
       <div
-        v-if="props.loading && columnsReady"
+        v-if="headerState === 'guide'"
         class="data-table-guide"
         :class="{ 'data-table-guide--ready': hasTarget }"
       >
@@ -12,6 +12,10 @@
         <span v-else>
           請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
         </span>
+      </div>
+      <div v-else-if="headerState === 'summary'" class="data-table-summary-inline">
+        <span>{{ previewColumns.length }} 個欄位</span>
+        <span>{{ previewDataRows.length }} 筆已讀取</span>
       </div>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
@@ -32,7 +36,7 @@
     </div>
 
     <div v-else class="data-table-body">
-      <div class="data-table-summary">
+      <div v-if="headerState === 'guide'" class="data-table-summary">
         <span>{{ previewColumns.length }} 個欄位</span>
         <span>{{ previewDataRows.length }} 筆已讀取</span>
       </div>
@@ -173,6 +177,11 @@
   const fileName = computed(() => props.fileName ?? props.file?.name ?? '')
   const previewColumns = ref<string[]>([])
   const columnsReady = computed(() => previewColumns.value.length > 0)
+  type HeaderState = 'guide' | 'summary' | 'none'
+  const headerState = computed<HeaderState>(() => {
+    if (!columnsReady.value) return 'none'
+    return props.loading ? 'guide' : 'summary'
+  })
   const previewDataRows = ref<string[][]>([])
   const columnSettings = ref<ColumnSetting[]>([])
   const isLoading = ref(false)
@@ -513,12 +522,22 @@
     color: #475569;
   }
 
-  .data-table-summary {
+  .data-table-summary,
+  .data-table-summary-inline {
     display: flex;
     gap: 14px;
     color: #475569;
     font-size: 13px;
+  }
+
+  .data-table-summary {
     margin-bottom: 12px;
+  }
+
+  .data-table-summary-inline {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .data-table-guide {

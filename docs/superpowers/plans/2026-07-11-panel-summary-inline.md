@@ -149,6 +149,13 @@ cd frontend && npm run build
 
 Expected: 通過（`vue-tsc` type-check + `vite build` 都不報錯）。這一步只能抓出 template/CSS/型別錯誤，不能證明排版視覺效果正確，下一步一定要接著手動驗證。
 
+> **實作階段的修正（2026-07-11，Step 2/3 之後）**：Step 2 原本把 `.data-table-body` 內的統計文字整個移除，導致暫停等待選 target 期間統計文字完全不顯示。使用者在驗證前指出這樣體驗上等於暫時消失，要求改成「統計文字永遠可見，只是位置換」。修正做法：
+> - Step 2 改成**不移除**，而是幫 `.data-table-body` 裡的 `.data-table-summary` 加上 `v-if="props.loading"`（能進到 `.data-table-body` 就代表 `columnsReady` 已是 true，不需要重複檢查），暫停時繼續顯示在原位置。
+> - Step 1 的 header 插槽改用新 class `.data-table-summary-inline`（不是沿用 `.data-table-summary`），因為同一個元素不可能同時滿足「body 區塊要有下方留白（`margin-bottom:12px`）」跟「header flex row 裡要撐滿橫向剩餘空間（`flex:1 1 auto`）」兩種互斥的排版需求。
+> - Step 3 改成新增 `.data-table-summary-inline` 規則，`.data-table-summary` 維持原樣（body 版本）不變。
+>
+> 詳見 `docs/superpowers/specs/2026-07-11-panel-summary-inline-design.md` 的對應修正說明。Distribution（Task 2）沒有暫停狀態，不受影響。
+
 - [ ] **Step 5: 手動驗證（需要瀏覽器操作，無法操作瀏覽器時必須明確說明「無法測試 UI」而非宣稱驗證通過）**
 
 執行（若尚未啟動）：
@@ -159,9 +166,9 @@ cd frontend && npm run dev
 
 在瀏覽器開啟 `http://localhost:3000/workflow`，上傳一份 CSV，切到 Data Table 節點，確認：
 
-- 暫停等待選 target 時（`繼續` 按鈕還沒按）：header 左側顯示藍色 guide 提示卡（跟改之前一樣，文字內容不變），`.data-table-body` 最上方**不再**顯示「N 個欄位 / M 筆已讀取」這行。
-- 在 Role 欄選好 Target 之後（guide 變綠色「已選定目標變數...」）：header 左側依然是 guide（還沒按繼續），不是統計文字。
-- 按下「繼續」之後：header 左側從 guide 變成統計文字（「N 個欄位 / M 筆已讀取」），跟右側「已選檔案：X.csv」同一行顯示；`.data-table-body` 依然沒有獨立的統計文字行、只剩欄位設定表格。
+- 暫停等待選 target 時（`繼續` 按鈕還沒按）：header 左側顯示藍色 guide 提示卡（跟改之前一樣，文字內容不變），`.data-table-body` 最上方**依然**顯示「N 個欄位 / M 筆已讀取」這行（維持原本位置與間距）。
+- 在 Role 欄選好 Target 之後（guide 變綠色「已選定目標變數...」）：header 左側依然是 guide（還沒按繼續），不是統計文字；body 的統計文字也還在。
+- 按下「繼續」之後：header 左側從 guide 變成統計文字（「N 個欄位 / M 筆已讀取」），跟右側「已選檔案：X.csv」同一行顯示；`.data-table-body` 這時**不再**顯示獨立的統計文字行（只剩欄位設定表格，已搬到 header）。
 - 換一份欄位很少（2-3 欄）跟很多（10+ 欄）的 CSV 各測一次，確認統計文字跟檔名不會擠壓換行、版面正常。
 
 - [ ] **Step 6: 停下來，等待使用者確認**

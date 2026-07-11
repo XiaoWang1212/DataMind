@@ -4,6 +4,10 @@
     :class="{ 'distribution-panel--full': isFullStage }"
   >
     <div class="distribution-header">
+      <div v-if="file && !loading" class="distribution-summary">
+        <span>{{ previewColumns.length }} 個欄位</span>
+        <span>{{ allRows.length }} 筆資料</span>
+      </div>
       <div v-if="fileName" class="distribution-file">
         已選檔案：{{ fileName }}
       </div>
@@ -20,11 +24,6 @@
         資料讀取中...
       </div>
       <div v-else>
-        <div class="distribution-summary">
-          <span>{{ previewColumns.length }} 個欄位</span>
-          <span>{{ allRows.length }} 筆資料</span>
-        </div>
-
         <div
           class="distribution-chart-grid"
           :class="{ 'distribution-chart-grid--full': isFullStage }"
@@ -373,6 +372,8 @@
   }
 
   .distribution-file {
+    flex-shrink: 0;
+    margin-left: auto;
     color: #475569;
     font-size: 13px;
   }
