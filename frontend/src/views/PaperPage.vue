@@ -66,7 +66,7 @@
   function onPanelSelect (citationId: string) {
     activeCitationId.value = citationId
     sheetRef.value
-      ?.querySelector(`[data-citation-id="${CSS.escape(citationId)}"]`)
+      ?.querySelector(`[data-citation-id~="${CSS.escape(citationId)}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 </script>

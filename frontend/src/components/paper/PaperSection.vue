@@ -7,18 +7,18 @@
       class="section-paragraph"
     >
       <template v-for="(segment, sIndex) in paragraph" :key="sIndex">
-        <!-- data-citation-id 是 PaperPage 捲動定位用的 DOM 契約,改動需同步 PaperPage -->
+        <!-- data-citation-id 是 PaperPage 捲動定位用的 DOM 契約(空白分隔的多個 id),改動需同步 PaperPage -->
         <mark
-          v-if="segment.citationId"
+          v-if="citationIdsOf(segment).length > 0"
           class="cite-highlight"
-          :class="{ 'cite-highlight--active': segment.citationId === activeCitationId }"
-          :data-citation-id="segment.citationId"
+          :class="{ 'cite-highlight--active': citationIdsOf(segment).includes(activeCitationId ?? '') }"
+          :data-citation-id="citationIdsOf(segment).join(' ')"
           role="button"
           tabindex="0"
-          @click="$emit('citation-click', segment.citationId)"
-          @keydown.enter.prevent="$emit('citation-click', segment.citationId)"
-          @keydown.space.prevent="$emit('citation-click', segment.citationId)"
-        >{{ segment.text }} [{{ citationIndex[segment.citationId] }}]</mark>
+          @click="$emit('citation-click', firstCitationId(segment))"
+          @keydown.enter.prevent="$emit('citation-click', firstCitationId(segment))"
+          @keydown.space.prevent="$emit('citation-click', firstCitationId(segment))"
+        >{{ segment.text }}<template v-for="cid in citationIdsOf(segment)" :key="cid"> [{{ citationIndex[cid] }}]</template></mark>
         <template v-else>{{ segment.text }}</template>
       </template>
     </p>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { PaperSection } from '@/constants/reportData'
+  import type { PaperSection, PaperSegment } from '@/constants/reportData'
 
   defineProps<{
     section: PaperSection
@@ -37,6 +37,14 @@
   defineEmits<{
     (e: 'citation-click', citationId: string): void
   }>()
+
+  function citationIdsOf (segment: PaperSegment): string[] {
+    return segment.citationIds ?? []
+  }
+
+  function firstCitationId (segment: PaperSegment): string {
+    return citationIdsOf(segment)[0] ?? ''
+  }
 </script>
 
 <style scoped>

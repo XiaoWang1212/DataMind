@@ -9,7 +9,7 @@ export interface Citation {
 
 export interface PaperSegment {
   text: string
-  citationId?: string
+  citationIds?: string[]
 }
 
 export interface PaperSection {
@@ -56,7 +56,7 @@ export const mockPaperReport: PaperReport = {
           {
             // 引用編號 [n] 由 UI 依 citations 順序推導,不要寫進 text
             text: '這項結果與近期文獻一致,指出梯度提升決策樹 (GBDT) 演算法由於具備處理特徵間複雜非線性交互作用的能力,在結構化表格數據 (Tabular Data) 的分類任務中,通常能提供比傳統統計模型更穩健的預測能力',
-            citationId: 'cite-1',
+            citationIds: ['cite-1'],
           },
           {
             text: '。因此,本系統最終選擇 XGBoost 作為部署至生產環境的最佳模型。',
@@ -73,7 +73,7 @@ export const mockPaperReport: PaperReport = {
           },
           {
             text: '數據顯示,採「按月付費 (Month-to-month)」合約的客戶,其基礎流失機率比簽訂「兩年合約」的長期客戶高出 45%,這反映了合約轉換成本 (Switching Cost) 會顯著降低客戶的忠誠度',
-            citationId: 'cite-2',
+            citationIds: ['cite-2'],
           },
           {
             text: '。這表明,電信營運商應將行銷資源集中於引導月租客戶升級至年約方案,而非僅依賴價格補貼。',
