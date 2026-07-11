@@ -25,6 +25,15 @@
             <span>{{ tab.label }}</span>
           </button>
         </div>
+
+        <v-btn
+          class="generate-paper-btn"
+          color="primary"
+          size="small"
+          @click="router.push('/paper/sources')"
+        >
+          生成論文
+        </v-btn>
       </header>
 
       <section class="metric-grid">
@@ -95,7 +104,10 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
+
+  const router = useRouter()
 
   onMounted(() => {
     document.title = 'DataMind'
@@ -235,6 +247,10 @@
     background: #e8ebf2;
     display: inline-flex;
     gap: 4px;
+  }
+
+  .generate-paper-btn {
+    margin-left: 12px;
   }
 
   .toolbar-tab {

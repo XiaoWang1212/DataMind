@@ -29,6 +29,11 @@ const router = createRouter({
       component: () => import("@/views/PaperPage.vue"),
     },
     {
+      path: "/paper/sources",
+      name: "paper-sources",
+      component: () => import("@/views/PaperSourcesView.vue"),
+    },
+    {
       path: "/hub",
       component: () => import("@/layouts/HubLayout.vue"),
       redirect: "/hub/dashboard",
