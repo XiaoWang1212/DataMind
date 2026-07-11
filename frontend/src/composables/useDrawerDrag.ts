@@ -21,7 +21,7 @@ function ratioPx(ratio: number): number {
 // 吸附動畫時長（ms）
 const SNAP_DURATION = 260;
 
-type Stage = "peeked" | "collapsed" | "expanded" | "full";
+export type Stage = "peeked" | "collapsed" | "expanded" | "full";
 
 // ─── 速度緩衝（ring buffer）──────────────────────────────────────
 interface VelPoint {
@@ -219,5 +219,5 @@ export function useDrawerDrag() {
 
   onBeforeUnmount(removeListeners);
 
-  return { style, startDrag, reset, expand };
+  return { style, startDrag, reset, expand, stage: computed(() => stage.value) };
 }

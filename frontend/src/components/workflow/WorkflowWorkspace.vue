@@ -72,6 +72,7 @@
             >
               <WorkflowOptionsPanel
                 :available-models="availableModelOptions"
+                :drawer-stage="drawerStage"
                 :file="workflowDataFile"
                 :model-options-loading="modelOptionsLoading"
                 :paused-node-id="pausedAtNodeId"
@@ -163,7 +164,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
+  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 

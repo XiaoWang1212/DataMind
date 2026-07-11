@@ -1,5 +1,8 @@
 <template>
-  <section class="distribution-panel">
+  <section
+    class="distribution-panel"
+    :class="{ 'distribution-panel--full': isFullStage }"
+  >
     <div class="distribution-header">
       <div v-if="fileName" class="distribution-file">
         已選檔案：{{ fileName }}
@@ -22,7 +25,10 @@
           <span>{{ allRows.length }} 筆資料</span>
         </div>
 
-        <div class="distribution-chart-grid">
+        <div
+          class="distribution-chart-grid"
+          :class="{ 'distribution-chart-grid--full': isFullStage }"
+        >
           <div
             v-for="(chart, index) in chartData"
             :key="chart.label"
@@ -106,14 +112,17 @@
 </template>
 
 <script setup lang="ts">
+  import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, ref, watch } from 'vue'
 
   const props = defineProps<{
     file?: File | null
     fileName?: string | null
+    drawerStage?: Stage
   }>()
 
   const fileName = computed(() => props.fileName ?? props.file?.name ?? '')
+  const isFullStage = computed(() => props.drawerStage === 'full')
   const selectedFile = ref<File | null>(null)
   const previewColumns = ref<string[]>([])
   const allRows = ref<string[][]>([])
@@ -346,6 +355,11 @@
     gap: 16px;
   }
 
+  .distribution-panel--full {
+    flex: 1;
+    min-height: 0;
+  }
+
   .distribution-header {
     display: flex;
     justify-content: space-between;
@@ -392,6 +406,22 @@
   .distribution-chart-grid::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.7);
     border-radius: 999px;
+  }
+
+  .distribution-chart-grid--full {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    align-content: start;
+    flex: 1 1 380px;
+    min-height: 380px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .distribution-chart-grid--full .distribution-chart-card {
+    flex: none;
+    min-width: 0;
   }
 
   .distribution-loading {

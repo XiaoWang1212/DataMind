@@ -23,7 +23,11 @@
 
         <!-- Distribution 節點：顯示當前資料視覺化 -->
         <template v-if="selectedNode.id === 'distribution'">
-          <DistributionPanel :file="props.file" :file-name="fileName" />
+          <DistributionPanel
+            :drawer-stage="props.drawerStage"
+            :file="props.file"
+            :file-name="fileName"
+          />
         </template>
 
         <template v-else-if="selectedNode.id === 'featureImportance'">
@@ -225,6 +229,7 @@
 
 <script setup lang="ts">
   import type { ConfigValue, SimpleNode } from '@/types/workflow'
+  import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, reactive, ref, watch } from 'vue'
   import ComputeCiPanel from './nodePanel/ComputeCiPanel.vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
@@ -257,6 +262,7 @@
     workflowSummary?: TestScoreSummary[]
     workflowResult?: Record<string, unknown> | null
     pausedNodeId?: string | null
+    drawerStage?: Stage
     availableModels?: string[]
     usedModelNames?: string[]
     modelOptionsLoading?: boolean
