@@ -423,3 +423,30 @@ def arxiv_generate():
     except Exception as e:
         logger.exception("arXiv 論文生成失敗")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/insight", methods=["POST"])
+def generate_insight():
+    """根據 DataMind 探勘結果，用 Gemini 生成一段洞察摘要
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+
+    回傳：
+        - insight : AI 生成的洞察文字
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        insight = service.generate_insight(data["mining_results"])
+        return jsonify({"success": True, "insight": insight})
+
+    except Exception as e:
+        logger.exception("洞察生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500

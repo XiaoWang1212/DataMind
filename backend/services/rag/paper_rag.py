@@ -324,6 +324,20 @@ class PaperRAGService:
 
         return {"success": True, "ingested": ingested, "failed": failed}
 
+    def generate_insight(self, mining_results: dict) -> str:
+        """讀 mining_results 摘要，用 Gemini 生成一段繁體中文洞察文字，供 /results 儀表板顯示。"""
+        results_text = self._format_datamind_output(mining_results)
+        prompt = (
+            "你是資料科學顧問。請根據以下機器學習實驗結果，"
+            "用繁體中文寫一段簡短的洞察摘要（約 2 到 3 句話），"
+            "說明表現最好的模型、關鍵發現，以及是否適合投入實際應用。\n\n"
+            f"【機器學習實驗結果】\n{results_text}\n\n"
+            "請「只」輸出洞察摘要本身，不要加上任何標題、條列符號或多餘說明文字。"
+        )
+        usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        text = self._call_gemini(prompt, usage_total)
+        return text.strip()
+
     def get_status(self) -> dict:
         return self._store.get_status()
 
