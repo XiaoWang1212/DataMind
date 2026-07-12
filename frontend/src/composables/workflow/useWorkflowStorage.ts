@@ -171,3 +171,8 @@ export function loadResultInsightFromStorage (projectId: string): string | null 
   const key = k(RESULT_INSIGHT_KEY, projectId)
   return localStorage.getItem(key)
 }
+
+export function clearResultInsightFromStorage (projectId: string): void {
+  const key = k(RESULT_INSIGHT_KEY, projectId)
+  localStorage.removeItem(key)
+}

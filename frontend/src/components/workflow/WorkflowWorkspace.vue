@@ -127,6 +127,7 @@
   import { useWorkflowImport } from '@/composables/workflow/useWorkflowImport.ts'
   import { useWorkflowNodes } from '@/composables/workflow/useWorkflowNodes.ts'
   import {
+    clearResultInsightFromStorage,
     loadWorkflowDataFileFromStorage,
     loadWorkflowJsonFileFromStorage,
     loadWorkflowStateFromStorage,
@@ -293,6 +294,7 @@
   }
 
   function handleApplyColumnConfig (): void {
+    if (projectId.value) clearResultInsightFromStorage(projectId.value)
     dataTableApplied.value = true
     workflowError.value = null
     markProjectRunning()
@@ -301,6 +303,7 @@
   }
 
   function handleContinueSettings (): void {
+    if (projectId.value) clearResultInsightFromStorage(projectId.value)
     markProjectRunning()
     continueWorkflow()
     closeMenu()
