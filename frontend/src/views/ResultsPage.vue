@@ -36,99 +36,102 @@
         </v-btn>
       </header>
 
-      <section class="metric-grid">
-        <article
-          v-for="card in metricCards"
-          :key="card.title"
-          class="metric-card"
-          :class="{ 'metric-card--accent': card.accent }"
-        >
-          <p class="metric-title">{{ card.title }}</p>
-          <p class="metric-value">{{ card.value }}</p>
-          <p class="metric-hint">{{ card.hint }}</p>
-        </article>
+      <section v-if="!hasLoaded" class="empty-state">
+        載入中...
       </section>
 
-      <section class="insight-card">
-        <div class="insight-header">
-          <div class="insight-icon-wrap">
-            <v-icon icon="mdi-shimmer" size="18" />
+      <section v-else-if="!workflowResult" class="empty-state">
+        <p>尚無結果。請先在 workflow 頁面完成執行。</p>
+        <v-btn color="primary" size="small" @click="router.push('/workflow')">
+          前往 Workflow
+        </v-btn>
+      </section>
+
+      <template v-else>
+        <section class="metric-grid">
+          <article
+            v-for="card in metricCards"
+            :key="card.title"
+            class="metric-card"
+            :class="{ 'metric-card--accent': card.accent }"
+          >
+            <p class="metric-title">{{ card.title }}</p>
+            <p class="metric-value">{{ card.value }}</p>
+            <p class="metric-hint">{{ card.hint }}</p>
+          </article>
+        </section>
+
+        <section class="insight-card">
+          <div class="insight-header">
+            <div class="insight-icon-wrap">
+              <v-icon icon="mdi-shimmer" size="18" />
+            </div>
+            <h2 class="insight-title">AI生成洞察</h2>
           </div>
-          <h2 class="insight-title">AI生成洞察</h2>
-        </div>
 
-        <p class="insight-text">
-          XGBoost模型以94.2%的準確率超越其他3個演算法。關鍵預測因素包括年齡、
-          活動幅度與步態變化，模型在跌倒辨識上具備穩定泛化能力。
-        </p>
+          <p v-if="insightLoading" class="insight-text">正在生成洞察...</p>
+          <template v-else-if="insightError">
+            <p class="insight-text">洞察生成失敗:{{ insightError }}</p>
+            <v-btn size="small" variant="text" @click="loadInsight">重試</v-btn>
+          </template>
+          <p v-else class="insight-text">{{ insightText }}</p>
+        </section>
 
-        <div class="insight-tags">
-          <span v-for="tag in insightTags" :key="tag" class="insight-tag">{{ tag }}</span>
-        </div>
-      </section>
+        <section class="comparison-card">
+          <div class="comparison-head">
+            <h3>模型效能比較</h3>
+            <p>各模型依實際設定的驗證方法訓練</p>
+          </div>
 
-      <section class="comparison-card">
-        <div class="comparison-head">
-          <h3>模型效能比較</h3>
-          <p>所有模型均採用 5 折交叉驗證訓練</p>
-        </div>
-
-        <div class="table-wrap">
-          <table class="result-table">
-            <thead>
-              <tr>
-                <th>模型</th>
-                <th>準確率</th>
-                <th>精準度</th>
-                <th>召回率</th>
-                <th>F1 分數</th>
-                <th>訓練時間</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in modelRows" :key="row.model">
-                <td class="model-name">{{ row.model }}</td>
-                <td :class="{ 'score-best': row.best }">{{ row.accuracy }}</td>
-                <td>{{ row.precision }}</td>
-                <td>{{ row.recall }}</td>
-                <td>{{ row.f1 }}</td>
-                <td>{{ row.time }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <div class="table-wrap">
+            <table class="result-table">
+              <thead>
+                <tr>
+                  <th>模型</th>
+                  <th v-for="metric in allMetricNames" :key="metric">
+                    {{ metricLabel(metric) }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in modelRows" :key="row.model">
+                  <td class="model-name">{{ row.model }}</td>
+                  <td
+                    v-for="metric in allMetricNames"
+                    :key="metric"
+                    :class="{ 'score-best': row.best && metric === rankingMetric }"
+                  >
+                    {{ row.values[metric] }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </template>
     </main>
   </section>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import { fetchResultInsight } from '@/api/insight'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
+  import {
+    loadResultInsightFromStorage,
+    loadWorkflowStateFromStorage,
+    saveResultInsightToStorage,
+  } from '@/composables/workflow/useWorkflowStorage'
 
+  const route = useRoute()
   const router = useRouter()
+
+  const projectId = computed(() => route.query.project as string | undefined)
 
   onMounted(() => {
     document.title = 'DataMind'
   })
-
-  interface MetricCard {
-    title: string
-    value: string
-    hint: string
-    accent?: boolean
-  }
-
-  interface ResultRow {
-    model: string
-    accuracy: string
-    precision: string
-    recall: string
-    f1: string
-    time: string
-    best?: boolean
-  }
 
   interface ToolbarTab {
     key: string
@@ -142,56 +145,186 @@
     { key: 'code', label: '程式碼', icon: 'mdi-code-tags', active: false },
   ])
 
-  const setActiveTab = (targetKey: ToolbarTab['key']) => {
-    tabs.value.forEach((tab) => {
+  function setActiveTab (targetKey: ToolbarTab['key']): void {
+    for (const tab of tabs.value) {
       tab.active = tab.key === targetKey
-    })
+    }
   }
 
-  const metricCards: MetricCard[] = [
-    { title: '最佳模型', value: 'XGBoost', hint: '極限梯度提升' },
-    { title: '準確率', value: '94.2%', hint: '較基準提升 +2.8%', accent: true },
-    { title: 'F1 分數', value: '0.91', hint: '平衡表現' },
-    { title: 'AUC_ROC', value: '0.96', hint: '優秀的區分能力' },
+  // ─── 讀取真實 workflow 結果 ──────────────────────────────────────────────────
+
+  const workflowResult = ref<Record<string, unknown> | null>(null)
+  const hasLoaded = ref(false)
+
+  interface ModelMetric {
+    metric: string
+    value: number | null
+  }
+
+  interface ModelResult {
+    model_name: string
+    metrics: ModelMetric[]
+  }
+
+  const modelResults = computed<ModelResult[]>(() => {
+    const raw = workflowResult.value?.results
+    if (!Array.isArray(raw)) return []
+    return raw
+      .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !('error' in r))
+      .map(r => ({
+        model_name: String(r.model_name ?? 'Unknown'),
+        metrics: Array.isArray(r.metrics)
+          ? r.metrics.map((m: Record<string, unknown>) => ({
+            metric: String(m.metric),
+            value: typeof m.value === 'number' ? m.value : null,
+          }))
+          : [],
+      }))
+  })
+
+  const METRIC_LABELS: Record<string, string> = {
+    accuracy: '準確率',
+    balanced_accuracy: '平衡準確率',
+    precision: '精準度',
+    recall: '召回率',
+    specificity: '特異度',
+    f1: 'F1 分數',
+    auc: 'AUC_ROC',
+    auprc: 'AUPRC',
+    mcc: 'MCC',
+    kappa: 'Kappa',
+  }
+
+  const PREFERRED_METRIC_ORDER = [
+    'balanced_accuracy', 'accuracy', 'f1', 'auc', 'auprc', 'precision', 'recall', 'specificity', 'mcc', 'kappa',
   ]
 
-  const insightTags = ['模型信心度高', '未偵測到資料洩漏', '可投入生產環境']
+  const RANKING_PRIORITY = ['balanced_accuracy', 'accuracy', 'auc']
 
-  const modelRows: ResultRow[] = [
-    {
-      model: 'XGBoost',
-      accuracy: '94.2%',
-      precision: '0.93',
-      recall: '0.89',
-      f1: '0.91',
-      time: '2 分 14 秒',
-      best: true,
-    },
-    {
-      model: 'Random Forest',
-      accuracy: '92.8%',
-      precision: '0.91',
-      recall: '0.87',
-      f1: '0.89',
-      time: '1 分 58 秒',
-    },
-    {
-      model: 'LightGBM',
-      accuracy: '93.5%',
-      precision: '0.92',
-      recall: '0.88',
-      f1: '0.90',
-      time: '1 分 42 秒',
-    },
-    {
-      model: 'SVM',
-      accuracy: '89.7%',
-      precision: '0.87',
-      recall: '0.84',
-      f1: '0.85',
-      time: '3 分 36 秒',
-    },
-  ]
+  function metricLabel (metric: string): string {
+    return METRIC_LABELS[metric] ?? metric.toUpperCase()
+  }
+
+  function metricValueOf (result: ModelResult, metric: string): number | null {
+    return result.metrics.find(m => m.metric === metric)?.value ?? null
+  }
+
+  const rankingMetric = computed<string | null>(() => {
+    const results = modelResults.value
+    if (results.length === 0) return null
+    for (const candidate of RANKING_PRIORITY) {
+      if (results.every(r => metricValueOf(r, candidate) !== null)) return candidate
+    }
+    return results[0]?.metrics[0]?.metric ?? null
+  })
+
+  const bestResult = computed<ModelResult | null>(() => {
+    const metric = rankingMetric.value
+    const results = modelResults.value
+    if (!metric || results.length === 0) return null
+    return results.reduce((best, current) => {
+      const bestValue = metricValueOf(best, metric) ?? Number.NEGATIVE_INFINITY
+      const currentValue = metricValueOf(current, metric) ?? Number.NEGATIVE_INFINITY
+      return currentValue > bestValue ? current : best
+    })
+  })
+
+  const allMetricNames = computed<string[]>(() => {
+    const seen = new Set<string>()
+    for (const result of modelResults.value) {
+      for (const m of result.metrics) seen.add(m.metric)
+    }
+    const ordered = PREFERRED_METRIC_ORDER.filter(m => seen.has(m))
+    const rest = [...seen].filter(m => !ordered.includes(m))
+    return [...ordered, ...rest]
+  })
+
+  interface MetricCard {
+    title: string
+    value: string
+    hint: string
+    accent?: boolean
+  }
+
+  const metricCards = computed<MetricCard[]>(() => {
+    const best = bestResult.value
+    const ranking = rankingMetric.value
+    if (!best || !ranking) return []
+
+    const cards: MetricCard[] = [
+      { title: '最佳模型', value: best.model_name, hint: `依 ${metricLabel(ranking)} 排名` },
+    ]
+
+    const otherMetrics = allMetricNames.value.filter(m => m !== ranking)
+    const cardMetrics = [ranking, ...otherMetrics].slice(0, 3)
+    for (const metric of cardMetrics) {
+      const value = metricValueOf(best, metric)
+      cards.push({
+        title: metricLabel(metric),
+        value: value === null ? 'N/A' : value.toFixed(3),
+        hint: metric,
+        accent: metric === ranking,
+      })
+    }
+    return cards
+  })
+
+  interface ResultRow {
+    model: string
+    values: Record<string, string>
+    best: boolean
+  }
+
+  const modelRows = computed<ResultRow[]>(() => {
+    const bestName = bestResult.value?.model_name
+    return modelResults.value.map(result => {
+      const values: Record<string, string> = {}
+      for (const metric of allMetricNames.value) {
+        const value = metricValueOf(result, metric)
+        values[metric] = value === null ? 'N/A' : value.toFixed(3)
+      }
+      return {
+        model: result.model_name,
+        values,
+        best: result.model_name === bestName,
+      }
+    })
+  })
+
+  // ─── AI 洞察文字(快取) ───────────────────────────────────────────────────────
+
+  const insightText = ref<string | null>(null)
+  const insightLoading = ref(false)
+  const insightError = ref<string | null>(null)
+
+  async function loadInsight (): Promise<void> {
+    if (!projectId.value || !workflowResult.value) return
+    const cached = loadResultInsightFromStorage(projectId.value)
+    if (cached) {
+      insightText.value = cached
+      return
+    }
+    insightLoading.value = true
+    insightError.value = null
+    try {
+      const insight = await fetchResultInsight(workflowResult.value)
+      insightText.value = insight
+      saveResultInsightToStorage(projectId.value, insight)
+    } catch (error) {
+      insightError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      insightLoading.value = false
+    }
+  }
+
+  onMounted(() => {
+    const state = loadWorkflowStateFromStorage(projectId.value)
+    workflowResult.value = state?.workflowResult ?? null
+    hasLoaded.value = true
+    if (workflowResult.value) {
+      loadInsight()
+    }
+  })
 </script>
 
 <style scoped>
