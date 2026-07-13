@@ -656,11 +656,14 @@
 
   .column-settings-table th:nth-child(1),
   .column-settings-table td:nth-child(1) {
-    width: 28%;
+    width: 37%;
   }
 
   .column-settings-table th:nth-child(2),
-  .column-settings-table td:nth-child(2),
+  .column-settings-table td:nth-child(2) {
+    width: 26%;
+  }
+
   .column-settings-table th:nth-child(3),
   .column-settings-table td:nth-child(3) {
     width: 22%;
@@ -668,7 +671,7 @@
 
   .column-settings-table th:nth-child(4),
   .column-settings-table td:nth-child(4) {
-    width: 28%;
+    width: 15%;
   }
 
   .column-settings-table thead th {
