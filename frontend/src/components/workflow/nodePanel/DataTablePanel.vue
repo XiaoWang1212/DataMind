@@ -292,16 +292,68 @@
     emit('apply-column-config')
   }
 
-  function getColumnValueLabel (index: number): string {
-    const column = columnSettings.value[index]
-    if (!column || column.type !== 'categorial') return '—'
-
-    const values = previewDataRows.value
+  function getColumnRawValues (index: number): string[] {
+    return previewDataRows.value
       .map(row => row[index] ?? '')
       .map(value => value.trim())
       .filter(value => value.length > 0)
+  }
+
+  function formatNumericValue (value: number): string {
+    if (Number.isInteger(value)) return String(value)
+    // 小於 1 的值改用有效位數，否則 toFixed(3) 會把 0.0001 這種值壓成 0、看起來像沒有變異
+    const rounded = Math.abs(value) < 1
+      ? Number(value.toPrecision(3))
+      : Number(value.toFixed(3))
+    return String(rounded)
+  }
+
+  function getColumnValueLabel (index: number): string {
+    const column = columnSettings.value[index]
+    if (!column) return '—'
+
+    const values = getColumnRawValues(index)
+    if (values.length === 0) return '—'
+
+    if (column.type === 'numeric') {
+      // min/max 用 for 迴圈算，previewDataRows 沒有截斷列數，展開成函式引數會超過引數上限
+      let min = Number.POSITIVE_INFINITY
+      let max = Number.NEGATIVE_INFINITY
+      for (const value of values) {
+        const parsed = Number(value)
+        if (Number.isNaN(parsed)) continue
+        if (parsed < min) min = parsed
+        if (parsed > max) max = parsed
+      }
+      if (min === Number.POSITIVE_INFINITY) return '—'
+      return `${formatNumericValue(min)} – ${formatNumericValue(max)}`
+    }
+
+    if (column.type === 'datetime') {
+      // 顯示原始字串而非重新格式化，避免時區轉換讓畫面上的日期跟 CSV 差一天
+      let minText = ''
+      let maxText = ''
+      let minTime = Number.POSITIVE_INFINITY
+      let maxTime = Number.NEGATIVE_INFINITY
+      for (const value of values) {
+        const time = Date.parse(value)
+        if (Number.isNaN(time)) continue
+        if (time < minTime) {
+          minTime = time
+          minText = value
+        }
+        if (time > maxTime) {
+          maxTime = time
+          maxText = value
+        }
+      }
+      if (!minText || !maxText) return '—'
+      return `${minText} – ${maxText}`
+    }
+
     const uniqueValues = Array.from(new Set(values))
-    return uniqueValues.slice(0, 6).join(', ')
+    const limit = column.type === 'categorial' ? 6 : 3
+    return uniqueValues.slice(0, limit).join(', ')
   }
 
   watch(
@@ -599,6 +651,24 @@
   .column-settings-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .column-settings-table th:nth-child(1),
+  .column-settings-table td:nth-child(1) {
+    width: 28%;
+  }
+
+  .column-settings-table th:nth-child(2),
+  .column-settings-table td:nth-child(2),
+  .column-settings-table th:nth-child(3),
+  .column-settings-table td:nth-child(3) {
+    width: 22%;
+  }
+
+  .column-settings-table th:nth-child(4),
+  .column-settings-table td:nth-child(4) {
+    width: 28%;
   }
 
   .column-settings-table thead th {
@@ -628,7 +698,6 @@
   }
 
   .values-cell {
-    max-width: 300px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
