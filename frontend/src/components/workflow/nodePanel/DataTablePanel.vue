@@ -208,7 +208,6 @@
     skip: 'Skip',
   }
 
-  const originalColumnSettings = ref<ColumnSetting[]>([])
   const nameMaxLength = 32
 
   const hasTarget = computed(() => columnSettings.value.some(c => c.role === 'target'))
@@ -253,28 +252,12 @@
     )
   }
 
-  function cloneColumnSetting (item: ColumnSetting): ColumnSetting {
-    return {
-      name: item.name,
-      type: item.type,
-      role: item.role,
-      availableTypes: [...item.availableTypes],
-    }
-  }
-
-  function cloneSettings (settings: ColumnSetting[]): ColumnSetting[] {
-    return settings.map(setting => cloneColumnSetting(setting))
-  }
-
-  function buildColumnSettings (): void {
-    const existingMap = new Map(
-      (props.columnConfig ?? []).map(config => [config.name, config]),
-    )
-
+  function buildColumnSettings (useExisting = true): void {
     columnSettings.value = previewColumns.value.map((header, index) => {
       const columnValues = previewDataRows.value.map(row => row[index] ?? '')
       const availableTypes = getColumnTypeCandidates(columnValues)
-      const existing = existingMap.get(header)
+      // 用索引而非名稱對位：Column Name 可編輯，改過名字後就跟 CSV 表頭對不上了
+      const existing = useExisting ? props.columnConfig?.[index] : undefined
       const selectedType
         = existing && availableTypes.includes(existing.type)
           ? existing.type
@@ -282,14 +265,12 @@
       const selectedRole = existing?.role ?? 'feature'
 
       return {
-        name: header,
+        name: existing?.name ?? header,
         type: selectedType,
         role: selectedRole,
         availableTypes,
       }
     })
-
-    originalColumnSettings.value = cloneSettings(columnSettings.value)
   }
 
   function emitColumnConfig (): void {
@@ -304,16 +285,10 @@
   }
 
   function resetColumnSettings (): void {
-    if (originalColumnSettings.value.length === 0) {
-      buildColumnSettings()
-      return
-    }
-    columnSettings.value = cloneSettings(originalColumnSettings.value)
+    buildColumnSettings(false)
   }
 
   function applyColumnSettings (): void {
-    emitColumnConfig()
-    originalColumnSettings.value = cloneSettings(columnSettings.value)
     emit('apply-column-config')
   }
 
@@ -336,7 +311,6 @@
         previewColumns.value = []
         previewDataRows.value = []
         columnSettings.value = []
-        originalColumnSettings.value = []
         isLoading.value = false
         return
       }
@@ -357,6 +331,16 @@
       }
     },
     { immediate: true, deep: true },
+  )
+
+  // 切到別的節點會讓這個面板被 v-if 卸載、本地狀態銷毀，只能靠父層還原，
+  // 所以每次改動都要即時寫回去，不能等按「繼續」
+  watch(
+    columnSettings,
+    () => {
+      emitColumnConfig()
+    },
+    { deep: true },
   )
 
   async function loadFile (file: File): Promise<void> {
