@@ -62,6 +62,11 @@ class TextChunker:
                 )
                 chunk_index += 1
 
+            # 已經切到文字結尾，沒有剩餘內容可切，直接結束，
+            # 避免尾端不斷產生越縮越短的重複殘影 chunk（overlap 導致每次只前進 1 字元）
+            if end >= len(text):
+                break
+
             next_start = end - self.overlap
             if next_start <= start:
                 next_start = start + 1
