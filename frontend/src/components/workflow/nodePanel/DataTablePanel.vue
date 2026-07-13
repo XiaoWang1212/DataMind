@@ -546,7 +546,7 @@
   .data-table-column-settings {
     display: flex;
     flex-direction: column;
-    padding: 14px 16px;
+    padding: 0;
     border-radius: 12px;
     border: 1px solid rgba(0, 93, 255, 0.12);
     background: #ffffff;
@@ -556,7 +556,8 @@
   }
 
   .column-settings-title {
-    margin-bottom: 10px;
+    flex-shrink: 0;
+    padding: 10px 12px;
     font-size: 13px;
     color: #475569;
     font-weight: 600;
@@ -567,6 +568,21 @@
     flex: 1;
     min-height: 0;
     overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+  }
+
+  .column-settings-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .column-settings-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .column-settings-body::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgba(148, 163, 184, 0.5);
   }
 
   .column-settings-actions {
@@ -574,7 +590,7 @@
     justify-content: flex-end;
     gap: 10px;
     margin-top: 14px;
-    padding-top: 10px;
+    padding: 10px 12px;
     border-top: 1px solid rgba(148, 163, 184, 0.12);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 70%);
     flex-shrink: 0;
@@ -616,13 +632,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .column-settings-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 14px;
   }
 
   .btn-reset,
