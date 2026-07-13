@@ -9,73 +9,91 @@
           icon="mdi-arrow-left"
           size="small"
           variant="text"
-          @click="router.push('/results')"
+          @click="router.push(`/results?project=${projectId}`)"
         />
         <h2 class="sources-title">選擇參考文獻</h2>
       </header>
 
-      <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
+      <section v-if="!hasLoaded" class="sources-status">
+        載入中...
+      </section>
 
-      <div v-if="loadingSearch" class="sources-status">
-        正在分析資料並查詢 arXiv...
-      </div>
-
-      <div v-else-if="searchError" class="sources-status sources-status--error">
-        {{ searchError }}
-        <v-btn size="small" variant="text" @click="loadCandidates">重試</v-btn>
-      </div>
-
-      <div v-else-if="candidates.length === 0" class="sources-status">
-        找不到相關文獻,請稍後再試。
-      </div>
+      <section v-else-if="!miningResults" class="sources-status">
+        <p>找不到這個專案的探勘結果,請先從 /results 頁面進入。</p>
+        <v-btn color="primary" size="small" @click="router.push(`/results?project=${projectId}`)">
+          回到 /results
+        </v-btn>
+      </section>
 
       <template v-else>
-        <ul class="candidate-list">
-          <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
-            <label class="candidate-select">
-              <input
-                v-model="selectedIds"
-                type="checkbox"
-                :value="candidate.arxiv_id"
-              >
-              <div class="candidate-body">
-                <p class="candidate-title">{{ candidate.title }}</p>
-                <p class="candidate-meta">
-                  {{ candidate.authors }}
-                  <span v-if="candidate.year">({{ candidate.year }})</span>
-                </p>
-                <p class="candidate-abstract">{{ candidate.abstract }}</p>
-              </div>
-            </label>
-          </li>
-        </ul>
+        <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
 
-        <div class="sources-actions">
-          <v-btn
-            color="primary"
-            :disabled="selectedIds.length === 0 || generating"
-            @click="handleGenerate"
-          >
-            {{ generating ? '生成中...' : `確認並生成論文 (${selectedIds.length})` }}
-          </v-btn>
-          <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
+        <div v-if="loadingSearch" class="sources-status">
+          正在分析資料並查詢 arXiv...
         </div>
+
+        <div v-else-if="searchError" class="sources-status sources-status--error">
+          {{ searchError }}
+          <v-btn size="small" variant="text" @click="loadCandidates">重試</v-btn>
+        </div>
+
+        <div v-else-if="candidates.length === 0" class="sources-status">
+          找不到相關文獻,請稍後再試。
+        </div>
+
+        <template v-else>
+          <ul class="candidate-list">
+            <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
+              <label class="candidate-select">
+                <input
+                  v-model="selectedIds"
+                  type="checkbox"
+                  :value="candidate.arxiv_id"
+                >
+                <div class="candidate-body">
+                  <p class="candidate-title">{{ candidate.title }}</p>
+                  <p class="candidate-meta">
+                    {{ candidate.authors }}
+                    <span v-if="candidate.year">({{ candidate.year }})</span>
+                  </p>
+                  <p class="candidate-abstract">{{ candidate.abstract }}</p>
+                </div>
+              </label>
+            </li>
+          </ul>
+
+          <div class="sources-actions">
+            <v-btn
+              color="primary"
+              :disabled="selectedIds.length === 0 || generating"
+              @click="handleGenerate"
+            >
+              {{ generating ? '生成中...' : `確認並生成論文 (${selectedIds.length})` }}
+            </v-btn>
+            <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
+          </div>
+        </template>
       </template>
     </main>
   </section>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
-  import { mockMiningResults } from '@/constants/mockMiningResults'
+  import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { usePaperStore } from '@/store/paperStore'
   import { transformArxivResultToPaperReport } from '@/utils/paperTransform'
 
+  const route = useRoute()
   const router = useRouter()
   const paperStore = usePaperStore()
+
+  const projectId = computed(() => route.query.project as string | undefined)
+  const miningResults = ref<Record<string, unknown> | null>(null)
+  const hasLoaded = ref(false)
 
   const topic = ref('')
   const candidates = ref<ArxivCandidate[]>([])
@@ -88,10 +106,11 @@
   const generateError = ref<string | null>(null)
 
   async function loadCandidates (): Promise<void> {
+    if (!miningResults.value) return
     loadingSearch.value = true
     searchError.value = null
     try {
-      const result = await searchArxivCandidates(mockMiningResults)
+      const result = await searchArxivCandidates(miningResults.value)
       topic.value = result.topic
       candidates.value = result.candidates
       selectedIds.value = []
@@ -103,13 +122,14 @@
   }
 
   async function handleGenerate (): Promise<void> {
+    if (!miningResults.value) return
     generating.value = true
     generateError.value = null
     try {
       const selectedCandidates = candidates.value.filter(c => selectedIds.value.includes(c.arxiv_id))
       const result = await generateFromArxiv({
         topic: topic.value,
-        miningResults: mockMiningResults,
+        miningResults: miningResults.value,
         selectedCandidates,
       })
       const report = transformArxivResultToPaperReport(result, topic.value)
@@ -122,7 +142,14 @@
     }
   }
 
-  onMounted(loadCandidates)
+  onMounted(() => {
+    const state = loadWorkflowStateFromStorage(projectId.value)
+    miningResults.value = state?.workflowResult ?? null
+    hasLoaded.value = true
+    if (miningResults.value) {
+      loadCandidates()
+    }
+  })
 </script>
 
 <style scoped>

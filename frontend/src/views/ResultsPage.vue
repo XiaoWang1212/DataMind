@@ -30,7 +30,7 @@
           class="generate-paper-btn"
           color="primary"
           size="small"
-          @click="router.push('/paper/sources')"
+          @click="router.push(`/paper/sources?project=${projectId}`)"
         >
           生成論文
         </v-btn>
