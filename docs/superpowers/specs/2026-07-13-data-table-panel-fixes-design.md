@@ -11,6 +11,13 @@
 
 三件事互相獨立，但都落在同一個檔案、同一個畫面，一起做可以只走一次驗證。
 
+> **實作階段的修正（2026-07-13）**：以下四處與原設計不同，下方各節已更新為實際落地的版本。
+>
+> 1. **「欄位設定」標題改為保留**（原「改動 4」作廢）。原設計要拿掉卡片內的小標，讓 Task 1 的節點副標接手說明職責。使用者在實作途中決定保留它。因為卡片 `padding` 已歸零，標題必須自己帶 `padding: 10px 12px` + `flex-shrink: 0`，否則會黏在卡片邊框上。
+> 2. **卡片 padding 歸零帶出一個新的視覺 bug，一併修掉**：`.column-settings-body` 的捲軸槽（macOS 常駐捲軸下約 15px）失去了原本 16px 內縮的遮蔽，露出成右側一條白邊，且灰色 sticky 表頭在那裡斷掉，讀起來像破圖。改成細捲軸（6px、軌道透明、淺灰圓角拇指）。**沒有完全消除**——徹底消除要把 sticky `<thead>` 搬出捲動容器（兩張表的欄寬同步，脆弱），使用者接受 6px 版本。
+> 3. **表格改用固定欄寬**（原設計未涵蓋）。表格原本沒有 `table-layout`，欄寬由內容決定——`<input>`/`<select>` 的固有寬度讓前三欄搶走空間，Values 撿剩下的，換一份 CSV 寬度就會跑掉。改成 `table-layout: fixed` + 固定比例 **37 / 26 / 22 / 15**。`.values-cell` 的 `max-width: 300px` 一併移除（固定佈局下欄寬由百分比決定，留著只是兩套機制互相打架；ellipsis 截斷仍靠 `overflow: hidden` + `white-space: nowrap`）。
+> 4. **數字格式改用有效位數處理小數**（原設計的 `toFixed(3)` 有 bug）。`toFixed(3)` 會把絕對值小於 0.0005 的數壓成 `0`——一欄值是 `0.0001 / 0.0002 / 0.0003` 的資料會顯示成 `0 – 0`，看起來像「這欄沒有變異」，是**會說謊的顯示**。改成：絕對值小於 1 時用 `toPrecision(3)`，否則維持 `toFixed(3)`。
+
 ## 背景
 
 ### 副標文案名不符實
@@ -163,17 +170,23 @@ watch(
 
 `hasTarget` 為 false 時「繼續」仍然 disabled（134-142 行的按鈕既有邏輯不動）——沒有目標變數就不該往下走，這與存檔時機無關。
 
-## 改動 4：拿掉重複的「欄位設定」標題
+## 改動 4：「欄位設定」標題 —— 保留（原設計要刪，已作廢）
 
-`DataTablePanel.vue:45`，刪除整個 `div`：
+原設計要刪掉卡片內的 `.column-settings-title`，理由是面板標題區的「Data Table + 設定欄位型別與目標變數」已經說明了這張表是什麼。**使用者在實作途中決定保留它。**
 
-```diff
-     <div v-if="columnSettings.length > 0" class="data-table-column-settings">
--      <div class="column-settings-title">欄位設定</div>
-       <div class="column-settings-body">
+保留的話有一件事必須一起做：改動 5 把卡片 `padding` 收成 `0`，標題若不自己帶內距就會黏在卡片邊框上。所以：
+
+```css
+.column-settings-title {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 600;
+}
 ```
 
-連同 `.column-settings-title` 的 CSS（574-579 行）一併刪除。面板標題區的「Data Table + 設定欄位型別與目標變數」已經說明了這張表是什麼。
+（原本是 `margin-bottom: 10px`，現在由 `padding` 取代；`flex-shrink: 0` 防止它在 flex column 裡被壓扁。）
 
 ## 改動 5：白卡片 padding 收成 0
 
@@ -213,6 +226,61 @@ watch(
 
 `.column-settings-body` 維持 `overflow-y: auto`，捲動區不受影響。
 
+### 副作用：捲軸槽變成右側一條白邊
+
+卡片 padding 歸零之後，`.column-settings-body` 的捲軸佔位（macOS 設定為常駐捲軸時約 15px）失去了原本 16px 內縮的遮蔽，露出成右側一條白邊；更糟的是灰色 sticky 表頭在那裡斷掉，整體讀起來像破圖。
+
+改成細捲軸，讓那條縫縮到 6px 並且讀起來像捲軸而不是排版 bug：
+
+```css
+.column-settings-body {
+  /* …既有屬性… */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.column-settings-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.column-settings-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-settings-body::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.5);
+}
+```
+
+**這條縫不會完全消失**——捲軸一定要佔空間。要徹底消除，必須把 sticky `<thead>` 搬出捲動容器（表頭固定在外、只讓資料列捲動），代價是兩張表的欄寬同步，容易脆化。不值得，維持 6px 版本。
+
+### 表格改用固定欄寬
+
+表格原本沒有指定 `table-layout`，瀏覽器用 auto layout 依內容分配欄寬：Column Name / Type / Role 裡塞的是 `<input>` 和 `<select>`（有原生的固有寬度，input 預設約 20 字元寬），所以這三欄搶走大部分空間，Values 撿剩下的。結果是**欄寬取決於內容而非設計**，換一份 CSV（長欄名、多類別值）寬度就會跑掉。
+
+```css
+.column-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.column-settings-table th:nth-child(1),
+.column-settings-table td:nth-child(1) { width: 37%; }
+
+.column-settings-table th:nth-child(2),
+.column-settings-table td:nth-child(2) { width: 26%; }
+
+.column-settings-table th:nth-child(3),
+.column-settings-table td:nth-child(3) { width: 22%; }
+
+.column-settings-table th:nth-child(4),
+.column-settings-table td:nth-child(4) { width: 15%; }
+```
+
+同時**移除** `.values-cell` 的 `max-width: 300px`：固定佈局下欄寬由百分比決定，留著 max-width 只是兩套機制互相打架；ellipsis 截斷仍由 `overflow: hidden` + `white-space: nowrap` 負責。
+
 ## 改動 6：Values 欄四種型別都要有內容
 
 這是 #14「感覺空」的主因。`getColumnValueLabel()`（320-330 行）重寫，依 `column.type` 分派：
@@ -227,7 +295,8 @@ watch(
 規則細節：
 
 - **分隔符**：en dash 前後各一個半形空格（`' – '`），與逗號分隔的唯一值列表在視覺上區隔開來。
-- **數字格式**：整數原樣輸出；小數最多保留 3 位並去除尾隨的 0（`String(Number(value.toFixed(3)))`）。避免 `18.000000000000004` 這種浮點雜訊直接曝在畫面上。
+- **數字格式**：整數原樣輸出。小數則分兩種情況——絕對值小於 1 時用 `toPrecision(3)`（有效位數），否則用 `toFixed(3)`（小數位數），兩者都再包一層 `Number()` 去掉尾隨的 0。避免 `18.000000000000004` 這種浮點雜訊曝在畫面上。
+  **為什麼不能一律用 `toFixed(3)`**：它會把絕對值小於 0.0005 的數壓成 `0`。一欄值是 `0.0001 / 0.0002 / 0.0003` 的資料會顯示成 `0 – 0`，看起來像「這欄沒有變異」——那是**會說謊的顯示**。`toPrecision(3)` 對這種值會給 `0.0001 – 0.0003`。
 - **日期格式**：**直接顯示原始字串**，不重新格式化。做法是對 `Date.parse()` 得到的 timestamp 取 min/max，記住是哪兩列，輸出那兩列的原始儲存格文字。這樣不會因為時區轉換讓畫面上的日期跟 CSV 裡的日期差一天。
 - **空欄位**：過濾掉空白後若沒有任何值可用（整欄皆空、或 `numeric` 欄位解析不出任何數字），仍然顯示 `'—'`。
 - **型別是使用者當下選的**：這個函式讀 `columnSettings[index].type` 而非重新推斷，所以使用者把某欄從 Numeric 改成 Categorical 時，Values 欄會立刻跟著換成唯一值列表。
@@ -244,9 +313,10 @@ watch(
 4. **Type 也要保住**：把某欄型別從 Numeric 改成 Categorical → 切走切回 → 仍是 Categorical。
 5. **Reset**：改了名稱、型別、Role 之後按 Reset → 三者全部回到剛載入檔案時的樣子，Target 清空、「繼續」變回 disabled；此時切走再切回，仍是重置後的狀態（證明 Reset 有同步出去，不只是視覺上的重置）。
 6. **「繼續」仍照舊**：選好 Target 按「繼續」 → 流程往 Settings 前進，行為與現在一致。
-7. **Values 欄**：載入一份含數值、類別、日期欄的 CSV → 四種型別都有內容，沒有整排「—」；日期顯示的字串與 CSV 內容一致（沒有差一天）。
-8. **留白**：卡片裡沒有「欄位設定」小標，表格貼齊卡片邊框，按鈕列有適當內距、沒有黏邊。
-9. `npm run lint` 與 `npm run build` 通過。
+7. **Values 欄**：載入一份含數值、類別、日期欄的 CSV → 四種型別都有內容，沒有整排「—」；日期顯示的字串與 CSV 內容一致（沒有差一天）；一欄極小數值（如 `0.0001 / 0.0002 / 0.0003`）顯示 `0.0001 – 0.0003` 而非 `0 – 0`。
+8. **留白**：「欄位設定」小標仍在但不黏邊框；表格貼齊卡片邊框；按鈕列有適當內距、沒有黏邊；右側捲軸是細的（6px），不是一條顯眼的白邊。
+9. **欄寬**：換不同的 CSV（長中文欄名、多類別值），四欄寬度維持 37/26/22/15 不變。
+10. `npm run build` 通過，且改動過的檔案沒有新增 lint 錯誤（`npm run lint` 在本專案 baseline 就是紅的，不能拿它當閘門）。
 
 ## 收尾要回填的文件
 

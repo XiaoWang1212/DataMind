@@ -8,6 +8,13 @@
 
 **Tech Stack:** Vue 3 `<script setup lang="ts">` SFC、scoped CSS、無額外套件。
 
+> **執行後的修正（2026-07-13，全部已完成並 commit）**：實作過程中有四處偏離本計畫，實際落地的版本以 spec 的「實作階段的修正」區塊為準：
+>
+> 1. **Task 3 Step 1「刪除『欄位設定』標題」作廢** —— 使用者中途決定保留該標題，並給它自己的 `padding: 10px 12px` + `flex-shrink: 0`（卡片 padding 歸零後不加內距會黏邊框）。Task 3 因此只做了兩刀。
+> 2. **Task 3 追加**：卡片 padding 歸零讓捲軸槽露出成右側一條白邊、灰色表頭在那裡斷掉。改成細捲軸（6px、軌道透明）。未完全消除（要消除得把 sticky thead 搬出捲動容器，脆弱），使用者接受。
+> 3. **Task 4 追加**：表格改用 `table-layout: fixed` + 固定欄寬 **37 / 26 / 22 / 15**（原本欄寬由內容決定，換 CSV 就跑掉）；`.values-cell` 的 `max-width: 300px` 一併移除。
+> 4. **Task 4 的 `formatNumericValue()` 有 bug，已修** —— 計畫給的 `toFixed(3)` 會把絕對值小於 0.0005 的數壓成 `0`（`0.0001/0.0002/0.0003` → 顯示 `0 – 0`，謊稱這欄沒有變異）。改成絕對值小於 1 時用 `toPrecision(3)`，否則 `toFixed(3)`。
+
 ## Global Constraints
 
 - **無自動化測試框架**：前端沒有 vitest/jest（`frontend/package.json` 沒有 `test` script）。依 `CLAUDE.md` 慣例，以「啟動 `npm run dev` 在瀏覽器手動操作」取代自動化測試。若執行者無法完成手動驗證，**必須明確說出「無法測試 UI」，不得逕自宣稱驗證通過**。
