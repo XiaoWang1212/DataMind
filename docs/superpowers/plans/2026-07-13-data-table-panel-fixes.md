@@ -10,7 +10,11 @@
 
 ## Global Constraints
 
-- **無自動化測試框架**：前端沒有 vitest/jest（`frontend/package.json` 沒有 `test` script）。依 `CLAUDE.md` 慣例，以「啟動 `npm run dev` 在瀏覽器手動操作」取代自動化測試。若執行者無法完成手動驗證，**必須明確說出「無法測試 UI」，不得逕自宣稱驗證通過**。每個 task 的「測試」步驟＝跑 `npm run lint` + `npm run build`（含 `vue-tsc` type-check）+ 該 task 指定的手動操作。
+- **無自動化測試框架**：前端沒有 vitest/jest（`frontend/package.json` 沒有 `test` script）。依 `CLAUDE.md` 慣例，以「啟動 `npm run dev` 在瀏覽器手動操作」取代自動化測試。若執行者無法完成手動驗證，**必須明確說出「無法測試 UI」，不得逕自宣稱驗證通過**。
+- **`npm run lint` 本來就是紅的，不要拿它當閘門**（實測 baseline：854 個問題、exit 1，多為既有的引號／分號風格錯誤）。每個 task 的驗證步驟＝
+  1. `npm run build`（含 `vue-tsc` type-check）**必須 exit 0**；
+  2. 用 `npx eslint <改動的檔案>` 比對改動前後的錯誤數，**不可新增**新的 lint 錯誤（既有的不用管、也不要順手修）；
+  3. 該 task 指定的手動瀏覽器操作。
 - **Commit 前必須先取得使用者明確同意**：完成實作、跑完 lint/build、列出手動驗證步驟後，停下來明確詢問使用者「瀏覽器手動測試沒問題了嗎？」，取得明確答覆後才能 `git add` / `git commit`。即使透過 `superpowers:subagent-driven-development` 執行，也要覆蓋掉 implementer 預設會自動 commit 的行為。
 - **Commit 訊息格式**：只寫**一行**簡短標題（如 `fix: sync data table column settings to parent on change`），**不要**多段落 body，**不要**加 `Co-Authored-By` trailer。
 - **本次不做的事**：不補資料列預覽功能；不改節點名稱 `Data Table`；不改父層 `WorkflowOptionsPanel.vue` / `WorkflowWorkspace.vue` / `useWorkflowExecution.ts`；不動 `.column-settings-body` 的捲動行為；不動 `.values-cell` 既有的 `max-width: 300px` + ellipsis 截斷。
@@ -755,5 +759,5 @@ git commit -m "docs: mark data table panel issues as fixed"
 - [ ] 「繼續」的流程行為與改動前一致（`hasTarget` 為 false 時 disabled；按下後往 Settings 前進）。
 - [ ] Values 欄四種型別都有內容，沒有整排「—」；日期字串與 CSV 一致。
 - [ ] 卡片內沒有重複的「欄位設定」標題；表格貼齊邊框；按鈕列沒有黏邊；卡片內部捲動與 sticky 表頭仍正常。
-- [ ] `npm run lint` 與 `npm run build` 都通過。
+- [ ] `npm run build` 通過，且改動過的檔案沒有新增 lint 錯誤。
 - [ ] `.claude/ux-issues.md` 的三個項目都已回填。
