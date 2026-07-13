@@ -389,6 +389,14 @@
     if (payload.nodeId === 'settings' && 'compute_ci' in payload.config) {
       syncComputeCiNode()
     }
+    if (payload.nodeId === 'dataTable' && 'columnConfig' in payload.config) {
+      const columnConfig = payload.config.columnConfig
+      const hasTarget = Array.isArray(columnConfig)
+        && columnConfig.some(col => (col as { role?: string })?.role === 'target')
+      if (!hasTarget) {
+        dataTableApplied.value = false
+      }
+    }
     saveState()
   }
 

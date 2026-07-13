@@ -119,8 +119,9 @@
                     'values-cell',
                     { 'target-cell': column.role === 'target' },
                   ]"
+                  :title="columnValueLabels[index]"
                 >
-                  {{ getColumnValueLabel(index) }}
+                  {{ columnValueLabels[index] }}
                 </td>
               </tr>
             </tbody>
@@ -258,10 +259,7 @@
       const availableTypes = getColumnTypeCandidates(columnValues)
       // 用索引而非名稱對位：Column Name 可編輯，改過名字後就跟 CSV 表頭對不上了
       const existing = useExisting ? props.columnConfig?.[index] : undefined
-      const selectedType
-        = existing && availableTypes.includes(existing.type)
-          ? existing.type
-          : (availableTypes[0] ?? 'text')
+      const selectedType = existing?.type ?? (availableTypes[0] ?? 'text')
       const selectedRole = existing?.role ?? 'feature'
 
       return {
@@ -308,10 +306,7 @@
     return String(rounded)
   }
 
-  function getColumnValueLabel (index: number): string {
-    const column = columnSettings.value[index]
-    if (!column) return '—'
-
+  function computeColumnValueLabel (column: ColumnSetting, index: number): string {
     const values = getColumnRawValues(index)
     if (values.length === 0) return '—'
 
@@ -355,6 +350,10 @@
     const limit = column.type === 'categorial' ? 6 : 3
     return uniqueValues.slice(0, limit).join(', ')
   }
+
+  const columnValueLabels = computed<string[]>(() =>
+    columnSettings.value.map((column, index) => computeColumnValueLabel(column, index)),
+  )
 
   watch(
     () => props.file,
@@ -507,6 +506,7 @@
     flex: 1;
     min-height: 0;
     gap: 14px;
+    position: relative;
   }
 
   .data-table-loading-overlay {
@@ -521,14 +521,12 @@
     align-items: center;
     gap: 12px;
     padding: 24px;
+    border-radius: 16px;
+    border: 1px dashed rgba(96, 165, 250, 0.7);
     background: rgba(255, 255, 255, 0.88);
-    color: #475569;
+    color: #005dff;
     font-size: 14px;
     z-index: 10;
-  }
-
-  .data-table-panel {
-    position: relative;
   }
 
   .data-table-body {
@@ -641,7 +639,6 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 14px;
     padding: 10px 12px;
     border-top: 1px solid rgba(148, 163, 184, 0.12);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 70%);
@@ -678,6 +675,7 @@
     position: sticky;
     top: 0;
     background: #f8fafc;
+    font-weight: 600;
     z-index: 1;
   }
 
@@ -730,11 +728,6 @@
   .btn-apply--disabled {
     background: #94a3b8;
     cursor: not-allowed;
-  }
-
-  .column-settings-table th {
-    background: #f8fafc;
-    font-weight: 600;
   }
 
   .column-settings-table select {
@@ -842,20 +835,6 @@
     background: transparent;
   }
 
-  .data-table-loading-overlay {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 16px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px dashed rgba(96, 165, 250, 0.7);
-    color: #005dff;
-    font-size: 14px;
-  }
-
   .loader {
     width: 16px;
     height: 16px;
@@ -869,78 +848,5 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  .data-table-scroll {
-    overflow-x: auto;
-    overflow-y: visible;
-    border-radius: 16px;
-    background: #fff;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-  }
-
-  table {
-    width: 100%;
-    min-width: max-content;
-    border-collapse: collapse;
-  }
-
-  th,
-  td {
-    padding: 12px 10px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-    text-align: left;
-    font-size: 13px;
-    color: #0f172a;
-    white-space: normal;
-  }
-
-  th {
-    background: #f8fafc;
-    color: #0f172a;
-    font-weight: 600;
-  }
-
-  .data-table-header-cell,
-  .data-table-cell {
-    min-width: 140px;
-  }
-
-  .cell-inner {
-    display: block;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-height: 1.5em;
-  }
-
-  .cell-inner.cell-inner--expanded {
-    display: inline-block;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-all;
-    max-height: none;
-  }
-
-  .data-table-header-cell .cell-inner.cell-inner--expanded {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-all;
-  }
-
-  .toggle-expand {
-    display: inline-flex;
-    margin-top: 4px;
-    font-size: 12px;
-    color: #005dff;
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  .toggle-expand:hover {
-    text-decoration: underline;
   }
 </style>
