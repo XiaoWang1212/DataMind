@@ -115,7 +115,7 @@
   }
 
   .flash-add::before {
-    background: #10b981;
+    background: #06b6d4;
   }
 
   .flash-remove::before {
