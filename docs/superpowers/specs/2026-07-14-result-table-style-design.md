@@ -313,6 +313,25 @@ Header 的 Metric 那格不動；`table-cell--model`（模型名 + split 名的�
 
 **注意**：這使得 Test & Score 的改動**不再是純樣式**。本設計「不做的事」裡「不改任何 `<script>`」那一條，對 Test & Score 與 Feature Importance 都已失效。
 
+**表格維持撐滿抽屜寬度**（`grid-template-columns: 180px repeat(auto-fit, minmax(80px, 1fr))` 不變）。曾試過給表格一個依 metric 數計算的 `max-width`，讓它在很寬的抽屜裡收成一張比例緊湊的資料卡，但使用者看過實機後選擇維持滿版。
+
+## 改動 4：`TestScorePanel.vue` 標出每個 metric 的最佳模型
+
+**（2026-07-14 追加。）**
+
+每個 metric 欄中數值最高的那一格加粗（`.table-cell--best { font-weight: 700; }`）。
+
+**為什麼**：這張表存在的目的就是**比較模型**。沒有標記的話，使用者得逐格比對小數點第三位才知道誰贏；加粗之後一眼可辨，而這正是 leaderboard 該替使用者做的事。
+
+**為什麼「取最大值」是安全的**：後端 `backend/docs/item-documentation-index.md` 的 Score Metrics 一共十個——accuracy、balanced_accuracy、precision、recall、specificity、f1、mcc、kappa、auc、auprc——**全部都是越高越好**，沒有 loss / error 這類越低越好的反向指標。若日後新增反向指標（例如 log loss、Brier score），這個假設就會失效，屆時必須改成依 metric 帶方向性。
+
+**實作**：
+
+- `bestByMetric` computed 掃過 `props.summary`，用 `Number(valueFormatted)` 求每個 metric 的最大值。`valueFormatted` 是 `toFixed(4)` 的字串（`useWorkflowExecution.ts:93-95`），`Number()` 解得回來，所以**不必更動 `workflowSummary` 的資料合約**去多帶一個原始數值。`'N/A'` 會解成 `NaN` 並被跳過。
+- `modelRows` 的 `values` 由 `string[]` 改成 `{ metric, text, isBest }[]`。
+- 平手時多格同時加粗（相同分數本來就該同時是最佳）。
+- **只用字重、不用顏色**：藍色粗體試過但使用者選擇拿掉，只留粗體。表格已有 hover 藍底，數值再上藍色會跟它競爭。
+
 ## 不做的事
 
 - 不動 `ComputeCiPanel`、`DataTablePanel`、`PreprocessorPanel`、`SettingsPanel`、`FeatureEngineeringPanel`。

@@ -525,3 +525,96 @@ Run: `cd frontend && npm run build` — 通過。
 git add frontend/src/components/workflow/nodePanel/TestScorePanel.vue
 git commit -m "refactor: transpose test & score table to one row per model"
 ```
+
+---
+
+## Task 4: `TestScorePanel.vue` 標出每個 metric 的最佳模型
+
+> 理由與安全性論證見 spec 的「改動 4」。關鍵前提：後端十個 score metric 全部越高越好，沒有反向指標；若日後新增 log loss / Brier score 之類，這個假設會失效。
+
+**Files:**
+- Modify: `frontend/src/components/workflow/nodePanel/TestScorePanel.vue`（`<template>` 的數值格、`<script>` 新增 `bestByMetric`、`<style>` 新增 `.table-cell--best`）
+
+**Interfaces:**
+- Consumes: `props.summary`（形狀不變）。刻意**不**更動 `useWorkflowExecution.ts` 的 `workflowSummary`——`valueFormatted` 是 `toFixed(4)` 的字串，`Number()` 解得回來，不需要為了比大小多帶一個原始數值欄位。
+- Produces: `bestByMetric` computed；`modelRows` 的 `values` 由 `string[]` 變成 `{ metric: string, text: string, isBest: boolean }[]`。
+
+- [ ] **Step 1: `<script>` 新增 `bestByMetric`，並改寫 `modelRows` 的 `values`**
+
+在 `metricKeys` 之後插入：
+
+```ts
+  // 每個 metric 的最佳值（後端的 10 個 metric——accuracy / balanced_accuracy / precision /
+  // recall / specificity / f1 / mcc / kappa / auc / auprc——全部都是越高越好，沒有反向指標）
+  const bestByMetric = computed(() => {
+    const best: Record<string, number> = {}
+    for (const item of props.summary) {
+      for (const metric of item.metrics) {
+        const value = Number(metric.valueFormatted)
+        if (Number.isNaN(value)) continue
+        const current = best[metric.metric]
+        if (current === undefined || value > current) best[metric.metric] = value
+      }
+    }
+    return best
+  })
+```
+
+`modelRows` 的 `values` 改成回傳物件：
+
+```ts
+      values: metricKeys.value.map(metricName => {
+        const text
+          = item.metrics.find(m => m.metric === metricName)?.valueFormatted ?? '-'
+        const value = Number(text)
+        return {
+          metric: metricName,
+          text,
+          isBest:
+            !Number.isNaN(value) && bestByMetric.value[metricName] === value,
+        }
+      }),
+```
+
+- [ ] **Step 2: `<template>` 的數值格掛上 `table-cell--best`**
+
+```html
+        <div
+          v-for="cell in row.values"
+          :key="`${row.model_name}-${cell.metric}`"
+          class="table-cell table-cell--num"
+          :class="{ 'table-cell--best': cell.isBest }"
+        >
+          {{ cell.text }}
+        </div>
+```
+
+- [ ] **Step 3: `<style>` 新增 `.table-cell--best`**
+
+插在 `.table-cell--num` 之後：
+
+```css
+  /* 該 metric 表現最好的模型。這是 leaderboard 真正要回答的問題，
+     不用逐格比對小數點就看得出誰贏 */
+  .table-cell--best {
+    font-weight: 700;
+  }
+```
+
+**只用字重、不加顏色**：藍色粗體試過，使用者選擇拿掉。表格已有 hover 的淡藍底，數值再上藍色會跟它競爭。
+
+- [ ] **Step 4: 建置檢查**
+
+Run: `cd frontend && npm run build`
+Expected: 通過。
+
+- [ ] **Step 5: 手動驗證（需要瀏覽器操作）**
+
+開 Test & Score 面板，確認每一個 metric 欄裡數值最大的那一格是粗體，其餘為一般字重；平手時該平手的格子同時加粗。
+
+- [ ] **Step 6: 停下來，等待使用者確認，取得同意後才 commit**
+
+```bash
+git add frontend/src/components/workflow/nodePanel/TestScorePanel.vue
+git commit -m "feat: bold the best model per metric in test & score"
+```
