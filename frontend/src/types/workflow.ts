@@ -24,6 +24,8 @@ export interface NodeData {
   config: Record<string, unknown>;
   /** demo 動畫狀態，由 canvasNodes computed 動態註入 */
   status?: "running" | "finished" | null;
+  /** 是否為目前點選中的節點，由 canvasNodes computed 依 selectedNodeId 動態註入 */
+  isSelected?: boolean;
 }
 
 export interface FlowNode {
