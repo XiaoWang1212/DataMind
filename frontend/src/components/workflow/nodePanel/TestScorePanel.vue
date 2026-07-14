@@ -20,7 +20,7 @@
         <div
           v-for="(value, index) in row.values"
           :key="`${row.metric}-${modelNames[index]}`"
-          class="table-cell"
+          class="table-cell table-cell--num"
         >
           {{ value }}
         </div>
@@ -81,8 +81,8 @@
   .workflow-summary {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 10px 0;
+    gap: 10px;
+    padding: 0;
   }
 
   .workflow-summary h4 {
@@ -95,7 +95,8 @@
   .summary-table {
     display: flex;
     flex-direction: column;
-    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
     overflow: hidden;
     background: #ffffff;
   }
@@ -107,56 +108,67 @@
     align-items: center;
   }
 
-  .table-row:not(.table-row--header) {
-    background: #ffffff;
+  /* 分隔線掛在 row 上（不是 cell）：cell 的 border 會被 grid 的欄間切斷成一段一段 */
+  .table-row:not(:last-child) {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   }
 
-  .table-row:nth-child(even):not(.table-row--header) {
-    background: #f8fafc;
+  .table-row:not(.table-row--header):hover {
+    background: rgba(0, 93, 255, 0.035);
   }
 
   .table-row--header {
-    font-weight: 700;
-    color: #0f172a;
-    background: #e7f0ff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  /* 標題列比資料列矮：它只是欄位標籤，不需要跟資料列一樣的呼吸空間 */
+  .table-row--header .table-cell {
+    padding: 8px 14px;
   }
 
   .table-cell {
-    padding: 14px 16px;
+    padding: 11px 14px;
     color: #0f172a;
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
     background: transparent;
-    text-align: center;
-  }
-
-  .table-row:last-child .table-cell {
-    border-bottom: none;
+    text-align: left;
   }
 
   .table-cell--metric {
-    background: rgba(226, 232, 240, 0.25);
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 600;
+    color: #1e293b;
   }
 
+  /* tabular-nums：讓各模型的分數逐位對齊，比置中好比較 */
+  .table-cell--num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 表頭的模型名/split 名靠右，才會跟底下那一整欄的數字對齊 */
   .table-cell--model {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    align-items: flex-end;
     background: transparent;
   }
 
   .model-name {
     font-weight: 700;
     color: #1f2937;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .model-split {
-    font-size: 12px;
-    color: #475569;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
   }
 
   .summary-empty {
