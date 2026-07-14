@@ -5,6 +5,21 @@
 
 要解決的問題：**兩個結果表格長得不一樣**。使用者希望節點 panel 的表格看起來像同一套設計。
 
+> **實作階段的修正（2026-07-14）**
+>
+> **Test & Score 已完成**（`cfe259c`），並依實機回饋多做兩件本設計沒寫的間距調整：`.workflow-summary` 的 `padding: 10px 0` → `0`、`gap: 14px` → `10px`（「Score Summary」標題上方的空白過大）；header 列另給 `padding: 8px 14px`（資料列維持 `11px 14px`，標題列只是欄位標籤，不需要同樣的列高）。
+>
+> **Feature Importance 已還原、暫緩**。把本設計的樣式套上去之後，實機上暴露兩個本設計沒預見的問題：
+>
+> 1. **框中框**：Feature Importance 是「模型卡片（有框）→ split 區塊 → 表格」，再給表格加外框就變成兩層框套疊。Test & Score 只有一層，所以同一套樣式在它身上乾淨、在這裡不乾淨。
+> 2. **內容長到無法閱讀，而根因不是樣式**：後端 `workflow_service.py:253` 把 split 命名為 `f"{method}_{i + 1}"`，10-fold 下每個模型產出 10 筆 result、每筆都帶完整的 feature importance。所以畫面上是「欄位數 × 10 折 × 模型數」全部攤平。折疊、Top-N、內部捲軸都只是治標。
+>
+> **正確解法**是比照 Test & Score 把 fold 聚合掉——`useWorkflowExecution.ts:61-91` 的 `workflowSummary` 已經在做同一件事（按 `model_name` 分組、跨折取平均、副標寫 `${count} splits`）。Feature Importance 照做：每個模型一張表、重要度取跨折平均、依平均排序、另加一欄跨折標準差（只給平均會藏起「某特徵在各折之間劇烈跳動」的不穩定性，學術慣例報 mean ± std）。聚合後框中框與過長問題會一起消失，不需要折疊或 Top-N。
+>
+> ML 合理性已查證：後端 `_extract_feature_importance()`（`workflow_service.py:126-151`）對樹模型取 `feature_importances_`（Gini，每折正規化成總和 1）、對線性模型取 `|coef_|`。每折都是獨立 refit 的模型，跨折平均是標準報告方式；單看某一折是有雜訊的點估計。限制：線性模型的 `|coef|` 尺度取決於特徵縮放（前處理是 per-fold fit-on-train-only，故只是近似可比）；不同模型之間的 importance 不可互相比較，因此維持「一個模型一張表」、不做跨模型合併排名。
+>
+> **狀態**：使用者要先與組員確認呈現方式（牽涉論文怎麼寫）才決定是否聚合。在那之前不動 `FeatureImportancePanel.vue`。**下方「不做的事」裡「不改任何 `<script>`」那一條，對 Feature Importance 已經失效**——聚合需要新的 computed。
+
 ## 背景
 
 畫布上的 panel 目前有**四套各自為政的表格實作**：

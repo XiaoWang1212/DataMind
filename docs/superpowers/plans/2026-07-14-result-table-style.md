@@ -43,6 +43,8 @@
 
 ## Task 1: `TestScorePanel.vue` 改成資料表風
 
+> **已完成（2026-07-14，`cfe259c`）**。步驟全部照計畫走，另依實機回饋加了兩處本計畫沒寫的間距調整：`.workflow-summary` 改成 `gap: 10px; padding: 0;`（原 `gap: 14px; padding: 10px 0;`），並新增 `.table-row--header .table-cell { padding: 8px 14px; }` 讓標題列比資料列矮。
+
 **Files:**
 - Modify: `frontend/src/components/workflow/nodePanel/TestScorePanel.vue:18-27`（template 的資料列）
 - Modify: `frontend/src/components/workflow/nodePanel/TestScorePanel.vue:80-166`（整段 `<style scoped>`）
@@ -235,6 +237,8 @@ git commit -m "style: restyle test & score table as a data table"
 ---
 
 ## Task 2: `FeatureImportancePanel.vue` 改成資料表風
+
+> **暫緩，且本任務的作法已作廢（2026-07-14）**。下面這套「純換 `<style scoped>`」的改法實機試過後還原了——它會造成框中框，而且沒解決真正的問題：10-fold 下每個模型的 feature importance 被重複列 10 遍。正確解法是先把 fold 聚合掉（詳見 spec 開頭的「實作階段的修正」）。**不要照下面的步驟做**；等使用者與組員確認是否聚合後，重寫這個任務。
 
 **Files:**
 - Modify: `frontend/src/components/workflow/nodePanel/FeatureImportancePanel.vue:149-229`（整段 `<style scoped>`）
