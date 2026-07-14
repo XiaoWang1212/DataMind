@@ -15,7 +15,7 @@
 - **Commit 前必須先取得使用者明確同意**：完成實作、跑完 `npm run build`、並列出手動驗證步驟後，必須停下來明確詢問使用者，取得明確答覆後才能執行 `git add` / `git commit`。即使透過 `superpowers:subagent-driven-development` 執行，也要覆蓋掉 implementer 預設會自動 commit 的行為。
 - Commit 訊息**一行就好**，不加 `Co-Authored-By` trailer。
 - **只動這兩個檔案**。不要動 `ComputeCiPanel.vue`、`DataTablePanel.vue`、`PreprocessorPanel.vue`、`SettingsPanel.vue`、`FeatureEngineeringPanel.vue`，也不要新增任何全域 CSS 檔。
-- **不要動 `<script setup>`**：兩個 panel 的 props、computed、格式化函式（`formatImportance`）全部原樣保留。改動限於 `<template>` 的 class 與 `<style scoped>`。
+- ~~**不要動 `<script setup>`**：兩個 panel 的 props、computed、格式化函式（`formatImportance`）全部原樣保留。改動限於 `<template>` 的 class 與 `<style scoped>`。~~ **（2026-07-14 作廢）** Task 3 的轉置改了 `TestScorePanel.vue` 的 computed；Feature Importance 的 fold 聚合也會需要新的 computed。
 - 精確色碼與數值（**逐字照抄，不要自行微調**）：
   - 表格外框：`1px solid rgba(148, 163, 184, 0.22)`
   - 列分隔線：`1px solid rgba(148, 163, 184, 0.16)`
@@ -44,6 +44,8 @@
 ## Task 1: `TestScorePanel.vue` 改成資料表風
 
 > **已完成（2026-07-14，`cfe259c`）**。步驟全部照計畫走，另依實機回饋加了兩處本計畫沒寫的間距調整：`.workflow-summary` 改成 `gap: 10px; padding: 0;`（原 `gap: 14px; padding: 10px 0;`），並新增 `.table-row--header .table-cell { padding: 8px 14px; }` 讓標題列比資料列矮。
+>
+> **接著又做了 Task 3 的轉置**（模型當列、metric 當欄），所以本任務下方保留的「metric×model 矩陣」描述、`grid-template-columns: 160px …`、以及 `.table-cell--metric` 都**已經是舊的**。要看目前的結構請直接讀 `TestScorePanel.vue` 或 spec 的「改動 3」。
 
 **Files:**
 - Modify: `frontend/src/components/workflow/nodePanel/TestScorePanel.vue:18-27`（template 的資料列）
@@ -428,4 +430,98 @@ Expected: 通過。同樣**不能證明視覺效果正確**，下一步一定要
 ```bash
 git add frontend/src/components/workflow/nodePanel/FeatureImportancePanel.vue
 git commit -m "style: restyle feature importance table to match test & score"
+```
+
+---
+
+## Task 3: `TestScorePanel.vue` 表格轉置（模型當列、metric 當欄）
+
+> **已完成（2026-07-14）**，在 Task 1 之後追加。理由見 spec 的「改動 3」：模型數會成長、metric 相對固定，讓會成長的那一維走垂直方向，表格才不會橫向擠爆；而且「一個模型一列」是 ML 模型比較表的領域慣例（sklearn / PyCaret 的 `compare_models`、論文結果表）。
+
+**Files:**
+- Modify: `frontend/src/components/workflow/nodePanel/TestScorePanel.vue`（`<template>` 的表格、`<script>` 的 computed、`<style>` 的欄寬與列首）
+
+**Interfaces:**
+- Consumes: `props.summary`（形狀不變：`Array<{ model_name, split_name, metrics: Array<{ metric, valueFormatted }> }>`）。
+- Produces: `modelRows` computed 取代 `matrixRows` / `modelNames` / `modelSplits`。`metricKeys` 保留，改當欄的來源。
+
+- [x] **Step 1: `<script>` 收斂 computed**
+
+刪掉 `modelNames`、`modelSplits`、`matrixRows`，改成單一 `modelRows`：
+
+```ts
+  const metricKeys = computed(() => {
+    const keys = new Set<string>()
+    for (const item of props.summary) {
+      for (const metric of item.metrics) keys.add(metric.metric)
+    }
+    return Array.from(keys)
+  })
+
+  // 一個模型一列、metric 當欄：模型數會隨使用者加減而成長，metric 相對固定，
+  // 讓會成長的那一維走垂直方向，表格才不會橫向擠爆
+  const modelRows = computed(() =>
+    props.summary.map(item => ({
+      model_name: item.model_name,
+      split_name: item.split_name,
+      values: metricKeys.value.map(metricName => {
+        const metric = item.metrics.find(m => m.metric === metricName)
+        return metric?.valueFormatted ?? '-'
+      }),
+    })),
+  )
+```
+
+- [x] **Step 2: `<template>` 換成模型列**
+
+```html
+    <div v-if="summary.length > 0" class="summary-table">
+      <div class="table-row table-row--header">
+        <div class="table-cell">Model</div>
+        <div
+          v-for="metricName in metricKeys"
+          :key="metricName"
+          class="table-cell table-cell--num"
+        >
+          {{ metricName }}
+        </div>
+      </div>
+
+      <div v-for="row in modelRows" :key="row.model_name" class="table-row">
+        <div class="table-cell table-cell--model">
+          <div class="model-name">{{ row.model_name }}</div>
+          <div class="model-split">{{ row.split_name }}</div>
+        </div>
+        <div
+          v-for="(value, index) in row.values"
+          :key="`${row.model_name}-${metricKeys[index]}`"
+          class="table-cell table-cell--num"
+        >
+          {{ value }}
+        </div>
+      </div>
+    </div>
+```
+
+metric 表頭套 `table-cell--num`（靠右），才會跟底下那一整欄的數字切齊。
+
+- [x] **Step 3: `<style>` 調欄寬與列首**
+
+- `grid-template-columns`：`160px repeat(auto-fit, minmax(120px, 1fr))` → `180px repeat(auto-fit, minmax(80px, 1fr))`（最左欄放模型名所以加寬；數值欄只放一個小數所以縮窄）
+- `.table-cell--model`：`align-items: flex-end` → `flex-start`、`gap: 3px` → `2px`；`.model-name` 改 `font-size: 13px; font-weight: 600; color: #1e293b`（它現在是列首，不是表頭）
+- `.table-cell--metric`：**整條刪除**（轉置後沒有消費者）
+
+- [x] **Step 4: 建置檢查**
+
+Run: `cd frontend && npm run build` — 通過。
+
+- [x] **Step 5: 手動驗證**
+
+使用者已在瀏覽器確認。
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add frontend/src/components/workflow/nodePanel/TestScorePanel.vue
+git commit -m "refactor: transpose test & score table to one row per model"
 ```

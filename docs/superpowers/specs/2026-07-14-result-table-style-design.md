@@ -9,6 +9,8 @@
 >
 > **Test & Score 已完成**（`cfe259c`），並依實機回饋多做兩件本設計沒寫的間距調整：`.workflow-summary` 的 `padding: 10px 0` → `0`、`gap: 14px` → `10px`（「Score Summary」標題上方的空白過大）；header 列另給 `padding: 8px 14px`（資料列維持 `11px 14px`，標題列只是欄位標籤，不需要同樣的列高）。
 >
+> **Test & Score 的表格接著被轉置**（見下方「改動 3」）。本設計原本寫「表格是 metric（列）× model（欄）的矩陣，`grid-template-columns` 不變」，那一條已作廢。
+>
 > **Feature Importance 已還原、暫緩**。把本設計的樣式套上去之後，實機上暴露兩個本設計沒預見的問題：
 >
 > 1. **框中框**：Feature Importance 是「模型卡片（有框）→ split 區塊 → 表格」，再給表格加外框就變成兩層框套疊。Test & Score 只有一層，所以同一套樣式在它身上乾淨、在這裡不乾淨。
@@ -291,6 +293,25 @@ Header 的 Metric 那格不動；`table-cell--model`（模型名 + split 名的�
 - **`.importance-split-list` / `.importance-split` / `.importance-split__title` 是新規則**——這三個 class 目前在 template 裡有、CSS 裡完全沒有對應規則（split 名稱現在是無樣式的預設文字）。表格加了外框後必須有 padding 把它跟卡片邊緣隔開，順手把 split 標題也降成 12px 灰字，讓它讀起來像表格的標籤而不是另一個標題。
 - **卡片 header 補一條底線**：卡片 header 與表格 header 現在都是 `#f8fafc`，中間隔著 split 標題；補一條 `border-bottom` 讓「卡片標頭」與「內容區」的界線明確，不會看成兩條連在一起的灰帶。
 - **表格 header 的 `#f1f5f9` 統一成 `#f8fafc`**：跟 Test & Score 用同一個灰。
+
+## 改動 3：`TestScorePanel.vue` 的表格轉置（模型當列、metric 當欄）
+
+**（2026-07-14 追加，於樣式改動之後。）**
+
+原本的表格是 **metric（列）× model（欄）**：一個 metric 一列，每個模型佔一欄。改成 **model（列）× metric（欄）**：一個模型一列，metric 當欄。
+
+**為什麼**：
+
+- **會成長的那一維要走垂直方向**。模型數會隨使用者在 Settings 加減而成長，metric 則相對固定（accuracy / auc / f1 / mcc…）。讓模型當欄的話，模型一多就橫向擠爆——這正是原設計的驗收清單裡要特別檢查「模型多時表頭會不會爆版」的原因，那個檢查項本身就是這個結構的症狀。轉置後模型再多也只是往下長，而 drawer 本來就能垂直捲動。
+- **符合領域慣例**。ML 的模型比較表（sklearn、PyCaret 的 `compare_models`、論文的結果表）幾乎一律是「一個模型一列、metrics 當欄」，因為主要任務是**比較模型**，一列一個候選者最好掃視。
+
+**實作**：
+
+- `<script>`：`modelNames` / `modelSplits` / `matrixRows` 三個 computed 收斂成單一 `modelRows`（轉置後前兩個沒有消費者）。`metricKeys` 不變，改為欄的來源。
+- `<template>`：表頭第一格從 `Metric` 改成 `Model`，其餘欄位是 metric 名稱（套 `table-cell--num` 靠右，才會跟底下那一整欄的數字切齊）；資料列的第一格是模型名 + split 名的兩行堆疊（`table-cell--model`，靠左）。
+- `<style>`：`grid-template-columns` 從 `160px repeat(auto-fit, minmax(120px, 1fr))` 改成 `180px repeat(auto-fit, minmax(80px, 1fr))`——最左欄要放模型名所以加寬，數值欄只放一個小數所以縮窄。`.table-cell--model` 由靠右改靠左（它現在是列首而非表頭）；`.table-cell--metric` 整條刪除（沒有消費者了）。
+
+**注意**：這使得 Test & Score 的改動**不再是純樣式**。本設計「不做的事」裡「不改任何 `<script>`」那一條，對 Test & Score 與 Feature Importance 都已失效。
 
 ## 不做的事
 
