@@ -20,11 +20,12 @@
           <div class="model-split">{{ row.split_name }}</div>
         </div>
         <div
-          v-for="(value, index) in row.values"
-          :key="`${row.model_name}-${metricKeys[index]}`"
+          v-for="cell in row.values"
+          :key="`${row.model_name}-${cell.metric}`"
           class="table-cell table-cell--num"
+          :class="{ 'table-cell--best': cell.isBest }"
         >
-          {{ value }}
+          {{ cell.text }}
         </div>
       </div>
     </div>
@@ -54,6 +55,21 @@
     return Array.from(keys)
   })
 
+  // 每個 metric 的最佳值（後端的 10 個 metric——accuracy / balanced_accuracy / precision /
+  // recall / specificity / f1 / mcc / kappa / auc / auprc——全部都是越高越好，沒有反向指標）
+  const bestByMetric = computed(() => {
+    const best: Record<string, number> = {}
+    for (const item of props.summary) {
+      for (const metric of item.metrics) {
+        const value = Number(metric.valueFormatted)
+        if (Number.isNaN(value)) continue
+        const current = best[metric.metric]
+        if (current === undefined || value > current) best[metric.metric] = value
+      }
+    }
+    return best
+  })
+
   // 一個模型一列、metric 當欄：模型數會隨使用者加減而成長，metric 相對固定，
   // 讓會成長的那一維走垂直方向，表格才不會橫向擠爆
   const modelRows = computed(() =>
@@ -61,8 +77,15 @@
       model_name: item.model_name,
       split_name: item.split_name,
       values: metricKeys.value.map(metricName => {
-        const metric = item.metrics.find(m => m.metric === metricName)
-        return metric?.valueFormatted ?? '-'
+        const text
+          = item.metrics.find(m => m.metric === metricName)?.valueFormatted ?? '-'
+        const value = Number(text)
+        return {
+          metric: metricName,
+          text,
+          isBest:
+            !Number.isNaN(value) && bestByMetric.value[metricName] === value,
+        }
       }),
     })),
   )
@@ -135,6 +158,12 @@
   .table-cell--num {
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* 該 metric 表現最好的模型。這是 leaderboard 真正要回答的問題，
+     不用逐格比對小數點就看得出誰贏 */
+  .table-cell--best {
+    font-weight: 700;
   }
 
   /* 最左欄：模型名 + split 名兩行堆疊，靠左 */
