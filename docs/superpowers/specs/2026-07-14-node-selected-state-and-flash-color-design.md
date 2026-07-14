@@ -3,16 +3,16 @@
 日期：2026-07-14
 範圍：`frontend/src/composables/workflow/useWorkflowNodes.ts`、`frontend/src/components/workflow/IconNode.vue`
 
-對應 `.claude/ux-issues.md`：
+要解決的兩個問題：
 
-- 問題 **#4**「無法辨識目前點在哪個節點的 panel」
-- 問題 **#8**「現在的綠色 highlight 很醜」
+- **無法辨識目前點在哪個節點的 panel**
+- **增刪節點時閃的綠色很醜**
 
 兩題都落在畫布節點的視覺回饋上，改動集中在同兩個檔案，一起做只需走一次驗證。
 
 ## 背景
 
-### #4：畫布上沒有「選取中」的視覺回饋
+### 畫布上沒有「選取中」的視覺回饋
 
 點節點會開啟 drawer 顯示該節點的 panel，但**畫布這一側完全沒有回饋**——被點到的節點看起來跟其他節點一模一樣。切幾個節點之後就分不清目前這個 panel 是誰的。
 
@@ -28,7 +28,7 @@ Panel 那一側其實已經有身分資訊了：`WorkflowOptionsPanel.vue:7-10` 
 
 **Vue Flow 的 `props.selected` 用不了**：`WorkflowCanvas.vue:19` 設了 `:elements-selectable="false"`，所以 Vue Flow 內建的選取狀態永遠是 `false`；`useWorkflowNodes.ts:63` 又把每個節點的 `class` 硬設成 `''`。這個 app 真正的選取事實來源是 `WorkflowWorkspace.vue:147` 的 `selectedNodeId`，而它**已經被傳進 `useWorkflowNodes()`**（第 16 行參數），目前只用來算步驟高亮。
 
-### #8：綠色閃光跟藍色系不搭
+### 綠色閃光跟藍色系不搭
 
 `IconNode.vue:100-106`：
 
@@ -141,11 +141,3 @@ const isSelected = computed(() => Boolean(props.data?.isSelected))
 5. **閃色**：Settings ③ 加一個模型 → 新的 model 節點閃**青色**兩下；刪掉一個模型 → 閃紅色兩下。在 ①／② 增刪前處理/特徵工程步驟導致 preprocessor / featureEngineering 節點增刪時同理。
 6. **重新整理後**：`selectedNodeId` 由 localStorage 還原（`WorkflowWorkspace.vue:487`），重整後仍選在同一顆節點上，環也還在。
 7. `npm run build` 通過，改動過的檔案沒有新增 lint 錯誤（`npm run lint` 在本專案 baseline 就是紅的，不能拿它當閘門）。
-
-## 收尾要回填的文件
-
-實作完成後更新 `.claude/ux-issues.md`：
-
-- 問題 **#4** 勾選為已修，註明做法是從 `selectedNodeId` 算 `isSelected` 傳進 `data`（沒有開啟 Vue Flow 的 `elements-selectable`），畫布端補上淡藍靜態外環。
-- 問題 **#8** 勾選為已修，註明綠 `#10b981` → 青 `#06b6d4`，刪除紅不動。
-- 第 76 行的「現況」統計（已解決 6 項／未解決 6 項）同步更新。
