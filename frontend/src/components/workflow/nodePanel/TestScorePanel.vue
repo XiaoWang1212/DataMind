@@ -4,22 +4,24 @@
 
     <div v-if="summary.length > 0" class="summary-table">
       <div class="table-row table-row--header">
-        <div class="table-cell">Metric</div>
+        <div class="table-cell">Model</div>
         <div
-          v-for="modelName in modelNames"
-          :key="modelName"
-          class="table-cell table-cell--model"
+          v-for="metricName in metricKeys"
+          :key="metricName"
+          class="table-cell table-cell--num"
         >
-          <div class="model-name">{{ modelName }}</div>
-          <div class="model-split">{{ modelSplits[modelName] }}</div>
+          {{ metricName }}
         </div>
       </div>
 
-      <div v-for="row in matrixRows" :key="row.metric" class="table-row">
-        <div class="table-cell table-cell--metric">{{ row.metric }}</div>
+      <div v-for="row in modelRows" :key="row.model_name" class="table-row">
+        <div class="table-cell table-cell--model">
+          <div class="model-name">{{ row.model_name }}</div>
+          <div class="model-split">{{ row.split_name }}</div>
+        </div>
         <div
           v-for="(value, index) in row.values"
-          :key="`${row.metric}-${modelNames[index]}`"
+          :key="`${row.model_name}-${metricKeys[index]}`"
           class="table-cell table-cell--num"
         >
           {{ value }}
@@ -44,20 +46,6 @@
     }>
   }>()
 
-  const modelNames = computed(() =>
-    props.summary.map(item => item.model_name),
-  )
-
-  const modelSplits = computed(() =>
-    props.summary.reduce(
-      (acc, item) => {
-        acc[item.model_name] = item.split_name
-        return acc
-      },
-      {} as Record<string, string>,
-    ),
-  )
-
   const metricKeys = computed(() => {
     const keys = new Set<string>()
     for (const item of props.summary) {
@@ -66,10 +54,13 @@
     return Array.from(keys)
   })
 
-  const matrixRows = computed(() =>
-    metricKeys.value.map(metricName => ({
-      metric: metricName,
-      values: props.summary.map(item => {
+  // 一個模型一列、metric 當欄：模型數會隨使用者加減而成長，metric 相對固定，
+  // 讓會成長的那一維走垂直方向，表格才不會橫向擠爆
+  const modelRows = computed(() =>
+    props.summary.map(item => ({
+      model_name: item.model_name,
+      split_name: item.split_name,
+      values: metricKeys.value.map(metricName => {
         const metric = item.metrics.find(m => m.metric === metricName)
         return metric?.valueFormatted ?? '-'
       }),
@@ -103,7 +94,7 @@
 
   .table-row {
     display: grid;
-    grid-template-columns: 160px repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: 180px repeat(auto-fit, minmax(80px, 1fr));
     gap: 0;
     align-items: center;
   }
@@ -139,30 +130,26 @@
     text-align: left;
   }
 
-  .table-cell--metric {
-    font-weight: 600;
-    color: #1e293b;
-  }
-
-  /* tabular-nums：讓各模型的分數逐位對齊，比置中好比較 */
+  /* tabular-nums：讓同一欄的分數逐位對齊，比置中好比較。
+     metric 表頭也套這條，標題才會跟底下那一整欄的數字切齊 */
   .table-cell--num {
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
 
-  /* 表頭的模型名/split 名靠右，才會跟底下那一整欄的數字對齊 */
+  /* 最左欄：模型名 + split 名兩行堆疊，靠左 */
   .table-cell--model {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    align-items: flex-end;
+    gap: 2px;
+    align-items: flex-start;
     background: transparent;
   }
 
   .model-name {
-    font-weight: 700;
-    color: #1f2937;
-    font-size: 12px;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 13px;
   }
 
   .model-split {
