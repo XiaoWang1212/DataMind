@@ -38,7 +38,18 @@
 
 ---
 
-## Task 1: 選取中的節點加上淡藍外環
+## Task 1: 選取中的節點加上選取指示
+
+> **實作階段的修正（2026-07-14，`a73d5b4`）**：Step 4/5 的**視覺表達整個換掉**了，但 Step 1-3 的資料流（`NodeData.isSelected` → `canvasNodes` 注入 → `IconNode` 讀出）**完全照計畫走、一行沒改**。
+>
+> 原計畫是在圓形上加淡藍外環（`.node-selected`，三層 `box-shadow`）。實作時在瀏覽器逐一試過外環、往上浮起（`translateY` + 各 `colorClass` 自帶的 `--lift-shadow`），全部都不好看——根因是**圓形的填色已經被「狀態」佔用**（灰＝未跑／黃＝已完成），任何加在圓形上的選取指示都會跟它打架。改成把選取畫在**標籤**上（`.label-selected`，文字下方的指示線），圓形完全不碰。
+>
+> 落地的版本（詳見 spec 的「改動 2」）：
+> - 標籤包一層 `<span>`，class 掛在 span 上（掛外層 div 的話，`min-height: 32px` 會把線推得離單行標籤很遠）。
+> - 線的顏色**跟著節點自己的色相走**（`--node-accent`，由 `LABEL_ACCENTS` 依 `colorClass` 映射；色碼要壓深，例如黃節點用 `#c2a935` 而非 `#f0e274`，原色在近白畫布上看不見）。固定色不論淡藍或飽和主色都會跟黃節點較勁。
+> - 進場動畫：`scaleX` 從中央長出，200ms `ease-out`，`prefers-reduced-motion` 停用。
+>
+> 因此 Task 1 實際多碰了 `IconNode.vue` 的 wrapper `:style`（多掛一個 `--node-accent`）與 `.icon-node-label` 的 template 結構。
 
 **Files:**
 - Modify: `frontend/src/types/workflow.ts:18-27`（`NodeData` interface）

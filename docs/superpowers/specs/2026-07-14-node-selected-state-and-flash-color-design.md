@@ -1,14 +1,23 @@
 # 節點選取狀態與增刪閃色 設計
 
 日期：2026-07-14
-範圍：`frontend/src/composables/workflow/useWorkflowNodes.ts`、`frontend/src/components/workflow/IconNode.vue`
+範圍：`frontend/src/types/workflow.ts`、`frontend/src/composables/workflow/useWorkflowNodes.ts`、`frontend/src/components/workflow/IconNode.vue`
 
 要解決的兩個問題：
 
 - **無法辨識目前點在哪個節點的 panel**
 - **增刪節點時閃的綠色很醜**
 
-兩題都落在畫布節點的視覺回饋上，改動集中在同兩個檔案，一起做只需走一次驗證。
+兩題都落在畫布節點的視覺回饋上，改動集中在同幾個檔案，一起做只需走一次驗證。
+
+> **實作階段的修正（2026-07-14）**：選取狀態的視覺表達與原設計完全不同，下方「改動 2」已改寫成實際落地的版本。原設計是**圓形外的淡藍細環**（`box-shadow` 三層：畫布色間隙 + `#a8c6ff` 環 + 柔投影）。實作時在瀏覽器上一一試過外環、往上浮起（`translateY` + 同色相投影），全部都不好看，根因是：
+>
+> 1. **圓形的填色這個「頻道」已經被狀態佔用了**（灰＝未跑／黃＝已完成）。任何加在圓形上的選取指示——環、投影、浮起——都會跟正在表達狀態的那個顏色打架。這不是色碼沒調好，是頻道衝突。
+> 2. 解法是把選取移到**沒被佔用的頻道**：標籤。`ui-ux-pro-max` 的 UX 準則也指向同一個做法（Active State：`text-primary border-b-2`）。
+> 3. 底線的顏色若用固定色（淡藍 `#9cc0ff`、飽和主色 `#005dff`）仍會跟黃色節點較勁；用中性墨色 `#242424` 則因為跟標籤同色而不夠顯眼。最後採用**跟著節點自己的色相走**（`--node-accent`）：灰節點灰藍線、黃節點金色線——線與正上方的圓同色相，永遠不會不搭。
+> 4. 加了 `scaleX` 從中央長出的 200ms 進場動畫（`prefers-reduced-motion` 會停用）。
+>
+> **另外查證到的事實**：畫布上的節點**永遠不會是藍色**。`INITIAL_NODES`（`workflowData.ts`）七顆全是 `node-pending`，動態生成的 `model-*` / preprocessor / featureEngineering / computeCi 也一律 `node-pending`，唯一的顏色轉換是 `useWorkflowNodes.ts:67` 的 `finished → node-yellow`。`node-purple`（藍漸層）只出現在 `components/WorkflowBuilder.vue`，而那是**死檔案**（全前端零 import）。所以實際只有灰、黃兩種底色；`LABEL_ACCENTS` 裡的 `node-purple` 那一條只是 fallback。
 
 ## 背景
 
@@ -71,44 +80,95 @@ Panel 那一側其實已經有身分資訊了：`WorkflowOptionsPanel.vue:7-10` 
 
 **為什麼不開 Vue Flow 的 `elements-selectable`**：那會引入 Vue Flow 自己的 `.selected` 預設樣式與框選行為，而且 `class: ''`（63 行）本來就會把它加的 class 洗掉。`selectedNodeId` 已經是這個 app 唯一的選取來源（drawer 開關、localStorage 還原都靠它），再開一套等於同一份狀態存兩份。
 
-## 改動 2：`IconNode.vue` 套用選取樣式
+## 改動 2：`IconNode.vue` 用「標籤底線」表示選取
 
-讀出旗標：
+`NodeData`（`types/workflow.ts`）先宣告新欄位，比照既有的 `status?`（既有的 `highlighted` / `flashType` 都是沒宣告就硬注入 `data`，靠 TS 推論漏過去；新欄位不跟進這個習慣）：
 
 ```ts
-// 目前點選中的節點（來自 selectedNodeId，非 Vue Flow 內建的 selected）
-const isSelected = computed(() => Boolean(props.data?.isSelected))
+/** 是否為目前點選中的節點，由 canvasNodes computed 依 selectedNodeId 動態註入 */
+isSelected?: boolean;
 ```
 
-掛上 class（`IconNode.vue:23`）：
+`IconNode.vue` 讀出旗標，並把底線的顏色依 `colorClass` 映射成 CSS 變數：
+
+```ts
+// 用 data.isSelected 而非 Vue Flow 的 props.selected：
+// WorkflowCanvas 設了 elements-selectable="false"，內建的 selected 永遠是 false
+const isSelected = computed(() => Boolean(props.data?.isSelected))
+
+// 選取指示線的顏色，對應各 colorClass 的底色（壓深過，淺色在近白的畫布上看不見）
+const LABEL_ACCENTS: Record<string, string> = {
+  'node-pending': '#7c88a8',
+  'node-purple': '#005dff',
+  'node-yellow': '#c2a935',
+}
+const accentColor = computed(() => LABEL_ACCENTS[colorClass.value] ?? '#005dff')
+```
+
+`--node-accent` 掛在 wrapper 上——底線在標籤上、`colorClass` 在圓形上，兩者是兄弟節點，CSS 沒辦法直接跨過去取值：
 
 ```diff
--      :class="[colorClass, { 'node-highlighted': highlighted, 'flash-add': flashType === 'add', 'flash-remove': flashType === 'remove' }]"
-+      :class="[colorClass, { 'node-selected': isSelected, 'node-highlighted': highlighted, 'flash-add': flashType === 'add', 'flash-remove': flashType === 'remove' }]"
+   <div
+     class="icon-node-wrap"
+-    :style="highlightColor ? { '--highlight-color': highlightColor } : {}"
++    :style="{
++      '--node-accent': accentColor,
++      ...(highlightColor ? { '--highlight-color': highlightColor } : {}),
++    }"
+   >
+```
+
+標籤包一層 `<span>`，class 掛在 span 上：
+
+```diff
+-    <div class="icon-node-label">{{ label }}</div>
++    <div class="icon-node-label">
++      <span :class="{ 'label-selected': isSelected }">{{ label }}</span>
++    </div>
 ```
 
 樣式：
 
 ```css
-.node-selected {
-  box-shadow:
-    0 0 0 3px #f8fbff,                 /* 間隙：與畫布底色同色 */
-    0 0 0 5px #a8c6ff,                 /* 淡藍細環 */
-    0 4px 10px rgba(15, 23, 42, 0.12); /* 柔投影 */
+/* inline-block 讓 span 高度貼合文字；掛在外層 .icon-node-label 的話，
+   它的 min-height 會把線推得離單行標籤很遠 */
+.label-selected {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.label-selected::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 34px;
+  height: 2px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--node-accent, #005dff);
+  animation: underline-in 0.2s ease-out;
+}
+
+@keyframes underline-in {
+  from { transform: translateX(-50%) scaleX(0); opacity: 0; }
+  to   { transform: translateX(-50%) scaleX(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label-selected::after { animation: none; }
 }
 ```
 
 **設計決策**：
 
-- **只有外環，標籤不變色**。節點跑完會變黃底（`node-yellow`），若再把標籤染藍，畫面上同一顆節點就有三個顏色在打架。
-- **淡藍 `#a8c6ff`** 是主色 `#005dff` 的淡版——保留品牌感，但不會強到跟「藍＝預設狀態、黃＝已完成」的狀態語意混淆。
-- **間隙用 `#f8fbff` 而非白色**：畫布底色是 `#f8fbff` + 淡藍點陣（`WorkflowCanvas.vue:214-219`）。用純白會在節點外圈出現一條比背景亮的白邊；用同色才讀得像「空隙」。
-- **靜態、不脈動**。`.node-highlighted` 是會脈動的黃框，選取環在「會不會動」這一項上就先跟它分開了。
+- **選取畫在標籤上，圓形完全不碰**。圓形的填色已經在表達「狀態」（灰＝未跑／黃＝已完成），再把「選取」也塞進同一個頻道就一定會打架——外環、投影、浮起都試過，全部都怪。標籤是空著的頻道。
+- **底線顏色跟著節點自己的色相走**。固定色（不論淡藍或飽和主色）都會跟黃色節點較勁；中性墨色又因為跟標籤同色而不夠顯眼。跟著走則永遠協調，代價是「選取」少一個固定識別色——可接受，因為畫面上同時只會有一顆被選取。
+- **色碼要壓深**：`#c2a935` 不是節點的 `#f0e274`。原色在近白的畫布（`#f8fbff`）上根本看不見。
+- **動畫用 `scaleX` 不用 `width`**：只動 transform/opacity，不觸發 layout；200ms 落在微互動的 150–300ms 區間；`prefers-reduced-motion` 會停用。
 
-**跟現有效果的關係**：
-
-- `.node-highlighted` 也用 `box-shadow`，但**兩者不會落在同一顆節點上**：`getHighlightedIds()`（45-53 行）只在 `selectedNodeId === 'settings'` 時發出高亮，且對象是**其他**節點（preprocessor / featureEngineering / `model-*` / computeCi）。被選取的那顆（settings）自己永遠不在高亮集合裡。
-- 閃色是 `::before` 疊層（`.icon-node` 有 `overflow: hidden`，疊層被裁在圓形內），`box-shadow` 畫在圓形外，兩者不互相覆蓋。
+**跟現有效果的關係**：底線畫在標籤上，`.node-highlighted`（Settings 步驟的黃色脈動框，`box-shadow`）和閃色（`::before` 疊層，被 `.icon-node` 的 `overflow: hidden` 裁在圓形內）都畫在圓形上，三者位置互不重疊，可以同時出現。
 
 ## 改動 3：閃色換色
 
@@ -134,10 +194,11 @@ const isSelected = computed(() => Boolean(props.data?.isSelected))
 
 開 dev server（`npm run dev`）：
 
-1. **選取環**：依序點 File / Data Table / Settings / Test & Score 各節點 → 被點到的那顆出現淡藍細環＋淺投影，切到下一顆時前一顆的環消失。
-2. **取消選取**：點畫布空白處（`@pane-click`）→ drawer 關閉、環一併消失。
-3. **跟黃色脈動框並存**：選 Settings、切到步驟 ①～④ → 畫面上同時有「Settings 的靜態淡藍環」與「被引導節點的黃色脈動框」，兩者一眼分得出來、不會誤認。
-4. **黃底節點上仍可讀**：跑完流程（節點變 `node-yellow`）後點 Test & Score → 選取環在黃底上仍清楚。
-5. **閃色**：Settings ③ 加一個模型 → 新的 model 節點閃**青色**兩下；刪掉一個模型 → 閃紅色兩下。在 ①／② 增刪前處理/特徵工程步驟導致 preprocessor / featureEngineering 節點增刪時同理。
-6. **重新整理後**：`selectedNodeId` 由 localStorage 還原（`WorkflowWorkspace.vue:487`），重整後仍選在同一顆節點上，環也還在。
-7. `npm run build` 通過，改動過的檔案沒有新增 lint 錯誤（`npm run lint` 在本專案 baseline 就是紅的，不能拿它當閘門）。
+1. **選取底線**：依序點 File / Data Table / Settings / Test & Score 各節點 → 被點到的那顆標籤下方長出一條線（從中央往兩側展開），切到下一顆時前一顆的線消失。
+2. **線的長度與位置一致**：單行標籤（File）與兩行標籤（Data Table）的線一樣長（34px）、離文字一樣遠（8px）。
+3. **取消選取**：點畫布空白處（`@pane-click`）→ drawer 關閉、線一併消失。
+4. **顏色跟著節點走**：灰底節點（未跑）是灰藍線 `#7c88a8`；跑完變黃底後是金色線 `#c2a935`。
+5. **跟黃色脈動框並存**：選 Settings、切到步驟 ①～④ → Settings 的底線與被引導節點的黃色脈動框同時在畫面上，位置不重疊、不互相干擾。
+6. **閃色**：Settings ③ 加一個模型 → 新的 model 節點閃**青色**兩下；刪掉一個模型 → 閃紅色兩下。在 ①／② 增刪前處理/特徵工程步驟導致 preprocessor / featureEngineering 節點增刪時同理。
+7. **重新整理後**：`selectedNodeId` 由 localStorage 還原（`WorkflowWorkspace.vue:487`），重整後仍選在同一顆節點上，線也還在。
+8. `npm run build` 通過，改動過的檔案沒有新增 lint 錯誤（`npm run lint` 在本專案 baseline 就是紅的，不能拿它當閘門）。
