@@ -139,7 +139,7 @@
       },
     ]
 
-    for (const metric of metricNames.value.slice(0, 3)) {
+    for (const metric of metricNames.value.slice(1, 4)) {
       const metricBest = bestModelFor(metric)
       cards.push({
         key: metric,
