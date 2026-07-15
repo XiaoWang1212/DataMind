@@ -3,7 +3,7 @@
 日期：2026-07-11
 範圍：`frontend/src/components/workflow/nodePanel/DataTablePanel.vue`、`frontend/src/components/workflow/nodePanel/DistributionPanel.vue`
 
-對應 `.claude/ux-issues.md` 問題 #16。
+要處理的問題：Data Table／Distribution 面板的欄位統計文字獨佔一行，想搬到跟檔名同一行。
 
 ## 背景
 
@@ -208,7 +208,7 @@ Distribution 沒有暫停狀態，統計文字永遠跟檔名同一行，條件�
 
 - 兩個檔案的 `<script setup>` 邏輯（`chartData`、CSV 解析、`columnsReady`、`hasTarget` 等 computed/ref）完全不變，只動 template 結構位置與少數 CSS 屬性。
 - Distribution 的 full 段位 grid 排版（`.distribution-chart-grid--full`、`isFullStage`）不受影響——本次改動的 `.distribution-summary` 完全在 grid 之外的 header 區塊。
-- `.claude/ux-issues.md` #17（full 切換過場動畫）、#18（full 段位內部捲動 flex chain bug）不在本次範圍。
+- full 切換過場動畫、full 段位內部捲動的 flex chain bug，不在本次範圍。
 
 ## 驗證方式
 

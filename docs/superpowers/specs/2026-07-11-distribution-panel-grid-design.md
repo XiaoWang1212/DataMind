@@ -3,7 +3,7 @@
 日期：2026-07-11
 範圍：`frontend/src/composables/useDrawerDrag.ts`、`frontend/src/components/workflow/WorkflowWorkspace.vue`、`frontend/src/components/workflow/WorkflowOptionsPanel.vue`、`frontend/src/components/workflow/nodePanel/DistributionPanel.vue`
 
-對應 `.claude/ux-issues.md` 問題 #2：「Distribution 圖太多，排版不佳」。
+要處理的問題：「Distribution 圖太多，排版不佳」。
 
 ## 背景
 
@@ -89,7 +89,7 @@ const isFullStage = computed(() => props.drawerStage === 'full')
 
 ## 不涉及的部分
 
-- `.claude/ux-issues.md` #16（統計文字搬到跟檔名同一行）不在本次範圍。
+- 統計文字搬到跟檔名同一行，不在本次範圍。
 - 其他節點面板（settings/preprocessor/…）不受影響——`drawerStage` 是新增的可選 prop，只有 `DistributionPanel` 使用。
 
 ## 驗證方式

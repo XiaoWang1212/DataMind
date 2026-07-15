@@ -37,11 +37,10 @@
 |---|---|---|
 | `frontend/src/constants/workflowData.ts` | 工作流節點的初始定義（icon/label/description/config） | 只改 `dataTable` 節點的 `description` 一行文案（Task 1） |
 | `frontend/src/components/workflow/nodePanel/DataTablePanel.vue` | Data Table 節點面板：欄位設定表格（Column Name / Type / Role / Values）＋暫停等待選 target 的提示卡 | `<script setup>`：即時同步 + 索引對位 + Reset 重新定義（Task 2）、Values 欄顯示邏輯（Task 4）；template/CSS：拿掉重複標題、卡片 padding 收 0、合併重複的 CSS 宣告（Task 3） |
-| `.claude/ux-issues.md` | 專案的 UX 問題追蹤清單 | 收尾回填三個項目的狀態（Task 5） |
 
 兩個程式檔都已存在，不新增檔案。
 
-**Task 之間的相依性**：Task 2 必須在 Task 4 之前完成——Task 4 的 `getColumnValueLabel()` 讀 `columnSettings[index].type`，而 Task 2 改寫了 `buildColumnSettings()` 決定 `type` 的方式。Task 1 與 Task 3 跟其他 task 互不相干，順序可調。Task 5 必須最後做。
+**Task 之間的相依性**：Task 2 必須在 Task 4 之前完成——Task 4 的 `getColumnValueLabel()` 讀 `columnSettings[index].type`，而 Task 2 改寫了 `buildColumnSettings()` 決定 `type` 的方式。Task 1 與 Task 3 跟其他 task 互不相干，順序可調。
 
 ---
 
@@ -676,85 +675,6 @@ git commit -m "feat: show value range for numeric and datetime columns"
 
 ---
 
-## Task 5: 回填 `.claude/ux-issues.md`
-
-**前置**：Task 1-4 全部完成並 commit 之後才做。
-
-**Files:**
-- Modify: `.claude/ux-issues.md:31`（Role/Target 遺失的「⚠️ 新發現待處理」）
-- Modify: `.claude/ux-issues.md:153-156`（問題 #14）
-- Modify: `.claude/ux-issues.md:192`（副標題待辦）
-
-**Interfaces:**
-- Consumes: Task 1-4 的實際 commit hash（`git log --oneline -5` 取得）。
-- Produces: 無程式介面。
-
-- [ ] **Step 1: 取得本次的 commit hash**
-
-```bash
-git log --oneline -5
-```
-
-記下 Task 1-4 四個 commit 的 hash，下面填進文件時要用。
-
-- [ ] **Step 2: 更新第 31 行的 Role/Target 待處理項**
-
-把（`.claude/ux-issues.md:31`）：
-
-```markdown
-> ⚠️ 新發現待處理（2026-07-10）：Role/Target 選擇在使用者按下「繼續」之前只存在 `DataTablePanel.vue` 元件本地狀態；若選好 Target 後、按繼續前就切去別的節點，面板重建會讓選擇遺失（`hasTarget` 重新變 false，暫停指示卡與圈圈也會跟著重新出現，行為上正確但體驗上等於選擇被吃掉）。修法可能是 Role/Type 改變時即時同步回父層，而非等按「繼續」才 emit；屬於資料流改動，範圍較大，本次不處理。
-```
-
-改成（`<hash>` 換成 Task 2 的實際 commit hash）：
-
-```markdown
-> ✅ 已修（`<hash>`，2026-07-13）：Role/Target 選擇改成「一改動就即時同步回父層」——`DataTablePanel.vue` 對 `columnSettings` 加 deep watch，任何改動立刻 `emit('update-column-config')` 寫進 `node.data.config`，不再等按「繼續」才 emit。同時發現第二條會造成同樣症狀的路徑：`buildColumnSettings()` 原本用**欄位名稱**比對已存的 config，但 Column Name 是可編輯的，使用者改過名字後 CSV 表頭就對不上，整欄設定仍會被重置——一併改成用**索引**對位。附帶影響：「上次存檔」不再是有意義的狀態，Reset 因此重新定義為「回到自動推斷的預設」（名稱回 CSV 表頭、型別回自動偵測、Role 全回 feature），「繼續」則只剩「往下一步走」的職責。
-```
-
-- [ ] **Step 3: 把問題 #14 標記為已修**
-
-把（`.claude/ux-issues.md:153-156`）：
-
-```markdown
-- [ ] **#14 Data Table Panel 的 padding/margin 感覺偏多，整體偏空**
-  - 現象：整個 panel 有不必要的留白感。
-  - 現況（2026-07-11）：**未完全確認**。程式碼層級檢查 `DataTablePanel.vue` 目前的間距值本身不算誇張（`.data-table-panel` gap 14px、`.data-table-column-settings` padding 14px 16px、表格 cell padding 10-12px），單看數值沒有明顯異常，但「感覺空」是視覺整體觀感問題，光看 CSS 數字無法下定論，需要實際在瀏覽器打開比對。
-  - 待辦：實際開 dev server 走一次 Data Table 節點，比對 collapsed / expanded / full 三段 drawer 高度下的實際留白觀感，再決定要不要收緊。
-```
-
-改成（`<hash3>`、`<hash4>` 換成 Task 3、Task 4 的實際 commit hash）：
-
-```markdown
-- [x] **#14 Data Table Panel 的 padding/margin 感覺偏多，整體偏空**
-  - 現象：整個 panel 有不必要的留白感。
-  - ✅ 已修（`<hash3>`、`<hash4>`，2026-07-13）：**「感覺空」的主因不是間距數值，而是 Values 欄整排「—」**。`getColumnValueLabel()` 原本只對 `categorial` 型別回傳內容，其餘一律回 `'—'`，所以以數值欄為主的資料集最右欄會是一長排破折號。改成四種型別都有內容：numeric 顯示 `min – max`、datetime 顯示「最早 – 最晚」（原始字串，避免時區差一天）、categorial 維持前 6 個唯一值、text 顯示前 3 個唯一值當範例。另外兩刀：拿掉卡片內重複的「欄位設定」小標（面板標題區的副標已經說明了這張表是什麼），白卡片 `padding` 從 `14px 16px` 收成 `0` 讓表格貼齊邊框（按鈕列自己補 `padding: 10px 12px`），並順手合併了 `.column-settings-actions` 重複宣告兩次的 CSS。
-```
-
-- [ ] **Step 4: 勾掉第 192 行的副標題待辦**
-
-把（`.claude/ux-issues.md:192`）：
-
-```markdown
-  - [ ] Data table 的副標題是「上傳資料預覽」是不是要改一下
-```
-
-改成（`<hash1>` 換成 Task 1 的實際 commit hash）：
-
-```markdown
-  - [x] Data table 的副標題是「上傳資料預覽」是不是要改一下 — ✅ 已改（`<hash1>`，2026-07-13）：面板裡根本沒有資料列預覽，副標名不符實。改成「設定欄位型別與目標變數」，如實描述這個面板實際在做的事。節點名稱 `Data Table` 不動，也不補預覽功能。
-```
-
-- [ ] **Step 5: 詢問使用者，取得同意後才 commit**
-
-先問使用者：「文件回填好了，可以 commit 嗎？」等到明確答覆再執行：
-
-```bash
-git add .claude/ux-issues.md
-git commit -m "docs: mark data table panel issues as fixed"
-```
-
----
-
 ## 完成標準
 
 全部 task 做完後，下列每一項都要成立：
@@ -767,4 +687,3 @@ git commit -m "docs: mark data table panel issues as fixed"
 - [ ] Values 欄四種型別都有內容，沒有整排「—」；日期字串與 CSV 一致。
 - [ ] 卡片內沒有重複的「欄位設定」標題；表格貼齊邊框；按鈕列沒有黏邊；卡片內部捲動與 sticky 表頭仍正常。
 - [ ] `npm run build` 通過，且改動過的檔案沒有新增 lint 錯誤。
-- [ ] `.claude/ux-issues.md` 的三個項目都已回填。

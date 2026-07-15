@@ -3,11 +3,11 @@
 日期：2026-07-13
 範圍：`frontend/src/constants/workflowData.ts`、`frontend/src/components/workflow/nodePanel/DataTablePanel.vue`
 
-對應 `.claude/ux-issues.md`：
+本次要修的三件事：
 
-- 第 192 行待辦「Data table 的副標題是『上傳資料預覽』是不是要改一下」
-- 第 31 行「⚠️ 新發現待處理（2026-07-10）」：Role/Target 選擇在按「繼續」前遺失
-- 問題 #14「Data Table Panel 的 padding/margin 感覺偏多，整體偏空」
+- 副標文案「上傳資料預覽」名不符實，要改一下。
+- Role/Target 選擇在按「繼續」前會遺失。
+- Data Table Panel 的 padding/margin 感覺偏多，整體偏空。
 
 三件事互相獨立，但都落在同一個檔案、同一個畫面，一起做可以只走一次驗證。
 
@@ -54,7 +54,7 @@ const existing = existingMap.get(header)   // header 來自 CSV 表頭
 
 ### #14 留白偏多
 
-`ux-issues.md` 當初的結論是「單看 CSS 數值不算誇張，需實際開瀏覽器比對」。實際看下來，「空」的最大來源不是間距數值，而是 **Values 欄整排都是「—」**：`getColumnValueLabel()`（320-330 行）只對 `categorial` 型別回傳內容，其餘型別一律回 `'—'`。一份以數值欄為主的資料集，整張表最右欄會是一長排破折號，視覺上就是一大塊空白。
+單看 CSS 數值不算誇張，實際開瀏覽器比對後發現：「空」的最大來源不是間距數值，而是 **Values 欄整排都是「—」**：`getColumnValueLabel()`（320-330 行）只對 `categorial` 型別回傳內容，其餘型別一律回 `'—'`。一份以數值欄為主的資料集，整張表最右欄會是一長排破折號，視覺上就是一大塊空白。
 
 另外兩個較小的來源：面板標題區已經有「Data Table」大標，卡片裡又有一個「欄位設定」小標（45 行），語意重複且多佔一行；白卡片本身還有 `padding: 14px 16px` 的內縮。
 
@@ -317,11 +317,3 @@ watch(
 8. **留白**：「欄位設定」小標仍在但不黏邊框；表格貼齊卡片邊框；按鈕列有適當內距、沒有黏邊；右側捲軸是細的（6px），不是一條顯眼的白邊。
 9. **欄寬**：換不同的 CSV（長中文欄名、多類別值），四欄寬度維持 37/26/22/15 不變。
 10. `npm run build` 通過，且改動過的檔案沒有新增 lint 錯誤（`npm run lint` 在本專案 baseline 就是紅的，不能拿它當閘門）。
-
-## 收尾要回填的文件
-
-實作完成後更新 `.claude/ux-issues.md`：
-
-- 第 31 行的「⚠️ 新發現待處理（2026-07-10）」改為已修，註明改成即時同步 + 索引對位。
-- 問題 #14 勾選為已修，補上「主因是 Values 欄整排『—』，而非間距數值」的結論。
-- 第 192 行的副標題待辦勾掉。
