@@ -24,11 +24,6 @@ const router = createRouter({
       component: () => import("@/components/Sidebar.vue"),
     },
     {
-      path: "/results",
-      name: "results",
-      component: () => import("@/views/ResultsPage.vue"),
-    },
-    {
       path: "/hub",
       component: () => import("@/layouts/HubLayout.vue"),
       redirect: "/hub/dashboard",
@@ -62,6 +57,11 @@ const router = createRouter({
           path: "projects/:id",
           name: "hub-project-detail",
           component: () => import("@/views/hub/ProjectDetailView.vue"),
+        },
+        {
+          path: "projects/:id/result",
+          name: "hub-project-result",
+          component: () => import("@/views/hub/ResultView.vue"),
         },
         {
           path: "settings",
