@@ -24,10 +24,12 @@
     <!-- ── Step 0：前處理 ── -->
     <div v-if="currentStep === 0" class="step-body">
       <div class="add-bar">
-        <select v-model="newPreprocessType" class="type-select">
-          <option disabled value="">選擇步驟類型</option>
-          <option v-for="[k, v] in preprocessOptions" :key="k" :value="k">{{ v }}</option>
-        </select>
+        <CustomSelect
+          v-model="newPreprocessType"
+          class="type-select"
+          :options="preprocessOptions.map(([value, label]) => ({ value, label }))"
+          placeholder="選擇步驟類型"
+        />
         <button class="add-btn" :disabled="!newPreprocessType" type="button" @click="addPreprocessStep">
           新增
         </button>
@@ -47,15 +49,16 @@
             <template v-if="step.type === 'fill_na'">
               <div class="param-pair">
                 <span class="param-key">strategy</span>
-                <select
+                <CustomSelect
                   class="param-select"
-                  :value="step.strategy ?? 'mean'"
-                  @change="patchPreprocessStep(i, 'strategy', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="mean">均值</option>
-                  <option value="median">中位數</option>
-                  <option value="mode">眾數</option>
-                </select>
+                  :model-value="String(step.strategy ?? 'mean')"
+                  :options="[
+                    { value: 'mean', label: '均值' },
+                    { value: 'median', label: '中位數' },
+                    { value: 'mode', label: '眾數' },
+                  ]"
+                  @update:model-value="patchPreprocessStep(i, 'strategy', $event)"
+                />
               </div>
             </template>
             <template v-else-if="step.type === 'knn_impute'">
@@ -92,10 +95,12 @@
     <!-- ── Step 1：特徵工程 ── -->
     <div v-else-if="currentStep === 1" class="step-body">
       <div class="add-bar">
-        <select v-model="newFEType" class="type-select">
-          <option disabled value="">選擇步驟類型</option>
-          <option v-for="[k, v] in featureOptions" :key="k" :value="k">{{ v }}</option>
-        </select>
+        <CustomSelect
+          v-model="newFEType"
+          class="type-select"
+          :options="featureOptions.map(([value, label]) => ({ value, label }))"
+          placeholder="選擇步驟類型"
+        />
         <button class="add-btn" :disabled="!newFEType" type="button" @click="addFEStep">
           新增
         </button>
@@ -146,16 +151,13 @@
     <!-- ── Step 2：模型 ── -->
     <div v-else-if="currentStep === 2" class="step-body">
       <div class="add-bar">
-        <select
+        <CustomSelect
           v-model="selectedModel"
           class="type-select"
+          :options="availableModels.map(m => ({ value: m, label: m }))"
+          :placeholder="props.modelOptionsLoading ? '載入中…' : availableModels.length === 0 ? '已全部加入' : '選擇模型'"
           :disabled="props.modelOptionsLoading || availableModels.length === 0"
-        >
-          <option disabled value="">
-            {{ props.modelOptionsLoading ? '載入中…' : availableModels.length === 0 ? '已全部加入' : '選擇模型' }}
-          </option>
-          <option v-for="m in availableModels" :key="m" :value="m">{{ m }}</option>
-        </select>
+        />
         <button class="add-btn" :disabled="!selectedModel" type="button" @click="addModel">
           新增
         </button>
@@ -237,6 +239,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
