@@ -253,6 +253,7 @@
   // ─── handlers ────────────────────────────────────────────────────────────
 
   function handleSelectNode (nodeId: string): void {
+    if (nodeId.startsWith('model-')) return
     if (selectedNodeId.value === nodeId) {
       closeMenu()
       return
