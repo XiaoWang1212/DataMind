@@ -324,6 +324,19 @@
     }
   }
 
+  function columnConfigEqual (a: unknown, b: unknown): boolean {
+    if (!Array.isArray(a) || !Array.isArray(b)) return a === b
+    if (a.length !== b.length) return false
+    return a.every((col, i) => {
+      const cur = col as { name?: unknown, type?: unknown, role?: unknown }
+      const other = b[i] as { name?: unknown, type?: unknown, role?: unknown } | undefined
+      return other !== undefined
+        && cur.name === other.name
+        && cur.type === other.type
+        && cur.role === other.role
+    })
+  }
+
   function handleUpdateConfig (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
     if (payload.nodeId === 'settings' && ('preprocessing' in payload.config || 'featureEngineering' in payload.config)) {
       const settingsNode = nodes.value.find(n => n.id === 'settings')
@@ -384,6 +397,10 @@
       return
     }
 
+    const prevColumnConfig = payload.nodeId === 'dataTable' && 'columnConfig' in payload.config
+      ? nodes.value.find(n => n.id === 'dataTable')?.data.config.columnConfig
+      : undefined
+
     nodes.value = nodes.value.map(node => {
       if (node.id !== payload.nodeId) return node
       return { ...node, data: { ...node.data, config: { ...node.data.config, ...payload.config } } }
@@ -392,10 +409,8 @@
       syncComputeCiNode()
     }
     if (payload.nodeId === 'dataTable' && 'columnConfig' in payload.config) {
-      const columnConfig = payload.config.columnConfig
-      const hasTarget = Array.isArray(columnConfig)
-        && columnConfig.some(col => (col as { role?: string })?.role === 'target')
-      if (!hasTarget) {
+      // 只有真的改了（且原本已 Apply）才翻回旗標；面板重掛 emit 相同設定不算改動
+      if (dataTableApplied.value && !columnConfigEqual(prevColumnConfig, payload.config.columnConfig)) {
         dataTableApplied.value = false
       }
     }
