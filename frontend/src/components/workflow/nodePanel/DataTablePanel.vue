@@ -68,35 +68,23 @@
                   >
                 </td>
                 <td :class="{ 'target-cell': column.role === 'target' }">
-                  <select v-model="column.type">
-                    <option
-                      v-for="type in typeOptions"
-                      :key="type"
-                      :value="type"
-                    >
-                      {{ typeLabels[type] }}
-                    </option>
-                  </select>
+                  <CustomSelect
+                    :model-value="column.type"
+                    :options="typeOptions.map(t => ({ value: t, label: typeLabels[t] }))"
+                    @update:model-value="column.type = $event as ColumnType"
+                  />
                 </td>
                 <td :class="{ 'target-cell': column.role === 'target' }">
                   <div class="role-select-wrap">
-                    <select
-                      v-model="column.role"
+                    <CustomSelect
                       class="role-select"
-                      :class="{
-                        'role-select--attention': props.loading && !hasTarget && !roleSelectTouched,
-                      }"
+                      :model-value="column.role"
+                      :options="roleOptions.map(r => ({ value: r, label: roleLabels[r] }))"
+                      :highlight="props.loading && !hasTarget && !roleSelectTouched"
+                      @update:model-value="column.role = $event as ColumnRole"
                       @change="onRoleChange(index)"
-                      @focus="handleRoleSelectFocus"
-                    >
-                      <option
-                        v-for="role in roleOptions"
-                        :key="role"
-                        :value="role"
-                      >
-                        {{ roleLabels[role] }}
-                      </option>
-                    </select>
+                      @focusin="handleRoleSelectFocus"
+                    />
                     <Transition v-if="index === 0" name="tap-hint-fade">
                       <span
                         v-if="props.loading && !roleSelectTouched && !hasTarget"
@@ -145,6 +133,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
