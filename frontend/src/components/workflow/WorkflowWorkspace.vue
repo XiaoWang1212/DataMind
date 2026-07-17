@@ -83,6 +83,7 @@
                 :workflow-summary="workflowSummary"
                 @add-model="handleAddModel"
                 @apply-column-config="handleApplyColumnConfig"
+                @back-node="handleBackToDataTable"
                 @continue-settings="handleContinueSettings"
                 @open-upload="uploadDialogVisible = true"
                 @remove-model="handleRemoveModel"
@@ -296,6 +297,17 @@
     markProjectRunning()
     continueWorkflow()
     closeMenu()
+  }
+
+  function handleBackToDataTable (): void {
+    pausedAtNodeId.value = 'dataTable'
+    const next = new Map(nodeStatuses.value)
+    next.set('dataTable', 'running')
+    next.delete('settings')
+    nodeStatuses.value = next
+    selectedNodeId.value = 'dataTable'
+    expandDrawer()
+    saveState()
   }
 
   function handleAddModel (modelName: string): void {

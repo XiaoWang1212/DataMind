@@ -1,6 +1,10 @@
 <template>
   <section class="settings-wizard">
 
+    <button class="back-to-datatable" type="button" @click="emit('back-node')">
+      <span aria-hidden="true">←</span> 回 Data Table
+    </button>
+
     <!-- ── 步驟頁籤 ── -->
     <div class="wizard-tabs">
       <button
@@ -246,6 +250,7 @@
     (e: 'update-preprocessing' | 'update-feature-engineering', steps: Array<Record<string, unknown>>): void
     (e: 'update-compute-ci', value: boolean): void
     (e: 'continue'): void
+    (e: 'back-node'): void
     (e: 'step-change', step: number): void
   }>()
 
@@ -407,6 +412,24 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .back-to-datatable {
+    flex-shrink: 0;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border: none;
+    background: none;
+    color: #005dff;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .back-to-datatable:hover {
+    text-decoration: underline;
   }
 
   /* 步驟頁籤 */
