@@ -60,7 +60,7 @@
             </template>
             <template v-else-if="step.type === 'knn_impute'">
               <div class="param-pair">
-                <span class="param-key">鄰居數</span>
+                <span class="param-key">n_neighbors</span>
                 <input
                   class="param-num"
                   min="1"
@@ -72,7 +72,7 @@
             </template>
             <template v-else-if="step.type === 'remove_outliers_iqr' || step.type === 'remove_outliers_zscore'">
               <div class="param-pair">
-                <span class="param-key">閾值</span>
+                <span class="param-key">threshold</span>
                 <input
                   class="param-num"
                   min="0"
@@ -126,7 +126,7 @@
             </template>
             <template v-else-if="step.type === 'pca'">
               <div class="param-pair">
-                <span class="param-key">維度</span>
+                <span class="param-key">n_components</span>
                 <input
                   class="param-num"
                   min="1"
@@ -163,7 +163,7 @@
 
       <div v-if="props.models.length > 0" class="item-list">
         <div v-for="model in props.models" :key="modelName(model)" class="item-row">
-          <div class="item-head item-head--top">
+          <div class="item-head">
             <span class="item-idx item-idx--dot" />
             <span class="item-name">{{ modelName(model) }}</span>
             <button class="del-btn" title="移除" type="button" @click="emit('remove-model', modelName(model))">✕</button>
@@ -205,13 +205,21 @@
 
     <div class="settings-footer">
       <button
-        class="btn-continue"
-        :class="{ 'btn-continue--disabled': props.models.length === 0 }"
-        :disabled="props.models.length === 0"
+        v-if="currentStep > 0"
+        class="btn-back"
         type="button"
-        @click="emit('continue')"
+        @click="currentStep -= 1"
       >
-        繼續
+        上一步
+      </button>
+      <button
+        class="btn-continue"
+        :class="{ 'btn-continue--disabled': isPrimaryDisabled }"
+        :disabled="isPrimaryDisabled"
+        type="button"
+        @click="handlePrimary"
+      >
+        {{ primaryLabel }}
       </button>
     </div>
 
@@ -243,6 +251,19 @@
 
   const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
   const currentStep = ref(0)
+
+  const LAST_STEP = STEPS.length - 1
+
+  const primaryLabel = computed(() => (currentStep.value < LAST_STEP ? '下一步' : '執行'))
+  const isPrimaryDisabled = computed(() => currentStep.value === LAST_STEP && props.models.length === 0)
+
+  function handlePrimary (): void {
+    if (currentStep.value < LAST_STEP) {
+      currentStep.value += 1
+    } else {
+      emit('continue')
+    }
+  }
 
   watch(currentStep, step => emit('step-change', step), { immediate: true })
 
@@ -381,6 +402,8 @@
 
 <style scoped>
   .settings-wizard {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -388,6 +411,7 @@
 
   /* 步驟頁籤 */
   .wizard-tabs {
+    flex-shrink: 0;
     display: flex;
     gap: 4px;
     padding: 4px;
@@ -455,6 +479,9 @@
 
   /* Step 內容 */
   .step-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -533,16 +560,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  /* 模型卡片：名稱換行時，圓圈與叉叉維持在最上面一行對齊 */
-  .item-head--top {
-    align-items: flex-start;
-  }
-
-  /* 圓圈(18px)與叉叉(22px)高度不同，微調上緣讓兩者中線對齊名稱首行 */
-  .item-head--top .item-idx {
-    margin-top: 2px;
   }
 
   .item-idx {
@@ -756,11 +773,13 @@
   }
 
   .settings-footer {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
-    padding-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 93, 255, 0.1);
   }
 
   .btn-continue {
@@ -777,5 +796,20 @@
   .btn-continue--disabled {
     background: #94a3b8;
     cursor: not-allowed;
+  }
+
+  .btn-back {
+    min-width: 88px;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    color: #475569;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .btn-back:hover {
+    background: #f1f5f9;
   }
 </style>
