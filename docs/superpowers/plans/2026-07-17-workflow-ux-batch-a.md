@@ -203,12 +203,14 @@ git commit -m "fix: Settings 模型列 icon 與名稱垂直置中對齊"
 
 **Files:**
 - Modify: `frontend/src/components/workflow/WorkflowWorkspace.vue:255-262`（`handleSelectNode`）
-- Modify: `frontend/src/composables/workflow/useWorkflowNodes.ts:58-74`（`canvasNodes` computed 的 data 注入）
-- Modify: `frontend/src/components/workflow/IconNode.vue`（模板 wrap class、`<script setup>` computed、`<style>`）
+- Modify: `frontend/src/composables/workflow/useWorkflowNodes.ts:58-74`（`canvasNodes` computed 的 `class` 欄位）
+- Modify: `frontend/src/components/workflow/WorkflowCanvas.vue`（`<style>` 的 `:deep` 游標規則）
 
 **Interfaces:**
-- Consumes: 既有 `selectedNodeId`、`closeMenu()`、`expandDrawer()`（WorkflowWorkspace）；`node.id`（useWorkflowNodes）；`props.data`（IconNode）。
-- Produces: 節點 `data` 新增布林欄位 `nonInteractive`，由 `IconNode.vue` 讀取。
+- Consumes: 既有 `selectedNodeId`、`closeMenu()`、`expandDrawer()`（WorkflowWorkspace）；`node.id`（useWorkflowNodes）。
+- Produces: `model-*` 節點的 `class` 欄位帶 `node-non-interactive`，由 `WorkflowCanvas.vue` 的 `:deep` 樣式讀取。
+
+> 註（實作定案）：原設想在 `IconNode.vue` 內設 `cursor` 會被 vue-flow 的 `.vue-flow__node` 蓋掉，故改用節點 `class` + 畫布層 `:deep`。`IconNode.vue` 不動。
 
 - [ ] **Step 1: 父層守門 — 模型節點點擊不開面板**
 
@@ -226,14 +228,14 @@ git commit -m "fix: Settings 模型列 icon 與名稱垂直置中對齊"
   }
 ```
 
-- [ ] **Step 2: 節點 data 注入 `nonInteractive`**
+- [ ] **Step 2: 模型節點掛 `node-non-interactive` class**
 
-`useWorkflowNodes.ts` 的 `canvasNodes` computed（第 58-74 行），在回傳物件的 `data` 內（`flashType` 那行之後）加一欄：
+`useWorkflowNodes.ts` 的 `canvasNodes` computed（第 58-74 行），把回傳物件的 `class: ''` 改為條件式：
 
 ```ts
       return {
         ...node,
-        class: '',
+        class: node.id.startsWith('model-') ? 'node-non-interactive' : '',
         data: {
           ...node.data,
           status,
@@ -242,40 +244,26 @@ git commit -m "fix: Settings 模型列 icon 與名稱垂直置中對齊"
           highlightColor: highlighted ? color : null,
           isSelected: node.id === selectedNodeId.value,
           flashType: nodeFlash.value.get(node.id) ?? null,
-          nonInteractive: node.id.startsWith('model-'),
         },
       }
 ```
 
-- [ ] **Step 3: IconNode 讀旗標並套用游標**
+- [ ] **Step 3: 畫布層 `:deep` 游標規則**
 
-`IconNode.vue` 的 `<script setup>` 尾端（`flashType` computed，第 78 行之後）加：
-
-```ts
-  // 模型節點停用互動：游標不顯示可點暗示
-  const nonInteractive = computed(() => Boolean(props.data?.nonInteractive))
-```
-
-模板最外層 `.icon-node-wrap`（第 3-9 行）加上條件 class：
-
-```html
-  <div
-    class="icon-node-wrap"
-    :class="{ 'is-non-interactive': nonInteractive }"
-    :style="{
-      '--node-accent': accentColor,
-      ...(highlightColor ? { '--highlight-color': highlightColor } : {}),
-    }"
-  >
-```
-
-`<style scoped>` 加（放在 `.icon-node-wrap { … }` 規則之後即可）：
+`WorkflowCanvas.vue` 的 `<style>`，在 `:deep(.vue-flow__pane.dragging) { … }` 之後加：
 
 ```css
-  .is-non-interactive {
+  /* 可點的節點顯示手指；模型節點停用互動、顯示預設箭頭 */
+  :deep(.vue-flow__node) {
+    cursor: pointer;
+  }
+
+  :deep(.vue-flow__node.node-non-interactive) {
     cursor: default;
   }
 ```
+
+（vue-flow 會把節點物件的 `class` 併進 `.vue-flow__node` 的 classList，故 `.vue-flow__node.node-non-interactive` 選得到模型節點。）
 
 - [ ] **Step 4: 型別檢查 + lint**
 
@@ -286,20 +274,28 @@ Expected: 皆通過。
 
 `npm run dev` → 有模型節點的 workflow：
 - 點任一模型節點：**不**開啟面板（抽屜不展開）。
-- 滑鼠移到模型節點上：游標為預設箭頭（非手指／非可點暗示）。
-- 點其他節點（file / dataTable / settings / testScore 等）：面板照常開啟，行為不變。
+- 滑鼠移到模型節點上：游標為預設箭頭（非 grab、非手指）。
+- 點其他節點（file / dataTable / settings / testScore 等）：面板照常開啟；hover 顯示手指 `pointer`。
 
 - [ ] **Step 6: Commit（先問使用者）**
 
 取得確認後：
 
 ```bash
-git add frontend/src/components/workflow/WorkflowWorkspace.vue frontend/src/composables/workflow/useWorkflowNodes.ts frontend/src/components/workflow/IconNode.vue
+git add frontend/src/components/workflow/WorkflowWorkspace.vue frontend/src/composables/workflow/useWorkflowNodes.ts frontend/src/components/workflow/WorkflowCanvas.vue
 git commit -m "feat: 模型節點停用點選，不開面板且游標非可互動"
 ```
 
 ---
 
+### Task 4: 實作期間依 user 回饋追加（同屬批次 A）
+
+執行過程中 user 現場回饋，追加下列變更，皆已完成、`npm run build` 通過。檔案仍在批次 A 範圍內，併入對應 commit。
+
+- **「上一步」改為並排靠右**：`SettingsPanel.vue` 的 `.btn-back` 移除 `margin-right: auto`，讓它緊貼在主按鈕左邊（`.settings-footer` 維持 `justify-content: flex-end` + `gap`）。併入 Task 1 commit。
+- **Settings sticky footer**：`SettingsPanel.vue` 純 CSS——`.settings-wizard` 加 `flex:1; min-height:0`；`.wizard-tabs`、`.settings-footer` 加 `flex-shrink:0`；`.step-body` 加 `flex:1; min-height:0; overflow-y:auto`；`.settings-footer` 加 `border-top` + `padding-top:12px`。沿用 `.setting-area`/`.panel`/`.panel-body` 既有的 `flex:1; min-height:0` 高度鏈路。併入 Task 1 commit。
+- **步驟參數標籤改英文**：`SettingsPanel.vue` 模板三處 `param-key` 文字——「鄰居數」→ `n_neighbors`、「閾值」→ `threshold`、「維度」→ `n_components`，對齊 Preprocessor 面板。strategy 下拉選項文字暫留中文。可獨立成一個 commit（`fix: Settings 步驟參數標籤改用英文參數名`）或併入 Task 1，依 user 決定。
+
 ## 完成後
 
-三個 task 都完成、`npm run build` 與 `npm run lint` 全綠、手動驗證通過後，批次 A 收工。批次 B（跨節點上一步＋下游重置）另開 spec → plan。
+各 task 完成、`npm run build`（vue-tsc）通過、手動驗證通過後，批次 A 收工。`npm run lint` 為既有壞基線（全 repo 不符 vuetify preset），本批照現有檔案風格撰寫、未引入新種類問題，不在此批處理。批次 B（跨節點上一步＋下游重置）另開 spec → plan。
