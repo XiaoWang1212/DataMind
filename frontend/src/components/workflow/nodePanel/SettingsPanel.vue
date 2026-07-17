@@ -1,10 +1,6 @@
 <template>
   <section class="settings-wizard">
 
-    <button class="back-to-datatable" type="button" @click="emit('back-node')">
-      <span aria-hidden="true">←</span> 回 Data Table
-    </button>
-
     <!-- ── 步驟頁籤 ── -->
     <div class="wizard-tabs">
       <button
@@ -209,22 +205,31 @@
 
     <div class="settings-footer">
       <button
-        v-if="currentStep > 0"
         class="btn-back"
         type="button"
-        @click="currentStep -= 1"
+        @click="emit('back-node')"
       >
-        上一步
+        回 Data Table
       </button>
-      <button
-        class="btn-continue"
-        :class="{ 'btn-continue--disabled': isPrimaryDisabled }"
-        :disabled="isPrimaryDisabled"
-        type="button"
-        @click="handlePrimary"
-      >
-        {{ primaryLabel }}
-      </button>
+      <div class="settings-footer__right">
+        <button
+          v-if="currentStep > 0"
+          class="btn-back"
+          type="button"
+          @click="currentStep -= 1"
+        >
+          上一步
+        </button>
+        <button
+          class="btn-continue"
+          :class="{ 'btn-continue--disabled': isPrimaryDisabled }"
+          :disabled="isPrimaryDisabled"
+          type="button"
+          @click="handlePrimary"
+        >
+          {{ primaryLabel }}
+        </button>
+      </div>
     </div>
 
   </section>
@@ -414,23 +419,6 @@
     gap: 12px;
   }
 
-  .back-to-datatable {
-    flex-shrink: 0;
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 4px;
-    border: none;
-    background: none;
-    color: #005dff;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .back-to-datatable:hover {
-    text-decoration: underline;
-  }
 
   /* 步驟頁籤 */
   .wizard-tabs {
@@ -799,10 +787,16 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 10px;
     padding-top: 12px;
     border-top: 1px solid rgba(0, 93, 255, 0.1);
+  }
+
+  .settings-footer__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .btn-continue {
