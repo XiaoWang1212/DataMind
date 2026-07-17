@@ -284,6 +284,7 @@
   }
 
   function handleApplyColumnConfig (): void {
+    if (pausedAtNodeId.value !== 'dataTable') return
     dataTableApplied.value = true
     workflowError.value = null
     markProjectRunning()

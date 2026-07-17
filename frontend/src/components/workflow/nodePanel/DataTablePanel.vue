@@ -130,8 +130,8 @@
           </button>
           <button
             class="btn-apply"
-            :class="{ 'btn-apply--disabled': !hasTarget }"
-            :disabled="!hasTarget"
+            :class="{ 'btn-apply--disabled': !hasTarget || !props.loading }"
+            :disabled="!hasTarget || !props.loading"
             type="button"
             @click="applyColumnSettings"
           >
