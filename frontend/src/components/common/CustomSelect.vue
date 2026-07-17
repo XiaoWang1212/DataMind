@@ -10,6 +10,7 @@
       role="combobox"
       aria-haspopup="listbox"
       :aria-expanded="open"
+      :aria-activedescendant="open && activeIndex >= 0 ? `${uid}-opt-${activeIndex}` : undefined"
       :disabled="disabled"
       @click="toggle"
       @keydown="onTriggerKeydown"
@@ -33,6 +34,7 @@
       >
         <li
           v-for="(opt, i) in options"
+          :id="`${uid}-opt-${i}`"
           :key="opt.value"
           class="cs-option"
           :class="{
@@ -70,6 +72,9 @@
     'update:modelValue': [value: string]
     'change': [value: string]
   }>()
+
+  let uidSeq = 0
+  const uid = `cs-${(uidSeq += 1)}-${Math.random().toString(36).slice(2, 8)}`
 
   const triggerRef = ref<HTMLElement | null>(null)
   const popupRef = ref<HTMLElement | null>(null)
@@ -208,6 +213,10 @@
     if (triggerRef.value?.contains(t) || popupRef.value?.contains(t)) return
     close()
   }
+
+  watch(() => props.disabled, isDisabled => {
+    if (isDisabled) close()
+  })
 
   watch(open, isOpen => {
     if (isOpen) {
