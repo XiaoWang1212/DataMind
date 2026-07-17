@@ -86,16 +86,12 @@
                       :class="{
                         'role-select--attention': props.loading && !hasTarget && !roleSelectTouched,
                       }"
+                      @change="onRoleChange(index)"
                       @focus="handleRoleSelectFocus"
                     >
                       <option
                         v-for="role in roleOptions"
                         :key="role"
-                        :disabled="
-                          role === 'target' &&
-                            hasOtherTarget(index) &&
-                            column.role !== 'target'
-                        "
                         :value="role"
                       >
                         {{ roleLabels[role] }}
@@ -247,11 +243,6 @@
     return [...new Set(candidates)]
   }
 
-  function hasOtherTarget (index: number): boolean {
-    return columnSettings.value.some(
-      (item, itemIndex) => itemIndex !== index && item.role === 'target',
-    )
-  }
 
   function buildColumnSettings (useExisting = true): void {
     columnSettings.value = previewColumns.value.map((header, index) => {
@@ -288,6 +279,15 @@
 
   function applyColumnSettings (): void {
     emit('apply-column-config')
+  }
+
+  function onRoleChange (index: number): void {
+    if (columnSettings.value[index]?.role !== 'target') return
+    columnSettings.value.forEach((col, i) => {
+      if (i !== index && col.role === 'target') {
+        col.role = 'feature'
+      }
+    })
   }
 
   function getColumnRawValues (index: number): string[] {
