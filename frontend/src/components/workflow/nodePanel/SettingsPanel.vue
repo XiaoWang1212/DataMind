@@ -419,7 +419,6 @@
     gap: 12px;
   }
 
-
   /* 步驟頁籤 */
   .wizard-tabs {
     flex-shrink: 0;

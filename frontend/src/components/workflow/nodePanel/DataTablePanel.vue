@@ -243,7 +243,6 @@
     return [...new Set(candidates)]
   }
 
-
   function buildColumnSettings (useExisting = true): void {
     columnSettings.value = previewColumns.value.map((header, index) => {
       const columnValues = previewDataRows.value.map(row => row[index] ?? '')

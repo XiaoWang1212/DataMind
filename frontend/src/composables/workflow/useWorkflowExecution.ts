@@ -262,9 +262,9 @@ export function useWorkflowExecution(deps: {
       workflowError.value = null
       workflowResult.value = null
 
-      const settledSettings = new Map(nodeStatuses.value)
-      settledSettings.set('settings', 'finished')
-      nodeStatuses.value = settledSettings
+      const next = new Map(nodeStatuses.value)
+      next.set('settings', 'finished')
+      nodeStatuses.value = next
 
       const steps = buildDemoSteps(nodes.value)
       const settingsStep = steps.find(s => s.nodeIds.includes('settings'))
