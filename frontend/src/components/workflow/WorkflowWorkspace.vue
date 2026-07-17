@@ -299,15 +299,30 @@
     closeMenu()
   }
 
-  function handleBackToDataTable (): void {
+  // 把流程狀態退回 dataTable 這步（繼續按鈕靠 pausedAtNodeId 判斷能不能按）
+  function snapFlowToDataTable (): void {
     pausedAtNodeId.value = 'dataTable'
     const next = new Map(nodeStatuses.value)
     next.set('dataTable', 'running')
     next.delete('settings')
     nodeStatuses.value = next
+  }
+
+  function handleBackToDataTable (): void {
+    snapFlowToDataTable()
     selectedNodeId.value = 'dataTable'
     expandDrawer()
     saveState()
+  }
+
+  // 回退後若真的改了欄位設定，下游全部重來：清掉 Settings 設定並移除 model / pipeline / computeCi 節點
+  function clearSettingsDownstream (): void {
+    nodes.value = nodes.value
+      .filter(n => !n.id.startsWith('model-') && n.id !== 'computeCi')
+      .map(n => n.id === 'settings'
+        ? { ...n, data: { ...n.data, config: { ...n.data.config, preprocessing: [], featureEngineering: [], models: [], compute_ci: false } } }
+        : n)
+    syncPipelineCanvasNodes()
   }
 
   function handleAddModel (modelName: string): void {
@@ -424,6 +439,10 @@
       // 只有真的改了（且原本已 Apply）才翻回旗標；面板重掛 emit 相同設定不算改動
       if (dataTableApplied.value && !columnConfigEqual(prevColumnConfig, payload.config.columnConfig)) {
         dataTableApplied.value = false
+        clearSettingsDownstream()
+        // 不管是用「回 Data Table」按鈕還是直接點節點回來的，只要真的改了就把流程拉回 dataTable，
+        // 讓「繼續」重新可按、能重新往前走
+        snapFlowToDataTable()
       }
     }
     saveState()
