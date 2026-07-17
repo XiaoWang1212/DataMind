@@ -156,11 +156,10 @@
     }
   }, { immediate: true })
 
-  watch([currentModel, () => selectedFold.value], ([model]) => {
+  // 換模型（或結果載入）時，fold 一律重置為該模型的第一個
+  watch(currentModel, model => {
     const splits = model?.splits ?? []
-    if (splits.length > 0 && !splits.some(s => s.split_name === selectedFold.value)) {
-      selectedFold.value = splits[0]!.split_name
-    }
+    selectedFold.value = splits[0]?.split_name ?? ''
   }, { immediate: true })
 
   function formatImportance (value: number): string {
