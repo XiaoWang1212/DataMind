@@ -36,8 +36,10 @@ emits: {
 - **關閉**：點選項、點外部、按 Esc、trigger 捲出視窗；視窗 `scroll`（capture）/`resize` 時重新定位（trigger 離開視窗就關）。
 - **鍵盤**：Trigger focus 時 Enter/Space/↓ 開啟；開啟後 ↑↓ 移動 highlight、Enter 選定、Esc 關、Tab 關。
 - **Type-ahead**：清單開啟時打字累積到一個 buffer（約 500ms 無輸入就清空），highlight 跳到第一個 `label` 以 buffer 開頭（不分大小寫）的選項。
-- **a11y**：trigger `role="combobox"` + `aria-haspopup="listbox"` + `aria-expanded`；浮層 `role="listbox"`；每項 `role="option"` + `aria-selected`；停用項 `aria-disabled`。
-- **樣式**：對齊現有輸入元件（白底、`#005dff` 藍、圓角 8px、border `rgba(0,93,255,.18)`）；選定項與 hover 項高亮；`disabled` 選項不可點、淡化。
+- **a11y**：trigger `role="combobox"` + `aria-haspopup="listbox"` + `aria-expanded` + `aria-activedescendant`（指向目前 highlight 選項的 id，虛擬焦點模式，焦點留在 trigger）；浮層 `role="listbox"`；每項 `role="option"` + `aria-selected` + 唯一 `id`；停用項 `aria-disabled`。
+- **開啟中被 disable**：`disabled` 若在浮層開啟時翻成 `true`，watch 立即關閉浮層（避免卡在停用卻可互動的狀態）。
+- **展開/收合動畫**：仿 jQuery `slideToggle` 的高度滑動——用 `<Transition :css="false">` 的 JS hook + Web Animations 滑動浮層高度（`0 ↔ min(內容高, 240)`）＋淡入淡出。開 ~100ms `ease-out`、關 ~90ms `ease-in`；快速連點以 `getAnimations().cancel()` 防打架；`prefers-reduced-motion` 直接跳過動畫。（高度不定，故用 JS 量測而非純 CSS transition。）
+- **樣式**：對齊現有輸入元件（白底、`#005dff` 藍、圓角 8px、border `rgba(0,93,255,.18)`）；選定項與 hover 項高亮；`disabled` 選項不可點、淡化。chevron 展開時轉 180°。
 
 ## 2. 換掉 6 個原生 select
 
@@ -61,10 +63,11 @@ emits: {
 
 **改法**（`FeatureImportancePanel.vue`）：
 - **移除**面板內重複的 `<h4>Feature Importance</h4>`（panel header 已有標題）。
-- 頂部**兩顆 `CustomSelect` 並排**：左「模型」、右「fold」。
+- 頂部控制列**兩組並排**，每組是 `label ｜ CustomSelect` 的**行內橫向**排法（label 在下拉左邊，不是上下堆疊）：「模型 [下拉]」「fold [下拉]」，下拉固定寬 ~160px。用 `<div>` 包（不是 `<label>`——`<label>` 包自製 combobox 會讓點文字也觸發展開）。
   - 模型 options＝各 `model_name`；fold options＝**目前選定模型**的 `splits` 的 `split_name`。
-  - 預設：第一個模型 + 它的第一個 fold。切換模型時 fold 重置為該模型的第一個。
-- 下方只顯示 **(選定模型, 選定 fold)** 那一組的 feature/importance 表（沿用現有 `importance-table` 樣式）。
+  - 預設：第一個模型 + 它的第一個 fold。切換模型時 fold **一律**重置為該模型的第一個（`watch(currentModel)` 無條件設；因各模型 split 名稱相同，不能只在「舊 fold 不存在」時才重置）。
+- 下方只顯示 **(選定模型, 選定 fold)** 那一組的 feature/importance 表，**沿用 Test & Score 的共用 result-table 樣式**（圓角外框卡片、`#f8fafc` 表頭、列間分隔線、Importance 欄 `tabular-nums` 右對齊、hover 高亮），維持結果面板視覺一致。
+- 面板頂部不留多餘上方留白（`padding: 0`），下拉貼近上緣。
 - **不做跨折平均**——逐折檢視（組員拍板）。
 - 空狀態（無結果）：「尚未有特徵重要性結果，請執行 Workflow 後再查看。」；選定 fold 無資料時：「該抽樣沒有可用的特徵重要性資訊。」
 

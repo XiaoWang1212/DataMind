@@ -951,6 +951,18 @@ git commit -m "feat: render Feature Engineering panel as cards instead of raw JS
 
 ---
 
+## 實作期間的追加與調整（2026-07-17～18）
+
+執行與 review 過程中的偏離與追加，皆已完成、`npm run build` 通過：
+
+- **CustomSelect（Task 1）review 後補**：`disabled` 中途翻 true 時 watch 立即關閉浮層；加 `aria-activedescendant` + 選項唯一 `id`（虛擬焦點 a11y）。
+- **CustomSelect 展開/收合動畫（user 追加）**：仿 jQuery `slideToggle` 的高度滑動——`<Transition :css="false">` 的 JS hook + Web Animations 滑動浮層高度（`0 ↔ min(內容高, 240)`）＋淡入淡出，開 ~100ms `ease-out`／關 ~90ms `ease-in`，`getAnimations().cancel()` 防連點打架，`prefers-reduced-motion` 跳過。（中途試過「整體 pop」「階梯式 cascade」，最後定為 slideToggle 式。）
+- **Feature Importance（Task 4）review 後修**：fold 重置改為 `watch(currentModel)` **無條件**設第一個 fold（原本只在舊 fold 不存在時才重置，但各模型 split 名稱相同故失效）。
+- **Feature Importance 視覺（user 追加）**：控制列改成 `label ｜ 下拉` 行內橫排、兩組並排、下拉固定 ~160px、外層 `<label>` 改 `<div>`；表格改用 Test & Score 的共用 result-table 樣式；面板 `padding: 0` 收掉上方留白。
+- **Settings 下拉雙層邊框（最終全分支 review 抓到）修正**：`.type-select`/`.param-select` 原生 select 樣式（border/chevron/height）其實會套到 CustomSelect 外層 div（Vue scoped CSS 會把父層 scope 套到子元件根），造成框中框＋兩個箭頭；已把這兩條收斂成只留 `flex/min-width` 佈局。
+
+**延後（記錄備查）**：CustomSelect 浮層水平捲出不自動關（只判垂直）、`options` 開啟中縮短時 `activeIndex` 可能過界（已防崩、僅掉 highlight）、dead `uidSeq`；下拉無 `aria-label`；換 select 後殘留的 dead CSS（DataTable `.column-settings-table select`、`.role-select--attention`）。
+
 ## 完成後
 
 五個 task 完成、`npm run build` 通過、手動驗證通過後，批次 C 收工。批次 A/B/C 合起來就是這輪 workflow UI/state 的全部改動。
