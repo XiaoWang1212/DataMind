@@ -24,6 +24,7 @@
     </button>
 
     <Teleport to="body">
+      <Transition :css="false" @enter="onPopupEnter" @leave="onPopupLeave">
       <ul
         v-if="open"
         ref="popupRef"
@@ -51,6 +52,7 @@
           {{ opt.label }}
         </li>
       </ul>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -212,6 +214,52 @@
     const t = e.target as Node
     if (triggerRef.value?.contains(t) || popupRef.value?.contains(t)) return
     close()
+  }
+
+  // 展開/收合
+  const SLIDE_OPEN_MS = 90
+  const SLIDE_CLOSE_MS = 90
+
+  function prefersReduced (): boolean {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+
+  function onPopupEnter (el: Element, done: () => void): void {
+    const ul = el as HTMLElement
+    if (prefersReduced()) {
+      done()
+      return
+    }
+    ul.getAnimations().forEach(a => a.cancel())
+    const target = Math.min(ul.scrollHeight, 240)
+    ul.style.overflow = 'hidden'
+    const anim = ul.animate(
+      [{ height: '0px', opacity: 0 }, { height: `${target}px`, opacity: 1 }],
+      { duration: SLIDE_OPEN_MS, easing: 'ease-out' },
+    )
+    anim.onfinish = () => {
+      ul.style.overflow = ''
+      done()
+    }
+  }
+
+  function onPopupLeave (el: Element, done: () => void): void {
+    const ul = el as HTMLElement
+    if (prefersReduced()) {
+      done()
+      return
+    }
+    ul.getAnimations().forEach(a => a.cancel())
+    const start = Math.min(ul.scrollHeight, 240)
+    ul.style.overflow = 'hidden'
+    const anim = ul.animate(
+      [{ height: `${start}px`, opacity: 1 }, { height: '0px', opacity: 0 }],
+      { duration: SLIDE_CLOSE_MS, easing: 'ease-in' },
+    )
+    anim.onfinish = () => {
+      ul.style.overflow = ''
+      done()
+    }
   }
 
   watch(() => props.disabled, isDisabled => {
