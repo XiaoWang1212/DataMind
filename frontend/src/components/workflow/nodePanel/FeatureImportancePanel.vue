@@ -1,37 +1,39 @@
 <template>
   <section class="feature-importance-panel">
     <div v-if="groupedResults.length > 0" class="fi-controls">
-      <label class="fi-field">
+      <div class="fi-field">
         <span class="fi-field__label">模型</span>
         <CustomSelect
           v-model="selectedModel"
+          class="fi-select"
           :options="modelOptions"
         />
-      </label>
-      <label class="fi-field">
+      </div>
+      <div class="fi-field">
         <span class="fi-field__label">fold</span>
         <CustomSelect
           v-model="selectedFold"
+          class="fi-select"
           :options="foldOptions"
         />
-      </label>
+      </div>
     </div>
 
     <div
       v-if="currentImportance.length > 0"
-      class="importance-table"
+      class="fi-table"
     >
-      <div class="importance-row importance-row--header">
-        <div class="importance-cell">Feature</div>
-        <div class="importance-cell">Importance</div>
+      <div class="fi-row fi-row--header">
+        <div class="fi-cell">Feature</div>
+        <div class="fi-cell fi-cell--num">Importance</div>
       </div>
       <div
         v-for="item in currentImportance"
         :key="item.feature"
-        class="importance-row"
+        class="fi-row"
       >
-        <div class="importance-cell importance-cell--feature">{{ item.feature }}</div>
-        <div class="importance-cell importance-cell--value">{{ formatImportance(item.importance) }}</div>
+        <div class="fi-cell fi-cell--feature">{{ item.feature }}</div>
+        <div class="fi-cell fi-cell--num">{{ formatImportance(item.importance) }}</div>
       </div>
     </div>
 
@@ -171,64 +173,89 @@
   .feature-importance-panel {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 10px 0;
+    gap: 12px;
+    padding: 0;
   }
 
+  /* 控制列：模型｜下拉  fold｜下拉，label 在下拉左邊、兩組並排 */
   .fi-controls {
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
   }
 
   .fi-field {
-    flex: 1;
-    min-width: 0;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 8px;
   }
 
   .fi-field__label {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 13px;
+    color: #475569;
+    white-space: nowrap;
   }
 
-  .importance-table {
+  .fi-select {
+    width: 160px;
+  }
+
+  /* 表格沿用 Test & Score 的圓角卡片樣式，維持結果面板一致 */
+  .fi-table {
     display: flex;
     flex-direction: column;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
   }
 
-  .importance-row {
+  .fi-row {
     display: grid;
-    grid-template-columns: 1fr 120px;
+    grid-template-columns: 1fr 140px;
     gap: 0;
     align-items: center;
-    padding: 12px 16px;
   }
 
-  .importance-row--header {
-    font-weight: 700;
-    background: #f1f5f9;
-    color: #0f172a;
+  .fi-row:not(:last-child) {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   }
 
-  .importance-cell {
+  .fi-row:not(.fi-row--header):hover {
+    background: rgba(0, 93, 255, 0.035);
+  }
+
+  .fi-row--header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  .fi-row--header .fi-cell {
+    padding: 8px 14px;
+  }
+
+  .fi-cell {
+    padding: 11px 14px;
     color: #0f172a;
     font-size: 13px;
+    min-width: 0;
     word-break: break-word;
   }
 
-  .importance-cell--feature {
-    color: #1f2937;
+  .fi-cell--feature {
+    color: #1e293b;
   }
 
-  .importance-cell--value {
+  .fi-cell--num {
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   .summary-empty {
     color: #6b7280;
     font-size: 13px;
-    padding: 14px 16px;
   }
 </style>
