@@ -505,25 +505,10 @@
     gap: 6px;
   }
 
+  /* 只保留 add-bar 的 flex 佈局，外觀交給 CustomSelect 自己畫 */
   .type-select {
     flex: 1;
-    height: 32px;
-    border: 1px solid rgba(0, 93, 255, 0.18);
-    border-radius: 8px;
-    padding: 0 28px 0 8px;
-    font-size: 12px;
-    background-color: rgba(255, 255, 255, 0.9);
-    color: #0f172a;
-    outline: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23005DFF' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 6px center;
-  }
-
-  .type-select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    min-width: 0;
   }
 
   .add-btn {
@@ -616,17 +601,6 @@
   .item-params .param-select {
     flex: 1;
     min-width: 0;
-  }
-
-  .param-select {
-    height: 30px;
-    border: 1px solid rgba(0, 93, 255, 0.15);
-    border-radius: 6px;
-    padding: 0 8px;
-    font-size: 13px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #0f172a;
-    outline: none;
   }
 
   .param-pair {
