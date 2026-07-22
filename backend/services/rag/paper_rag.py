@@ -372,10 +372,19 @@ class PaperRAGService:
             )
 
         # 前處理流程
-        for i, pv in enumerate(mining_results.get("preprocess_variants", []), 1):
-            pp = "、".join(s.get("type", "") for s in pv.get("preprocess_steps", [])) or "無"
-            fe = "、".join(s.get("type", "") for s in pv.get("feature_engineering_steps", [])) or "無"
-            parts.append(f"【前處理流程 {i}】\n預處理：{pp}\n特徵工程：{fe}")
+        # 注意：不能讀 mining_results["preprocess_variants"]——那是 workflow_service.py 直接把
+        # 原始 preprocess_pipelines（List[List[Dict]]，未與 feature engineering 配對）塞進去的，
+        # 每個元素本身就是 list、不是 dict，對它呼叫 .get() 會噴 AttributeError。
+        # 正確配對好的 preprocess_steps / feature_engineering_steps 其實在 results 的每一筆結果裡。
+        seen_pipeline_indices: set = set()
+        for r in mining_results.get("results", []):
+            idx = r.get("preprocess_pipeline_index")
+            if idx is None or idx in seen_pipeline_indices:
+                continue
+            seen_pipeline_indices.add(idx)
+            pp = "、".join(s.get("type", "") for s in r.get("preprocess_steps", [])) or "無"
+            fe = "、".join(s.get("type", "") for s in r.get("feature_engineering_steps", [])) or "無"
+            parts.append(f"【前處理流程 {idx + 1}】\n預處理：{pp}\n特徵工程：{fe}")
 
         # 各模型結果
         valid_results = [r for r in mining_results.get("results", []) if "error" not in r]
