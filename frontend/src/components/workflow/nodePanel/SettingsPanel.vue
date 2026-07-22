@@ -13,6 +13,11 @@
       >
         <span class="wizard-tab__num">{{ i + 1 }}</span>
         <span class="wizard-tab__text">{{ label }}</span>
+        <span
+          v-if="label === '模型' && props.models.length === 0"
+          class="wizard-tab__required"
+          title="必須新增至少一個模型"
+        >必填</span>
       </button>
     </div>
 
@@ -30,19 +35,28 @@
 
       <div v-if="localPreprocessing.length > 0" class="item-list">
         <div v-for="(step, i) in localPreprocessing" :key="i" class="item-row">
-          <span class="item-idx">{{ i + 1 }}</span>
-          <span class="item-name">{{ PREPROCESS_LABELS[step.type as string] ?? step.type }}</span>
-          <div class="item-params">
+          <div class="item-head">
+            <span class="item-idx">{{ i + 1 }}</span>
+            <span class="item-name">{{ PREPROCESS_LABELS[step.type as string] ?? step.type }}</span>
+            <button class="del-btn" title="移除" type="button" @click="removePreprocessStep(i)">✕</button>
+          </div>
+          <div
+            v-if="step.type === 'fill_na' || step.type === 'knn_impute' || step.type === 'remove_outliers_iqr' || step.type === 'remove_outliers_zscore'"
+            class="item-params"
+          >
             <template v-if="step.type === 'fill_na'">
-              <select
-                class="param-select"
-                :value="step.strategy ?? 'mean'"
-                @change="patchPreprocessStep(i, 'strategy', ($event.target as HTMLSelectElement).value)"
-              >
-                <option value="mean">均值</option>
-                <option value="median">中位數</option>
-                <option value="mode">眾數</option>
-              </select>
+              <div class="param-pair">
+                <span class="param-key">strategy</span>
+                <select
+                  class="param-select"
+                  :value="step.strategy ?? 'mean'"
+                  @change="patchPreprocessStep(i, 'strategy', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="mean">均值</option>
+                  <option value="median">中位數</option>
+                  <option value="mode">眾數</option>
+                </select>
+              </div>
             </template>
             <template v-else-if="step.type === 'knn_impute'">
               <div class="param-pair">
@@ -70,7 +84,6 @@
               </div>
             </template>
           </div>
-          <button class="del-btn" title="移除" type="button" @click="removePreprocessStep(i)">✕</button>
         </div>
       </div>
       <p v-else class="empty-hint">尚未加入任何前處理步驟</p>
@@ -90,9 +103,15 @@
 
       <div v-if="localFE.length > 0" class="item-list">
         <div v-for="(step, i) in localFE" :key="i" class="item-row">
-          <span class="item-idx">{{ i + 1 }}</span>
-          <span class="item-name">{{ FEATURE_LABELS[step.type as string] ?? step.type }}</span>
-          <div class="item-params">
+          <div class="item-head">
+            <span class="item-idx">{{ i + 1 }}</span>
+            <span class="item-name">{{ FEATURE_LABELS[step.type as string] ?? step.type }}</span>
+            <button class="del-btn" title="移除" type="button" @click="removeFEStep(i)">✕</button>
+          </div>
+          <div
+            v-if="step.type === 'select_relevant_features' || step.type === 'pca'"
+            class="item-params"
+          >
             <template v-if="step.type === 'select_relevant_features'">
               <div class="param-pair">
                 <span class="param-key">k</span>
@@ -119,7 +138,6 @@
               </div>
             </template>
           </div>
-          <button class="del-btn" title="移除" type="button" @click="removeFEStep(i)">✕</button>
         </div>
       </div>
       <p v-else class="empty-hint">尚未加入任何特徵工程步驟</p>
@@ -145,10 +163,11 @@
 
       <div v-if="props.models.length > 0" class="item-list">
         <div v-for="model in props.models" :key="modelName(model)" class="item-row">
-          <span class="item-idx item-idx--dot" />
-          <span class="item-name">{{ modelName(model) }}</span>
-          <div class="item-params" />
-          <button class="del-btn" title="移除" type="button" @click="emit('remove-model', modelName(model))">✕</button>
+          <div class="item-head item-head--top">
+            <span class="item-idx item-idx--dot" />
+            <span class="item-name">{{ modelName(model) }}</span>
+            <button class="del-btn" title="移除" type="button" @click="emit('remove-model', modelName(model))">✕</button>
+          </div>
         </div>
       </div>
       <p v-else class="empty-hint">尚未加入任何模型</p>
@@ -424,6 +443,16 @@
     white-space: nowrap;
   }
 
+  .wizard-tab__required {
+    font-size: 9px;
+    font-weight: 700;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border-radius: 6px;
+    padding: 1px 4px;
+    white-space: nowrap;
+  }
+
   /* Step 內容 */
   .step-body {
     display: flex;
@@ -481,20 +510,39 @@
   }
 
   .item-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    align-items: stretch;
   }
 
   .item-row {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px;
     background: rgba(0, 93, 255, 0.04);
     border: 1px solid rgba(0, 93, 255, 0.1);
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 13px;
+  }
+
+  .item-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* 模型卡片：名稱換行時，圓圈與叉叉維持在最上面一行對齊 */
+  .item-head--top {
+    align-items: flex-start;
+  }
+
+  /* 圓圈(18px)與叉叉(22px)高度不同，微調上緣讓兩者中線對齊名稱首行 */
+  .item-head--top .item-idx {
+    margin-top: 2px;
   }
 
   .item-idx {
@@ -517,27 +565,35 @@
 
   .item-name {
     flex: 1;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.3;
     color: #1e293b;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-break: break-word;
   }
 
   .item-params {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(0, 93, 255, 0.14);
+  }
+
+  .item-params .param-select {
+    flex: 1;
+    min-width: 0;
   }
 
   .param-select {
-    height: 26px;
+    height: 30px;
     border: 1px solid rgba(0, 93, 255, 0.15);
     border-radius: 6px;
-    padding: 0 6px;
-    font-size: 11px;
+    padding: 0 8px;
+    font-size: 13px;
     background: rgba(255, 255, 255, 0.9);
     color: #0f172a;
     outline: none;
@@ -546,22 +602,22 @@
   .param-pair {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .param-key {
-    font-size: 10px;
+    font-size: 12px;
     color: #64748b;
     white-space: nowrap;
   }
 
   .param-num {
-    width: 54px;
-    height: 26px;
+    width: 68px;
+    height: 30px;
     border: 1px solid rgba(0, 93, 255, 0.15);
     border-radius: 6px;
-    padding: 0 6px;
-    font-size: 11px;
+    padding: 0 8px;
+    font-size: 13px;
     text-align: center;
     outline: none;
     background: rgba(255, 255, 255, 0.9);
@@ -701,7 +757,9 @@
 
   .settings-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 10px;
     padding-top: 4px;
   }
 

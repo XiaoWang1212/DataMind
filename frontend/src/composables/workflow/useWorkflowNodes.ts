@@ -67,6 +67,7 @@ export function useWorkflowNodes(
           colorClass: status === 'finished' ? 'node-yellow' : node.data.colorClass,
           highlighted,
           highlightColor: highlighted ? color : null,
+          isSelected: node.id === selectedNodeId.value,
           flashType: nodeFlash.value.get(node.id) ?? null,
         },
       }

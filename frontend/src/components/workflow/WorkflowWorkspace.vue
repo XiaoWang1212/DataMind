@@ -61,7 +61,6 @@
       <div
         v-if="selectedNode"
         class="options-drawer"
-        :class="{ 'options-drawer--expanded': isExpanded }"
         :style="drawerStyle"
         @wheel.stop
       >
@@ -82,6 +81,7 @@
             >
               <WorkflowOptionsPanel
                 :available-models="availableModelOptions"
+                :drawer-stage="drawerStage"
                 :file="workflowDataFile"
                 :model-options-loading="modelOptionsLoading"
                 :paused-node-id="pausedAtNodeId"
@@ -175,7 +175,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { isExpanded, style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer } = useDrawerDrag()
+  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
@@ -401,6 +401,14 @@
     })
     if (payload.nodeId === 'settings' && 'compute_ci' in payload.config) {
       syncComputeCiNode()
+    }
+    if (payload.nodeId === 'dataTable' && 'columnConfig' in payload.config) {
+      const columnConfig = payload.config.columnConfig
+      const hasTarget = Array.isArray(columnConfig)
+        && columnConfig.some(col => (col as { role?: string })?.role === 'target')
+      if (!hasTarget) {
+        dataTableApplied.value = false
+      }
     }
     saveState()
   }
@@ -786,10 +794,10 @@
     transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-  }
-
-  .options-drawer--expanded {
-    max-height: 54vh;
+    /* 安全上限：實際高度由 useDrawerDrag 精確控制各段大小，
+       這裡固定用 full 段（90vh）當唯一上限，避免用分段 class
+       卡高度時，收合到比自己上限還小的段落會被瞬間夾住而不是平滑動畫 */
+    max-height: 90vh;
   }
 
   .options-drawer__scroll {
@@ -799,10 +807,19 @@
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    /* 永遠保留捲軸空間（兩側等寬），避免捲軸出現/消失時內容寬度跳動、且左右留白對稱 */
+    scrollbar-gutter: stable both-edges;
     overscroll-behavior: contain;
     padding-bottom: 16px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.72) transparent;
+  }
+
+  .drawer-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .options-drawer__scroll::-webkit-scrollbar {

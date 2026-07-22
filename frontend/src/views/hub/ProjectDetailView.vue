@@ -34,6 +34,11 @@
             <div class="result-label">關鍵發現</div>
             <div class="result-value">{{ project.keyFinding }}</div>
           </div>
+          <div class="result-divider" />
+          <RouterLink class="view-result-btn" :to="`/hub/projects/${project.id}/result`">
+            查看完整結果
+            <v-icon icon="mdi-arrow-right" size="14" />
+          </RouterLink>
         </template>
 
         <!-- Running -->
@@ -226,6 +231,21 @@
 .result-value.large {
   font-size: 30px;
   font-weight: 700;
+}
+
+.view-result-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #2347c5;
+  text-decoration: none;
+}
+
+.view-result-btn:hover {
+  color: #1b3ca0;
 }
 
 /* ── Running state ── */

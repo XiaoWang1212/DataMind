@@ -2,7 +2,10 @@
   <!-- 自訂節點 UI：左 target / 右 source + 圓形 icon + label -->
   <div
     class="icon-node-wrap"
-    :style="highlightColor ? { '--highlight-color': highlightColor } : {}"
+    :style="{
+      '--node-accent': accentColor,
+      ...(highlightColor ? { '--highlight-color': highlightColor } : {}),
+    }"
   >
     <!-- 右側輸出點：連到下一個節點 -->
     <Handle
@@ -28,7 +31,9 @@
     </div>
 
     <!-- 節點標籤（支援換行） -->
-    <div class="icon-node-label">{{ label }}</div>
+    <div class="icon-node-label">
+      <span :class="{ 'label-selected': isSelected }">{{ label }}</span>
+    </div>
   </div>
 </template>
 
@@ -50,8 +55,20 @@
     String(props.data?.colorClass ?? 'node-purple'),
   )
 
+  // 選取指示線的顏色，對應各 colorClass 的底色（壓深過，淺色在近白的畫布上看不見）
+  const LABEL_ACCENTS: Record<string, string> = {
+    'node-pending': '#7c88a8',
+    'node-purple': '#005dff',
+    'node-yellow': '#c2a935',
+  }
+  const accentColor = computed(() => LABEL_ACCENTS[colorClass.value] ?? '#005dff')
+
   // demo 動畫狀態（running 時顯示 spinner）
   const status = computed(() => props.data?.status ?? null)
+
+  // 用 data.isSelected 而非 Vue Flow 的 props.selected：
+  // WorkflowCanvas 設了 elements-selectable="false"，內建的 selected 永遠是 false
+  const isSelected = computed(() => Boolean(props.data?.isSelected))
 
   // Settings 步驟高亮外框
   const highlighted = computed(() => Boolean(props.data?.highlighted))
@@ -98,7 +115,7 @@
   }
 
   .flash-add::before {
-    background: #10b981;
+    background: #06b6d4;
   }
 
   .flash-remove::before {
@@ -155,6 +172,45 @@
     font-weight: 600;
     color: #242424;
     white-space: pre-line;
+  }
+
+  /* inline-block 讓 span 高度貼合文字；掛在外層 .icon-node-label 的話，
+     它的 min-height 會把線推得離單行標籤很遠 */
+  .label-selected {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 8px;
+  }
+
+  .label-selected::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 34px;
+    height: 2px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    background: var(--node-accent, #005dff);
+    animation: underline-in 0.2s ease-out;
+  }
+
+  @keyframes underline-in {
+    from {
+      transform: translateX(-50%) scaleX(0);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateX(-50%) scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .label-selected::after {
+      animation: none;
+    }
   }
 
   .node-yellow {

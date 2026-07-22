@@ -28,7 +28,7 @@ export const INITIAL_NODES: FlowNode[] = [
       icon: "mdi-table",
       label: "Data\nTable",
       colorClass: "node-pending",
-      description: "上傳資料預覽",
+      description: "設定欄位型別與目標變數",
       fields: [],
       config: {},
     },

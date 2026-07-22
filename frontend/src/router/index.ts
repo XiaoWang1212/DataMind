@@ -69,6 +69,11 @@ const router = createRouter({
           component: () => import("@/views/hub/ProjectDetailView.vue"),
         },
         {
+          path: "projects/:id/result",
+          name: "hub-project-result",
+          component: () => import("@/views/hub/ResultView.vue"),
+        },
+        {
           path: "settings",
           name: "hub-settings",
           component: () => import("@/views/hub/SettingsView.vue"),
