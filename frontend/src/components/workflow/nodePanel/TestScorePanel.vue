@@ -96,7 +96,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 0;
+    padding: 0 0 16px;
   }
 
   .workflow-summary h4 {

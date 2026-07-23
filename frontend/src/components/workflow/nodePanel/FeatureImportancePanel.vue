@@ -174,7 +174,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 0;
+    padding: 0 0 16px;
   }
 
   /* 控制列：模型｜下拉  fold｜下拉，label 在下拉左邊、兩組並排 */
