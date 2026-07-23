@@ -155,3 +155,24 @@ export function loadWorkflowStateFromStorage (
     return null
   }
 }
+
+const RESULT_INSIGHT_KEY = 'resultInsight'
+
+export function saveResultInsightToStorage (projectId: string, insight: string): void {
+  const key = k(RESULT_INSIGHT_KEY, projectId)
+  try {
+    localStorage.setItem(key, insight)
+  } catch (error) {
+    console.error('[WF-SAVE] 無法儲存洞察文字:', error)
+  }
+}
+
+export function loadResultInsightFromStorage (projectId: string): string | null {
+  const key = k(RESULT_INSIGHT_KEY, projectId)
+  return localStorage.getItem(key)
+}
+
+export function clearResultInsightFromStorage (projectId: string): void {
+  const key = k(RESULT_INSIGHT_KEY, projectId)
+  localStorage.removeItem(key)
+}

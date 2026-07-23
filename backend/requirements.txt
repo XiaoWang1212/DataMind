@@ -9,3 +9,5 @@ lightgbm
 catboost
 imbalanced-learn
 seaborn
+sentence-transformers
+pymupdf

@@ -21,10 +21,6 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"txt", "md", "pdf"}
 
 
-def allowed_file(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
 def extract_text_from_file(file_path: Path) -> str:
     """從文件中提取文本"""
     suffix = file_path.suffix.lower()
@@ -299,4 +295,158 @@ def delete_paper(paper_id: str):
 
     except Exception as e:
         logger.exception("Failed to delete paper")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/generate-paper", methods=["POST"])
+def generate_paper():
+    """利用 DataMind 資料探勘結果 + 參考論文庫，生成學術論文
+
+    JSON body:
+        - topic          : 研究主題（必填）
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+        - structure      : 論文章節列表（選填，預設六章）
+        - language       : 語言（選填，預設 zh-TW）
+
+    回傳：
+        - paper_markdown  : 完整論文（Markdown 格式）
+        - citation_map    : 引用地圖（逐段記錄引用來源，供前端使用）
+        - references      : 全域引用清單
+        - sections_generated : 實際生成的章節
+        - usage           : Gemini token 用量
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    topic = data.get("topic", "").strip()
+    if not topic:
+        return jsonify({"success": False, "error": "topic 為必填欄位"}), 400
+
+    mining_results = data.get("mining_results")
+    if mining_results is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    structure = data.get("structure")
+    language = data.get("language", "zh-TW")
+
+    service = get_paper_rag_service()
+
+    try:
+        result = service.generate_paper(
+            topic=topic,
+            mining_results=mining_results,
+            structure=structure,
+            language=language,
+        )
+        return jsonify({"success": True, "result": result})
+
+    except Exception as e:
+        logger.exception("Paper generation failed")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/arxiv/search", methods=["POST"])
+def arxiv_search():
+    """分類 DataMind 探勘結果並查詢 arXiv 候選論文（不寫入向量庫）
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+
+    回傳：
+        - topic       : AI 產生的研究主題
+        - arxiv_query : 用於查詢 arXiv 的關鍵字字串
+        - candidates  : 候選論文清單（arxiv_id/title/authors/year/abstract/pdf_url）
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        result = service.search_arxiv_candidates(data["mining_results"])
+        return jsonify({"success": True, **result})
+
+    except Exception as e:
+        logger.exception("arXiv 查詢失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/arxiv/generate", methods=["POST"])
+def arxiv_generate():
+    """下載選中的 arXiv 論文、建立索引，並生成論文
+
+    JSON body:
+        - topic               : 研究主題（必填）
+        - mining_results      : DataMind 探勘結果（必填）
+        - selected_candidates : 使用者勾選的候選論文清單（必填，來自 /arxiv/search 的 candidates）
+
+    回傳：與 /generate-paper 相同形狀，外加 ingested/failed 清單
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    topic = data.get("topic", "").strip()
+    mining_results = data.get("mining_results")
+    selected_candidates = data.get("selected_candidates")
+
+    if not topic:
+        return jsonify({"success": False, "error": "topic 為必填欄位"}), 400
+    if mining_results is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+    if not selected_candidates:
+        return jsonify({"success": False, "error": "selected_candidates 為必填欄位，至少需選擇一篇論文"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        ingest_result = service.ingest_arxiv_selection(selected_candidates)
+        if not ingest_result.get("success"):
+            return jsonify(ingest_result), 422
+
+        result = service.generate_paper(topic=topic, mining_results=mining_results)
+        return jsonify({
+            "success": True,
+            "result": result,
+            "ingested": ingest_result["ingested"],
+            "failed": ingest_result["failed"],
+        })
+
+    except Exception as e:
+        logger.exception("arXiv 論文生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/insight", methods=["POST"])
+def generate_insight():
+    """根據 DataMind 探勘結果，用 Gemini 生成一段洞察摘要
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+
+    回傳：
+        - insight : AI 生成的洞察文字
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        insight = service.generate_insight(data["mining_results"])
+        return jsonify({"success": True, "insight": insight})
+
+    except Exception as e:
+        logger.exception("洞察生成失敗")
         return jsonify({"success": False, "error": str(e)}), 500

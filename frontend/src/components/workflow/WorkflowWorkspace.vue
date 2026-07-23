@@ -13,6 +13,15 @@
       @select-node="handleSelectNode"
     />
 
+    <button
+      v-if="workflowResult"
+      class="view-results-btn"
+      type="button"
+      @click="router.push(`/results?project=${projectId}`)"
+    >
+      查看結果
+    </button>
+
     <!-- 上傳 model 檔案 dialog -->
     <UploadDialog
       :visible="uploadDialogVisible"
@@ -111,7 +120,7 @@
     toRaw,
     watch,
   } from 'vue'
-  import { useRoute } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
   import { fetchAvailableModels } from '@/api/workflow'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import { useWorkflowDemo } from '@/composables/workflow/useWorkflowDemo.ts'
@@ -119,6 +128,7 @@
   import { useWorkflowImport } from '@/composables/workflow/useWorkflowImport.ts'
   import { useWorkflowNodes } from '@/composables/workflow/useWorkflowNodes.ts'
   import {
+    clearResultInsightFromStorage,
     loadWorkflowDataFileFromStorage,
     loadWorkflowJsonFileFromStorage,
     loadWorkflowStateFromStorage,
@@ -135,6 +145,7 @@
 
   const nodeTypes = { iconNode: markRaw(IconNode) }
   const route = useRoute()
+  const router = useRouter()
   const projectId = computed(() => route.query.project as string | undefined)
 
   const projectStore = useProjectStore()
@@ -286,6 +297,7 @@
 
   function handleApplyColumnConfig (): void {
     if (pausedAtNodeId.value !== 'dataTable') return
+    if (projectId.value) clearResultInsightFromStorage(projectId.value)
     dataTableApplied.value = true
     workflowError.value = null
     markProjectRunning()
@@ -294,6 +306,7 @@
   }
 
   function handleContinueSettings (): void {
+    if (projectId.value) clearResultInsightFromStorage(projectId.value)
     markProjectRunning()
     continueWorkflow()
     closeMenu()
@@ -688,6 +701,32 @@
     padding: 0 14px;
   }
 
+  .view-results-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #005dff;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    user-select: none;
+    padding: 0 14px;
+  }
+
+  .view-results-btn:hover {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
   .json-upload-btn {
     position: absolute;
     top: 14px;
@@ -794,7 +833,7 @@
   }
 
   .options-drawer {
-    position: fixed;
+    position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
