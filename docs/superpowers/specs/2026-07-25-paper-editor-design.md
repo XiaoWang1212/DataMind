@@ -33,6 +33,8 @@
 
 引用歸屬用自訂的 **Citation mark**（概念上跟 Bold/Italic 一樣是附著在文字上的標記，多帶一個 `citationId` 屬性）。ProseMirror 的 mark 機制會讓這個標記跟著它所附著的文字走——使用者在段落中插字、加粗、搬動段落，citation 歸屬不會遺失。這代表不需要額外保留一份原始結構化資料當備份；檢視與編輯共用同一份「文件 + citation mark」。
 
+**Mark 繼承規則（`inclusive`）**：Citation mark 使用 Tiptap 預設的 `inclusive: true`。代表游標停在一段引用文字「中間」打字時，新打的字自動繼承該 mark，合併進同一個引用歸屬，不會產生斷裂。若游標停在整段引用文字的最前面或最後面（mark 範圍邊界外）才開始打字，新字不會自動套用 mark——這是預期行為，因為那是在引用文字「前後」加字，不是「中間」插入。
+
 ## 資料模型
 
 `frontend/src/constants/reportData.ts` 的 `PaperReport` 型別改為：
