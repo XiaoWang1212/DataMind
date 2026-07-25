@@ -44,7 +44,9 @@
       </p>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
-      <div class="paper-body">
+      <p v-if="loading" class="loading-hint">載入中...</p>
+
+      <div v-else class="paper-body">
         <article class="paper-sheet">
           <PaperEditor
             ref="editorRef"
@@ -223,6 +225,12 @@
     margin: 8px 2px 0;
     font-size: 12px;
     color: #dc2626;
+  }
+
+  .loading-hint {
+    margin: 24px 2px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
   .paper-body {
