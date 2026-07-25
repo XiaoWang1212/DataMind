@@ -50,7 +50,11 @@ export const mockPaperReport: PaperReport = {
         content: [
           {
             type: 'text',
-            text: '本研究採用分層十折交叉驗證 (Stratified 10-Fold Cross-Validation) 對三種異質模型進行了嚴謹的基準測試。實驗結果顯示,XGBoost 模型在各項關鍵指標上均優於隨機森林 (Random Forest) 與支持向量機 (SVM),其準確率 (Accuracy) 達到 94.2%,F1-Score 為 0.92。相較之下,SVM 在處理類別不平衡數據時表現較弱,Recall 僅為 0.76。這項結果與近期文獻一致,指出梯度提升決策樹 (GBDT) 演算法由於具備處理特徵間複雜非線性交互作用的能力,在結構化表格數據 (Tabular Data) 的分類任務中,通常能提供比傳統統計模型更穩健的預測能力',
+            text: '本研究採用分層十折交叉驗證 (Stratified 10-Fold Cross-Validation) 對三種異質模型進行了嚴謹的基準測試。實驗結果顯示,XGBoost 模型在各項關鍵指標上均優於隨機森林 (Random Forest) 與支持向量機 (SVM),其準確率 (Accuracy) 達到 94.2%,F1-Score 為 0.92。相較之下,SVM 在處理類別不平衡數據時表現較弱,Recall 僅為 0.76。',
+          },
+          {
+            type: 'text',
+            text: '這項結果與近期文獻一致,指出梯度提升決策樹 (GBDT) 演算法由於具備處理特徵間複雜非線性交互作用的能力,在結構化表格數據 (Tabular Data) 的分類任務中,通常能提供比傳統統計模型更穩健的預測能力',
             marks: [{ type: 'citation', attrs: { citationId: 'cite-1' } }],
           },
           { type: 'text', text: '。因此,本系統最終選擇 XGBoost 作為部署至生產環境的最佳模型。' },
@@ -66,7 +70,11 @@ export const mockPaperReport: PaperReport = {
         content: [
           {
             type: 'text',
-            text: '進一步透過 SHAP (SHapley Additive exPlanations) 值解析模型的決策邏輯,我們發現「合約類型 (Contract Type)」是預測客戶流失的最顯著特徵。SHAP Summary Plot 顯示,合約期限越短,SHAP 值越高,代表流失風險越大。數據顯示,採「按月付費 (Month-to-month)」合約的客戶,其基礎流失機率比簽訂「兩年合約」的長期客戶高出 45%,這反映了合約轉換成本 (Switching Cost) 會顯著降低客戶的忠誠度',
+            text: '進一步透過 SHAP (SHapley Additive exPlanations) 值解析模型的決策邏輯,我們發現「合約類型 (Contract Type)」是預測客戶流失的最顯著特徵。SHAP Summary Plot 顯示,合約期限越短,SHAP 值越高,代表流失風險越大。',
+          },
+          {
+            type: 'text',
+            text: '數據顯示,採「按月付費 (Month-to-month)」合約的客戶,其基礎流失機率比簽訂「兩年合約」的長期客戶高出 45%,這反映了合約轉換成本 (Switching Cost) 會顯著降低客戶的忠誠度',
             marks: [{ type: 'citation', attrs: { citationId: 'cite-2' } }],
           },
           { type: 'text', text: '。這表明,電信營運商應將行銷資源集中於引導月租客戶升級至年約方案,而非僅依賴價格補貼。' },

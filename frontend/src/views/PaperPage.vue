@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
   import type { PaperReport } from '@/constants/reportData'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
@@ -110,7 +110,7 @@
       }
     }
 
-    savedSnapshot = structuredClone(report.value)
+    savedSnapshot = structuredClone(toRaw(report.value))
     loading.value = false
   })
 
@@ -142,7 +142,7 @@
         citations: report.value.citations,
       })
       report.value = { title: result.title, content: result.content, citations: result.citations }
-      savedSnapshot = structuredClone(report.value)
+      savedSnapshot = structuredClone(toRaw(report.value))
       mode.value = 'view'
     } catch (error) {
       saveError.value = error instanceof Error ? error.message : String(error)
