@@ -134,7 +134,7 @@
       })
       const report = transformArxivResultToPaperReport(result, topic.value)
       paperStore.setGeneratedReport(report)
-      router.push('/paper')
+      router.push(`/paper?project=${projectId.value}`)
     } catch (error) {
       generateError.value = error instanceof Error ? error.message : String(error)
     } finally {

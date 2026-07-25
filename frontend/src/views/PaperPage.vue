@@ -12,16 +12,45 @@
           @click="router.back()"
         />
         <h2 class="paper-title">{{ report.title }}</h2>
+
+        <div class="toolbar-actions">
+          <v-btn
+            v-if="mode === 'view'"
+            :disabled="loading"
+            prepend-icon="mdi-pencil"
+            size="small"
+            variant="text"
+            @click="mode = 'edit'"
+          >
+            編輯
+          </v-btn>
+          <template v-else>
+            <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
+            <v-btn
+              color="primary"
+              :disabled="!projectId"
+              :loading="saving"
+              size="small"
+              @click="save"
+            >
+              儲存
+            </v-btn>
+          </template>
+        </div>
       </header>
 
+      <p v-if="mode === 'edit' && !projectId" class="save-hint">
+        此論文尚未關聯專案,無法儲存
+      </p>
+      <p v-if="saveError" class="save-error">{{ saveError }}</p>
+
       <div class="paper-body">
-        <article ref="sheetRef" class="paper-sheet">
-          <PaperSection
-            v-for="section in report.sections"
-            :key="section.heading"
-            :active-citation-id="activeCitationId"
-            :citation-index="citationIndex"
-            :section="section"
+        <article class="paper-sheet">
+          <PaperEditor
+            ref="editorRef"
+            v-model="report.content"
+            :citations="report.citations"
+            :editable="mode === 'edit'"
             @citation-click="onCitationClick"
           />
         </article>
@@ -38,28 +67,51 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import type { PaperReport } from '@/constants/reportData'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPanel from '@/components/paper/CitationPanel.vue'
-  import PaperSection from '@/components/paper/PaperSection.vue'
+  import PaperEditor from '@/components/paper/PaperEditor.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
 
+  const route = useRoute()
   const router = useRouter()
   const paperStore = usePaperStore()
-  const report = paperStore.generatedReport ?? mockPaperReport
-  paperStore.clearGeneratedReport()
 
-  const citationIndex = Object.fromEntries(
-    report.citations.map((citation, index) => [citation.id, index + 1]),
-  )
+  const projectId = computed(() => route.query.project as string | undefined)
 
+  const report = ref<PaperReport>(mockPaperReport)
+  const loading = ref(true)
+  const mode = ref<'view' | 'edit'>('view')
+  const saving = ref(false)
+  const saveError = ref<string | null>(null)
   const activeCitationId = ref<string | null>(null)
-  const sheetRef = ref<HTMLElement | null>(null)
+  const editorRef = ref<InstanceType<typeof PaperEditor> | null>(null)
 
-  onMounted(() => {
+  let savedSnapshot: PaperReport = mockPaperReport
+
+  onMounted(async () => {
     document.title = 'DataMind'
+
+    if (paperStore.generatedReport) {
+      report.value = paperStore.generatedReport
+      paperStore.clearGeneratedReport()
+    } else if (projectId.value) {
+      try {
+        const saved = await getReport(projectId.value)
+        if (saved) {
+          report.value = { title: saved.title, content: saved.content, citations: saved.citations }
+        }
+      } catch (error) {
+        saveError.value = error instanceof Error ? error.message : String(error)
+      }
+    }
+
+    savedSnapshot = structuredClone(report.value)
+    loading.value = false
   })
 
   function onCitationClick (citationId: string) {
@@ -68,9 +120,35 @@
 
   function onPanelSelect (citationId: string) {
     activeCitationId.value = citationId
-    sheetRef.value
-      ?.querySelector(`[data-citation-id~="${CSS.escape(citationId)}"]`)
+    editorRef.value
+      ?.getDom()
+      ?.querySelector(`[data-citation-id="${CSS.escape(citationId)}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  function cancelEdit () {
+    report.value = structuredClone(savedSnapshot)
+    mode.value = 'view'
+  }
+
+  async function save () {
+    if (!projectId.value) return
+    saving.value = true
+    saveError.value = null
+    try {
+      const result = await saveReport(projectId.value, {
+        title: report.value.title,
+        content: report.value.content,
+        citations: report.value.citations,
+      })
+      report.value = { title: result.title, content: result.content, citations: result.citations }
+      savedSnapshot = structuredClone(report.value)
+      mode.value = 'view'
+    } catch (error) {
+      saveError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      saving.value = false
+    }
   }
 </script>
 
@@ -126,6 +204,25 @@
     font-size: 14px;
     font-weight: 700;
     color: #1c2130;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .save-hint {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    color: #b45309;
+  }
+
+  .save-error {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    color: #dc2626;
   }
 
   .paper-body {
