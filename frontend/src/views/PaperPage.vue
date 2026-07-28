@@ -14,17 +14,8 @@
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
-          <v-btn
-            v-if="mode === 'view'"
-            :disabled="loading"
-            prepend-icon="mdi-pencil"
-            size="small"
-            variant="text"
-            @click="mode = 'edit'"
-          >
-            編輯
-          </v-btn>
-          <template v-else>
+          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
+          <template v-if="mode === 'edit'">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
               color="primary"
@@ -75,6 +66,7 @@
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPanel from '@/components/paper/CitationPanel.vue'
+  import ModeSwitch from '@/components/paper/ModeSwitch.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
