@@ -40,21 +40,20 @@
       <div v-else class="paper-body">
         <article class="paper-sheet">
           <PaperEditor
-            ref="editorRef"
             v-model="report.content"
             :citations="report.citations"
             :editable="mode === 'edit'"
             @citation-click="onCitationClick"
           />
         </article>
-
-        <CitationPanel
-          :active-citation-id="activeCitationId"
-          :citations="report.citations"
-          class="paper-citations"
-          @select="onPanelSelect"
-        />
       </div>
+
+      <CitationPopover
+        :citation="popoverCitation"
+        :index="popoverIndex"
+        :target="popoverTarget"
+        @close="activeCitationId = null"
+      />
     </main>
   </section>
 </template>
@@ -65,7 +64,7 @@
   import { useRoute, useRouter } from 'vue-router'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
-  import CitationPanel from '@/components/paper/CitationPanel.vue'
+  import CitationPopover from '@/components/paper/CitationPopover.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
   import { mockPaperReport } from '@/constants/reportData'
@@ -83,7 +82,14 @@
   const saving = ref(false)
   const saveError = ref<string | null>(null)
   const activeCitationId = ref<string | null>(null)
-  const editorRef = ref<InstanceType<typeof PaperEditor> | null>(null)
+  const popoverTarget = ref<HTMLElement | null>(null)
+
+  const popoverCitation = computed(() =>
+    report.value.citations.find(c => c.id === activeCitationId.value) ?? null,
+  )
+  const popoverIndex = computed(() =>
+    report.value.citations.findIndex(c => c.id === activeCitationId.value) + 1,
+  )
 
   let savedSnapshot: PaperReport = mockPaperReport
 
@@ -108,16 +114,13 @@
     loading.value = false
   })
 
-  function onCitationClick (citationId: string) {
+  function onCitationClick ({ citationId, target }: { citationId: string, target: HTMLElement }) {
+    if (activeCitationId.value === citationId) {
+      activeCitationId.value = null
+      return
+    }
     activeCitationId.value = citationId
-  }
-
-  function onPanelSelect (citationId: string) {
-    activeCitationId.value = citationId
-    editorRef.value
-      ?.getDom()
-      ?.querySelector(`[data-citation-id="${CSS.escape(citationId)}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    popoverTarget.value = target
   }
 
   function cancelEdit () {
@@ -229,7 +232,6 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    gap: 16px;
     margin-top: 14px;
     overflow: auto;
   }
@@ -244,28 +246,5 @@
     border-radius: 12px;
     padding: 28px 34px;
     height: fit-content;
-  }
-
-  .paper-citations {
-    width: 280px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    max-height: calc(100vh - 150px);
-    overflow-y: auto;
-  }
-
-  @media (max-width: 1100px) {
-    .paper-body {
-      flex-direction: column;
-    }
-
-    .paper-citations {
-      width: 100%;
-      position: static;
-      max-height: none;
-      overflow-y: visible;
-    }
   }
 </style>

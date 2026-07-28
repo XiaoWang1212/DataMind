@@ -125,7 +125,7 @@
 
   const emit = defineEmits<{
     (e: 'update:modelValue', content: JSONContent): void
-    (e: 'citation-click', citationId: string): void
+    (e: 'citation-click', payload: { citationId: string, target: HTMLElement }): void
   }>()
 
   const citationIndex: Record<string, number> = {}
@@ -148,10 +148,10 @@
     editorProps: {
       handleClick: (_view, _pos, event) => {
         if (props.editable) return false
-        const target = (event.target as HTMLElement).closest('[data-citation-id]')
+        const target = (event.target as HTMLElement).closest<HTMLElement>('[data-citation-id]')
         const citationId = target?.getAttribute('data-citation-id')
-        if (citationId) {
-          emit('citation-click', citationId)
+        if (citationId && target) {
+          emit('citation-click', { citationId, target })
           return true
         }
         return false
@@ -172,10 +172,6 @@
     if (current !== JSON.stringify(value)) {
       editor.value.commands.setContent(value, { emitUpdate: false })
     }
-  })
-
-  defineExpose({
-    getDom: (): HTMLElement | null => editor.value?.view.dom ?? null,
   })
 </script>
 
