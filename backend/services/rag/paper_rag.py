@@ -372,9 +372,19 @@ class PaperRAGService:
             )
 
         # 前處理流程
+        # /api/models/workflow/execute 回傳的 preprocess_variants 是「每個 pipeline
+        # 的 step 清單」（List[List[dict]]），不是包著 preprocess_steps/
+        # feature_engineering_steps 的 dict；後者只出現在舊版測試假資料中，這裡
+        # 兩種形狀都相容。
         for i, pv in enumerate(mining_results.get("preprocess_variants", []), 1):
-            pp = "、".join(s.get("type", "") for s in pv.get("preprocess_steps", [])) or "無"
-            fe = "、".join(s.get("type", "") for s in pv.get("feature_engineering_steps", [])) or "無"
+            if isinstance(pv, dict):
+                pp_steps = pv.get("preprocess_steps", [])
+                fe_steps = pv.get("feature_engineering_steps", [])
+            else:
+                pp_steps = pv if isinstance(pv, list) else []
+                fe_steps = []
+            pp = "、".join(s.get("type", "") for s in pp_steps) or "無"
+            fe = "、".join(s.get("type", "") for s in fe_steps) or "無"
             parts.append(f"【前處理流程 {i}】\n預處理：{pp}\n特徵工程：{fe}")
 
         # 各模型結果
@@ -384,6 +394,8 @@ class PaperRAGService:
             for r in valid_results:
                 model_name = r.get("model_name", "Unknown")
                 split = r.get("split_name", "")
+                fe_steps = r.get("feature_engineering_steps", []) or []
+                fe_str = "、".join(s.get("type", "") for s in fe_steps) or "無"
 
                 # 評估指標
                 metric_strs: List[str] = []
@@ -416,6 +428,7 @@ class PaperRAGService:
                     f"\n▶ {model_name}（{split}）\n"
                     f"  驗證方法：{val_str}\n"
                     f"  重採樣：{resampling}\n"
+                    f"  特徵工程：{fe_str}\n"
                     f"  特徵數：{r.get('feature_count', 'N/A')}，"
                     f"訓練樣本：{r.get('row_count', 'N/A')}\n"
                     f"  評估指標：{', '.join(metric_strs) or 'N/A'}\n"

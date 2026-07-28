@@ -7,6 +7,7 @@ requires-python = ">=3.10,<3.12"
 dependencies = [
   "mineru[core]",
   "torch",
+  "pymupdf",
   "flask",
   "flask-cors",
   "scikit-learn",
