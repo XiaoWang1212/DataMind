@@ -395,6 +395,7 @@ class PaperRAGService:
                     parsed = self._safe_parse_json(raw)
                     if parsed is None:
                         raise ValueError("Gemini 回傳非合法 JSON")
+                    self._validate_score_shape(parsed)
 
                     journal_scores.append({
                         "journal": rubric["name"],
@@ -604,6 +605,27 @@ class PaperRAGService:
             except json.JSONDecodeError:
                 return None
         return None
+
+    @staticmethod
+    def _validate_score_shape(parsed: dict) -> None:
+        """檢查 score_paper() 解析出的 JSON 是否符合預期結構，不符合則拋出 ValueError，
+        交由呼叫端的重試/失敗邏輯處理，避免不完整的 Gemini 回傳被當成成功結果。"""
+        if not isinstance(parsed.get("overall_score"), (int, float)):
+            raise ValueError(f"overall_score 缺漏或非數字：{parsed.get('overall_score')!r}")
+
+        criteria = parsed.get("criteria")
+        if not isinstance(criteria, list) or len(criteria) != len(_SCORE_CRITERIA):
+            raise ValueError(
+                f"criteria 應包含 {len(_SCORE_CRITERIA)} 項，實際：{criteria!r}"
+            )
+        for c in criteria:
+            if not isinstance(c, dict) or not isinstance(c.get("score"), (int, float)) \
+                    or not c.get("name") or not c.get("comment"):
+                raise ValueError(f"criteria 項目格式不正確：{c!r}")
+
+        suggestions = parsed.get("suggestions")
+        if not isinstance(suggestions, list) or len(suggestions) == 0:
+            raise ValueError(f"suggestions 應至少包含 1 項，實際：{suggestions!r}")
 
     # ── Prompt 建立 ───────────────────────────────────────────────────────────
 
