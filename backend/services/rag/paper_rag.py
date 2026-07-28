@@ -383,7 +383,10 @@ class PaperRAGService:
                 prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.4,
-                    max_output_tokens=2048,
+                    # gemini-2.5-flash 的隱藏「thinking」token 也算在 max_output_tokens 裡，
+                    # 2048 對稍微複雜一點的實驗結果就會被吃光，JSON 輸出被截斷到一半失敗。
+                    # 跟檔案內其他呼叫（_call_gemini 預設 8192）看齊，留足夠空間給 thinking + 實際輸出。
+                    max_output_tokens=8192,
                     response_mime_type="application/json",
                 ),
             )
