@@ -428,10 +428,16 @@ class PaperRAGService:
             return {"reply": f"（對話發生錯誤：{e}）", "papers": []}
 
         function_call = None
-        for part in resp.parts:
-            if part.function_call and part.function_call.name:
-                function_call = part.function_call
-                break
+        try:
+            for part in resp.parts:
+                if part.function_call and part.function_call.name:
+                    function_call = part.function_call
+                    break
+        except Exception as e:
+            # resp.parts 在回應被安全過濾／無候選結果等情況下會拋 ValueError，
+            # 這裡跟其他分支一樣降級成錯誤訊息回覆，不讓整個 request 500
+            logger.error("解析 Gemini 回應失敗：%s", e)
+            return {"reply": f"（對話發生錯誤：{e}）", "papers": []}
 
         papers: List[dict] = []
         if function_call is not None:
@@ -456,7 +462,14 @@ class PaperRAGService:
                 logger.error("對話生成失敗（function response 後）：%s", e)
                 return {"reply": f"（對話發生錯誤：{e}）", "papers": papers}
 
-        return {"reply": (getattr(resp, "text", "") or "").strip(), "papers": papers}
+        try:
+            reply_text = (getattr(resp, "text", "") or "").strip()
+        except Exception as e:
+            # resp.text 跟 resp.parts 一樣，在回應被安全過濾等情況下會拋 ValueError
+            logger.error("解析 Gemini 回應文字失敗：%s", e)
+            return {"reply": f"（對話發生錯誤：{e}）", "papers": papers}
+
+        return {"reply": reply_text, "papers": papers}
 
     def get_status(self) -> dict:
         return self._store.get_status()
