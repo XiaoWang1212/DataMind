@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -83,6 +84,9 @@ _SCORE_CRITERIA: List[str] = [
     "臨床/實務意義與限制討論",
     "寫作結構與期刊格式規範",
 ]
+
+_SCORE_MAX_ATTEMPTS = 3
+_SCORE_RETRY_DELAY_SECONDS = 2
 
 
 @dataclass
@@ -508,7 +512,8 @@ class PaperRAGService:
     def score_paper(self, paper_text: str) -> dict:
         """依 _JOURNAL_RUBRICS 對論文全文逐期刊評分，各期刊各一次獨立的 Gemini JSON 呼叫。
 
-        單一期刊評分失敗（Gemini 例外或 JSON 解析失敗）時跳過並記錄，不中斷整體流程；
+        單一期刊評分失敗（Gemini 例外或 JSON 解析失敗）時，最多重試 _SCORE_MAX_ATTEMPTS 次
+        （間隔 _SCORE_RETRY_DELAY_SECONDS 秒），全部嘗試皆失敗才跳過並記錄，不中斷整體流程；
         若全部期刊皆失敗則回傳 {"success": False, "error": ...}。
         """
         journal_scores: List[dict] = []
@@ -517,30 +522,42 @@ class PaperRAGService:
 
         for rubric in _JOURNAL_RUBRICS:
             prompt = self._build_score_prompt(paper_text, rubric)
-            try:
-                raw = self._call_gemini_json(prompt, usage_total)
-                parsed = self._safe_parse_json(raw)
-                if parsed is None:
-                    raise ValueError("Gemini 回傳非合法 JSON")
+            last_error: Exception | None = None
 
-                journal_scores.append({
-                    "journal": rubric["name"],
-                    "journal_full_name": rubric["full_name"],
-                    "overall_score": int(parsed["overall_score"]),
-                    "criteria": [
-                        {
-                            "name": str(c["name"]),
-                            "score": int(c["score"]),
-                            "comment": str(c["comment"]),
-                        }
-                        for c in parsed["criteria"]
-                    ],
-                    "suggestions": [str(s) for s in parsed.get("suggestions", [])],
-                })
-            except Exception as e:
-                logger.warning("期刊評分失敗：%s (%s)", rubric["name"], e)
+            for attempt in range(1, _SCORE_MAX_ATTEMPTS + 1):
+                try:
+                    raw = self._call_gemini_json(prompt, usage_total)
+                    parsed = self._safe_parse_json(raw)
+                    if parsed is None:
+                        raise ValueError("Gemini 回傳非合法 JSON")
+
+                    journal_scores.append({
+                        "journal": rubric["name"],
+                        "journal_full_name": rubric["full_name"],
+                        "overall_score": int(parsed["overall_score"]),
+                        "criteria": [
+                            {
+                                "name": str(c["name"]),
+                                "score": int(c["score"]),
+                                "comment": str(c["comment"]),
+                            }
+                            for c in parsed["criteria"]
+                        ],
+                        "suggestions": [str(s) for s in parsed.get("suggestions", [])],
+                    })
+                    last_error = None
+                    break
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        "期刊評分失敗（第 %d/%d 次嘗試）：%s (%s)",
+                        attempt, _SCORE_MAX_ATTEMPTS, rubric["name"], e,
+                    )
+                    if attempt < _SCORE_MAX_ATTEMPTS:
+                        time.sleep(_SCORE_RETRY_DELAY_SECONDS)
+
+            if last_error is not None:
                 failed_journals.append(rubric["name"])
-                continue
 
         if not journal_scores:
             return {
@@ -687,7 +704,7 @@ class PaperRAGService:
         resp = self._model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
-                temperature=0.2,
+                temperature=0,
                 max_output_tokens=4096,
                 response_mime_type="application/json",
             ),
