@@ -527,35 +527,48 @@ class PaperRAGService:
             for attempt in range(1, _SCORE_MAX_ATTEMPTS + 1):
                 try:
                     raw = self._call_gemini_json(prompt, usage_total)
-                    parsed = self._safe_parse_json(raw)
-                    if parsed is None:
-                        raise ValueError("Gemini 回傳非合法 JSON")
-                    self._validate_score_shape(parsed)
-
-                    journal_scores.append({
-                        "journal": rubric["name"],
-                        "journal_full_name": rubric["full_name"],
-                        "overall_score": int(parsed["overall_score"]),
-                        "criteria": [
-                            {
-                                "name": str(c["name"]),
-                                "score": int(c["score"]),
-                                "comment": str(c["comment"]),
-                            }
-                            for c in parsed["criteria"]
-                        ],
-                        "suggestions": [str(s) for s in parsed.get("suggestions", [])],
-                    })
-                    last_error = None
-                    break
                 except Exception as e:
+                    # Gemini 呼叫本身失敗（網路、逾時等）屬於暫時性錯誤，值得重試。
                     last_error = e
                     logger.warning(
-                        "期刊評分失敗（第 %d/%d 次嘗試）：%s (%s)",
+                        "期刊評分失敗（第 %d/%d 次嘗試，Gemini 呼叫失敗）：%s (%s)",
                         attempt, _SCORE_MAX_ATTEMPTS, rubric["name"], e,
                     )
                     if attempt < _SCORE_MAX_ATTEMPTS:
                         time.sleep(_SCORE_RETRY_DELAY_SECONDS)
+                    continue
+
+                try:
+                    parsed = self._safe_parse_json(raw)
+                    if parsed is None:
+                        raise ValueError("Gemini 回傳非合法 JSON")
+                    self._validate_score_shape(parsed)
+                except ValueError as e:
+                    # temperature=0 下，同一個 prompt 的解析/驗證失敗幾乎是決定性的，
+                    # 重試無法改變結果，直接判定此期刊失敗、不再重試以節省成本與時間。
+                    last_error = e
+                    logger.warning(
+                        "期刊評分失敗（格式錯誤，不重試）：%s (%s)",
+                        rubric["name"], e,
+                    )
+                    break
+
+                journal_scores.append({
+                    "journal": rubric["name"],
+                    "journal_full_name": rubric["full_name"],
+                    "overall_score": int(parsed["overall_score"]),
+                    "criteria": [
+                        {
+                            "name": str(c["name"]),
+                            "score": int(c["score"]),
+                            "comment": str(c["comment"]),
+                        }
+                        for c in parsed["criteria"]
+                    ],
+                    "suggestions": [str(s) for s in parsed.get("suggestions", [])],
+                })
+                last_error = None
+                break
 
             if last_error is not None:
                 failed_journals.append(rubric["name"])
