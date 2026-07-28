@@ -70,3 +70,25 @@ export function transformArxivResultToPaperReport (result: ArxivGenerateResult, 
     citations: buildCitations(result),
   }
 }
+
+export function buildPaperText (report: PaperReport, citationIndex: Record<string, number>): string {
+  const lines: string[] = [`# ${report.title}`]
+
+  for (const section of report.sections) {
+    lines.push(`## ${section.heading}`)
+
+    for (const paragraph of section.paragraphs) {
+      const paragraphText = paragraph
+        .map(segment => {
+          const marks = (segment.citationIds ?? [])
+            .map(id => `[${citationIndex[id] ?? id}]`)
+            .join('')
+          return segment.text + marks
+        })
+        .join('')
+      lines.push(paragraphText)
+    }
+  }
+
+  return lines.join('\n\n')
+}

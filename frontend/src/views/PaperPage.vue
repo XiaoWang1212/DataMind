@@ -12,7 +12,22 @@
           @click="router.back()"
         />
         <h2 class="paper-title">{{ report.title }}</h2>
+        <v-btn
+          class="score-btn"
+          :loading="scoring"
+          prepend-icon="mdi-school-outline"
+          size="small"
+          variant="tonal"
+          @click="handleScorePaper"
+        >
+          期刊評分
+        </v-btn>
       </header>
+
+      <p v-if="scoreError" class="score-error">
+        {{ scoreError }}
+        <v-btn size="small" variant="text" @click="handleScorePaper">重試</v-btn>
+      </p>
 
       <div class="paper-body">
         <article ref="sheetRef" class="paper-sheet">
@@ -34,17 +49,27 @@
         />
       </div>
     </main>
+
+    <JournalScoreDialog
+      :failed-journals="failedJournals"
+      :journal-scores="journalScores"
+      :visible="scoreDialogVisible"
+      @close="scoreDialogVisible = false"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import { type JournalScore, scorePaper } from '@/api/arxiv'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPanel from '@/components/paper/CitationPanel.vue'
+  import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
   import PaperSection from '@/components/paper/PaperSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
+  import { buildPaperText } from '@/utils/paperTransform'
 
   const router = useRouter()
   const paperStore = usePaperStore()
@@ -57,6 +82,12 @@
 
   const activeCitationId = ref<string | null>(null)
   const sheetRef = ref<HTMLElement | null>(null)
+
+  const scoring = ref(false)
+  const scoreError = ref<string | null>(null)
+  const scoreDialogVisible = ref(false)
+  const journalScores = ref<JournalScore[]>([])
+  const failedJournals = ref<string[]>([])
 
   onMounted(() => {
     document.title = 'DataMind'
@@ -71,6 +102,22 @@
     sheetRef.value
       ?.querySelector(`[data-citation-id~="${CSS.escape(citationId)}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  async function handleScorePaper (): Promise<void> {
+    scoring.value = true
+    scoreError.value = null
+    try {
+      const paperText = buildPaperText(report, citationIndex)
+      const result = await scorePaper(paperText)
+      journalScores.value = result.journalScores
+      failedJournals.value = result.failedJournals
+      scoreDialogVisible.value = true
+    } catch (error) {
+      scoreError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      scoring.value = false
+    }
   }
 </script>
 
@@ -126,6 +173,19 @@
     font-size: 14px;
     font-weight: 700;
     color: #1c2130;
+  }
+
+  .score-btn {
+    margin-left: auto;
+  }
+
+  .score-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 2px 0;
+    font-size: 12px;
+    color: #b91c1c;
   }
 
   .paper-body {
