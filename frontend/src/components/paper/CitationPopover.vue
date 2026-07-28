@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="citation" class="citation-popover-backdrop" @click="emit('close')">
-      <article class="citation-popover-card" :style="cardStyle" @click.stop>
+      <article ref="cardRef" class="citation-popover-card" :style="cardStyle" @click.stop>
         <p class="citation-label">
           <v-icon icon="mdi-book-open-variant-outline" size="13" />
           來源文獻 [{{ index }}]
@@ -23,7 +23,7 @@
 <script setup lang="ts">
   import type { CSSProperties } from 'vue'
   import type { Citation } from '@/constants/reportData'
-  import { computed } from 'vue'
+  import { nextTick, ref, watch } from 'vue'
 
   const props = defineProps<{
     citation: Citation | null
@@ -36,18 +36,46 @@
   }>()
 
   const cardWidth = 300
+  const cardRef = ref<HTMLElement | null>(null)
+  const cardStyle = ref<CSSProperties>({ display: 'none' })
 
-  const cardStyle = computed((): CSSProperties => {
-    if (!props.target) return { display: 'none' }
-    const rect = props.target.getBoundingClientRect()
-    const left = Math.min(Math.max(8, rect.left), window.innerWidth - cardWidth - 8)
-    return {
+  function positionCard () {
+    const target = props.target
+    const card = cardRef.value
+    if (!target || !card) {
+      cardStyle.value = { display: 'none' }
+      return
+    }
+
+    const rect = target.getBoundingClientRect()
+    const cardHeight = card.offsetHeight
+    const left = Math.min(
+      Math.max(8, rect.left),
+      Math.max(8, window.innerWidth - cardWidth - 8),
+    )
+
+    const spaceBelow = window.innerHeight - rect.bottom - 8
+    const placeAbove = spaceBelow < cardHeight && rect.top - 8 - cardHeight > 0
+    const top = placeAbove
+      ? Math.max(8, rect.top - 8 - cardHeight)
+      : Math.min(rect.bottom + 8, Math.max(8, window.innerHeight - cardHeight - 8))
+
+    cardStyle.value = {
       position: 'fixed',
-      top: `${rect.bottom + 8}px`,
+      top: `${top}px`,
       left: `${left}px`,
       width: `${cardWidth}px`,
     }
-  })
+  }
+
+  watch(() => [props.citation, props.target], async () => {
+    if (!props.citation || !props.target) {
+      cardStyle.value = { display: 'none' }
+      return
+    }
+    await nextTick()
+    positionCard()
+  }, { immediate: true })
 </script>
 
 <style scoped>
@@ -59,6 +87,8 @@
   }
 
   .citation-popover-card {
+    max-height: min(400px, calc(100vh - 16px));
+    overflow-y: auto;
     background: #fffbe8;
     border: 1px solid #eadf9e;
     border-radius: 12px;
