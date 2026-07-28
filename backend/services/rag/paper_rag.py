@@ -365,6 +365,8 @@ class PaperRAGService:
             )
             text = getattr(resp, "text", "") or ""
             data = json.loads(text)
+            if not isinstance(data, dict):
+                data = {}
         except Exception as e:
             logger.error("結構化分析生成失敗：%s", e)
             data = {}
