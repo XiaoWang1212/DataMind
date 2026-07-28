@@ -85,6 +85,10 @@
     positionCard()
   }, { immediate: true })
 
+  // Guard is based on the click's real target, not firing order relative to
+  // PaperEditor's citation handling (that runs on ProseMirror's own
+  // `mouseup`, which always precedes this native `click` regardless of DOM
+  // depth) — so this stays correct even if that ordering ever changes.
   function handleDocumentClick (event: MouseEvent) {
     if (!props.citation) return
     const target = event.target as HTMLElement
