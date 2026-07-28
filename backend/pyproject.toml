@@ -17,6 +17,8 @@ dependencies = [
   "catboost",
   "imbalanced-learn",
   "seaborn",
+  "openpyxl>=3.1.5",
+  "xlrd>=2.0.2",
 ]
 
 [build-system]
