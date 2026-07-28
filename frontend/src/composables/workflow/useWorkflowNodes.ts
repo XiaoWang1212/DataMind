@@ -60,7 +60,7 @@ export function useWorkflowNodes(
       const highlighted = highlightedIds.has(node.id)
       return {
         ...node,
-        class: '',
+        class: node.id.startsWith('model-') ? 'node-non-interactive' : '',
         data: {
           ...node.data,
           status,

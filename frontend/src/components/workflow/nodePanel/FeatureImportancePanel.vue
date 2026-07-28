@@ -1,58 +1,44 @@
 <template>
   <section class="feature-importance-panel">
-    <h4>Feature Importance</h4>
-
-    <div v-if="groupedResults.length > 0" class="importance-list">
-      <div
-        v-for="group in groupedResults"
-        :key="group.model_name"
-        class="importance-card"
-      >
-        <div class="importance-card__header">
-          <div class="importance-card__title">{{ group.model_name }}</div>
-          <div class="importance-card__subtitle">
-            {{ group.splits.length }} 種抽樣結果
-          </div>
-        </div>
-
-        <div class="importance-split-list">
-          <div
-            v-for="split in group.splits"
-            :key="`${group.model_name}-${split.split_name}`"
-            class="importance-split"
-          >
-            <div class="importance-split__title">
-              {{ split.split_name }}
-            </div>
-
-            <div
-              v-if="split.feature_importance.length > 0"
-              class="importance-table"
-            >
-              <div class="importance-row importance-row--header">
-                <div class="importance-cell">Feature</div>
-                <div class="importance-cell">Importance</div>
-              </div>
-              <div
-                v-for="item in split.feature_importance"
-                :key="item.feature"
-                class="importance-row"
-              >
-                <div class="importance-cell importance-cell--feature">
-                  {{ item.feature }}
-                </div>
-                <div class="importance-cell importance-cell--value">
-                  {{ formatImportance(item.importance) }}
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="summary-empty">
-              該抽樣沒有可用的特徵重要性資訊。
-            </div>
-          </div>
-        </div>
+    <div v-if="groupedResults.length > 0" class="fi-controls">
+      <div class="fi-field">
+        <span class="fi-field__label">模型</span>
+        <CustomSelect
+          v-model="selectedModel"
+          class="fi-select"
+          :options="modelOptions"
+        />
       </div>
+      <div class="fi-field">
+        <span class="fi-field__label">fold</span>
+        <CustomSelect
+          v-model="selectedFold"
+          class="fi-select"
+          :options="foldOptions"
+        />
+      </div>
+    </div>
+
+    <div
+      v-if="currentImportance.length > 0"
+      class="fi-table"
+    >
+      <div class="fi-row fi-row--header">
+        <div class="fi-cell">Feature</div>
+        <div class="fi-cell fi-cell--num">Importance</div>
+      </div>
+      <div
+        v-for="item in currentImportance"
+        :key="item.feature"
+        class="fi-row"
+      >
+        <div class="fi-cell fi-cell--feature">{{ item.feature }}</div>
+        <div class="fi-cell fi-cell--num">{{ formatImportance(item.importance) }}</div>
+      </div>
+    </div>
+
+    <div v-else-if="groupedResults.length > 0" class="summary-empty">
+      該抽樣沒有可用的特徵重要性資訊。
     </div>
 
     <div v-else class="summary-empty">
@@ -62,7 +48,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   interface FeatureImportanceItem {
     feature: string
@@ -141,6 +128,42 @@
     return Array.from(groups.values())
   })
 
+  const selectedModel = ref('')
+  const selectedFold = ref('')
+
+  const modelOptions = computed(() =>
+    groupedResults.value.map(g => ({ value: g.model_name, label: g.model_name })),
+  )
+
+  const currentModel = computed(() =>
+    groupedResults.value.find(g => g.model_name === selectedModel.value) ?? null,
+  )
+
+  const foldOptions = computed(() =>
+    (currentModel.value?.splits ?? []).map(s => ({ value: s.split_name, label: s.split_name })),
+  )
+
+  const currentImportance = computed(() =>
+    currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.feature_importance ?? [],
+  )
+
+  // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
+  watch(groupedResults, groups => {
+    if (groups.length === 0) {
+      selectedModel.value = ''
+      return
+    }
+    if (!groups.some(g => g.model_name === selectedModel.value)) {
+      selectedModel.value = groups[0]!.model_name
+    }
+  }, { immediate: true })
+
+  // 換模型（或結果載入）時，fold 一律重置為該模型的第一個
+  watch(currentModel, model => {
+    const splits = model?.splits ?? []
+    selectedFold.value = splits[0]?.split_name ?? ''
+  }, { immediate: true })
+
   function formatImportance (value: number): string {
     return value.toFixed(4)
   }
@@ -150,80 +173,89 @@
   .feature-importance-panel {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 10px 0;
+    gap: 12px;
+    padding: 0 0 16px;
   }
 
-  .feature-importance-panel h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-  }
-
-  .importance-card {
-    border-radius: 18px;
-    overflow: hidden;
-    background: #ffffff;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-  }
-
-  .importance-card__header {
-    padding: 14px 16px;
-    background: #f8fafc;
+  /* 控制列：模型｜下拉  fold｜下拉，label 在下拉左邊、兩組並排 */
+  .fi-controls {
     display: flex;
-    justify-content: space-between;
-    gap: 16px;
+    align-items: center;
+    gap: 20px;
     flex-wrap: wrap;
   }
 
-  .importance-card__title {
-    font-weight: 700;
-    color: #0f172a;
-    font-size: 14px;
+  .fi-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .importance-card__subtitle {
-    font-size: 12px;
+  .fi-field__label {
+    font-size: 13px;
     color: #475569;
+    white-space: nowrap;
   }
 
-  .importance-table {
+  .fi-select {
+    width: 160px;
+  }
+
+  /* 表格沿用 Test & Score 的圓角卡片樣式，維持結果面板一致 */
+  .fi-table {
     display: flex;
     flex-direction: column;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
   }
 
-  .importance-row {
+  .fi-row {
     display: grid;
-    grid-template-columns: 1fr 120px;
+    grid-template-columns: 1fr 140px;
     gap: 0;
     align-items: center;
-    padding: 12px 16px;
   }
 
-  .importance-row--header {
-    font-weight: 700;
-    background: #f1f5f9;
-    color: #0f172a;
+  .fi-row:not(:last-child) {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   }
 
-  .importance-cell {
+  .fi-row:not(.fi-row--header):hover {
+    background: rgba(0, 93, 255, 0.035);
+  }
+
+  .fi-row--header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  .fi-row--header .fi-cell {
+    padding: 8px 14px;
+  }
+
+  .fi-cell {
+    padding: 11px 14px;
     color: #0f172a;
     font-size: 13px;
+    min-width: 0;
     word-break: break-word;
   }
 
-  .importance-cell--feature {
-    color: #1f2937;
+  .fi-cell--feature {
+    color: #1e293b;
   }
 
-  .importance-cell--value {
+  .fi-cell--num {
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   .summary-empty {
     color: #6b7280;
     font-size: 13px;
-    padding: 14px 16px;
   }
 </style>

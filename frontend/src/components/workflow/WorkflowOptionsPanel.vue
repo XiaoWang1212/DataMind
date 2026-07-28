@@ -79,6 +79,7 @@
             :preprocessing="settingsPreprocessing"
             :used-model-names="(props.usedModelNames ?? [])"
             @add-model="name => emit('add-model', name)"
+            @back-node="emit('back-node')"
             @continue="emit('continue-settings')"
             @remove-model="name => emit('remove-model', name)"
             @step-change="step => emit('settings-step-change', step)"
@@ -274,7 +275,7 @@
       e: 'update-config',
       payload: { nodeId: string, config: Record<string, ConfigValue> },
     ): void
-    (e: 'open-upload' | 'apply-column-config' | 'continue-settings'): void
+    (e: 'open-upload' | 'apply-column-config' | 'continue-settings' | 'back-node'): void
     (e: 'update:file', file: File): void
     (e: 'add-model' | 'remove-model', modelName: string): void
     (e: 'settings-step-change', step: number): void

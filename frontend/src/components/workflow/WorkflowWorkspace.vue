@@ -92,6 +92,7 @@
                 :workflow-summary="workflowSummary"
                 @add-model="handleAddModel"
                 @apply-column-config="handleApplyColumnConfig"
+                @back-node="handleBackToDataTable"
                 @continue-settings="handleContinueSettings"
                 @open-upload="uploadDialogVisible = true"
                 @remove-model="handleRemoveModel"
@@ -264,6 +265,7 @@
   // ─── handlers ────────────────────────────────────────────────────────────
 
   function handleSelectNode (nodeId: string): void {
+    if (nodeId.startsWith('model-')) return
     if (selectedNodeId.value === nodeId) {
       closeMenu()
       return
@@ -294,6 +296,7 @@
   }
 
   function handleApplyColumnConfig (): void {
+    if (pausedAtNodeId.value !== 'dataTable') return
     if (projectId.value) clearResultInsightFromStorage(projectId.value)
     dataTableApplied.value = true
     workflowError.value = null
@@ -307,6 +310,40 @@
     markProjectRunning()
     continueWorkflow()
     closeMenu()
+  }
+
+  // 流程退回 dataTable 這一步
+  function snapFlowToDataTable (): void {
+    pausedAtNodeId.value = 'dataTable'
+    const next = new Map(nodeStatuses.value)
+    next.set('dataTable', 'running')
+    next.delete('settings')
+    nodeStatuses.value = next
+  }
+
+  function handleBackToDataTable (): void {
+    snapFlowToDataTable()
+    selectedNodeId.value = 'dataTable'
+    expandDrawer()
+    saveState()
+  }
+
+  // 改了欄位設定就把下游清空：清 Settings 設定、移除 model / pipeline / CI 節點
+  function clearSettingsDownstream (): void {
+    nodes.value = nodes.value
+      .filter(n => !n.id.startsWith('model-') && n.id !== 'computeCi')
+      .map(n => n.id === 'settings'
+        ? { ...n, data: { ...n.data, config: { ...n.data.config, preprocessing: [], featureEngineering: [], models: [], compute_ci: false } } }
+        : n)
+    syncPipelineCanvasNodes()
+    // 清掉已被移除節點的殘留狀態，免得之後重加同 id 的節點誤顯示成已完成
+    const validIds = new Set(nodes.value.map(n => n.id))
+    nodeStatuses.value = new Map(
+      [...nodeStatuses.value].filter(([id]) => validIds.has(id)),
+    )
+    // 舊的執行結果也失效
+    workflowResult.value = null
+    isDemoFinished.value = false
   }
 
   function handleAddModel (modelName: string): void {
@@ -333,6 +370,19 @@
     } else {
       syncModelCanvasNodes(next)
     }
+  }
+
+  function columnConfigEqual (a: unknown, b: unknown): boolean {
+    if (!Array.isArray(a) || !Array.isArray(b)) return a === b
+    if (a.length !== b.length) return false
+    return a.every((col, i) => {
+      const cur = col as { name?: unknown, type?: unknown, role?: unknown }
+      const other = b[i] as { name?: unknown, type?: unknown, role?: unknown } | undefined
+      return other !== undefined
+        && cur.name === other.name
+        && cur.type === other.type
+        && cur.role === other.role
+    })
   }
 
   function handleUpdateConfig (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
@@ -395,6 +445,10 @@
       return
     }
 
+    const prevColumnConfig = payload.nodeId === 'dataTable' && 'columnConfig' in payload.config
+      ? nodes.value.find(n => n.id === 'dataTable')?.data.config.columnConfig
+      : undefined
+
     nodes.value = nodes.value.map(node => {
       if (node.id !== payload.nodeId) return node
       return { ...node, data: { ...node.data, config: { ...node.data.config, ...payload.config } } }
@@ -403,11 +457,12 @@
       syncComputeCiNode()
     }
     if (payload.nodeId === 'dataTable' && 'columnConfig' in payload.config) {
-      const columnConfig = payload.config.columnConfig
-      const hasTarget = Array.isArray(columnConfig)
-        && columnConfig.some(col => (col as { role?: string })?.role === 'target')
-      if (!hasTarget) {
+      // 真的改了才重置（面板重掛送出相同設定不算改）
+      if (dataTableApplied.value && !columnConfigEqual(prevColumnConfig, payload.config.columnConfig)) {
         dataTableApplied.value = false
+        clearSettingsDownstream()
+        // 改了就把流程拉回 dataTable，讓「繼續」可以再按
+        snapFlowToDataTable()
       }
     }
     saveState()

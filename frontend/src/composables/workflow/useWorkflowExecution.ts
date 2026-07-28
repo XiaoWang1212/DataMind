@@ -84,7 +84,7 @@ export function useWorkflowExecution(deps: {
       column_config: Array.isArray(dataTableNode?.data.config.columnConfig)
         ? dataTableNode?.data.config.columnConfig
         : [],
-      target_col: selectedTargetColumn.value?.name ?? testScoreNode?.data.config.targetCol ?? '是否跌倒',
+      target_col: selectedTargetColumn.value?.name ?? testScoreNode?.data.config.targetCol ?? '',
       resampling_method: String(testScoreNode?.data.config.resampling_method ?? 'none'),
       resampling_config: (testScoreNode?.data.config.resampling_config ?? {}) as Record<string, unknown>,
       tuning_method: String(testScoreNode?.data.config.tuning_method ?? 'none'),
@@ -237,7 +237,7 @@ export function useWorkflowExecution(deps: {
       }, runAt)
       setTimeout(() => {
         const next = new Map(nodeStatuses.value)
-        next.set('settings', 'finished')
+        next.set('settings', 'running')
         nodeStatuses.value = next
         isDemoRunning.value = false
         pausedAtNodeId.value = 'settings'
@@ -261,6 +261,10 @@ export function useWorkflowExecution(deps: {
       isDemoRunning.value = true
       workflowError.value = null
       workflowResult.value = null
+
+      const next = new Map(nodeStatuses.value)
+      next.set('settings', 'finished')
+      nodeStatuses.value = next
 
       const steps = buildDemoSteps(nodes.value)
       const settingsStep = steps.find(s => s.nodeIds.includes('settings'))
