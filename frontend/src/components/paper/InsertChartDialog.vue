@@ -66,6 +66,7 @@
   import { computed, ref, watch } from 'vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
+  import { colorForIndex } from '@/components/paper/charts/chartColors'
   import BarChart from '@/components/paper/charts/BarChart.vue'
   import RadarChart from '@/components/paper/charts/RadarChart.vue'
 
@@ -110,6 +111,8 @@
     return points
   })
 
+  const legendModels = computed(() => [...new Set(chartSeries.value.map(point => point.model))])
+
   function svgToDataUrl (svgString: string): string {
     const bytes = new TextEncoder().encode(svgString)
     let binary = ''
@@ -117,10 +120,38 @@
     return `data:image/svg+xml;base64,${btoa(binary)}`
   }
 
+  function escapeXml (value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+  }
+
   function handleInsert () {
     const svgEl = previewRef.value?.querySelector('svg')
     if (!svgEl) return
-    const svgString = new XMLSerializer().serializeToString(svgEl)
+
+    const width = Number(svgEl.getAttribute('width'))
+    const chartHeight = Number(svgEl.getAttribute('height'))
+    const legendRowHeight = 18
+    const legendTop = chartHeight + 12
+    const totalHeight = legendTop + legendModels.value.length * legendRowHeight
+
+    const chartInnerMarkup = Array.from(svgEl.children)
+      .map(child => new XMLSerializer().serializeToString(child))
+      .join('')
+
+    const legendMarkup = legendModels.value
+      .map((model, index) => {
+        const y = legendTop + index * legendRowHeight
+        return `<rect x="8" y="${y}" width="10" height="10" rx="2" fill="${colorForIndex(index)}" />`
+          + `<text x="24" y="${y + 9}" font-size="11" fill="#4a4f5c">${escapeXml(model)}</text>`
+      })
+      .join('')
+
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}">${chartInnerMarkup}${legendMarkup}</svg>`
+
     emit('insert', svgToDataUrl(svgString))
     emit('update:modelValue', false)
   }

@@ -12,12 +12,16 @@
         :key="ring.scale"
         class="chart-gridline"
         fill="none"
+        stroke="#e8ebf1"
+        stroke-width="1"
         :points="ring.points"
       />
       <line
         v-for="axis in axes"
         :key="`axis-${axis.metric}`"
         class="chart-axis-line"
+        stroke="#d8dbe3"
+        stroke-width="1"
         :x1="center"
         :x2="axis.labelX"
         :y1="center"
@@ -27,6 +31,8 @@
         v-for="axis in axes"
         :key="`label-${axis.metric}`"
         class="chart-axis-label"
+        fill="#6f7480"
+        font-size="10"
         :text-anchor="axis.anchor"
         :x="axis.textX"
         :y="axis.textY"
@@ -42,6 +48,7 @@
         fill-opacity="0.18"
         :points="polygonPoints(model)"
         :stroke="colorForIndex(modelIndex)"
+        stroke-width="1.5"
       />
     </svg>
 

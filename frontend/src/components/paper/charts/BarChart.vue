@@ -11,6 +11,8 @@
         v-for="tick in yTicks"
         :key="`grid-${tick.value}`"
         class="chart-gridline"
+        stroke="#e8ebf1"
+        stroke-width="1"
         :x1="padding.left"
         :x2="width - padding.right"
         :y1="tick.y"
@@ -20,6 +22,8 @@
         v-for="tick in yTicks"
         :key="`label-${tick.value}`"
         class="chart-axis-label"
+        fill="#6f7480"
+        font-size="10"
         text-anchor="end"
         :x="padding.left - 8"
         :y="tick.y + 4"
@@ -39,6 +43,8 @@
         />
         <text
           class="chart-axis-label"
+          fill="#6f7480"
+          font-size="10"
           text-anchor="middle"
           :x="group.centerX"
           :y="height - padding.bottom + 18"
@@ -49,6 +55,8 @@
 
       <line
         class="chart-axis-line"
+        stroke="#d8dbe3"
+        stroke-width="1"
         :x1="padding.left"
         :x2="width - padding.right"
         :y1="height - padding.bottom"
