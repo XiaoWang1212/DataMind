@@ -6,6 +6,7 @@
      → 回傳 paper_markdown + citation_map（引用地圖）
 """
 
+import json
 import logging
 import os
 import re
@@ -337,6 +338,43 @@ class PaperRAGService:
         usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         text = self._call_gemini(prompt, usage_total)
         return text.strip()
+
+    def generate_structured_analysis(self, mining_results: dict) -> dict:
+        """讀 mining_results 摘要，用 Gemini 生成四個面向的結構化分析，供 ResultView.vue 顯示。"""
+        results_text = self._format_datamind_output(mining_results)
+        prompt = (
+            "你是資料科學顧問。請根據以下機器學習實驗結果，"
+            "用繁體中文分別針對四個面向各寫一段簡短分析（每段約 2 到 4 句話）：\n"
+            "1. model_comparison：模型表現比較與選擇建議（哪個模型最好、為什麼、實務上該選哪個）\n"
+            "2. data_insights：資料與特徵層面的洞察（哪些前處理／特徵工程步驟影響最大、資料品質相關發現）\n"
+            "3. risks：風險與限制提示（例如樣本數、過擬合疑慮、指標本身的侷限性）\n"
+            "4. recommendations：後續建議行動（建議再嘗試的模型/參數、建議收集的資料、下一步分析方向）\n\n"
+            f"【機器學習實驗結果】\n{results_text}\n\n"
+            "請輸出 JSON，格式如下（只輸出 JSON，不要有其他文字）：\n"
+            '{"model_comparison": "...", "data_insights": "...", "risks": "...", "recommendations": "..."}'
+        )
+
+        try:
+            resp = self._model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.4,
+                    max_output_tokens=2048,
+                    response_mime_type="application/json",
+                ),
+            )
+            text = getattr(resp, "text", "") or ""
+            data = json.loads(text)
+        except Exception as e:
+            logger.error("結構化分析生成失敗：%s", e)
+            data = {}
+
+        return {
+            "model_comparison": str(data.get("model_comparison", "")),
+            "data_insights": str(data.get("data_insights", "")),
+            "risks": str(data.get("risks", "")),
+            "recommendations": str(data.get("recommendations", "")),
+        }
 
     def get_status(self) -> dict:
         return self._store.get_status()

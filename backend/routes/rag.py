@@ -450,3 +450,30 @@ def generate_insight():
     except Exception as e:
         logger.exception("洞察生成失敗")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/structured-analysis", methods=["POST"])
+def structured_analysis():
+    """根據 DataMind 探勘結果，用 Gemini 生成結構化分析（模型比較、資料洞察、風險、建議）
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+
+    回傳：
+        - analysis : { model_comparison, data_insights, risks, recommendations }
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        analysis = service.generate_structured_analysis(data["mining_results"])
+        return jsonify({"success": True, "analysis": analysis})
+
+    except Exception as e:
+        logger.exception("結構化分析生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
