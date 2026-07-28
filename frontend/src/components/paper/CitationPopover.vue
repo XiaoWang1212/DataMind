@@ -36,14 +36,23 @@
   }>()
 
   const cardWidth = 300
+
+  const hiddenStyle: CSSProperties = {
+    position: 'fixed',
+    visibility: 'hidden',
+    top: '0px',
+    left: '0px',
+    width: `${cardWidth}px`,
+  }
+
   const cardRef = ref<HTMLElement | null>(null)
-  const cardStyle = ref<CSSProperties>({ display: 'none' })
+  const cardStyle = ref<CSSProperties>(hiddenStyle)
 
   function positionCard () {
     const target = props.target
     const card = cardRef.value
     if (!target || !card) {
-      cardStyle.value = { display: 'none' }
+      cardStyle.value = hiddenStyle
       return
     }
 
@@ -70,9 +79,10 @@
 
   watch(() => [props.citation, props.target], async () => {
     if (!props.citation || !props.target) {
-      cardStyle.value = { display: 'none' }
+      cardStyle.value = hiddenStyle
       return
     }
+    cardStyle.value = hiddenStyle
     await nextTick()
     positionCard()
   }, { immediate: true })
