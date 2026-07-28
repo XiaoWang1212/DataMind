@@ -110,9 +110,10 @@
             v-for="(msg, index) in chatMessages"
             :key="index"
             class="chat-bubble"
-            :class="msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--model'"
+            :class="[msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--model', { 'chat-bubble--failed': msg.failed }]"
           >
             <p class="chat-bubble-text">{{ msg.text }}</p>
+            <p v-if="msg.failed" class="chat-bubble-failed-hint">傳送失敗</p>
             <div v-if="msg.papers && msg.papers.length > 0" class="chat-papers">
               <a
                 v-for="paper in msg.papers"
@@ -251,6 +252,7 @@
 
   interface DisplayChatMessage extends ChatMessage {
     papers?: ArxivCandidate[]
+    failed?: boolean
   }
 
   const analysis = ref<StructuredAnalysis | null>(null)
@@ -271,6 +273,11 @@
     analysisError.value = null
     try {
       analysis.value = await fetchStructuredAnalysis(miningResult)
+      const isAllEmpty = Object.values(analysis.value).every(v => v === '')
+      if (isAllEmpty) {
+        analysis.value = null
+        throw new Error('AI 分析生成失敗，請稍後重試')
+      }
       saveStructuredAnalysisToStorage(projectId.value, analysis.value)
     } catch (error) {
       analysisError.value = error instanceof Error ? error.message : String(error)
@@ -299,12 +306,15 @@
     try {
       const historyForApi: ChatMessage[] = chatMessages.value
         .slice(0, -1)
+        .filter(m => !m.failed)
         .map(m => ({ role: m.role, text: m.text }))
       const { reply, papers } = await sendChatMessage(miningResult, historyForApi, text)
       chatMessages.value.push({ role: 'model', text: reply, papers: papers.length > 0 ? papers : undefined })
       saveChatHistoryToStorage(projectId.value, chatMessages.value)
     } catch (error) {
       chatError.value = error instanceof Error ? error.message : String(error)
+      const lastMessage = chatMessages.value[chatMessages.value.length - 1]
+      if (lastMessage) lastMessage.failed = true
     } finally {
       chatLoading.value = false
     }
@@ -601,6 +611,17 @@
   align-self: flex-start;
   background: #f4f5f8;
   color: #1f2532;
+}
+
+.chat-bubble--failed {
+  opacity: 0.65;
+  outline: 1px solid #d64545;
+}
+
+.chat-bubble-failed-hint {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: #ffd7d7;
 }
 
 .chat-bubble-text {
