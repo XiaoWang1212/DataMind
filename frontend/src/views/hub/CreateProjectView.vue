@@ -55,7 +55,7 @@
       <template v-if="currentStep === 1">
         <div class="fw-select-grid">
           <div
-            v-for="fw in frameworks"
+            v-for="fw in frameworkStore.frameworks"
             :key="fw.id"
             class="fw-select-card"
             :class="{ 'fw-select-card--selected': form.frameworkId === fw.id }"
@@ -64,7 +64,7 @@
             <div class="fw-select-icon">
               <v-icon icon="mdi-book-open-outline" size="20" color="#4f46e5" />
             </div>
-            <div class="fw-select-name">{{ fw.name }}</div>
+            <div class="fw-select-name">{{ fw.title }}</div>
             <div class="fw-select-tag">{{ fw.tag }}</div>
           </div>
         </div>
@@ -83,9 +83,9 @@
           <div class="drop-hint">支援 CSV、Excel（最大 50MB）</div>
           <input ref="datasetInput" type="file" accept=".csv,.xlsx,.xls" hidden @change="handleDatasetChange" />
         </div>
-        <div v-if="form.dataset" class="file-info">
+        <div v-if="form.datasetFile" class="file-info">
           <v-icon icon="mdi-file-table-outline" size="18" color="#2347c5" />
-          <span class="file-name">{{ form.dataset }}</span>
+          <span class="file-name">{{ form.datasetFile.name }}</span>
         </div>
       </template>
 
@@ -103,13 +103,11 @@
           </div>
           <div class="review-row">
             <span class="review-key">選擇框架</span>
-            <span class="review-val">
-              {{ frameworks.find(f => f.id === form.frameworkId)?.name || '（未選擇）' }}
-            </span>
+            <span class="review-val">{{ selectedFramework?.title || '（未選擇）' }}</span>
           </div>
           <div class="review-row">
             <span class="review-key">資料集</span>
-            <span class="review-val">{{ form.dataset || '（未上傳）' }}</span>
+            <span class="review-val">{{ form.datasetFile?.name || '（未上傳）' }}</span>
           </div>
         </div>
       </template>
@@ -133,10 +131,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useFrameworkStore } from '@/store/frameworkStore'
+import { useProjectStore } from '@/store/projectStore'
 
 const router = useRouter()
+const frameworkStore = useFrameworkStore()
+const projectStore = useProjectStore()
 const datasetInput = ref<HTMLInputElement | null>(null)
 const currentStep = ref(0)
 
@@ -147,32 +149,54 @@ const steps = [
   { title: '審閱並執行', sub: '確認並執行' },
 ]
 
-const frameworks = [
-  { id: 1, name: 'CNN 圖像分類', tag: 'CNN 架構' },
-  { id: 2, name: '市場情緒回歸', tag: '線性回歸' },
-  { id: 3, name: '用戶行為 RNN', tag: '遞歸神經網絡' },
-]
+const form = ref({
+  name: '',
+  description: '',
+  frameworkId: null as number | null,
+  datasetFile: null as File | null,
+})
 
-const form = ref({ name: '', description: '', frameworkId: null as number | null, dataset: '' })
+const selectedFramework = computed(() =>
+  frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
+)
 
-function stepCircleClass(i: number) {
+function stepCircleClass(i: number): string {
   if (i < currentStep.value) return 'step-circle--done'
   if (i === currentStep.value) return 'step-circle--active'
   return 'step-circle--inactive'
 }
 
-function handleDatasetChange(e: Event) {
+function handleDatasetChange(e: Event): void {
   const input = e.target as HTMLInputElement
-  if (input.files?.[0]) form.value.dataset = input.files[0].name
+  if (input.files?.[0]) form.value.datasetFile = input.files[0]
 }
 
-function handleDatasetDrop(e: DragEvent) {
+function handleDatasetDrop(e: DragEvent): void {
   const file = e.dataTransfer?.files[0]
-  if (file) form.value.dataset = file.name
+  if (file) form.value.datasetFile = file
 }
 
-function executeProject() {
-  router.push('/hub/projects')
+function executeProject(): void {
+  const today = new Date().toISOString().slice(0, 10)
+  const project = projectStore.addProject({
+    name: form.value.name || '未命名專案',
+    description: form.value.description,
+    frameworkId: form.value.frameworkId,
+    frameworkName: selectedFramework.value?.title ?? '',
+    datasetName: form.value.datasetFile?.name ?? '',
+    status: 'draft',
+    date: today,
+    progress: 0,
+    variables: selectedFramework.value?.variables ?? 0,
+  })
+
+  projectStore.setActiveContext({
+    projectId: project.id,
+    datasetFile: form.value.datasetFile,
+    frameworkId: form.value.frameworkId,
+  })
+
+  router.push(`/workflow?project=${project.id}`)
 }
 </script>
 

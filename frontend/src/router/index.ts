@@ -19,19 +19,19 @@ const router = createRouter({
       component: () => import("@/views/WorkflowPage.vue"),
     },
     {
-      path: "/sidebar",
-      name: "sidebar",
-      component: () => import("@/components/Sidebar.vue"),
-    },
-    {
       path: "/results",
       name: "results",
       component: () => import("@/views/ResultsPage.vue"),
     },
     {
-      path: "/pycaret",
-      name: "pycaret",
-      component: () => import("@/views/PyCaretTestPage.vue"),
+      path: "/paper",
+      name: "paper",
+      component: () => import("@/views/PaperPage.vue"),
+    },
+    {
+      path: "/paper/sources",
+      name: "paper-sources",
+      component: () => import("@/views/PaperSourcesView.vue"),
     },
     // ── Research Hub ──
     {
@@ -68,6 +68,11 @@ const router = createRouter({
           path: "projects/:id",
           name: "hub-project-detail",
           component: () => import("@/views/hub/ProjectDetailView.vue"),
+        },
+        {
+          path: "projects/:id/result",
+          name: "hub-project-result",
+          component: () => import("@/views/hub/ResultView.vue"),
         },
         {
           path: "settings",

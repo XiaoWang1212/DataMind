@@ -1,0 +1,360 @@
+{
+  "preprocessing": [],
+  "featureEngineering": [],
+  "models": [
+    {
+      "name": "Decision Tree",
+      "type": "Classification",
+      "purpose_zh": "建立決策樹模型，用於分類住院壓瘡。透過樹狀結構進行決策，可應用於分類和迴歸。",
+      "purpose_en": "Build a decision tree model for classifying inpatient pressure injury. It uses a tree-like structure for decision-making and can be applied to classification and regression."
+    },
+    {
+      "name": "Logistic Regression",
+      "type": "Classification",
+      "purpose_zh": "建立羅吉斯迴歸模型，用於分類住院壓瘡。主要探討自變數與類別型因變數之間的關係。",
+      "purpose_en": "Build a logistic regression model for classifying inpatient pressure injury. It mainly explores the relationship between independent variables and a categorical dependent variable."
+    },
+    {
+      "name": "Random Forest",
+      "type": "Ensemble Learning",
+      "purpose_zh": "建立隨機森林模型，用於分類住院壓瘡。作為多個決策樹的集成學習模型，適用於分類和迴歸，透過多數投票決定最終分類結果。",
+      "purpose_en": "Build a random forest model for classifying inpatient pressure injury. It is an ensemble learning model of multiple decision trees, applicable to classification and regression, determining the final classification result by majority vote."
+    }
+  ],
+  "features": [
+    {
+      "name": "巴氏量表總分",
+      "type": "categorical",
+      "description_zh": "評估日常生活活動能力的量表總分，分為數個依賴程度等級。",
+      "description_en": "Total score of the Barthel Index, assessing activities of daily living, categorized into several levels of dependence."
+    },
+    {
+      "name": "心血管狀況",
+      "type": "categorical",
+      "description_zh": "住院期間心血管狀況是否正常。",
+      "description_en": "Whether cardiovascular status was normal during hospitalization."
+    },
+    {
+      "name": "日常活動能力",
+      "type": "categorical",
+      "description_zh": "住院期間日常活動能力是否正常。",
+      "description_en": "Whether daily activities were normal during hospitalization."
+    },
+    {
+      "name": "左下肢肌力",
+      "type": "categorical",
+      "description_zh": "左下肢的肌肉力量評分。",
+      "description_en": "Muscle strength score of the left lower limb."
+    },
+    {
+      "name": "左上肢肌力",
+      "type": "categorical",
+      "description_zh": "左上肢的肌肉力量評分。",
+      "description_en": "Muscle strength score of the left upper limb."
+    },
+    {
+      "name": "右下肢肌力",
+      "type": "categorical",
+      "description_zh": "右下肢的肌肉力量評分。",
+      "description_en": "Muscle strength score of the right lower limb."
+    },
+    {
+      "name": "右上肢肌力",
+      "type": "categorical",
+      "description_zh": "右上肢的肌肉力量評分。",
+      "description_en": "Muscle strength score of the right upper limb."
+    },
+    {
+      "name": "情緒反應",
+      "type": "categorical",
+      "description_zh": "住院期間的情緒反應，如正常、冷漠、焦慮或無反應。",
+      "description_en": "Emotional responses during hospitalization, such as normal, indifferent, anxiety, or no responses."
+    },
+    {
+      "name": "疼痛評分",
+      "type": "categorical",
+      "description_zh": "疼痛程度評分，從無痛到重度疼痛。",
+      "description_en": "Pain score, from no pain to severe pain."
+    },
+    {
+      "name": "表達能力",
+      "type": "categorical",
+      "description_zh": "表達能力是否正常。",
+      "description_en": "Whether expression ability is normal."
+    },
+    {
+      "name": "睜眼反應",
+      "type": "categorical",
+      "description_zh": "格拉斯哥昏迷指數 (GCS) 的睜眼反應部分。",
+      "description_en": "Eye opening component of the Glasgow Coma Scale (GCS)."
+    },
+    {
+      "name": "運動反應",
+      "type": "categorical",
+      "description_zh": "格拉斯哥昏迷指數 (GCS) 的運動反應部分。",
+      "description_en": "Motor response component of the Glasgow Coma Scale (GCS)."
+    },
+    {
+      "name": "定向力",
+      "type": "categorical",
+      "description_zh": "意識狀態下的定向力是否正常。",
+      "description_en": "Whether orientation is normal in conscious state."
+    },
+    {
+      "name": "語言反應",
+      "type": "categorical",
+      "description_zh": "格拉斯哥昏迷指數 (GCS) 的語言反應部分。",
+      "description_en": "Verbal response component of the Glasgow Coma Scale (GCS)."
+    },
+    {
+      "name": "年齡",
+      "type": "numerical",
+      "description_zh": "患者住院天數減出生日期計算的年齡。",
+      "description_en": "Patient's age calculated by hospital days minus date of birth."
+    },
+    {
+      "name": "血型",
+      "type": "categorical",
+      "description_zh": "患者的血型 (A, B, O, AB)。",
+      "description_en": "Patient's blood type (A, B, O, AB)."
+    },
+    {
+      "name": "身體質量指數",
+      "type": "categorical",
+      "description_zh": "身體質量指數 (BMI) 的分類，包括正常、過高或過低。",
+      "description_en": "Categorization of Body Mass Index (BMI), including normal, too high, or too low."
+    },
+    {
+      "name": "住院科別",
+      "type": "categorical",
+      "description_zh": "患者住院的科別，如一般外科、腸胃內科等。",
+      "description_en": "The department where the patient was hospitalized, e.g., general surgery, gastroenterology."
+    },
+    {
+      "name": "性別",
+      "type": "categorical",
+      "description_zh": "患者的性別 (女性/男性)。",
+      "description_en": "Patient's sex (female/male)."
+    },
+    {
+      "name": "排便模式",
+      "type": "categorical",
+      "description_zh": "住院期間的排便模式，如正常、失禁、腹瀉或便秘。",
+      "description_en": "Defecation pattern during hospitalization, such as normal, incontinent, diarrhea, or constipation."
+    },
+    {
+      "name": "排尿模式",
+      "type": "categorical",
+      "description_zh": "住院期間的排尿模式是否正常。",
+      "description_en": "Whether voiding pattern was normal during hospitalization."
+    },
+    {
+      "name": "飲酒習慣",
+      "type": "categorical",
+      "description_zh": "患者是否有飲酒習慣。",
+      "description_en": "Whether the patient has an alcohol drinking habit."
+    },
+    {
+      "name": "嚼檳榔習慣",
+      "type": "categorical",
+      "description_zh": "患者是否有嚼檳榔習慣。",
+      "description_en": "Whether the patient has a betel nut chewing habit."
+    },
+    {
+      "name": "吸菸習慣",
+      "type": "categorical",
+      "description_zh": "患者是否有吸菸習慣。",
+      "description_en": "Whether the patient has a smoking habit."
+    },
+    {
+      "name": "天門冬胺酸轉胺酶",
+      "type": "numerical",
+      "description_zh": "實驗室數據：天門冬胺酸轉胺酶 (AST) 水平。",
+      "description_en": "Lab data: Aspartate aminotransferase (AST) level."
+    },
+    {
+      "name": "血尿素氮",
+      "type": "numerical",
+      "description_zh": "實驗室數據：血尿素氮 (BUN) 水平。",
+      "description_en": "Lab data: Blood urea nitrogen (BUN) level."
+    },
+    {
+      "name": "肌酸酐",
+      "type": "numerical",
+      "description_zh": "實驗室數據：肌酸酐水平。",
+      "description_en": "Lab data: Creatinine level."
+    },
+    {
+      "name": "空腹血糖",
+      "type": "numerical",
+      "description_zh": "實驗室數據：空腹血糖 (Glucose-AC) 水平。",
+      "description_en": "Lab data: Glucose-ante cibum (Glucose-AC) level."
+    },
+    {
+      "name": "鈉離子",
+      "type": "numerical",
+      "description_zh": "實驗室數據：血鈉離子 (Na+) 水平。",
+      "description_en": "Lab data: Sodium ion (Na+) level."
+    },
+    {
+      "name": "總膽紅素",
+      "type": "numerical",
+      "description_zh": "實驗室數據：總膽紅素 (T-Bilirubin) 水平。",
+      "description_en": "Lab data: Total bilirubin (T-Bilirubin) level."
+    },
+    {
+      "name": "尿酸",
+      "type": "numerical",
+      "description_zh": "實驗室數據：尿酸水平。",
+      "description_en": "Lab data: Uric acid level."
+    },
+    {
+      "name": "白血球",
+      "type": "numerical",
+      "description_zh": "實驗室數據：白血球 (WBC) 計數。",
+      "description_en": "Lab data: White blood cell (WBC) count."
+    },
+    {
+      "name": "癌症家族史",
+      "type": "categorical",
+      "description_zh": "患者是否有癌症家族史。",
+      "description_en": "Whether the patient has a family history of cancer."
+    },
+    {
+      "name": "過敏史",
+      "type": "categorical",
+      "description_zh": "患者是否有過敏史。",
+      "description_en": "Whether the patient has a history of allergy."
+    },
+    {
+      "name": "長期用藥",
+      "type": "categorical",
+      "description_zh": "患者是否有長期用藥習慣。",
+      "description_en": "Whether the patient has a habit of long-term medication use."
+    },
+    {
+      "name": "病史",
+      "type": "categorical",
+      "description_zh": "患者是否有病史。",
+      "description_en": "Whether the patient has a medical history."
+    },
+    {
+      "name": "白蛋白水平",
+      "type": "categorical",
+      "description_zh": "白蛋白水平的分類。",
+      "description_en": "Categorization of albumin level."
+    },
+    {
+      "name": "循環狀況",
+      "type": "categorical",
+      "description_zh": "循環狀況，包括水腫、微血管充填延遲等。",
+      "description_en": "Circulation status, including edema, delayed blood vessel fill, etc."
+    },
+    {
+      "name": "昏迷指數",
+      "type": "categorical",
+      "description_zh": "格拉斯哥昏迷指數 (GCS) 的分類，用於評估意識水平。",
+      "description_en": "Categorization of Glasgow Coma Scale (GCS), used to assess level of consciousness."
+    },
+    {
+      "name": "排泄模式",
+      "type": "categorical",
+      "description_zh": "排泄模式，包括失禁或控制排泄。",
+      "description_en": "Excretion pattern, including incontinence or controlled excretion."
+    },
+    {
+      "name": "活動程度",
+      "type": "categorical",
+      "description_zh": "活動程度，如臥床、輪椅或需要協助行走。",
+      "description_en": "Level of activity, such as bedridden, wheelchair, or needing assistance with walking."
+    },
+    {
+      "name": "活動能力",
+      "type": "categorical",
+      "description_zh": "活動能力，如無法動彈、無法翻身或完全自理。",
+      "description_en": "Level of mobility, such as immobility, unable to turn over, or fully motivated."
+    },
+    {
+      "name": "微血管再充填時間",
+      "type": "categorical",
+      "description_zh": "微血管再充填時間是否正常。",
+      "description_en": "Whether capillary refill time is normal."
+    },
+    {
+      "name": "周邊肢體顏色",
+      "type": "categorical",
+      "description_zh": "周邊肢體的顏色，如正常、蒼白或發紅。",
+      "description_en": "Color at the peripheral limbs, such as normal, pale, or redness."
+    },
+    {
+      "name": "皮膚完整性",
+      "type": "categorical",
+      "description_zh": "皮膚完整性是否完整。",
+      "description_en": "Whether skin integrity is complete."
+    },
+    {
+      "name": "皮膚特性",
+      "type": "categorical",
+      "description_zh": "皮膚特性，如正常、水腫、乾燥或無彈性。",
+      "description_en": "Skin properties, such as normal, edema, dry, or inelastic."
+    },
+    {
+      "name": "周邊肢體溫度",
+      "type": "categorical",
+      "description_zh": "周邊肢體的溫度，如溫暖、冰冷或發燒。",
+      "description_en": "Temperature at the peripheral limbs, such as warm, cold, or fever."
+    },
+    {
+      "name": "舒張壓",
+      "type": "numerical",
+      "description_zh": "患者的舒張壓數值。",
+      "description_en": "Patient's diastolic pressure value."
+    },
+    {
+      "name": "脈搏率",
+      "type": "numerical",
+      "description_zh": "患者的脈搏率數值。",
+      "description_en": "Patient's pulse rate value."
+    },
+    {
+      "name": "呼吸速率",
+      "type": "numerical",
+      "description_zh": "患者的呼吸速率數值。",
+      "description_en": "Patient's respiration rate value."
+    },
+    {
+      "name": "收縮壓",
+      "type": "numerical",
+      "description_zh": "患者的收縮壓數值。",
+      "description_en": "Patient's systolic pressure value."
+    },
+    {
+      "name": "體溫",
+      "type": "numerical",
+      "description_zh": "患者的體溫數值。",
+      "description_en": "Patient's temperature value."
+    }
+  ],
+  "validation": {
+    "method": "test_on_test",
+    "train_size": 0.5,
+    "shuffle": true
+  },
+  "metrics": [
+    {
+      "metric": "precision"
+    },
+    {
+      "metric": "recall"
+    },
+    {
+      "metric": "specificity"
+    },
+    {
+      "metric": "f1"
+    },
+    {
+      "metric": "auc"
+    }
+  ]
+}

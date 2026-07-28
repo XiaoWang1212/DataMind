@@ -5,13 +5,18 @@ description = "DataMind Flask backend with local Whisper STT"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 dependencies = [
-  "flask==3.1.0",
-  "flask-cors==5.0.0",
-  "python-dotenv==1.0.1",
-  "openai-whisper",
-  "pandas",
-  "pycaret",
+  "mineru[core]",
+  "torch",
+  "flask",
+  "flask-cors",
   "scikit-learn",
+  "google-generativeai",
+  "openai-whisper",
+  "xgboost",
+  "lightgbm",
+  "catboost",
+  "imbalanced-learn",
+  "seaborn",
 ]
 
 [build-system]
@@ -20,3 +25,17 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 package = false
+
+# torch 只在容器裡跑 CPU 推論（Whisper/mineru 用到，docker-compose.yml 沒有設定 GPU
+# 直通），改抓 PyTorch 官方的 CPU-only wheel，避免預設在 Linux 上連帶下載整包
+# nvidia-*-cu12 CUDA 函式庫（好幾 GB，且完全用不到）。只對 Linux 生效，
+# Windows/macOS 本機開發維持原本的解析方式。
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

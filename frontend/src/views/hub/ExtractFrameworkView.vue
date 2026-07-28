@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Back link -->
-    <RouterLink to="/hub/library" class="back-link">
+    <RouterLink class="back-link" to="/hub/library">
       <v-icon icon="mdi-arrow-left" size="15" />
       返回框架庫
     </RouterLink>
@@ -20,18 +20,24 @@
         <div
           class="drop-zone"
           :class="{ 'drop-zone--over': isDragOver }"
-          @dragover.prevent="isDragOver = true"
-          @dragleave="isDragOver = false"
-          @drop.prevent="handleDrop"
           @click="fileInput?.click()"
+          @dragleave="isDragOver = false"
+          @dragover.prevent="isDragOver = true"
+          @drop.prevent="handleDrop"
         >
-          <v-icon icon="mdi-upload-outline" size="48" class="drop-icon" />
+          <v-icon class="drop-icon" icon="mdi-upload-outline" size="48" />
           <div class="drop-text">點擊上傳或拖放檔案</div>
           <div class="drop-hint">僅限 PDF 檔案（最大 10MB）</div>
-          <input ref="fileInput" type="file" accept=".pdf" hidden @change="handleFileChange" />
+          <input
+            ref="fileInput"
+            accept=".pdf"
+            hidden
+            type="file"
+            @change="handleFileChange"
+          >
         </div>
         <div v-if="selectedFile" class="file-info">
-          <v-icon icon="mdi-file-pdf-box" size="18" color="#ef4444" />
+          <v-icon color="#ef4444" icon="mdi-file-pdf-box" size="18" />
           <span class="file-name">{{ selectedFile.name }}</span>
           <button class="file-remove" @click="selectedFile = null">
             <v-icon icon="mdi-close" size="15" />
@@ -45,7 +51,7 @@
           開始提取
         </button>
         <div v-if="extracting" class="extracting-indicator">
-          <v-progress-circular indeterminate color="#2347c5" size="20" width="2" />
+          <v-progress-circular color="#2347c5" indeterminate size="20" width="2" />
           <span>正在提取框架...</span>
         </div>
       </div>
@@ -54,7 +60,8 @@
       <div class="panel">
         <div class="panel-label">已提取框架</div>
         <div class="result-zone">
-          <div v-if="!extractedData" class="result-placeholder">
+          <div v-if="extractError" class="result-error">{{ extractError }}</div>
+          <div v-else-if="!extractedData" class="result-placeholder">
             提取完成後，框架詳細資料將顯示於此
           </div>
           <template v-else>
@@ -62,13 +69,33 @@
               <div class="result-field-label">框架名稱</div>
               <div class="result-field-value">{{ extractedData.name }}</div>
             </div>
-            <div class="result-field">
-              <div class="result-field-label">方法論</div>
-              <div class="result-field-value">{{ extractedData.method }}</div>
+            <div v-if="extractedData.targetCol" class="result-field">
+              <div class="result-field-label">目標欄位</div>
+              <div class="result-field-value">{{ extractedData.targetCol }}</div>
             </div>
-            <div class="result-field">
-              <div class="result-field-label">已識別變數</div>
-              <div class="result-field-value">{{ extractedData.variables }} 個</div>
+            <div v-if="extractedData.models.length > 0" class="result-field">
+              <div class="result-field-label">模型（{{ extractedData.models.length }} 個）</div>
+              <div class="result-tag-list">
+                <span v-for="m in extractedData.models" :key="m" class="result-tag">{{ m }}</span>
+              </div>
+            </div>
+            <div v-if="extractedData.preprocessing.length > 0" class="result-field">
+              <div class="result-field-label">前處理步驟（{{ extractedData.preprocessing.length }} 個）</div>
+              <div class="result-tag-list">
+                <span v-for="s in extractedData.preprocessing" :key="s" class="result-tag result-tag--gray">{{ s }}</span>
+              </div>
+            </div>
+            <div v-if="extractedData.featureEngineering.length > 0" class="result-field">
+              <div class="result-field-label">特徵工程（{{ extractedData.featureEngineering.length }} 個）</div>
+              <div class="result-tag-list">
+                <span v-for="s in extractedData.featureEngineering" :key="s" class="result-tag result-tag--gray">{{ s }}</span>
+              </div>
+            </div>
+            <div v-if="extractedData.metrics.length > 0" class="result-field">
+              <div class="result-field-label">評估指標</div>
+              <div class="result-tag-list">
+                <span v-for="m in extractedData.metrics" :key="m" class="result-tag result-tag--indigo">{{ m }}</span>
+              </div>
             </div>
             <button class="save-btn" @click="saveFramework">儲存框架</button>
           </template>
@@ -80,42 +107,99 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { analyzeWorkflowFromPdf } from '@/api/gemini'
+import { useFrameworkStore } from '@/store/frameworkStore'
 
+interface ExtractedFramework {
+  name: string
+  models: string[]
+  preprocessing: string[]
+  featureEngineering: string[]
+  targetCol: string
+  metrics: string[]
+}
+
+const router = useRouter()
+const store = useFrameworkStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const isDragOver = ref(false)
 const extracting = ref(false)
-const extractedData = ref<{ name: string; method: string; variables: number } | null>(null)
+const extractError = ref<string | null>(null)
+const extractedData = ref<ExtractedFramework | null>(null)
+const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
 
-function handleFileChange(e: Event) {
+function handleFileChange(e: Event): void {
   const input = e.target as HTMLInputElement
   if (input.files?.[0]) selectedFile.value = input.files[0]
 }
 
-function handleDrop(e: DragEvent) {
+function handleDrop(e: DragEvent): void {
   isDragOver.value = false
   const file = e.dataTransfer?.files[0]
   if (file && file.type === 'application/pdf') selectedFile.value = file
 }
 
-function startExtract() {
+async function startExtract(): Promise<void> {
+  if (!selectedFile.value) return
   extracting.value = true
   extractedData.value = null
-  setTimeout(() => {
-    extracting.value = false
+  extractError.value = null
+
+  try {
+    const result = await analyzeWorkflowFromPdf({
+      file: selectedFile.value,
+      title: selectedFile.value.name.replace(/\.[^.]+$/, ''),
+    })
+
+    const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
+      typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+    )
+    const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
+      (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+    )
+    const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
+      (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+    )
+
+    rawWorkflowJson.value = result
     extractedData.value = {
-      name: selectedFile.value?.name.replace('.pdf', '') ?? '未命名框架',
-      method: 'CNN 卷積神經網絡',
-      variables: 12,
+      name: selectedFile.value.name.replace(/\.[^.]+$/, ''),
+      models,
+      preprocessing,
+      featureEngineering,
+      targetCol: String(result.target_col ?? result.targetCol ?? ''),
+      metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
     }
-  }, 2000)
+  } catch (error) {
+    extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+  } finally {
+    extracting.value = false
+  }
 }
 
-function saveFramework() {
-  alert('框架已儲存至框架庫！')
+function saveFramework(): void {
+  if (!extractedData.value) return
+  const d = extractedData.value
+  const today = new Date().toISOString().slice(0, 10)
+  store.addFramework({
+    title: d.name,
+    subtitle: d.models.join('、') || '未命名方法',
+    tag: d.models[0] ?? 'AI 提取',
+    date: today,
+    variables: d.preprocessing.length + d.featureEngineering.length,
+    paperTitle: d.name,
+    description: `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
+    independentVars: [...d.preprocessing, ...d.featureEngineering],
+    dependentVars: d.targetCol ? [d.targetCol] : [],
+    hypotheses: [],
+    workflowJson: rawWorkflowJson.value ?? undefined,
+  })
   extractedData.value = null
+  rawWorkflowJson.value = null
   selectedFile.value = null
+  router.push('/hub/library')
 }
 </script>
 
@@ -284,16 +368,52 @@ function saveFramework() {
   text-align: center;
 }
 
+.result-error {
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+}
+
 .result-field-label {
   font-size: 12px;
   color: #9ca3af;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .result-field-value {
   font-size: 14px;
   color: #111827;
   font-weight: 500;
+}
+
+/* ── Tags ── */
+.result-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.result-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.result-tag--gray {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.result-tag--indigo {
+  background: #ede9fe;
+  color: #5b21b6;
 }
 
 .save-btn {

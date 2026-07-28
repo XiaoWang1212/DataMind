@@ -1,0 +1,297 @@
+Constructing Inpatient Pressure Injury Prediction Models
+Using Machine Learning Techniques
+Ya-Han Hu, PhD, Yi-Lien Lee, Ming-Feng Kang, MS, Pei-Ju Lee, PhD
+The incidence rate of pressure injury is a critical nursing
+quality indicator inclinic care; consequently, factors causing
+pressure injury are diverse and complex. The early preven
+tion of pressure injury and monitoring of these complex
+high-risk factors are critical to reducethepatients' pain, pre
+vent further surgical treatment, avoid prolonged hospital
+stay, decreasethe riskof woundinfection, andlower associ
+atedmedicalcostsandexpenses.Althoughanumberofrisk
+assessmentscalesofpressureinjury have been adopted
+in various countries, their criteria are set for specific pop
+ulations, which may not be suitable for the medical care
+systems of other countries. This study constructs three
+prediction models of inpatient pressure injury using ma
+chine learning techniques, including decision tree, logistic
+regression, and random forest. A total of 11 838 inpatient
+records were collected, and 30 sets of training samples
+were adopted for data analysis in the experiment. The ex
+perimental results and evaluations of the models suggest
+that the prediction model built using random forest had most
+favorable classification performance of 0.845. The critical
+risk factors for pressure injury identified in this study were
+skin integrity, systolic blood pressure, expression ability, cap
+illary refill time, and level of consciousness.
+KEY WORDS: Classification technique, Inpatient pressure
+injury, Machine learning, Pressure injury risk assessment
+Inpatientpressureinjuryisa critical clinical monitoring in
+dicator; a high rate of inpatient pressure injury not only
+indicates many underlying medical problems but also
+Author Affiliations: Department of Information Management, National Central University, Taoyuan,
+Taiwan (Dr Hu); Center for Innovative Research on Aging Society (CIRAS), National Chung Cheng
+University, Chiayi, Taiwan (Dr Hu); MOST AI Biomedical Research Center, National Cheng Kung
+University, Tainan, Taiwan (Dr Hu); Department of Information Management and Institute of Health
+care Information Management, National Chung Cheng University, Chiayi, Taiwan (Ms Lee, Ms Kang,
+and Dr Lee); Department of Medical Affairs, Chi Mei Medical Center, Tainan, Taiwan (Ms Lee); and
+Office of Resource Management, St. Martin De Porres Hospital, Chiayi, Taiwan (Ms Kang).
+This research was supported in part by the Ministry of Science and Technology (grant number
+MOST107-2410-H-194-054-MY2, MOST107-2410-H-194-053) and the Center for Innovative
+Research on Aging Society from The Featured Areas Research Center Program within the frame
+work of the Higher Education Sprout Project by the Ministry of Education in Taiwan.
+The authors have disclosed that they have no significant relationships with, or financial interest
+in, any commercial companies pertaining to this article.
+Corresponding author: Pei-Ju Lee, PhD, Department of Information Management and Institute
+of Healthcare Information Management, National Chung Cheng University, No. 168, Sec. 1,
+University Rd, Minhsiung, Chiayi, Taiwan, 62102, ROC (pjlee@mis.ccu.edu.tw).
+Supplemental digital content is available for this article. Direct URL citations appear in the
+printed text and are provided in the HTML and PDF versions of this article on the journal's
+Web site (www.cinjournal.com).
+Copyright © 2020 Wolters Kluwer Health, Inc. All rights reserved.
+DOI: 10.1097/CIN.0000000000000604
+predicts potential subsequent problems. Pressure injury is
+strongly associated with prolonged hospital stays, and may
+be accompanied by wound infection, pain, numerous com
+plications, and even death if severe.1 Thus, pressure injury
+is a key factor for medical care quality. Ninety-five percent
+of pressure injury cases can be prevented, and the cost of
+preventing pressure injury is much lower than the cost of
+treatment.2 A previous study conducted in the United States
+revealed that the medical expenses of a patient with pressure
+injury range from US$2000 to US$3000 on average.3
+Pressure injury is preventable; however, identifying all risk
+factors is difficult due to complex and diverse causes.4 The
+Braden Scale5 is the most commonly used clinical tool for
+pressure injury prediction as a result of its high sensitivity
+and specificity. However, previous studies have shown that
+some risk factors for pressure injury, such as sex, length of
+hospital stay, disease severity, medication use, diagnosis, and
+nursing workload, are not taken into consideration within
+the Braden Scale.5
+The pressure injury assessment scales currently used by
+hospitals in Taiwan for the systematic checkup of patients
+prior to hospital admission are derived from the pressure in
+jury risk assessment scales of other countries. To date, there
+has been no single universal pressure injury assessment scale
+developed for Taiwan. The Joint Commission of Taiwan
+provides hospitals with various healthcare quality indicators
+and training programs to improve healthcare for patients.
+The Taiwan Clinical Performance Indicator (TCPI) evalu
+ates clinical care in four categories, including general care,
+acute psychiatric care, chronic psychiatric care, and long
+term care. The prevalence rate and density of pressure in
+jury amongpatients are used to monitor the quality of hospi
+talization care. The incidence rate of inpatient pressure
+injury in Taiwan's regional hospitals was 0.22% in 2015
+according to the strict reporting requirements of TCPI.6
+Despite compliance with these scales, the occurrence rate
+of pressure injury has remained the same in Taiwan.5 This
+suggests that some risk factors are not included in the clinical
+pressure injury assessment scales. Furthermore, the predic
+tion power of any single assessment mentioned above is
+weak, possibly due to the complexity and interdependent na
+ture of the risk factors for pressure injury. Therefore, the es
+tablishment of an accurate pressure injury risk assessment
+scale is urgently required.
+CIN: Computers, Informatics, Nursing
+1
+Volume 00 | Number 0
+FEATURE ARTICLE
+Because of the nursing human-resource shortage and
+heavy workload, acomprehensivepressureinjury assessment
+scale is needed to assist nurses in identifying the actual risk
+factors for pressure injury and preventing it in high-risk
+patients. After identification, preventive care can be pro
+vided to patients to reduce the incidence rate of pressure in
+jury and prevent advancement of the pressure injury stage.7,8
+Raff9 conducted a study using logistic regression (LGR)
+andfoundthefollowingrisk factorsfor pressure injury: spinal
+cord injury, mechanical ventilation, and age of 40 years or
+older. Some demographic information such as age, hospital de
+partment, and sex were included in many previous studies.10–16
+Raju et al17 used LGR, decision tree (DT), and random
+forest (RF) to examine risk factors for general inpatient pres
+sure injury and ranked them in the following order accord
+ing to their level of significance: length of hospital stay, serum
+albumin, age, blood urine nitrogen, and total Braden score.
+Lyder et al18 analyzed retrospective data on pressure injury
+and showed that age, cancer, congestive heart failure, chronic
+obstructive pulmonary disease, cardiovascular diseases, diabe
+tes, obesity, rehospitalization, and prolonged length of hospi
+tal stay were all significantly correlated with pressure injury.
+Using multivariate linear regression, Cox19 and Cremasco
+et al20 analyzed the development of pressure injury in pa
+tients in the intensive care unit and identified the following
+risk factors for pressure injury: sex, age, length of hospital
+stay, mobility, frictional/shear forces, adrenaline infusion,
+cardiovascular diseases, disease severity, and nursing work
+load. In addition to Cox,19 the length of hospital stay and
+medical history11,14,15,18,21 and the level of mobility5,10,11,22,23
+were also commonly considered.
+Lahmann et al24,25 used the χ2 automatic interaction de
+tection to model a classification tree for identifying the pre
+dictors of pressure injury and showed that friction and shear
+are the most potent predictors of pressure injury. Okuwa
+et al26 used LGR to analyze risk factors for pressure injury
+in the lower limbs and reported that the key risk factors were
+length of bed rest, male sex, lower limb contracture, toe con
+tracture, ankle-brachial index, hemoglobin, red blood cells,
+sodium ions, and chloride ions. Schoonhoven et al27 ana
+lyzed the independent predictors of pressure injury by using
+LGR and found that the predictors were age, body weight
+at admission, abnormal appearance of the skin, friction
+and shear, and planned surgery.28 Skin appearance and
+properties were considered as one major indicator of
+pressure injury.3,4,10,13–16,22,25,29
+This study used classification techniques to establish a
+domestic inpatient pressure injury prediction model intended
+to assist nurses to identify patients at high risk. This model au
+tomatically screens and identifies patients who are at a po
+tential high risk of pressure injury using the electronic medical
+record, thereby simplifying the current complex process that
+2
+requires repeated assessment of pressure injury risk factors.
+Another advantage of a pressure injury prediction model is
+that it can be used for case management; in other words, it
+enables nurses to implement early preventive treatments
+for pressure injury, which may reduce related complications
+and eventually improve medical care quality.
+MATERIALS
+Data Collection
+This study was conducted using clinical data from one re
+gional teaching hospital in Taiwan; it is a metropolitan hos
+pital with 455 beds. The study applied for access to patients'
+electronic medical records and related information from the
+institutional review board of the hospital. The data were col
+lected from patients hospitalized between the years 2014 and
+2016. Each admission of a patient at a different time was con
+sidered as a single data point and all data were deidentified
+in the analysis. Patients' medical information, including nurs
+ing assessment at admission, laboratory test results, and pres
+sure injury-related information, were collected retrospectively.
+When the data values were missing, the authors performed
+value imputation based on the similarity between samples
+and deleted samples if too many values were missing; an
+excess of missing values may lead to analysis errors. The lit
+erature shows that the causes of pressure injury differ sig
+nificantly between adults and children.30 Therefore, the
+present study targeted adults and excluded patients younger
+than 18 years.
+Variables
+In Taiwan, domestic pressure injury assessment scales are
+mostly derived from the Braden Scale,5 Gosnell Scale,23
+WaterlowScale,29andNortonScale.31Thesescalesare used
+by different hospitals, and the assessment criteria are set up
+differently according to the target population as well as ap
+plicability and feasibility in terms of medical care systems.
+The contents of these four pressure injury assessments are
+different, and the criteria for determining the risk of pressure
+injury vary. To facilitate clinical use, these measurements do
+not include all variables that may affect pressure injury;
+therefore, using these measurements is not enough.
+According to previous studies, risk factors for pressure
+injury can be divided into internal and external factors.
+The internal factors include patients' health problems or
+conditions, which are sex, age, malnutrition, albumin level,
+anemia, hypotension, incontinence, decreased level of con
+sciousness in daily activities, systemic infection, chronic dis
+eases, disease severity, smoking habit, increases in physical
+and mental stress, and negative emotions. The external fac
+tors are the amount of pressure imposed on tissues, length of
+stay, shear force, friction, and high humidity.1,21,32,33
+CIN: Computers, Informatics, Nursing
+Month 2020
+The Barthel Index represents the activities of daily living
+assessment scale, which is the most commonly used scale to
+assess physical function in the case of long-term care and
+home care of the National Health Insurance. The scoring
+items in the Barthel Index include the ability to feed, move
+from wheelchair to bed and return, personal toilet, get on
+and off toilet, bathe self, walk on level surface, ascend and
+descend stairs, dress, and control bowels and bladder. A
+higher total score on the Barthel Index means the patient is
+less dependent on assistance. The total score on the Barthel
+Index and the incidence of pressure injury were negatively
+correlated; this implies a higher likelihood of patients being
+bedridden, which in turn can increase the rate of pressure in
+jury because of prolonged pressure on the skin.
+After integrating information from previous literature,
+existing scales, and clinical recommendations, this study se
+lected 54 variables under 12 categories (Table 1).
+DATA ANALYSIS
+After data collection and preprocessing, a total of 11 677
+non–pressure injury cases and 161 pressure injury cases were
+included inthe data analysis. The data set was randomlysplit
+into training and validation sets (1:1 ratio). That is, 50% of
+the data were used to train the best classifier in the tests
+and the remaining 50% of the data were used to validate
+the model performance. Toselect an optimal feature set that
+contains the independent variables highly correlated with
+the dependent variable (class) but uncorrelated with each
+other, a correlation-based feature selection technique, the
+CfsSubsetEval module of the data mining software Waikato
+Environmentfor KnowledgeAnalysis(WEKA;Universityof
+Waikato, New Zealand), was applied.
+In the collected dataset, the rate of pressure injury was
+1.36%,suggesting animbalancedratio betweenthetwo class
+labels. To avoid the class imbalance problem, the resample
+module of WEKA was employed to both undersample the
+majority class and oversample the minority class by the boot
+strap method. As a result, the injury and non–pressure injury
+cases were adjusted at a 1:1 ratio in the training set. More
+over, some useful samples in both classes may not be chosen
+by the resample module, resulting in a possible bias in the
+evaluations of model performance. Therefore, the bootstrap
+method was applied 10 times to construct 10 training datasets;
+for each generated training dataset, 10-fold cross-validation
+was then conducted in all the experimental evaluations.35
+In this study, WEKA was used to build prediction models
+of DT,LGR,andRF.Logisticregression issimilar to the lin
+ear regression analysis that mainly explores the relationship
+between the dependent variable and the independent vari
+able. The dependent variable in linear regression is usually
+a continuous variable; however, in this case, the dependent
+variable discussed by LGR is mainly a categorical variable,
+especially a variable divided into two categories. In addition
+to using a binary dependent variable, there are other exten
+sions for more thantwolevelsofdependentvariables, includ
+ing multinomial logistic regression or ordinal LGR. Decision
+tree uses the concept of tree branching as a decision-making
+model, which can be applied to classification and regression.
+Because the prediction result can display not only the category
+type but also the numerical data, the DT can be expanded
+into the classification tree, regression tree, or classification
+andregression tree. Random forest can be seen as an ensem
+ble learning model of multiple DTs. Similar to the DT, the
+RF can be applied to classification and regression. When a
+new target is classified by RF, each tree in the RF will give
+its own classification label and vote for it. The overall output
+of the forest will be the classification option with the most
+votes and the average of all DT outputs in the regression
+problem. The DT, the LGR, and the RF models were con
+structed using the J48, SimpleLogistic, and RandomForest
+modulesinWEKA,respectively.Becausetheprediction per
+formance of classifiers can be significantly influenced by the
+hyperparameter settings, the CVParameterSelection meta
+learner module of WEKA was used to optimize the hyper
+parameters for each classifier. Table 2 shows the details of
+the parameter tuning for each classification technique.
+After the best classifier is determined from the test of train
+ing sets, the best classifier is then used with optimal parameter
+settings to examine the performance using validation set.
+Theconfusion matrix was adopted to evaluate the perfor
+mance of each prediction model (Figure 1). True-positive
+(TP) is the number of inpatient pressure injuries in the sam
+ple and predicted to be successful; true-negative (TN) is the
+number of inpatient non–pressure injuries in the sample
+and predicted to be inpatient without pressure injury; false
+positive (FP) is the number of inpatient pressure injuries that
+wereactually hospitalized for non–pressure injury patients in
+the sample; and false-negative (FN) is the number of inpa
+tient non–pressure injuries that were actually hospitalized
+for pressure injury in the sample.
+Using the information summarized in the confusion matrix,
+four classification performance metrics, including the preci
+sion, the recall (ie, sensitivity), the specificity, and the F1
+measure, can be obtained through the following equations

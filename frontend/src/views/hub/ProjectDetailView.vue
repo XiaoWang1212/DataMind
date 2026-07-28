@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Back link -->
-    <RouterLink to="/hub/projects" class="back-link">
+    <RouterLink class="back-link" to="/hub/projects">
       <v-icon icon="mdi-arrow-left" size="15" />
       返回專案
     </RouterLink>
@@ -14,7 +14,7 @@
           {{ statusLabel[project.status] }}
         </span>
       </div>
-      <div class="framework-link">框架：{{ project.framework }}</div>
+      <div class="framework-link">框架：{{ project.frameworkName }}</div>
     </div>
 
     <!-- Detail panels -->
@@ -34,14 +34,19 @@
             <div class="result-label">關鍵發現</div>
             <div class="result-value">{{ project.keyFinding }}</div>
           </div>
+          <div class="result-divider" />
+          <RouterLink class="view-result-btn" :to="`/hub/projects/${project.id}/result`">
+            查看完整結果
+            <v-icon icon="mdi-arrow-right" size="14" />
+          </RouterLink>
         </template>
 
         <!-- Running -->
         <template v-else-if="project.status === 'running'">
           <div class="running-state">
             <v-progress-circular
-              indeterminate
               color="#d97706"
+              indeterminate
               size="52"
               width="4"
             />
@@ -53,6 +58,14 @@
         <template v-else>
           <div class="draft-state">尚未執行此專案</div>
         </template>
+
+        <!-- Open in Workflow button -->
+        <div class="open-workflow-wrap">
+          <button class="open-workflow-btn" @click="openInWorkflow">
+            <v-icon icon="mdi-sitemap-outline" size="16" />
+            在 Workflow 中開啟
+          </button>
+        </div>
       </div>
 
       <!-- Project info -->
@@ -64,7 +77,7 @@
         </div>
         <div class="info-row">
           <div class="info-label">資料集</div>
-          <div class="info-value">{{ project.dataset }}</div>
+          <div class="info-value">{{ project.datasetName || '（未上傳）' }}</div>
         </div>
         <div class="info-row">
           <div class="info-label">變數</div>
@@ -80,9 +93,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useProjectStore } from '@/store/projectStore'
 
 const route = useRoute()
+const router = useRouter()
+const store = useProjectStore()
 
 const statusLabel: Record<string, string> = {
   completed: '已完成',
@@ -90,48 +106,14 @@ const statusLabel: Record<string, string> = {
   draft: '草稿',
 }
 
-const projectsData = [
-  {
-    id: '1',
-    name: '市場情緒研究',
-    status: 'completed',
-    framework: '市場情緒回歸',
-    date: '2026-05-29',
-    accuracy: '87.3%',
-    keyFinding: '購買頻率是流失率最強的預測因子（p < 0.001）',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 100,
-  },
-  {
-    id: '2',
-    name: '圖像分類實驗',
-    status: 'running',
-    framework: 'CNN 圖像分類',
-    date: '2026-06-01',
-    accuracy: '',
-    keyFinding: '',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 67,
-  },
-  {
-    id: '3',
-    name: '用戶導航分析',
-    status: 'draft',
-    framework: '用戶行為 RNN',
-    date: '2026-06-02',
-    accuracy: '',
-    keyFinding: '',
-    dataset: 'customer_data.csv',
-    variables: 8,
-    progress: 0,
-  },
-]
-
 const project = computed(() =>
-  projectsData.find(p => p.id === route.params.id),
+  store.projects.find(p => p.id === route.params.id),
 )
+
+function openInWorkflow(): void {
+  if (!project.value) return
+  router.push(`/workflow?project=${project.value.id}`)
+}
 </script>
 
 <style scoped>
@@ -190,10 +172,6 @@ const project = computed(() =>
   color: #6b7280;
 }
 
-.page-header {
-  margin-bottom: 22px;
-}
-
 .framework-link {
   font-size: 13px;
   color: #2347c5;
@@ -248,6 +226,21 @@ const project = computed(() =>
   font-weight: 700;
 }
 
+.view-result-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #2347c5;
+  text-decoration: none;
+}
+
+.view-result-btn:hover {
+  color: #1b3ca0;
+}
+
 /* ── Running state ── */
 .running-state {
   display: flex;
@@ -270,6 +263,33 @@ const project = computed(() =>
   min-height: 120px;
   font-size: 14px;
   color: #9ca3af;
+}
+
+/* ── Open workflow button ── */
+.open-workflow-wrap {
+  padding-top: 20px;
+  margin-top: 4px;
+  border-top: 1px solid #f0f1f3;
+}
+
+.open-workflow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 18px;
+  height: 38px;
+  background: #2347c5;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.open-workflow-btn:hover {
+  background: #1b3ca0;
 }
 
 /* ── Project info ── */
