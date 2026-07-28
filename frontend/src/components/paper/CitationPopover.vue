@@ -1,29 +1,27 @@
 <template>
   <Teleport to="body">
-    <div v-if="citation" class="citation-popover-backdrop" @click="emit('close')">
-      <article ref="cardRef" class="citation-popover-card" :style="cardStyle" @click.stop>
-        <p class="citation-label">
-          <v-icon icon="mdi-book-open-variant-outline" size="13" />
-          來源文獻 [{{ index }}]
-        </p>
-        <p class="citation-field"><span>標題:</span>{{ citation.title }}</p>
-        <p class="citation-field"><span>作者:</span>{{ citation.authors }} ({{ citation.year }})</p>
-        <p class="citation-field"><span>期刊:</span>{{ citation.journal }}</p>
+    <article v-if="citation" ref="cardRef" class="citation-popover-card" :style="cardStyle">
+      <p class="citation-label">
+        <v-icon icon="mdi-book-open-variant-outline" size="13" />
+        來源文獻 [{{ index }}]
+      </p>
+      <p class="citation-field"><span>標題:</span>{{ citation.title }}</p>
+      <p class="citation-field"><span>作者:</span>{{ citation.authors }} ({{ citation.year }})</p>
+      <p class="citation-field"><span>期刊:</span>{{ citation.journal }}</p>
 
-        <p class="citation-label snippet-label">
-          <v-icon icon="mdi-text-search" size="13" />
-          檢索片段
-        </p>
-        <p class="citation-snippet">{{ citation.snippet }}</p>
-      </article>
-    </div>
+      <p class="citation-label snippet-label">
+        <v-icon icon="mdi-text-search" size="13" />
+        檢索片段
+      </p>
+      <p class="citation-snippet">{{ citation.snippet }}</p>
+    </article>
   </Teleport>
 </template>
 
 <script setup lang="ts">
   import type { CSSProperties } from 'vue'
   import type { Citation } from '@/constants/reportData'
-  import { nextTick, ref, watch } from 'vue'
+  import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
   const props = defineProps<{
     citation: Citation | null
@@ -86,19 +84,29 @@
     await nextTick()
     positionCard()
   }, { immediate: true })
+
+  function handleDocumentClick (event: MouseEvent) {
+    if (!props.citation) return
+    const target = event.target as HTMLElement
+    if (cardRef.value?.contains(target)) return
+    if (target.closest('[data-citation-id]')) return
+    emit('close')
+  }
+
+  onMounted(() => {
+    document.addEventListener('click', handleDocumentClick)
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('click', handleDocumentClick)
+  })
 </script>
 
 <style scoped>
-  .citation-popover-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 2400;
-    background: transparent;
-  }
-
   .citation-popover-card {
     max-height: min(400px, calc(100vh - 16px));
     overflow-y: auto;
+    z-index: 2400;
     background: #fffbe8;
     border: 1px solid #eadf9e;
     border-radius: 12px;
