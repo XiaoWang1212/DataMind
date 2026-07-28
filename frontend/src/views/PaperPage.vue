@@ -43,6 +43,7 @@
             v-model="report.content"
             :citations="report.citations"
             :editable="mode === 'edit'"
+            :project-id="projectId"
             @citation-click="onCitationClick"
           />
         </article>

@@ -95,18 +95,31 @@
         variant="text"
         @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
       />
+      <v-btn
+        icon="mdi-chart-bar"
+        size="small"
+        variant="text"
+        @click="chartDialogOpen = true"
+      />
       <span class="toolbar-divider" />
       <v-btn icon="mdi-undo" size="small" variant="text" @click="editor?.chain().focus().undo().run()" />
       <v-btn icon="mdi-redo" size="small" variant="text" @click="editor?.chain().focus().redo().run()" />
     </div>
 
     <EditorContent :editor="editor" class="editor-content" :class="{ 'editor-content--readonly': !editable }" />
+
+    <InsertChartDialog
+      v-model="chartDialogOpen"
+      :project-id="projectId"
+      @insert="handleInsertChart"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
+  import { Image } from '@tiptap/extension-image'
   import { Table } from '@tiptap/extension-table'
   import { TableCell } from '@tiptap/extension-table-cell'
   import { TableHeader } from '@tiptap/extension-table-header'
@@ -114,14 +127,22 @@
   import { TextAlign } from '@tiptap/extension-text-align'
   import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
-  import { watch } from 'vue'
+  import { ref, watch } from 'vue'
   import { CitationMark } from '@/components/paper/citationMark'
+  import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
 
   const props = defineProps<{
     modelValue: JSONContent
     editable: boolean
     citations: Citation[]
+    projectId?: string
   }>()
+
+  const chartDialogOpen = ref(false)
+
+  function handleInsertChart (dataUrl: string) {
+    editor.value?.chain().focus().setImage({ src: dataUrl, alt: '工作流程模型比對圖表' }).run()
+  }
 
   const emit = defineEmits<{
     (e: 'update:modelValue', content: JSONContent): void
@@ -143,6 +164,7 @@
       TableRow,
       TableHeader,
       TableCell,
+      Image.configure({ inline: false }),
       CitationMark.configure({ citationIndex }),
     ],
     editorProps: {
