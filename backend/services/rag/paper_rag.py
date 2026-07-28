@@ -543,7 +543,7 @@ class PaperRAGService:
                     if parsed is None:
                         raise ValueError("Gemini 回傳非合法 JSON")
                     self._validate_score_shape(parsed)
-                except ValueError as e:
+                except (ValueError, TypeError, AttributeError) as e:
                     # temperature=0 下，同一個 prompt 的解析/驗證失敗幾乎是決定性的，
                     # 重試無法改變結果，直接判定此期刊失敗、不再重試以節省成本與時間。
                     last_error = e
