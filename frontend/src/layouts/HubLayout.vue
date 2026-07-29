@@ -17,10 +17,10 @@ import HubSidebar from '@/components/hub/HubSidebar.vue'
 .hub-wrap {
   display: flex;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--color-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .hub-main {

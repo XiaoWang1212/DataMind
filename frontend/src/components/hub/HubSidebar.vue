@@ -49,7 +49,7 @@ const navItems = [
 .hub-sidebar {
   width: 210px;
   min-width: 210px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-right: 1px solid #e8e8e8;
   display: flex;
   flex-direction: column;
@@ -81,7 +81,7 @@ const navItems = [
 .hub-brand-title {
   font-size: 14.5px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   white-space: nowrap;
   line-height: 1.3;
 }
@@ -111,7 +111,7 @@ const navItems = [
 }
 
 .hub-toggle-btn:hover {
-  background: #f5f5f5;
+  background: var(--color-primary);
 }
 
 .hub-nav {
@@ -129,7 +129,7 @@ const navItems = [
   padding: 9px 10px;
   border-radius: 7px;
   text-decoration: none;
-  color: #4b5563;
+  color: var(--color-secondary);
   font-size: 13.5px;
   font-weight: 500;
   transition: background 0.12s;
@@ -137,12 +137,12 @@ const navItems = [
 }
 
 .hub-nav-item:hover {
-  background: #f5f5f5;
+  background: var(--color-primary);
 }
 
 .hub-nav-item--active {
-  background: #2347c5;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-ink);
 }
 
 .hub-nav-label {
