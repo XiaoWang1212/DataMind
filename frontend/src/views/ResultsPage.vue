@@ -28,7 +28,7 @@
 
         <v-btn
           class="generate-paper-btn"
-          color="primary"
+          color="accent"
           size="small"
           @click="router.push(`/paper/sources?project=${projectId}`)"
         >
@@ -42,7 +42,7 @@
 
       <section v-else-if="!workflowResult" class="empty-state">
         <p>尚無結果。請先在 workflow 頁面完成執行。</p>
-        <v-btn color="primary" size="small" @click="router.push('/workflow')">
+        <v-btn color="accent" size="small" @click="router.push('/workflow')">
           前往 Workflow
         </v-btn>
       </section>

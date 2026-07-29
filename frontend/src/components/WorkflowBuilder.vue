@@ -9,7 +9,7 @@
       <v-btn
         block
         class="new-btn"
-        color="primary"
+        color="accent"
         prepend-icon="mdi-plus"
       >新增</v-btn>
 
@@ -26,7 +26,7 @@
       </div>
 
       <div class="user-box">
-        <v-avatar color="primary" size="44">
+        <v-avatar color="accent" size="44">
           <v-icon icon="mdi-account" />
         </v-avatar>
         <div>

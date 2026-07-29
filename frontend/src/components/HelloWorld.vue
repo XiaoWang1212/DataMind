@@ -45,7 +45,7 @@
 
       <v-btn
         class="upload-btn"
-        color="primary"
+        color="accent"
         prepend-icon="mdi-folder-plus-outline"
         rounded="pill"
         size="x-large"
