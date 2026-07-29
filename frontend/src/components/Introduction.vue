@@ -37,7 +37,7 @@
 
           <template #subtitle>
             <div class="mt-2">
-              Change this page by updating <v-code>components/HelloWorld.vue</v-code>.
+              Start building your app with the Hub dashboard.
             </div>
           </template>
         </v-card>
