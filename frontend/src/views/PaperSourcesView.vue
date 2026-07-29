@@ -20,7 +20,7 @@
 
       <section v-else-if="!miningResults" class="sources-status">
         <p>找不到這個專案的探勘結果,請先從 /results 頁面進入。</p>
-        <v-btn color="accent" size="small" @click="router.push(`/results?project=${projectId}`)">
+        <v-btn class="bg-accent" color="accent" size="small" @click="router.push(`/results?project=${projectId}`)">
           回到 /results
         </v-btn>
       </section>
@@ -64,6 +64,7 @@
 
           <div class="sources-actions">
             <v-btn
+              class="bg-accent"
               color="accent"
               :disabled="selectedIds.length === 0 || generating"
               @click="handleGenerate"

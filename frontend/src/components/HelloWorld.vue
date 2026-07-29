@@ -44,7 +44,7 @@
       </div>
 
       <v-btn
-        class="upload-btn"
+        class="upload-btn bg-accent"
         color="accent"
         prepend-icon="mdi-folder-plus-outline"
         rounded="pill"

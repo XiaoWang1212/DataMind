@@ -18,6 +18,7 @@
           <template v-if="mode === 'edit'">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
+              class="bg-accent"
               color="accent"
               :disabled="!projectId"
               :loading="saving"

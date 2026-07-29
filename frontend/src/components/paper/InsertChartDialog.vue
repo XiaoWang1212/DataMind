@@ -56,7 +56,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn variant="text" @click="emit('update:modelValue', false)">取消</v-btn>
-        <v-btn color="accent" :disabled="chartSeries.length === 0" @click="handleInsert">插入</v-btn>
+        <v-btn class="bg-accent" color="accent" :disabled="chartSeries.length === 0" @click="handleInsert">插入</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
