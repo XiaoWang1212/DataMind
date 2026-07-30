@@ -212,7 +212,7 @@
     padding: 6px 8px;
     border: 1px solid #d8dbe3;
     border-radius: 8px;
-    background: #f7f8fb;
+    background: var(--color-surface);
   }
 
   .toolbar-divider {
@@ -225,7 +225,7 @@
   :deep(.editor-content) {
     font-size: 13.5px;
     line-height: 1.9;
-    color: #2a2f3a;
+    color: var(--color-ink);
   }
 
   :deep(.editor-content .ProseMirror) {
@@ -237,7 +237,7 @@
   :deep(.editor-content h3) {
     margin: 0 0 10px;
     font-weight: 700;
-    color: #1c2130;
+    color: var(--color-ink);
   }
 
   :deep(.editor-content p) {
