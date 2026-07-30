@@ -153,21 +153,18 @@
 
 <style scoped>
   .paper-page {
-    --page-bg: #e4e4e8;
-    --card-bg: #ffffff;
+    --page-bg: var(--color-primary);
+    --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: #15181e;
-    --text-secondary: #6f7480;
-    --brand: #1058d6;
+    --text-main: var(--color-ink);
+    --text-secondary: var(--color-secondary);
+    --brand: var(--color-accent);
     min-height: calc(100vh - 64px);
     display: flex;
     gap: 0;
     padding: 16px;
-    background:
-      radial-gradient(circle at 8% 12%, rgba(99, 146, 238, 0.18) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, rgba(88, 157, 255, 0.16) 0%, transparent 30%),
-      linear-gradient(180deg, #d7d9df 0%, #dedfe4 100%);
+    background: var(--color-primary);
     font-family: 'Noto Sans TC', 'Segoe UI', sans-serif;
     color: var(--text-main);
   }
@@ -179,9 +176,7 @@
     flex-direction: column;
     border: 1px solid var(--line);
     border-radius: 0 12px 12px 0;
-    background:
-      radial-gradient(circle, #cdd0d8 1px, transparent 1px) 0 0 / 18px 18px,
-      linear-gradient(180deg, #f3f4f8 0%, #eff1f6 100%);
+    background: var(--color-surface);
     padding: 12px 20px 18px;
     overflow: hidden;
   }
