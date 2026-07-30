@@ -60,7 +60,7 @@
               <svg preserveAspectRatio="none" viewBox="0 0 320 170">
                 <g v-for="(item, idx) in chart.counts" :key="item.label">
                   <rect
-                    fill="#2563eb"
+                    fill="var(--color-accent)"
                     :height="
                       Math.max(4, Math.round((item.count / chart.maxCount) * 110))
                     "
@@ -73,7 +73,7 @@
                     "
                   />
                   <text
-                    fill="#475569"
+                    fill="var(--color-secondary)"
                     font-size="10"
                     text-anchor="middle"
                     :x="
@@ -86,7 +86,7 @@
                     {{ item.label }}
                   </text>
                   <text
-                    fill="#0f172a"
+                    fill="var(--color-ink)"
                     font-size="10"
                     text-anchor="middle"
                     :x="
@@ -374,21 +374,21 @@
   .distribution-file {
     flex-shrink: 0;
     margin-left: auto;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
   .distribution-empty {
     padding: 24px;
     border-radius: 12px;
-    background: #f8fafc;
-    color: #475569;
+    background: var(--color-surface);
+    color: var(--color-secondary);
   }
 
   .distribution-summary {
     display: flex;
     gap: 14px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
@@ -432,7 +432,7 @@
     min-height: 160px;
     border-radius: 16px;
     background: rgba(248, 250, 252, 0.9);
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 14px;
   }
 
@@ -441,7 +441,7 @@
     min-width: 320px;
     padding: 12px;
     border-radius: 16px;
-    background: white;
+    background: var(--color-surface);
     border: 1px solid rgba(148, 163, 184, 0.16);
     scroll-snap-align: start;
     overflow-wrap: anywhere;
@@ -451,7 +451,7 @@
     font-weight: 600;
     font-size: 14px;
     margin-bottom: 4px;
-    color: #475569;
+    color: var(--color-secondary);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -467,7 +467,7 @@
   .distribution-title-toggle {
     border: none;
     background: transparent;
-    color: #2563eb;
+    color: var(--color-accent);
     font-size: 12px;
     padding: 0;
     margin-bottom: 8px;
@@ -477,20 +477,20 @@
 
   .distribution-chart-subtitle {
     font-size: 12px;
-    color: #64748b;
+    color: var(--color-secondary);
     margin-bottom: 10px;
   }
 
   .distribution-chart-meta {
     display: flex;
     justify-content: space-between;
-    color: #64748b;
+    color: var(--color-secondary);
     font-size: 12px;
     margin-bottom: 8px;
   }
 
   .distribution-chart-plot {
-    background: #f8fafc;
+    background: var(--color-surface);
     border-radius: 12px;
     padding: 10px;
   }
