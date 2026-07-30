@@ -103,7 +103,7 @@
     margin: 0;
     font-size: 16px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .summary-table {
@@ -112,7 +112,7 @@
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 12px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--color-surface);
   }
 
   .table-row {
@@ -128,14 +128,14 @@
   }
 
   .table-row:not(.table-row--header):hover {
-    background: rgba(0, 93, 255, 0.035);
+    background: color-mix(in oklab, var(--color-accent) 3.5%, transparent);
   }
 
   .table-row--header {
     font-size: 12px;
     font-weight: 600;
-    color: #475569;
-    background: #f8fafc;
+    color: var(--color-secondary);
+    background: var(--color-surface);
   }
 
   /* 標題列比資料列矮：它只是欄位標籤，不需要跟資料列一樣的呼吸空間 */
@@ -145,7 +145,7 @@
 
   .table-cell {
     padding: 11px 14px;
-    color: #0f172a;
+    color: var(--color-ink);
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
@@ -177,18 +177,18 @@
 
   .model-name {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--color-ink);
     font-size: 13px;
   }
 
   .model-split {
     font-size: 11px;
     font-weight: 400;
-    color: #94a3b8;
+    color: var(--color-secondary);
   }
 
   .summary-empty {
-    color: #6b7280;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 </style>
