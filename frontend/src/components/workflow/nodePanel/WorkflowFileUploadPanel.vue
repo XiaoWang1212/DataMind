@@ -229,6 +229,7 @@
     border-radius: 18px;
     padding: 16px;
     background: var(--color-surface);
+    scroll-snap-align: start;
   }
 
   .upload-modal-chart-title {
