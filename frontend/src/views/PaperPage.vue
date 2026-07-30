@@ -14,7 +14,7 @@
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
-          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit' && hasChanges" />
+          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
           <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
   import type { PaperReport } from '@/constants/reportData'
-  import { computed, onMounted, ref, toRaw, watch } from 'vue'
+  import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
@@ -94,17 +94,6 @@
   )
 
   let savedSnapshot: PaperReport = mockPaperReport
-  let editEntrySnapshot: PaperReport | null = null
-
-  const hasChanges = computed(() =>
-    JSON.stringify(report.value) !== JSON.stringify(editEntrySnapshot),
-  )
-
-  watch(mode, newMode => {
-    if (newMode === 'edit') {
-      editEntrySnapshot = structuredClone(toRaw(report.value))
-    }
-  })
 
   onMounted(async () => {
     document.title = 'DataMind'
