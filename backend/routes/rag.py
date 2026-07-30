@@ -450,3 +450,66 @@ def generate_insight():
     except Exception as e:
         logger.exception("洞察生成失敗")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/structured-analysis", methods=["POST"])
+def structured_analysis():
+    """根據 DataMind 探勘結果，用 Gemini 生成結構化分析（模型比較、資料洞察、風險、建議）
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+
+    回傳：
+        - analysis : { model_comparison, data_insights, risks, recommendations }
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        analysis = service.generate_structured_analysis(data["mining_results"])
+        return jsonify({"success": True, "analysis": analysis})
+
+    except Exception as e:
+        logger.exception("結構化分析生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@rag_bp.route("/chat", methods=["POST"])
+def chat():
+    """跟 AI 對話，針對 mining_results 提問，AI 可自主查詢 arXiv 論文
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+        - history         : 對話歷史 [{role: "user"|"model", text: str}]（選填，預設空陣列）
+        - message         : 本輪使用者輸入（必填）
+
+    回傳：
+        - reply  : AI 回覆文字
+        - papers : 本輪若觸發 arXiv 搜尋，附上候選論文清單；否則為空陣列
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"success": False, "error": "message 為必填欄位"}), 400
+
+    history = data.get("history") or []
+
+    service = get_paper_rag_service()
+
+    try:
+        result = service.chat_about_results(data["mining_results"], history, message)
+        return jsonify({"success": True, **result})
+
+    except Exception as e:
+        logger.exception("對話失敗")
+        return jsonify({"success": False, "error": str(e)}), 500

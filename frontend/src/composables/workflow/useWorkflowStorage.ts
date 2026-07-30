@@ -1,4 +1,5 @@
 import type { EdgeBase, FlowNode } from '@/types/workflow'
+import type { ChatMessage, StructuredAnalysis } from '@/api/resultAnalysis'
 
 const WORKFLOW_DATA_FILE_KEY = 'workflowDataFile'
 const WORKFLOW_JSON_FILE_KEY = 'workflowJsonFile'
@@ -175,4 +176,72 @@ export function loadResultInsightFromStorage (projectId: string): string | null 
 export function clearResultInsightFromStorage (projectId: string): void {
   const key = k(RESULT_INSIGHT_KEY, projectId)
   localStorage.removeItem(key)
+}
+
+// job 在後端已經永久查不到時（重啟、超過 TTL）呼叫，避免下次重新整理又試著輪詢同一個死掉的 job_id
+export function clearActiveJobIdFromStorage (projectId?: string): void {
+  const key = k(WORKFLOW_STATE_KEY, projectId)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return
+  }
+  try {
+    const state = JSON.parse(raw) as Record<string, unknown>
+    state.activeJobId = null
+    localStorage.setItem(key, JSON.stringify(state))
+  } catch (error) {
+    console.error('[WF-SAVE] 無法清除過期的 activeJobId:', error)
+  }
+}
+
+const STRUCTURED_ANALYSIS_KEY = 'structuredAnalysis'
+
+export function saveStructuredAnalysisToStorage (projectId: string, analysis: StructuredAnalysis): void {
+  const key = k(STRUCTURED_ANALYSIS_KEY, projectId)
+  try {
+    localStorage.setItem(key, JSON.stringify(analysis))
+  } catch (error) {
+    console.error('[WF-SAVE] 無法儲存結構化分析:', error)
+  }
+}
+
+export function loadStructuredAnalysisFromStorage (projectId: string): StructuredAnalysis | null {
+  const key = k(STRUCTURED_ANALYSIS_KEY, projectId)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return null
+  }
+  try {
+    return JSON.parse(raw) as StructuredAnalysis
+  } catch (error) {
+    console.error('[WF-LOAD] 結構化分析 JSON.parse FAILED:', error)
+    localStorage.removeItem(key)
+    return null
+  }
+}
+
+const CHAT_HISTORY_KEY = 'chatHistory'
+
+export function saveChatHistoryToStorage (projectId: string, history: ChatMessage[]): void {
+  const key = k(CHAT_HISTORY_KEY, projectId)
+  try {
+    localStorage.setItem(key, JSON.stringify(history))
+  } catch (error) {
+    console.error('[WF-SAVE] 無法儲存對話紀錄:', error)
+  }
+}
+
+export function loadChatHistoryFromStorage (projectId: string): ChatMessage[] {
+  const key = k(CHAT_HISTORY_KEY, projectId)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return []
+  }
+  try {
+    return JSON.parse(raw) as ChatMessage[]
+  } catch (error) {
+    console.error('[WF-LOAD] 對話紀錄 JSON.parse FAILED:', error)
+    localStorage.removeItem(key)
+    return []
+  }
 }

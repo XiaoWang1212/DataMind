@@ -62,16 +62,107 @@
           </table>
         </div>
       </section>
+
+      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card">
+        <div class="analysis-header">
+          <div class="analysis-icon-wrap">
+            <v-icon icon="mdi-shimmer" size="18" />
+          </div>
+          <h2 class="analysis-title">AI 結構化分析</h2>
+        </div>
+
+        <p v-if="analysisLoading" class="analysis-loading">正在生成分析...</p>
+        <template v-else-if="analysisError">
+          <p class="analysis-error">分析生成失敗：{{ analysisError }}</p>
+          <button class="analysis-retry-btn" type="button" @click="loadAnalysis">重試</button>
+        </template>
+        <div v-else-if="analysis" class="analysis-grid">
+          <article class="analysis-block">
+            <h3>模型比較與選擇建議</h3>
+            <p>{{ analysis.model_comparison }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>資料與特徵層面洞察</h3>
+            <p>{{ analysis.data_insights }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>風險與限制提示</h3>
+            <p>{{ analysis.risks }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>後續建議行動</h3>
+            <p>{{ analysis.recommendations }}</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="chat-card">
+        <div class="analysis-header">
+          <div class="analysis-icon-wrap">
+            <v-icon icon="mdi-chat-processing-outline" size="18" />
+          </div>
+          <h2 class="analysis-title">與 AI 對話</h2>
+        </div>
+
+        <div class="chat-messages">
+          <p v-if="chatMessages.length === 0" class="chat-empty">針對這份結果有任何問題，都可以在下方提問。</p>
+          <div
+            v-for="(msg, index) in chatMessages"
+            :key="index"
+            class="chat-bubble"
+            :class="[msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--model', { 'chat-bubble--failed': msg.failed }]"
+          >
+            <p class="chat-bubble-text">{{ msg.text }}</p>
+            <p v-if="msg.failed" class="chat-bubble-failed-hint">傳送失敗</p>
+            <div v-if="msg.papers && msg.papers.length > 0" class="chat-papers">
+              <a
+                v-for="paper in msg.papers"
+                :key="paper.arxiv_id"
+                class="chat-paper-card"
+                :href="paper.pdf_url"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <p class="chat-paper-title">{{ paper.title }}</p>
+                <p class="chat-paper-meta">{{ paper.authors }}<span v-if="paper.year">（{{ paper.year }}）</span></p>
+              </a>
+            </div>
+          </div>
+          <p v-if="chatLoading" class="chat-loading">AI 思考中...</p>
+          <p v-if="chatError" class="chat-error">傳送失敗：{{ chatError }}</p>
+        </div>
+
+        <form class="chat-input-row" @submit.prevent="sendMessage">
+          <input
+            v-model="chatInput"
+            class="chat-input"
+            :disabled="chatLoading"
+            placeholder="針對這份結果提問..."
+            type="text"
+          >
+          <button class="chat-send-btn" :disabled="chatLoading || !chatInput.trim()" type="submit">
+            送出
+          </button>
+        </form>
+      </section>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import type { ArxivCandidate } from '@/api/arxiv'
+  import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
-  import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
+  import { type ChatMessage, fetchStructuredAnalysis, sendChatMessage, type StructuredAnalysis } from '@/api/resultAnalysis'
+  import {
+    loadChatHistoryFromStorage,
+    loadStructuredAnalysisFromStorage,
+    loadWorkflowStateFromStorage,
+    saveChatHistoryToStorage,
+    saveStructuredAnalysisToStorage,
+  } from '@/composables/workflow/useWorkflowStorage'
   import { useProjectStore } from '@/store/projectStore'
-  import { summarizeWorkflowResult, type ModelMetricSummary } from '@/utils/workflow/summarizeWorkflowResult'
+  import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
   interface MetricCard {
     key: string
@@ -158,6 +249,82 @@
     if (row.errors[metric]) return '錯誤'
     return '—'
   }
+
+  interface DisplayChatMessage extends ChatMessage {
+    papers?: ArxivCandidate[]
+    failed?: boolean
+  }
+
+  const analysis = ref<StructuredAnalysis | null>(null)
+  const analysisLoading = ref(false)
+  const analysisError = ref<string | null>(null)
+
+  async function loadAnalysis (): Promise<void> {
+    const cached = loadStructuredAnalysisFromStorage(projectId.value)
+    if (cached) {
+      analysis.value = cached
+      return
+    }
+
+    const miningResult = loadWorkflowStateFromStorage(projectId.value)?.workflowResult
+    if (!miningResult) return
+
+    analysisLoading.value = true
+    analysisError.value = null
+    try {
+      analysis.value = await fetchStructuredAnalysis(miningResult)
+      const isAllEmpty = Object.values(analysis.value).every(v => v === '')
+      if (isAllEmpty) {
+        analysis.value = null
+        throw new Error('AI 分析生成失敗，請稍後重試')
+      }
+      saveStructuredAnalysisToStorage(projectId.value, analysis.value)
+    } catch (error) {
+      analysisError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      analysisLoading.value = false
+    }
+  }
+
+  const chatMessages = ref<DisplayChatMessage[]>([])
+  const chatInput = ref('')
+  const chatLoading = ref(false)
+  const chatError = ref<string | null>(null)
+
+  async function sendMessage (): Promise<void> {
+    const text = chatInput.value.trim()
+    if (!text || chatLoading.value) return
+
+    const miningResult = loadWorkflowStateFromStorage(projectId.value)?.workflowResult
+    if (!miningResult) return
+
+    chatMessages.value.push({ role: 'user', text })
+    chatInput.value = ''
+    chatLoading.value = true
+    chatError.value = null
+
+    try {
+      const historyForApi: ChatMessage[] = chatMessages.value
+        .slice(0, -1)
+        .filter(m => !m.failed)
+        .map(m => ({ role: m.role, text: m.text }))
+      const { reply, papers } = await sendChatMessage(miningResult, historyForApi, text)
+      chatMessages.value.push({ role: 'model', text: reply, papers: papers.length > 0 ? papers : undefined })
+      saveChatHistoryToStorage(projectId.value, chatMessages.value)
+    } catch (error) {
+      chatError.value = error instanceof Error ? error.message : String(error)
+      const lastMessage = chatMessages.value[chatMessages.value.length - 1]
+      if (lastMessage) lastMessage.failed = true
+    } finally {
+      chatLoading.value = false
+    }
+  }
+
+  onMounted(() => {
+    if (summary.value.length === 0) return
+    loadAnalysis()
+    chatMessages.value = loadChatHistoryFromStorage(projectId.value) as DisplayChatMessage[]
+  })
 </script>
 
 <style scoped>
@@ -334,6 +501,207 @@
 .score-best {
   color: #18a836;
   font-weight: 700;
+}
+
+.analysis-card,
+.chat-card {
+  margin-top: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.analysis-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef1ff;
+  color: #2347c5;
+}
+
+.analysis-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.analysis-loading {
+  margin: 0;
+  font-size: 13px;
+  color: #6f7480;
+}
+
+.analysis-error {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #d64545;
+}
+
+.analysis-retry-btn {
+  border: none;
+  background: none;
+  color: #2347c5;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analysis-block h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #20232a;
+}
+
+.analysis-block p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4b5160;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.chat-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  background: #2347c5;
+  color: #ffffff;
+}
+
+.chat-bubble--model {
+  align-self: flex-start;
+  background: #f4f5f8;
+  color: #1f2532;
+}
+
+.chat-bubble--failed {
+  opacity: 0.65;
+  outline: 1px solid #d64545;
+}
+
+.chat-bubble-failed-hint {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: #ffd7d7;
+}
+
+.chat-bubble-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-papers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chat-paper-card {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  text-decoration: none;
+  border: 1px solid #e2e4ea;
+}
+
+.chat-paper-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #2347c5;
+}
+
+.chat-paper-meta {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: #6f7480;
+}
+
+.chat-loading,
+.chat-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #9ca3af;
+}
+
+.chat-error {
+  color: #d64545;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e2e4ea;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.chat-input:disabled {
+  background: #f7f7f9;
+}
+
+.chat-send-btn {
+  height: 38px;
+  padding: 0 18px;
+  background: #2347c5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chat-send-btn:disabled {
+  background: #b7c2e6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 1260px) {

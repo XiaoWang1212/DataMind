@@ -133,7 +133,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
-  import CustomSelect from '@/components/common/CustomSelect.vue'
+  import * as XLSX from 'xlsx'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
@@ -382,22 +382,64 @@
     { deep: true },
   )
 
+  function getFileExtension (file: File): string {
+    const name = file.name || ''
+    const dot = name.lastIndexOf('.')
+    return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()
+  }
+
+  async function loadExcelFile (file: File): Promise<void> {
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    if (!firstSheetName) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    const sheet = workbook.Sheets[firstSheetName]!
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
+    const stringRows = rows.map(row =>
+      row.map(cell => (cell === null || cell === undefined ? '' : String(cell))),
+    )
+    const nonEmptyRows = stringRows.filter(row => row.some(cell => cell.trim().length > 0))
+
+    if (nonEmptyRows.length === 0) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    previewColumns.value = nonEmptyRows[0]!
+    previewDataRows.value = nonEmptyRows.slice(1)
+  }
+
+  async function loadCsvFile (file: File): Promise<void> {
+    const text = await decodeFileText(file)
+    const lines = text
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+
+    if (lines.length === 0) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    previewColumns.value = parseCsvLine(lines[0]!)
+    previewDataRows.value = lines.slice(1).map(line => parseCsvLine(line))
+  }
+
   async function loadFile (file: File): Promise<void> {
     try {
-      const text = await decodeFileText(file)
-      const lines = text
-        .replace(/\r\n/g, '\n')
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-
-      if (lines.length === 0) {
-        previewColumns.value = []
-        previewDataRows.value = []
-        return
+      const ext = getFileExtension(file)
+      if (ext === 'xlsx' || ext === 'xls') {
+        await loadExcelFile(file)
+      } else {
+        await loadCsvFile(file)
       }
-
-      previewColumns.value = parseCsvLine(lines[0]!)
-      previewDataRows.value = lines.slice(1).map(line => parseCsvLine(line))
       buildColumnSettings()
     } catch {
       previewColumns.value = []

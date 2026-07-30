@@ -6,6 +6,7 @@
      → 回傳 paper_markdown + citation_map（引用地圖）
 """
 
+import json
 import logging
 import os
 import re
@@ -69,6 +70,30 @@ class PaperRAGService:
         genai.configure(api_key=api_key)
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self._model = genai.GenerativeModel(model_name=model_name)
+
+        search_arxiv_declaration = genai.protos.FunctionDeclaration(
+            name="search_arxiv",
+            description=(
+                "搜尋 arXiv 上跟指定關鍵字相關的論文，回傳候選論文清單"
+                "（標題、作者、年份、摘要、PDF連結）。當使用者的問題涉及"
+                "「有沒有相關文獻／論文」「這個發現有沒有學術支持」之類需要"
+                "查詢外部學術論文佐證的問題時才呼叫。"
+            ),
+            parameters=genai.protos.Schema(
+                type=genai.protos.Type.OBJECT,
+                properties={
+                    "query": genai.protos.Schema(
+                        type=genai.protos.Type.STRING,
+                        description="英文搜尋關鍵字，適合直接拿去查 arXiv",
+                    ),
+                },
+                required=["query"],
+            ),
+        )
+        self._chat_model = genai.GenerativeModel(
+            model_name=model_name,
+            tools=[genai.protos.Tool(function_declarations=[search_arxiv_declaration])],
+        )
 
         embed_model = os.getenv("RAG_EMBED_MODEL", "BAAI/bge-small-zh-v1.5")
         index_dir = (
@@ -338,6 +363,117 @@ class PaperRAGService:
         text = self._call_gemini(prompt, usage_total)
         return text.strip()
 
+    def generate_structured_analysis(self, mining_results: dict) -> dict:
+        """讀 mining_results 摘要，用 Gemini 生成四個面向的結構化分析，供 ResultView.vue 顯示。"""
+        results_text = self._format_datamind_output(mining_results)
+        prompt = (
+            "你是資料科學顧問。請根據以下機器學習實驗結果，"
+            "用繁體中文分別針對四個面向各寫一段簡短分析（每段約 2 到 4 句話）：\n"
+            "1. model_comparison：模型表現比較與選擇建議（哪個模型最好、為什麼、實務上該選哪個）\n"
+            "2. data_insights：資料與特徵層面的洞察（哪些前處理／特徵工程步驟影響最大、資料品質相關發現）\n"
+            "3. risks：風險與限制提示（例如樣本數、過擬合疑慮、指標本身的侷限性）\n"
+            "4. recommendations：後續建議行動（建議再嘗試的模型/參數、建議收集的資料、下一步分析方向）\n\n"
+            f"【機器學習實驗結果】\n{results_text}\n\n"
+            "請輸出 JSON，格式如下（只輸出 JSON，不要有其他文字）：\n"
+            '{"model_comparison": "...", "data_insights": "...", "risks": "...", "recommendations": "..."}'
+        )
+
+        try:
+            resp = self._model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.4,
+                    # gemini-2.5-flash 的隱藏「thinking」token 也算在 max_output_tokens 裡，
+                    # 2048 對稍微複雜一點的實驗結果就會被吃光，JSON 輸出被截斷到一半失敗。
+                    # 跟檔案內其他呼叫（_call_gemini 預設 8192）看齊，留足夠空間給 thinking + 實際輸出。
+                    max_output_tokens=8192,
+                    response_mime_type="application/json",
+                ),
+            )
+            text = getattr(resp, "text", "") or ""
+            data = json.loads(text)
+            if not isinstance(data, dict):
+                data = {}
+        except Exception as e:
+            logger.error("結構化分析生成失敗：%s", e)
+            data = {}
+
+        return {
+            "model_comparison": str(data.get("model_comparison", "")),
+            "data_insights": str(data.get("data_insights", "")),
+            "risks": str(data.get("risks", "")),
+            "recommendations": str(data.get("recommendations", "")),
+        }
+
+    def chat_about_results(self, mining_results: dict, history: List[dict], message: str) -> dict:
+        """跟使用者針對 mining_results 進行多輪對話，AI 可自主呼叫 search_arxiv 工具查詢文獻。"""
+        results_text = self._format_datamind_output(mining_results)
+        context_turns = [
+            {
+                "role": "user",
+                "parts": [
+                    "以下是這次機器學習實驗的資料探勘結果，請記住這些資訊，"
+                    "之後我會針對這份結果提問，如果我問到跟學術文獻相關的問題，"
+                    "你可以呼叫 search_arxiv 工具查詢 arXiv 上的相關論文。\n\n"
+                    f"【機器學習實驗結果】\n{results_text}"
+                ],
+            },
+            {"role": "model", "parts": ["好的，我已經了解這次實驗結果，請問有什麼問題？"]},
+        ]
+        prior_turns = [{"role": h["role"], "parts": [h["text"]]} for h in history]
+
+        chat = self._chat_model.start_chat(history=context_turns + prior_turns)
+
+        try:
+            resp = chat.send_message(message)
+        except Exception as e:
+            logger.error("對話生成失敗：%s", e)
+            return {"reply": f"（對話發生錯誤：{e}）", "papers": []}
+
+        function_call = None
+        try:
+            for part in resp.parts:
+                if part.function_call and part.function_call.name:
+                    function_call = part.function_call
+                    break
+        except Exception as e:
+            # resp.parts 在回應被安全過濾／無候選結果等情況下會拋 ValueError，
+            # 這裡跟其他分支一樣降級成錯誤訊息回覆，不讓整個 request 500
+            logger.error("解析 Gemini 回應失敗：%s", e)
+            return {"reply": f"（對話發生錯誤：{e}）", "papers": []}
+
+        papers: List[dict] = []
+        if function_call is not None:
+            query = str(function_call.args.get("query", ""))
+            try:
+                papers = arxiv_source.search_arxiv(query, max_results=5)
+                function_result: dict = {"result": papers}
+            except Exception as e:
+                logger.warning("對話中 arXiv 搜尋失敗：%s", e)
+                papers = []
+                function_result = {"error": f"查詢 arXiv 時發生錯誤：{e}"}
+
+            function_response_part = genai.protos.Part(
+                function_response=genai.protos.FunctionResponse(
+                    name=function_call.name,
+                    response=function_result,
+                )
+            )
+            try:
+                resp = chat.send_message(function_response_part)
+            except Exception as e:
+                logger.error("對話生成失敗（function response 後）：%s", e)
+                return {"reply": f"（對話發生錯誤：{e}）", "papers": papers}
+
+        try:
+            reply_text = (getattr(resp, "text", "") or "").strip()
+        except Exception as e:
+            # resp.text 跟 resp.parts 一樣，在回應被安全過濾等情況下會拋 ValueError
+            logger.error("解析 Gemini 回應文字失敗：%s", e)
+            return {"reply": f"（對話發生錯誤：{e}）", "papers": papers}
+
+        return {"reply": reply_text, "papers": papers}
+
     def get_status(self) -> dict:
         return self._store.get_status()
 
@@ -372,20 +508,19 @@ class PaperRAGService:
             )
 
         # 前處理流程
-        # /api/models/workflow/execute 回傳的 preprocess_variants 是「每個 pipeline
-        # 的 step 清單」（List[List[dict]]），不是包著 preprocess_steps/
-        # feature_engineering_steps 的 dict；後者只出現在舊版測試假資料中，這裡
-        # 兩種形狀都相容。
-        for i, pv in enumerate(mining_results.get("preprocess_variants", []), 1):
-            if isinstance(pv, dict):
-                pp_steps = pv.get("preprocess_steps", [])
-                fe_steps = pv.get("feature_engineering_steps", [])
-            else:
-                pp_steps = pv if isinstance(pv, list) else []
-                fe_steps = []
-            pp = "、".join(s.get("type", "") for s in pp_steps) or "無"
-            fe = "、".join(s.get("type", "") for s in fe_steps) or "無"
-            parts.append(f"【前處理流程 {i}】\n預處理：{pp}\n特徵工程：{fe}")
+        # 注意：不能讀 mining_results["preprocess_variants"]——那是 workflow_service.py 直接把
+        # 原始 preprocess_pipelines（List[List[Dict]]，未與 feature engineering 配對）塞進去的，
+        # 每個元素本身就是 list、不是 dict，對它呼叫 .get() 會噴 AttributeError。
+        # 正確配對好的 preprocess_steps / feature_engineering_steps 其實在 results 的每一筆結果裡。
+        seen_pipeline_indices: set = set()
+        for r in mining_results.get("results", []):
+            idx = r.get("preprocess_pipeline_index")
+            if idx is None or idx in seen_pipeline_indices:
+                continue
+            seen_pipeline_indices.add(idx)
+            pp = "、".join(s.get("type", "") for s in r.get("preprocess_steps", [])) or "無"
+            fe = "、".join(s.get("type", "") for s in r.get("feature_engineering_steps", [])) or "無"
+            parts.append(f"【前處理流程 {idx + 1}】\n預處理：{pp}\n特徵工程：{fe}")
 
         # 各模型結果
         valid_results = [r for r in mining_results.get("results", []) if "error" not in r]

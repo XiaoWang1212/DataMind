@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { fetchWorkflowJob } from '@/api/workflow'
-import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
+import { fetchWorkflowJob, WorkflowJobNotFoundError } from '@/api/workflow'
+import { clearActiveJobIdFromStorage, loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
 
 const JOB_POLL_INTERVAL_MS = 2000
 
@@ -157,7 +157,14 @@ export const useProjectStore = defineStore('project', () => {
               target.status = 'completed'
             }
           }
-        } catch {
+        } catch (error) {
+          if (error instanceof WorkflowJobNotFoundError) {
+            // job 在後端已經永久消失（重啟／超過 TTL），不是暫時性錯誤，停止輪詢並清掉過期紀錄
+            window.clearInterval(intervalId)
+            jobPollers.delete(projectId)
+            clearActiveJobIdFromStorage(projectId)
+            return
+          }
           // 輪詢暫時失敗（網路抖動等），下一輪再試
         }
       })()
