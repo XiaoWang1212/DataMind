@@ -18,7 +18,7 @@
   height: 100vh;
   display: flex;
   overflow: hidden;
-  background-color: #f9fbff;
+  background-color: var(--color-surface);
 }
 
 .workflow-page__main {
