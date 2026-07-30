@@ -14,8 +14,8 @@
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
-          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
-          <template v-if="mode === 'edit'">
+          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit' && hasChanges" />
+          <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
               class="bg-accent"
@@ -27,7 +27,7 @@
             >
               儲存
             </v-btn>
-          </template>
+          </div>
         </div>
       </header>
 
@@ -94,6 +94,10 @@
   )
 
   let savedSnapshot: PaperReport = mockPaperReport
+
+  const hasChanges = computed(() =>
+    JSON.stringify(toRaw(report.value)) !== JSON.stringify(savedSnapshot),
+  )
 
   onMounted(async () => {
     document.title = 'DataMind'
@@ -210,6 +214,17 @@
     align-items: center;
     gap: 6px;
     margin-left: auto;
+  }
+
+  .edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .edit-actions--hidden {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .save-hint {
