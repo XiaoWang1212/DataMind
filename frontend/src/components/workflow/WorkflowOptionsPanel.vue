@@ -422,20 +422,20 @@
   .panel-header {
     margin-bottom: 14px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0, 93, 255, 0.1);
+    border-bottom: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
     background: transparent;
   }
 
   .panel-header h3 {
     margin: 0 0 2px;
     font-size: 16px;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .panel-header p {
     margin: 0;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--color-secondary);
   }
 
   .panel-body {
@@ -458,12 +458,12 @@
   .form-row label {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-secondary);
   }
 
   .form-row input,
   .form-row select {
-    border: 1px solid rgba(0, 93, 255, 0.2);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 20%, transparent);
     border-radius: 8px;
     padding: 7px 10px;
     font-size: 13px;
@@ -476,7 +476,7 @@
     appearance: none;
     -webkit-appearance: none;
     padding-right: 32px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23005DFF' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23E8A33D' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 8px center;
     cursor: pointer;
@@ -484,9 +484,9 @@
 
   .upload-card {
     padding: 18px;
-    border: 1px dashed rgba(0, 93, 255, 0.28);
+    border: 1px dashed color-mix(in oklab, var(--color-accent) 28%, transparent);
     border-radius: 16px;
-    background: rgba(0, 93, 255, 0.04);
+    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -499,7 +499,7 @@
 
   .upload-card__desc {
     margin: 0;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
     line-height: 1.5;
   }
@@ -512,7 +512,7 @@
   }
 
   .upload-card__info {
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .upload-modal-dropzone {
@@ -530,23 +530,23 @@
   }
 
   .upload-modal-dropzone--active {
-    border-color: #2563eb;
-    background: rgba(59, 130, 246, 0.13);
+    border-color: var(--color-accent);
+    background: color-mix(in oklab, var(--color-accent) 13%, transparent);
   }
 
   .upload-modal-icon {
     font-size: 32px;
-    color: #2563eb;
+    color: var(--color-accent);
   }
 
   .upload-modal-line1 {
     font-size: 18px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-ink);
   }
 
   .upload-modal-line2 {
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 14px;
   }
 
@@ -554,7 +554,7 @@
     border: none;
     border-radius: 999px;
     padding: 10px 22px;
-    background: #2563eb;
+    background: var(--color-accent);
     color: #fff;
     cursor: pointer;
     font-size: 14px;
@@ -562,11 +562,11 @@
 
   .upload-modal-file {
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
   }
 
   .upload-modal-error {
-    color: #b91c1c;
+    color: #ef4444;
     font-size: 13px;
     text-align: center;
   }
@@ -578,7 +578,7 @@
   }
 
   .upload-modal-preview-header {
-    color: #1f2937;
+    color: var(--color-ink);
     font-size: 16px;
     font-weight: 700;
   }
@@ -586,7 +586,7 @@
   .upload-modal-preview-summary {
     display: flex;
     gap: 16px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
@@ -600,7 +600,7 @@
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 18px;
     padding: 16px;
-    background: #f8fafc;
+    background: var(--color-surface);
   }
 
   .upload-modal-chart-title {
@@ -613,7 +613,7 @@
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 12px;
     margin-bottom: 14px;
   }
@@ -633,7 +633,7 @@
 
   .upload-modal-chart-bar-label {
     font-size: 12px;
-    color: #0f172a;
+    color: var(--color-ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -649,12 +649,12 @@
   .upload-modal-chart-bar-fill {
     height: 100%;
     border-radius: 999px;
-    background: #2563eb;
+    background: var(--color-accent);
   }
 
   .upload-modal-chart-bar-value {
     font-size: 12px;
-    color: #0f172a;
+    color: var(--color-ink);
     text-align: right;
   }
 
@@ -679,8 +679,8 @@
   }
 
   .upload-modal-preview-table th {
-    background: #f8fafc;
-    color: #0f172a;
+    background: var(--color-surface);
+    color: var(--color-ink);
   }
 
   .details__summary {
@@ -688,8 +688,8 @@
     padding: 10px 12px;
     font-weight: 600;
     font-size: 13px;
-    background: rgba(0, 93, 255, 0.06);
-    border-bottom: 1px solid rgba(0, 93, 255, 0.12);
+    background: color-mix(in oklab, var(--color-accent) 6%, transparent);
+    border-bottom: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
   }
 
   .details__content {
@@ -701,7 +701,7 @@
 
   .preview-box {
     margin-top: 6px;
-    border: 1px solid rgba(0, 93, 255, 0.16);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 16%, transparent);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.28);
     overflow: auto;
@@ -728,7 +728,7 @@
 
   .hint {
     font-size: 13px;
-    color: #6b7280;
+    color: var(--color-secondary);
   }
 
   .actions {
@@ -747,13 +747,13 @@
   }
 
   .btn-primary {
-    background: #005dff;
+    background: var(--color-accent);
     color: #fff;
     font-weight: 700;
   }
 
   .btn-primary:hover {
-    background: #004fd8;
+    background: color-mix(in oklab, var(--color-accent) 85%, black);
   }
 
   @media (max-width: 768px) {
