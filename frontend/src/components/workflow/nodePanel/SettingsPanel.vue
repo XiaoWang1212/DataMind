@@ -428,7 +428,7 @@
     display: flex;
     gap: 4px;
     padding: 4px;
-    background: rgba(0, 93, 255, 0.05);
+    background: color-mix(in oklab, var(--color-accent) 5%, transparent);
     border-radius: 12px;
   }
 
@@ -442,7 +442,7 @@
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: #64748b;
+    color: var(--color-secondary);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -450,10 +450,10 @@
   }
 
   .wizard-tab--active {
-    background: #fff;
-    color: #005dff;
+    background: var(--color-surface);
+    color: var(--color-accent);
     font-weight: 700;
-    box-shadow: 0 1px 5px rgba(0, 93, 255, 0.14);
+    box-shadow: 0 1px 5px color-mix(in oklab, var(--color-accent) 14%, transparent);
   }
 
   .wizard-tab__num {
@@ -467,12 +467,12 @@
     font-weight: 700;
     flex-shrink: 0;
     background: rgba(100, 116, 139, 0.12);
-    color: #64748b;
+    color: var(--color-secondary);
     transition: background 0.15s, color 0.15s;
   }
 
   .wizard-tab--active .wizard-tab__num {
-    background: #005dff;
+    background: var(--color-accent);
     color: #fff;
   }
 
@@ -516,7 +516,7 @@
     padding: 0 14px;
     border: none;
     border-radius: 8px;
-    background: #005dff;
+    background: var(--color-accent);
     color: #fff;
     font-size: 12px;
     font-weight: 600;
@@ -548,8 +548,8 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
-    background: rgba(0, 93, 255, 0.04);
-    border: 1px solid rgba(0, 93, 255, 0.1);
+    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
     border-radius: 8px;
     font-size: 13px;
   }
@@ -564,8 +564,8 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: rgba(0, 93, 255, 0.12);
-    color: #005dff;
+    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    color: var(--color-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -575,7 +575,7 @@
   }
 
   .item-idx--dot {
-    background: rgba(0, 93, 255, 0.2);
+    background: color-mix(in oklab, var(--color-accent) 20%, transparent);
   }
 
   .item-name {
@@ -583,7 +583,7 @@
     font-weight: 600;
     font-size: 13px;
     line-height: 1.3;
-    color: #1e293b;
+    color: var(--color-ink);
     min-width: 0;
     word-break: break-word;
   }
@@ -595,7 +595,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed rgba(0, 93, 255, 0.14);
+    border-top: 1px dashed color-mix(in oklab, var(--color-accent) 14%, transparent);
   }
 
   .item-params .param-select {
@@ -611,21 +611,21 @@
 
   .param-key {
     font-size: 12px;
-    color: #64748b;
+    color: var(--color-secondary);
     white-space: nowrap;
   }
 
   .param-num {
     width: 68px;
     height: 30px;
-    border: 1px solid rgba(0, 93, 255, 0.15);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 15%, transparent);
     border-radius: 6px;
     padding: 0 8px;
     font-size: 13px;
     text-align: center;
     outline: none;
     background: rgba(255, 255, 255, 0.9);
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .del-btn {
@@ -662,8 +662,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: rgba(0, 93, 255, 0.04);
-    border: 1px solid rgba(0, 93, 255, 0.12);
+    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
     border-radius: 10px;
   }
 
@@ -683,17 +683,17 @@
   .ci-card__title {
     font-size: 13px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-ink);
   }
 
   .ci-card__sub {
     font-size: 11px;
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   .ci-card__desc {
     font-size: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     line-height: 1.55;
   }
 
@@ -718,13 +718,13 @@
   }
 
   .ci-card__status--on {
-    background: rgba(0, 93, 255, 0.1);
-    color: #005dff;
+    background: color-mix(in oklab, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
   }
 
   .ci-card__status--off {
     background: rgba(100, 116, 139, 0.1);
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   .ci-toggle {
@@ -741,7 +741,7 @@
   }
 
   .ci-toggle--on {
-    background: #005dff;
+    background: var(--color-accent);
   }
 
   .ci-toggle__thumb {
@@ -749,7 +749,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-surface);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s;
     transform: translateX(0);
@@ -766,7 +766,7 @@
     justify-content: space-between;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid rgba(0, 93, 255, 0.1);
+    border-top: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
   }
 
   .settings-footer__right {
@@ -780,7 +780,7 @@
     padding: 10px 14px;
     border: none;
     border-radius: 10px;
-    background: #2563eb;
+    background: var(--color-accent);
     color: #fff;
     font-size: 13px;
     cursor: pointer;
@@ -796,8 +796,8 @@
     padding: 10px 14px;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
-    background: #fff;
-    color: #475569;
+    background: var(--color-surface);
+    color: var(--color-secondary);
     font-size: 13px;
     cursor: pointer;
   }
