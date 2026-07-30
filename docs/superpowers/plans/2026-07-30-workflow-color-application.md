@@ -6756,6 +6756,7 @@ Replace:
     border-radius: 18px;
     padding: 16px;
     background: #f8fafc;
+    scroll-snap-align: start;
   }
 
   .upload-modal-chart-title {
@@ -6990,6 +6991,7 @@ With:
     border-radius: 18px;
     padding: 16px;
     background: var(--color-surface);
+    scroll-snap-align: start;
   }
 
   .upload-modal-chart-title {
