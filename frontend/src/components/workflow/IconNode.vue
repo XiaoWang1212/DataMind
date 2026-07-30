@@ -61,7 +61,7 @@
     'node-purple': '#005dff',
     'node-yellow': '#c2a935',
   }
-  const accentColor = computed(() => LABEL_ACCENTS[colorClass.value] ?? LABEL_ACCENTS['node-purple'])
+  const accentColor = computed(() => LABEL_ACCENTS[colorClass.value] ?? '#005dff')
 
   // demo 動畫狀態（running 時顯示 spinner）
   const status = computed(() => props.data?.status ?? null)
@@ -191,7 +191,7 @@
     height: 2px;
     transform: translateX(-50%);
     border-radius: 2px;
-    background: var(--node-accent, var(--color-accent));
+    background: var(--node-accent, #005dff);
     animation: underline-in 0.2s ease-out;
   }
 
