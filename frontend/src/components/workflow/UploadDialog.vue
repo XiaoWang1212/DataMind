@@ -119,7 +119,7 @@
   .upload-dialog-card {
     width: min(560px, calc(100% - 32px));
     border-radius: 20px;
-    background: #ffffff;
+    background: var(--color-surface);
     box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
     overflow: hidden;
     padding: 28px;
@@ -141,7 +141,7 @@
     width: 36px;
     height: 36px;
     border-radius: 999px;
-    color: #1f2937;
+    color: var(--color-ink);
     font-size: 18px;
     cursor: pointer;
   }
@@ -153,7 +153,7 @@
 
   .upload-dialog-card p {
     margin: 6px 0 0;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -172,18 +172,18 @@
   }
 
   .upload-dropzone--active {
-    border-color: #2563eb;
-    background: rgba(59, 130, 246, 0.12);
+    border-color: var(--color-accent);
+    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
   }
 
   .upload-dropzone__icon {
     font-size: 28px;
-    color: #2563eb;
+    color: var(--color-accent);
   }
 
   .upload-dropzone__text {
     font-size: 18px;
-    color: #1f2937;
+    color: var(--color-ink);
     font-weight: 600;
   }
 
@@ -193,7 +193,7 @@
     justify-content: center;
     padding: 10px 22px;
     border-radius: 999px;
-    background: #2563eb;
+    background: var(--color-accent);
     color: #fff;
     cursor: pointer;
     font-size: 14px;
@@ -201,7 +201,7 @@
 
   .upload-dropzone__file {
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
   }
 
   .upload-dialog-actions {
