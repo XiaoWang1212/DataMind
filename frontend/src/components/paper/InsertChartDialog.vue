@@ -164,7 +164,7 @@
 
   .empty-hint {
     font-size: 13px;
-    color: #6f7480;
+    color: var(--color-secondary);
     padding: 12px 0;
   }
 
@@ -189,7 +189,7 @@
     margin: 0 0 4px;
     font-size: 12px;
     font-weight: 700;
-    color: #4a4f5c;
+    color: var(--color-secondary);
   }
 
   .chart-preview {
