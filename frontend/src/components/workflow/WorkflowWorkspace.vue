@@ -637,8 +637,8 @@
     min-height: 0;
     overflow: auto;
     border-radius: 16px 16px 0 0;
-    background-color: #f9fbff;
-    background-image: radial-gradient(rgba(0, 93, 255, 0.035) 0.8px, transparent 0.8px);
+    background-color: var(--color-surface);
+    background-image: radial-gradient(color-mix(in oklab, var(--color-accent) 3.5%, transparent) 0.8px, transparent 0.8px);
     background-size: 16px 16px;
   }
 
@@ -659,11 +659,11 @@
     width: 36px;
     height: 36px;
     border-radius: 999px;
-    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     font-size: 13px;
-    color: #005dff;
+    color: var(--color-accent);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
     user-select: none;
@@ -690,11 +690,11 @@
     min-width: 92px;
     height: 36px;
     border-radius: 999px;
-    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     font-size: 13px;
-    color: #005dff;
+    color: var(--color-accent);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
     user-select: none;
@@ -712,11 +712,11 @@
     min-width: 92px;
     height: 36px;
     border-radius: 999px;
-    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     font-size: 13px;
-    color: #005dff;
+    color: var(--color-accent);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
     user-select: none;
@@ -737,11 +737,11 @@
     min-width: 92px;
     height: 36px;
     border-radius: 999px;
-    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     font-size: 13px;
-    color: #005dff;
+    color: var(--color-accent);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
     user-select: none;
@@ -763,11 +763,11 @@
     min-width: 92px;
     height: 36px;
     border-radius: 999px;
-    border: 1.5px solid rgba(0, 93, 255, 0.18);
+    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     font-size: 13px;
-    color: #005dff;
+    color: var(--color-accent);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
     user-select: none;
@@ -818,16 +818,16 @@
     max-height: 500px;
     overflow: auto;
     padding: 16px;
-    background: #ffffff;
+    background: var(--color-surface);
     border: 1px solid rgba(148, 163, 184, 0.32);
     border-radius: 16px;
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .workflow-error {
     margin-bottom: 10px;
-    color: #b91c1c;
+    color: #ef4444;
     font-size: 13px;
     font-weight: 600;
   }
@@ -902,7 +902,7 @@
     width: 52px;
     height: 5px;
     border-radius: 999px;
-    background: rgba(0, 93, 255, 0.26);
+    background: color-mix(in oklab, var(--color-accent) 26%, transparent);
     margin: 0 auto;
     cursor: grab;
   }
