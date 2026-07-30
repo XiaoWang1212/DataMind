@@ -186,13 +186,13 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -214,7 +214,7 @@
 .search-icon {
   position: absolute;
   left: 11px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .search-input {
@@ -225,18 +225,18 @@
   border-radius: 7px;
   background-color: #ffffff;
   font-size: 13.5px;
-  color: #111827;
+  color: var(--color-ink);
   outline: none;
   transition: border-color 0.15s;
   color-scheme: light;
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .search-input:focus {
-  border-color: #2347c5;
+  border-color: var(--color-accent);
 }
 
 .upload-btn {
@@ -245,7 +245,7 @@
   gap: 7px;
   padding: 0 18px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border-radius: 7px;
   text-decoration: none;
@@ -256,7 +256,7 @@
 }
 
 .upload-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 /* ── Cards ── */
@@ -282,7 +282,7 @@
 }
 
 .fw-card--selected {
-  border: 1.5px solid #2347c5;
+  border: 1.5px solid var(--color-accent);
 }
 
 .fw-card-top {
@@ -311,7 +311,7 @@
 .fw-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -320,7 +320,7 @@
 
 .fw-subtitle {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-top: 4px;
   line-height: 1.4;
 }
@@ -339,24 +339,24 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 .meta-icon {
-  color: #9ca3af;
+  color: var(--color-secondary);
   flex-shrink: 0;
 }
 
 .fw-vars {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── Empty ── */
 .empty-state {
   text-align: center;
   padding: 48px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   font-size: 14px;
 }
 
@@ -405,13 +405,13 @@
 .panel-title {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   line-height: 1.3;
 }
 
 .panel-tag {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-top: 3px;
 }
 
@@ -421,7 +421,7 @@
   border: none;
   background: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -432,7 +432,7 @@
 
 .panel-close:hover {
   background: #f5f5f5;
-  color: #374151;
+  color: var(--color-secondary);
 }
 
 /* ── Panel body ── */
@@ -459,25 +459,25 @@
 }
 
 .section-icon {
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 .panel-section-label {
   font-size: 13.5px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-secondary);
 }
 
 .panel-section-label-plain {
   font-size: 13.5px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-secondary);
   margin-bottom: 10px;
 }
 
 .panel-text-muted {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   line-height: 1.55;
 }
 
@@ -494,7 +494,7 @@
   border-radius: 6px;
   font-size: 12.5px;
   font-family: 'Courier New', 'Roboto Mono', Consolas, monospace;
-  color: #374151;
+  color: var(--color-secondary);
   background: #ffffff;
 }
 
@@ -509,7 +509,7 @@
   padding: 8px 12px;
   border-left: 2.5px solid #93c5fd;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-secondary);
   line-height: 1.5;
 }
 
@@ -530,11 +530,11 @@
 }
 
 .panel-meta-key {
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .panel-meta-val {
-  color: #374151;
+  color: var(--color-secondary);
   font-weight: 500;
 }
 
@@ -551,7 +551,7 @@
   justify-content: center;
   width: 100%;
   height: 46px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border-radius: 8px;
   text-decoration: none;
@@ -561,6 +561,6 @@
 }
 
 .use-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 </style>
