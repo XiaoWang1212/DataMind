@@ -155,16 +155,19 @@
 
 <style scoped>
   .sources-page {
-    --page-bg: #e4e4e8;
-    --card-bg: #ffffff;
+    --page-bg: var(--color-primary);
+    --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: #15181e;
-    --text-secondary: #6f7480;
+    --text-main: var(--color-ink);
+    --text-secondary: var(--color-secondary);
     min-height: calc(100vh - 64px);
     display: flex;
     padding: 16px;
-    background: linear-gradient(180deg, #d7d9df 0%, #dedfe4 100%);
+    background:
+      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-accent) 16%, transparent) 0%, transparent 30%),
+      var(--page-bg);
     font-family: 'Noto Sans TC', 'Segoe UI', sans-serif;
     color: var(--text-main);
   }
@@ -176,7 +179,7 @@
     flex-direction: column;
     border: 1px solid var(--line);
     border-radius: 0 12px 12px 0;
-    background: linear-gradient(180deg, #f3f4f8 0%, #eff1f6 100%);
+    background: var(--card-bg);
     padding: 12px 20px 24px;
     overflow: auto;
   }
@@ -190,14 +193,14 @@
   }
 
   .back-btn {
-    color: #1f2430;
+    color: var(--color-ink);
   }
 
   .sources-title {
     margin: 0;
     font-size: 14px;
     font-weight: 700;
-    color: #1c2130;
+    color: var(--color-ink);
   }
 
   .sources-topic {
@@ -213,7 +216,7 @@
   }
 
   .sources-status--error {
-    color: #b91c1c;
+    color: #ef4444;
   }
 
   .candidate-list {
@@ -248,7 +251,7 @@
     margin: 0 0 4px;
     font-size: 13.5px;
     font-weight: 700;
-    color: #1c2130;
+    color: var(--color-ink);
   }
 
   .candidate-meta {
@@ -261,7 +264,7 @@
     margin: 0;
     font-size: 12.5px;
     line-height: 1.6;
-    color: #3a3f4a;
+    color: var(--color-secondary);
   }
 
   .sources-actions {
