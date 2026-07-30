@@ -333,14 +333,14 @@
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.12s;
 }
 
 .back-link:hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .page-header {
@@ -350,20 +350,20 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
 .not-found {
   text-align: center;
   padding: 48px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   font-size: 14px;
 }
 
@@ -382,7 +382,7 @@
 .empty-text {
   margin: 0;
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .open-workflow-btn {
@@ -391,7 +391,7 @@
   gap: 7px;
   padding: 0 18px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 7px;
@@ -403,7 +403,7 @@
 }
 
 .open-workflow-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .metric-grid {
@@ -420,14 +420,14 @@
 }
 
 .metric-card--accent .metric-value {
-  color: #18a836;
+  color: #16a34a;
 }
 
 .metric-title {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #20232a;
+  color: var(--color-ink);
 }
 
 .metric-value {
@@ -435,13 +435,13 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .metric-hint {
   margin: 0;
   font-size: 12px;
-  color: #6f7480;
+  color: var(--color-secondary);
 }
 
 .comparison-card {
@@ -461,7 +461,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .table-wrap {
@@ -485,7 +485,7 @@
 
 .result-table th {
   font-weight: 700;
-  color: #2a2f39;
+  color: var(--color-ink);
   background: #fafbff;
 }
 
@@ -495,11 +495,11 @@
 
 .model-name {
   font-weight: 700;
-  color: #1f2532;
+  color: var(--color-ink);
 }
 
 .score-best {
-  color: #18a836;
+  color: #16a34a;
   font-weight: 700;
 }
 
@@ -527,32 +527,32 @@
   height: 28px;
   border-radius: 8px;
   background: #eef1ff;
-  color: #2347c5;
+  color: var(--color-accent);
 }
 
 .analysis-title {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .analysis-loading {
   margin: 0;
   font-size: 13px;
-  color: #6f7480;
+  color: var(--color-secondary);
 }
 
 .analysis-error {
   margin: 0 0 8px;
   font-size: 13px;
-  color: #d64545;
+  color: #ef4444;
 }
 
 .analysis-retry-btn {
   border: none;
   background: none;
-  color: #2347c5;
+  color: var(--color-accent);
   font-size: 13px;
   cursor: pointer;
   padding: 0;
@@ -568,14 +568,14 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 700;
-  color: #20232a;
+  color: var(--color-ink);
 }
 
 .analysis-block p {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: #4b5160;
+  color: var(--color-secondary);
 }
 
 .chat-messages {
@@ -590,7 +590,7 @@
 .chat-empty {
   margin: 0;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .chat-bubble {
@@ -603,19 +603,19 @@
 
 .chat-bubble--user {
   align-self: flex-end;
-  background: #2347c5;
-  color: #ffffff;
+  background: var(--color-chat-user);
+  color: var(--color-inverted);
 }
 
 .chat-bubble--model {
   align-self: flex-start;
-  background: #f4f5f8;
-  color: #1f2532;
+  background: var(--color-chat-system);
+  color: var(--color-ink);
 }
 
 .chat-bubble--failed {
   opacity: 0.65;
-  outline: 1px solid #d64545;
+  outline: 1px solid #ef4444;
 }
 
 .chat-bubble-failed-hint {
@@ -649,24 +649,24 @@
   margin: 0;
   font-size: 12.5px;
   font-weight: 600;
-  color: #2347c5;
+  color: var(--color-accent);
 }
 
 .chat-paper-meta {
   margin: 3px 0 0;
   font-size: 11.5px;
-  color: #6f7480;
+  color: var(--color-secondary);
 }
 
 .chat-loading,
 .chat-error {
   margin: 0;
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .chat-error {
-  color: #d64545;
+  color: #ef4444;
 }
 
 .chat-input-row {
@@ -690,7 +690,7 @@
 .chat-send-btn {
   height: 38px;
   padding: 0 18px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 8px;
