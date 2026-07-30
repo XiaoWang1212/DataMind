@@ -108,9 +108,9 @@
 
   .upload-card {
     padding: 18px;
-    border: 1px dashed rgba(0, 93, 255, 0.28);
+    border: 1px dashed color-mix(in oklab, var(--color-accent) 28%, transparent);
     border-radius: 16px;
-    background: rgba(0, 93, 255, 0.04);
+    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -118,7 +118,7 @@
 
   .upload-card__desc {
     margin: 0;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
     line-height: 1.5;
   }
@@ -138,23 +138,23 @@
   }
 
   .upload-modal-dropzone--active {
-    border-color: #2563eb;
-    background: rgba(59, 130, 246, 0.13);
+    border-color: var(--color-accent);
+    background: color-mix(in oklab, var(--color-accent) 13%, transparent);
   }
 
   .upload-modal-icon {
     font-size: 32px;
-    color: #2563eb;
+    color: var(--color-accent);
   }
 
   .upload-modal-line1 {
     font-size: 18px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-ink);
   }
 
   .upload-modal-line2 {
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 14px;
   }
 
@@ -162,7 +162,7 @@
     border: none;
     border-radius: 999px;
     padding: 10px 22px;
-    background: #2563eb;
+    background: var(--color-accent);
     color: #fff;
     cursor: pointer;
     font-size: 14px;
@@ -170,18 +170,18 @@
 
   .upload-modal-file {
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
   }
 
   .upload-modal-note {
     margin-top: 6px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 12px;
     line-height: 1.4;
   }
 
   .upload-modal-error {
-    color: #b91c1c;
+    color: #ef4444;
     font-size: 13px;
     text-align: center;
   }
@@ -195,13 +195,13 @@
   .upload-modal-preview-header {
     font-size: 16px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-ink);
   }
 
   .upload-modal-preview-summary {
     display: flex;
     gap: 16px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
@@ -228,20 +228,19 @@
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 18px;
     padding: 16px;
-    background: #f8fafc;
-    scroll-snap-align: start;
+    background: var(--color-surface);
   }
 
   .upload-modal-chart-title {
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 8px;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .upload-modal-chart-subtitle {
     margin-top: 6px;
-    color: #64748b;
+    color: var(--color-secondary);
     font-size: 12px;
   }
 
@@ -249,7 +248,7 @@
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 12px;
     margin-bottom: 14px;
   }
@@ -269,7 +268,7 @@
 
   .upload-modal-chart-bar-label {
     font-size: 12px;
-    color: #0f172a;
+    color: var(--color-ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -286,12 +285,12 @@
   .upload-modal-chart-bar-fill {
     height: 100%;
     border-radius: 999px;
-    background: #2563eb;
+    background: var(--color-accent);
   }
 
   .upload-modal-chart-bar-value {
     font-size: 12px;
-    color: #0f172a;
+    color: var(--color-ink);
     text-align: right;
   }
 
@@ -300,8 +299,8 @@
     overflow: auto;
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 14px;
-    background: #ffffff;
-    color: #0f172a;
+    background: var(--color-surface);
+    color: var(--color-ink);
   }
 
   .upload-modal-preview-table table {
@@ -317,12 +316,12 @@
     text-align: left;
     font-size: 13px;
     white-space: nowrap;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .upload-modal-preview-table th {
-    background: #f8fafc;
-    color: #0f172a;
+    background: var(--color-surface);
+    color: var(--color-ink);
   }
 
   .workflow-file-upload-panel {
