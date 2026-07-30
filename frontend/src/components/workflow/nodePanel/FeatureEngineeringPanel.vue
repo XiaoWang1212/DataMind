@@ -74,7 +74,7 @@
 
   .step-count {
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
   }
 
   .steps {
@@ -91,7 +91,7 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
-    background: #f8fafc;
+    background: var(--color-surface);
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     font-size: 13px;
@@ -122,7 +122,7 @@
     font-weight: 600;
     font-size: 13px;
     line-height: 1.3;
-    color: #1e293b;
+    color: var(--color-ink);
     min-width: 0;
     word-break: break-word;
   }
@@ -145,18 +145,18 @@
 
   .param-key {
     font-size: 12px;
-    color: #64748b;
+    color: var(--color-secondary);
     white-space: nowrap;
   }
 
   .param-val {
     font-size: 13px;
-    color: #0f172a;
+    color: var(--color-ink);
     font-weight: 500;
   }
 
   .empty-hint {
-    color: #6b7280;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 </style>
