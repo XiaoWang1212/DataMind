@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
   import type { PaperReport } from '@/constants/reportData'
-  import { computed, onMounted, ref, toRaw } from 'vue'
+  import { computed, onMounted, ref, toRaw, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
@@ -94,10 +94,17 @@
   )
 
   let savedSnapshot: PaperReport = mockPaperReport
+  let editEntrySnapshot: PaperReport | null = null
 
   const hasChanges = computed(() =>
-    JSON.stringify(toRaw(report.value)) !== JSON.stringify(savedSnapshot),
+    JSON.stringify(report.value) !== JSON.stringify(editEntrySnapshot),
   )
+
+  watch(mode, newMode => {
+    if (newMode === 'edit') {
+      editEntrySnapshot = structuredClone(toRaw(report.value))
+    }
+  })
 
   onMounted(async () => {
     document.title = 'DataMind'
