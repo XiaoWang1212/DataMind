@@ -193,7 +193,7 @@
 
   .fi-field__label {
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
     white-space: nowrap;
   }
 
@@ -208,7 +208,7 @@
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 12px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--color-surface);
   }
 
   .fi-row {
@@ -223,14 +223,14 @@
   }
 
   .fi-row:not(.fi-row--header):hover {
-    background: rgba(0, 93, 255, 0.035);
+    background: color-mix(in oklab, var(--color-accent) 3.5%, transparent);
   }
 
   .fi-row--header {
     font-size: 12px;
     font-weight: 600;
-    color: #475569;
-    background: #f8fafc;
+    color: var(--color-secondary);
+    background: var(--color-surface);
   }
 
   .fi-row--header .fi-cell {
@@ -239,14 +239,14 @@
 
   .fi-cell {
     padding: 11px 14px;
-    color: #0f172a;
+    color: var(--color-ink);
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
   }
 
   .fi-cell--feature {
-    color: #1e293b;
+    color: var(--color-ink);
   }
 
   .fi-cell--num {
@@ -255,7 +255,7 @@
   }
 
   .summary-empty {
-    color: #6b7280;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 </style>
