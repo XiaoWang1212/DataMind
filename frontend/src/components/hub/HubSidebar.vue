@@ -111,7 +111,7 @@ const navItems = [
 }
 
 .hub-toggle-btn:hover {
-  background: var(--color-primary);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
 }
 
 .hub-nav {
@@ -137,7 +137,7 @@ const navItems = [
 }
 
 .hub-nav-item:hover {
-  background: var(--color-primary);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
 }
 
 .hub-nav-item--active {
