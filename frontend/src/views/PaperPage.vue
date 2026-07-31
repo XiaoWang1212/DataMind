@@ -159,6 +159,7 @@
         citations: report.value.citations,
         citationStyle: report.value.citationStyle,
       })
+      savedSnapshot = structuredClone(toRaw(report.value))
     } catch (error) {
       saveError.value = error instanceof Error ? error.message : String(error)
     }
