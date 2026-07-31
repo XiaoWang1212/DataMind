@@ -90,7 +90,13 @@
     align-items: center;
     padding: 3px;
     border-radius: 999px;
-    background: #eceef3;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 1px 4px rgba(28, 33, 48, 0.08);
   }
 
   .pill {
