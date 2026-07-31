@@ -26,14 +26,6 @@
           </button>
         </div>
 
-        <v-btn
-          class="generate-paper-btn bg-accent"
-          color="accent"
-          size="small"
-          @click="router.push(`/paper/sources?project=${projectId}`)"
-        >
-          生成論文
-        </v-btn>
       </header>
 
       <section v-if="!hasLoaded" class="empty-state">
@@ -380,10 +372,6 @@
     background: #e8ebf2;
     display: inline-flex;
     gap: 4px;
-  }
-
-  .generate-paper-btn {
-    margin-left: 12px;
   }
 
   .toolbar-tab {
