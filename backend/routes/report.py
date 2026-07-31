@@ -14,9 +14,10 @@ def save_report(project_id: str):
     """儲存論文編輯內容
 
     JSON body:
-        - title    : 論文標題（必填）
-        - content  : Tiptap JSON 文件內容（必填）
-        - citations: 參考文獻清單（選填，預設空陣列）
+        - title        : 論文標題（必填）
+        - content      : Tiptap JSON 文件內容（必填）
+        - citations    : 參考文獻清單（選填，預設空陣列）
+        - citationStyle: 參考文獻格式，'apa'/'ieee'/'mla'（選填，預設 'apa'）
     """
     from services.report.report_store import get_report_store
 
@@ -27,6 +28,7 @@ def save_report(project_id: str):
     title = data.get("title")
     content = data.get("content")
     citations = data.get("citations", [])
+    citation_style = data.get("citationStyle", "apa")
 
     if not title or content is None:
         return jsonify({"success": False, "error": "title 和 content 為必填欄位"}), 400
@@ -34,7 +36,7 @@ def save_report(project_id: str):
     store = get_report_store()
 
     try:
-        result = store.save(project_id, title, content, citations)
+        result = store.save(project_id, title, content, citations, citation_style)
         return jsonify({"success": True, "result": result})
     except Exception as e:
         logger.exception("儲存論文失敗")

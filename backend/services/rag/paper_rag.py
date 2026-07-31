@@ -332,6 +332,7 @@ class PaperRAGService:
                     "author": candidate.get("authors", ""),
                     "year": candidate.get("year", ""),
                     "journal": f"arXiv:{candidate.get('arxiv_id', '')}",
+                    "arxiv_id": candidate.get("arxiv_id", ""),
                 },
             )
             if result.get("success"):

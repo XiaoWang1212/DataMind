@@ -21,11 +21,12 @@ class ReportStore:
         safe_id = re.sub(r"[^A-Za-z0-9_-]", "_", project_id)
         return self.index_dir / f"{safe_id}.json"
 
-    def save(self, project_id: str, title: str, content: dict, citations: list) -> dict:
+    def save(self, project_id: str, title: str, content: dict, citations: list, citation_style: str = "apa") -> dict:
         record = {
             "title": title,
             "content": content,
             "citations": citations,
+            "citationStyle": citation_style,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         self._path_for(project_id).write_text(
