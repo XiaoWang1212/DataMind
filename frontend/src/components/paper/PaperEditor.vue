@@ -384,7 +384,7 @@
     content: props.modelValue,
     editable: props.editable,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       CharacterCount.configure({}),
       Link.configure({ openOnClick: false, autolink: true }),
