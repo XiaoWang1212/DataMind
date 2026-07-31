@@ -164,10 +164,7 @@
     display: flex;
     gap: 0;
     padding: 16px;
-    background:
-      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-accent) 16%, transparent) 0%, transparent 30%),
-      var(--color-primary);
+    background: var(--color-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
   }
@@ -181,7 +178,7 @@
     border-radius: 0 12px 12px 0;
     background:
       radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
-      var(--color-surface);
+      var(--color-primary);
     padding: 12px 20px 18px;
     overflow: hidden;
   }
