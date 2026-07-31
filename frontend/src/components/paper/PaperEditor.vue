@@ -290,7 +290,7 @@
     <EditorContent :editor="editor" class="editor-content" :class="{ 'editor-content--readonly': !editable }" />
 
     <div v-if="editable" class="editor-status-bar">
-      字數：{{ editor?.storage.characterCount.words() ?? 0 }}
+      字數：{{ editor?.storage.characterCount.characters() ?? 0 }}
     </div>
 
     <InsertChartDialog
