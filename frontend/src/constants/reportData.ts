@@ -1,5 +1,7 @@
 import type { JSONContent } from '@tiptap/core'
 
+export type CitationStyle = 'apa' | 'ieee' | 'mla'
+
 export interface Citation {
   id: string
   title: string
@@ -7,16 +9,19 @@ export interface Citation {
   journal: string
   year: number
   snippet: string
+  arxivId?: string
 }
 
 export interface PaperReport {
   title: string
   content: JSONContent
   citations: Citation[]
+  citationStyle: CitationStyle
 }
 
 export const mockPaperReport: PaperReport = {
   title: '基於機器學習之電信客戶流失預測研究',
+  citationStyle: 'apa',
   citations: [
     {
       id: 'cite-1',

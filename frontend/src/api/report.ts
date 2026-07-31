@@ -1,16 +1,17 @@
 import type { JSONContent } from '@tiptap/core'
-import type { Citation } from '@/constants/reportData'
+import type { Citation, CitationStyle } from '@/constants/reportData'
 
 export interface SavedReport {
   title: string
   content: JSONContent
   citations: Citation[]
+  citationStyle: CitationStyle
   updated_at: string
 }
 
 export async function saveReport (
   projectId: string,
-  payload: { title: string, content: JSONContent, citations: Citation[] },
+  payload: { title: string, content: JSONContent, citations: Citation[], citationStyle: CitationStyle },
 ): Promise<SavedReport> {
   const response = await fetch(`/api/report/${encodeURIComponent(projectId)}`, {
     method: 'POST',
