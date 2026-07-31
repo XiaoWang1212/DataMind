@@ -1,109 +1,145 @@
 <template>
   <div class="paper-editor">
     <div v-if="editable" class="editor-toolbar">
-      <v-btn
-        icon="mdi-format-bold"
-        size="small"
-        :variant="editor?.isActive('bold') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleBold().run()"
-      />
-      <v-btn
-        icon="mdi-format-italic"
-        size="small"
-        :variant="editor?.isActive('italic') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleItalic().run()"
-      />
-      <v-btn
-        icon="mdi-format-underline"
-        size="small"
-        :variant="editor?.isActive('underline') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleUnderline().run()"
-      />
-      <v-btn
-        icon="mdi-format-strikethrough"
-        size="small"
-        :variant="editor?.isActive('strike') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleStrike().run()"
-      />
+      <div class="toolbar-btn-wrap" data-tooltip="粗體">
+        <v-btn
+          icon="mdi-format-bold"
+          size="small"
+          :variant="editor?.isActive('bold') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleBold().run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="斜體">
+        <v-btn
+          icon="mdi-format-italic"
+          size="small"
+          :variant="editor?.isActive('italic') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleItalic().run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="底線">
+        <v-btn
+          icon="mdi-format-underline"
+          size="small"
+          :variant="editor?.isActive('underline') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleUnderline().run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="刪除線">
+        <v-btn
+          icon="mdi-format-strikethrough"
+          size="small"
+          :variant="editor?.isActive('strike') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleStrike().run()"
+        />
+      </div>
       <span class="toolbar-divider" />
-      <v-btn
-        icon="mdi-format-header-1"
-        size="small"
-        :variant="editor?.isActive('heading', { level: 1 }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
-      />
-      <v-btn
-        icon="mdi-format-header-2"
-        size="small"
-        :variant="editor?.isActive('heading', { level: 2 }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-      />
-      <v-btn
-        icon="mdi-format-header-3"
-        size="small"
-        :variant="editor?.isActive('heading', { level: 3 }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
-      />
+      <div class="toolbar-btn-wrap" data-tooltip="標題 1">
+        <v-btn
+          icon="mdi-format-header-1"
+          size="small"
+          :variant="editor?.isActive('heading', { level: 1 }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="標題 2">
+        <v-btn
+          icon="mdi-format-header-2"
+          size="small"
+          :variant="editor?.isActive('heading', { level: 2 }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="標題 3">
+        <v-btn
+          icon="mdi-format-header-3"
+          size="small"
+          :variant="editor?.isActive('heading', { level: 3 }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
+        />
+      </div>
       <span class="toolbar-divider" />
-      <v-btn
-        icon="mdi-format-list-bulleted"
-        size="small"
-        :variant="editor?.isActive('bulletList') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleBulletList().run()"
-      />
-      <v-btn
-        icon="mdi-format-list-numbered"
-        size="small"
-        :variant="editor?.isActive('orderedList') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleOrderedList().run()"
-      />
-      <v-btn
-        icon="mdi-format-quote-close"
-        size="small"
-        :variant="editor?.isActive('blockquote') ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().toggleBlockquote().run()"
-      />
+      <div class="toolbar-btn-wrap" data-tooltip="項目符號清單">
+        <v-btn
+          icon="mdi-format-list-bulleted"
+          size="small"
+          :variant="editor?.isActive('bulletList') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleBulletList().run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="編號清單">
+        <v-btn
+          icon="mdi-format-list-numbered"
+          size="small"
+          :variant="editor?.isActive('orderedList') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleOrderedList().run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="引用">
+        <v-btn
+          icon="mdi-format-quote-close"
+          size="small"
+          :variant="editor?.isActive('blockquote') ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().toggleBlockquote().run()"
+        />
+      </div>
       <span class="toolbar-divider" />
-      <v-btn
-        icon="mdi-format-align-left"
-        size="small"
-        :variant="editor?.isActive({ textAlign: 'left' }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().setTextAlign('left').run()"
-      />
-      <v-btn
-        icon="mdi-format-align-center"
-        size="small"
-        :variant="editor?.isActive({ textAlign: 'center' }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().setTextAlign('center').run()"
-      />
-      <v-btn
-        icon="mdi-format-align-right"
-        size="small"
-        :variant="editor?.isActive({ textAlign: 'right' }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().setTextAlign('right').run()"
-      />
-      <v-btn
-        icon="mdi-format-align-justify"
-        size="small"
-        :variant="editor?.isActive({ textAlign: 'justify' }) ? 'tonal' : 'text'"
-        @click="editor?.chain().focus().setTextAlign('justify').run()"
-      />
+      <div class="toolbar-btn-wrap" data-tooltip="靠左對齊">
+        <v-btn
+          icon="mdi-format-align-left"
+          size="small"
+          :variant="editor?.isActive({ textAlign: 'left' }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().setTextAlign('left').run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="置中對齊">
+        <v-btn
+          icon="mdi-format-align-center"
+          size="small"
+          :variant="editor?.isActive({ textAlign: 'center' }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().setTextAlign('center').run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="靠右對齊">
+        <v-btn
+          icon="mdi-format-align-right"
+          size="small"
+          :variant="editor?.isActive({ textAlign: 'right' }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().setTextAlign('right').run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="左右對齊">
+        <v-btn
+          icon="mdi-format-align-justify"
+          size="small"
+          :variant="editor?.isActive({ textAlign: 'justify' }) ? 'tonal' : 'text'"
+          @click="editor?.chain().focus().setTextAlign('justify').run()"
+        />
+      </div>
       <span class="toolbar-divider" />
-      <v-btn
-        icon="mdi-table-plus"
-        size="small"
-        variant="text"
-        @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
-      />
-      <v-btn
-        icon="mdi-chart-bar"
-        size="small"
-        variant="text"
-        @click="chartDialogOpen = true"
-      />
+      <div class="toolbar-btn-wrap" data-tooltip="插入表格">
+        <v-btn
+          icon="mdi-table-plus"
+          size="small"
+          variant="text"
+          @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
+        />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="插入圖表">
+        <v-btn
+          icon="mdi-chart-bar"
+          size="small"
+          variant="text"
+          @click="chartDialogOpen = true"
+        />
+      </div>
       <span class="toolbar-divider" />
-      <v-btn icon="mdi-undo" size="small" variant="text" @click="editor?.chain().focus().undo().run()" />
-      <v-btn icon="mdi-redo" size="small" variant="text" @click="editor?.chain().focus().redo().run()" />
+      <div class="toolbar-btn-wrap" data-tooltip="復原">
+        <v-btn icon="mdi-undo" size="small" variant="text" @click="editor?.chain().focus().undo().run()" />
+      </div>
+      <div class="toolbar-btn-wrap" data-tooltip="重做">
+        <v-btn icon="mdi-redo" size="small" variant="text" @click="editor?.chain().focus().redo().run()" />
+      </div>
     </div>
 
     <EditorContent :editor="editor" class="editor-content" :class="{ 'editor-content--readonly': !editable }" />
@@ -209,17 +245,52 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 2px;
-    padding: 6px 8px;
-    border: 1px solid #d8dbe3;
-    border-radius: 8px;
-    background: var(--color-surface);
+    padding: 8px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 6px 20px rgba(28, 33, 48, 0.12);
   }
 
   .toolbar-divider {
     width: 1px;
     height: 20px;
-    margin: 0 4px;
-    background: #d8dbe3;
+    margin: 0 5px;
+    background: rgba(28, 33, 48, 0.15);
+  }
+
+  .toolbar-btn-wrap {
+    position: relative;
+  }
+
+  .toolbar-btn-wrap::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c2130;
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+  }
+
+  .toolbar-btn-wrap:hover::after {
+    opacity: 1;
+  }
+
+  .toolbar-btn-wrap :deep(.v-btn:hover) {
+    transform: translateY(-2px);
   }
 
   :deep(.editor-content) {
