@@ -14,6 +14,16 @@
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
+          <v-select
+            v-model="report.citationStyle"
+            class="citation-style-select"
+            density="compact"
+            :disabled="loading || mode === 'edit'"
+            hide-details
+            :items="citationStyleItems"
+            variant="outlined"
+            @update:model-value="onCitationStyleChange"
+          />
           <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
           <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
@@ -47,6 +57,7 @@
             :project-id="projectId"
             @citation-click="onCitationClick"
           />
+          <ReferencesSection :citations="report.citations" :style="report.citationStyle" />
         </article>
       </div>
 
@@ -69,8 +80,10 @@
   import CitationPopover from '@/components/paper/CitationPopover.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
+  import ReferencesSection from '@/components/paper/ReferencesSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
+  import { citationStyleLabels } from '@/utils/paper/formatCitation'
 
   const route = useRoute()
   const router = useRouter()
@@ -105,7 +118,12 @@
       try {
         const saved = await getReport(projectId.value)
         if (saved) {
-          report.value = { title: saved.title, content: saved.content, citations: saved.citations }
+          report.value = {
+            title: saved.title,
+            content: saved.content,
+            citations: saved.citations,
+            citationStyle: saved.citationStyle ?? 'apa',
+          }
         }
       } catch (error) {
         saveError.value = error instanceof Error ? error.message : String(error)
@@ -125,9 +143,25 @@
     popoverTarget.value = target
   }
 
+  const citationStyleItems = Object.entries(citationStyleLabels).map(([value, title]) => ({ value, title }))
+
   function cancelEdit () {
     report.value = structuredClone(savedSnapshot)
     mode.value = 'view'
+  }
+
+  async function onCitationStyleChange () {
+    if (!projectId.value) return
+    try {
+      await saveReport(projectId.value, {
+        title: report.value.title,
+        content: report.value.content,
+        citations: report.value.citations,
+        citationStyle: report.value.citationStyle,
+      })
+    } catch (error) {
+      saveError.value = error instanceof Error ? error.message : String(error)
+    }
   }
 
   async function save () {
@@ -139,8 +173,14 @@
         title: report.value.title,
         content: report.value.content,
         citations: report.value.citations,
+        citationStyle: report.value.citationStyle,
       })
-      report.value = { title: result.title, content: result.content, citations: result.citations }
+      report.value = {
+        title: result.title,
+        content: result.content,
+        citations: result.citations,
+        citationStyle: result.citationStyle,
+      }
       savedSnapshot = structuredClone(toRaw(report.value))
       mode.value = 'view'
     } catch (error) {
@@ -205,6 +245,14 @@
     align-items: center;
     gap: 6px;
     margin-left: auto;
+  }
+
+  .citation-style-select {
+    width: 92px;
+  }
+
+  .citation-style-select :deep(.v-field) {
+    font-size: 12px;
   }
 
   .edit-actions {
