@@ -362,10 +362,10 @@
     const file = input.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.addEventListener('load', () => {
       const dataUrl = reader.result as string
       editor.value?.chain().focus().setImage({ src: dataUrl }).updateAttributes('image', { align: 'center', width: '100%' }).run()
-    }
+    })
     reader.readAsDataURL(file)
     input.value = ''
   }
