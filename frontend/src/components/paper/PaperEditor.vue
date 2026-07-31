@@ -98,6 +98,32 @@
             @click="editor?.chain().focus().toggleStrike().run()"
           />
         </div>
+        <v-menu :close-on-content-click="false" location="bottom">
+          <template #activator="{ props: menuProps }">
+            <div class="toolbar-btn-wrap" data-tooltip="插入連結">
+              <v-btn
+                icon="mdi-link-variant"
+                size="small"
+                :variant="editor?.isActive('link') ? 'tonal' : 'text'"
+                v-bind="menuProps"
+                @click="openLinkMenu"
+              />
+            </div>
+          </template>
+          <v-card class="link-menu-card">
+            <v-text-field
+              v-model="linkUrlDraft"
+              density="compact"
+              hide-details
+              label="網址"
+              placeholder="https://"
+            />
+            <div class="link-menu-actions">
+              <v-btn size="small" variant="text" @click="removeLink">移除連結</v-btn>
+              <v-btn class="bg-accent" color="accent" size="small" @click="applyLink">套用</v-btn>
+            </div>
+          </v-card>
+        </v-menu>
         <span class="toolbar-divider" />
         <div class="toolbar-btn-wrap" data-tooltip="標題 1">
           <v-btn
@@ -232,6 +258,7 @@
 <script setup lang="ts">
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
+  import { Link } from '@tiptap/extension-link'
   import { Table } from '@tiptap/extension-table'
   import { TableCell } from '@tiptap/extension-table-cell'
   import { TableHeader } from '@tiptap/extension-table-header'
@@ -253,6 +280,21 @@
 
   const chartDialogOpen = ref(false)
   const imageFileInputRef = ref<HTMLInputElement | null>(null)
+  const linkUrlDraft = ref('')
+
+  function openLinkMenu () {
+    linkUrlDraft.value = editor.value?.getAttributes('link').href ?? ''
+  }
+
+  function applyLink () {
+    if (!linkUrlDraft.value) return
+    editor.value?.chain().focus().extendMarkRange('link').setLink({ href: linkUrlDraft.value }).run()
+  }
+
+  function removeLink () {
+    editor.value?.chain().focus().unsetLink().run()
+    linkUrlDraft.value = ''
+  }
 
   function handleInsertChart (dataUrl: string) {
     editor.value?.chain().focus().setImage({ src: dataUrl, alt: '工作流程模型比對圖表' }).run()
@@ -287,6 +329,7 @@
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Link.configure({ openOnClick: false, autolink: true }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -386,6 +429,20 @@
 
   .hidden-file-input {
     display: none;
+  }
+
+  .link-menu-card {
+    padding: 12px;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .link-menu-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
   }
 
   :deep(.editor-content img) {
