@@ -52,7 +52,8 @@ const navItems = [
   background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-top: 1.5px solid rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-left: none;
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35),
