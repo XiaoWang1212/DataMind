@@ -6,8 +6,19 @@
     </RouterLink>
 
     <div v-if="project" class="page-header">
-      <h1 class="page-title">{{ project.name }}</h1>
-      <p class="page-sub">結果總覽 · 框架：{{ project.frameworkName }}</p>
+      <div class="page-header-top">
+        <div>
+          <h1 class="page-title">{{ project.name }}</h1>
+          <p class="page-sub">結果總覽 · 框架：{{ project.frameworkName }}</p>
+        </div>
+        <RouterLink
+          v-if="summary.length > 0"
+          class="generate-paper-btn"
+          :to="`/paper/sources?project=${projectId}`"
+        >
+          生成論文
+        </RouterLink>
+      </div>
     </div>
 
     <div v-if="!project" class="not-found">找不到該專案</div>
@@ -345,6 +356,35 @@
 
 .page-header {
   margin-bottom: 24px;
+}
+
+.page-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.generate-paper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  height: 38px;
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.generate-paper-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .page-title {
