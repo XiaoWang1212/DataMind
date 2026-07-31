@@ -289,6 +289,10 @@
 
     <EditorContent :editor="editor" class="editor-content" :class="{ 'editor-content--readonly': !editable }" />
 
+    <div v-if="editable" class="editor-status-bar">
+      字數：{{ editor?.storage.characterCount.words() ?? 0 }}
+    </div>
+
     <InsertChartDialog
       v-model="chartDialogOpen"
       :project-id="projectId"
@@ -308,6 +312,7 @@
 <script setup lang="ts">
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
+  import { CharacterCount } from '@tiptap/extension-character-count'
   import { Link } from '@tiptap/extension-link'
   import { Subscript } from '@tiptap/extension-subscript'
   import { Superscript } from '@tiptap/extension-superscript'
@@ -381,6 +386,7 @@
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      CharacterCount.configure({}),
       Link.configure({ openOnClick: false, autolink: true }),
       Superscript,
       Subscript,
@@ -497,6 +503,13 @@
     display: flex;
     justify-content: flex-end;
     gap: 6px;
+  }
+
+  .editor-status-bar {
+    font-size: 11px;
+    color: var(--color-secondary);
+    text-align: right;
+    padding: 0 4px;
   }
 
   :deep(.editor-content img) {
