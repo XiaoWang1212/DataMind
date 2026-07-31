@@ -124,6 +124,22 @@
             </div>
           </v-card>
         </v-menu>
+        <div class="toolbar-btn-wrap" data-tooltip="上標">
+          <v-btn
+            icon="mdi-format-superscript"
+            size="small"
+            :variant="editor?.isActive('superscript') ? 'tonal' : 'text'"
+            @click="editor?.chain().focus().toggleSuperscript().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="下標">
+          <v-btn
+            icon="mdi-format-subscript"
+            size="small"
+            :variant="editor?.isActive('subscript') ? 'tonal' : 'text'"
+            @click="editor?.chain().focus().toggleSubscript().run()"
+          />
+        </div>
         <span class="toolbar-divider" />
         <div class="toolbar-btn-wrap" data-tooltip="標題 1">
           <v-btn
@@ -259,6 +275,8 @@
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
   import { Link } from '@tiptap/extension-link'
+  import { Subscript } from '@tiptap/extension-subscript'
+  import { Superscript } from '@tiptap/extension-superscript'
   import { Table } from '@tiptap/extension-table'
   import { TableCell } from '@tiptap/extension-table-cell'
   import { TableHeader } from '@tiptap/extension-table-header'
@@ -330,6 +348,8 @@
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false, autolink: true }),
+      Superscript,
+      Subscript,
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
