@@ -160,10 +160,10 @@
     --text-main: var(--color-ink);
     --text-secondary: var(--color-secondary);
     --brand: var(--color-accent);
-    min-height: calc(100vh - 64px);
+    min-height: 100vh;
     display: flex;
     gap: 0;
-    padding: 16px;
+    padding: 0;
     background: var(--color-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
@@ -174,8 +174,6 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--line);
-    border-radius: 0 12px 12px 0;
     background:
       radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
       var(--color-primary);
