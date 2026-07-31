@@ -17,7 +17,7 @@
       v-if="workflowResult"
       class="view-results-btn"
       type="button"
-      @click="router.push(`/results?project=${projectId}`)"
+      @click="router.push(`/hub/projects/${projectId}/result`)"
     >
       查看結果
     </button>
