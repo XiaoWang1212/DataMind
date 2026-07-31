@@ -232,6 +232,40 @@
             @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
           />
         </div>
+        <template v-if="editor?.isActive('table')">
+          <div class="toolbar-btn-wrap" data-tooltip="新增列">
+            <v-btn
+              icon="mdi-table-row-plus-after"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().addRowAfter().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="刪除列">
+            <v-btn
+              icon="mdi-table-row-remove"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().deleteRow().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="新增欄">
+            <v-btn
+              icon="mdi-table-column-plus-after"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().addColumnAfter().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="刪除欄">
+            <v-btn
+              icon="mdi-table-column-remove"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().deleteColumn().run()"
+            />
+          </div>
+        </template>
         <div class="toolbar-btn-wrap" data-tooltip="插入圖片">
           <v-btn icon="mdi-image-plus" size="small" variant="text" @click="imageFileInputRef?.click()" />
         </div>
