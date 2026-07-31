@@ -49,8 +49,14 @@ const navItems = [
 .hub-sidebar {
   width: 210px;
   min-width: 210px;
-  background: var(--color-surface);
-  border-right: 1px solid #e8e8e8;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
+    4px 0 24px rgba(28, 33, 48, 0.1);
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease, min-width 0.2s ease;
@@ -58,6 +64,21 @@ const navItems = [
   position: sticky;
   top: 0;
   height: 100vh;
+  z-index: 2;
+}
+
+.hub-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 70%;
+  height: 220%;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.7) 50%, transparent 65%);
+  transform: translate(-160%, -20%) rotate(12deg);
+  animation: hub-sidebar-shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .hub-sidebar--collapsed {
@@ -71,6 +92,8 @@ const navItems = [
   justify-content: space-between;
   padding: 18px 14px 14px;
   gap: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 .hub-brand {
@@ -120,6 +143,8 @@ const navItems = [
   display: flex;
   flex-direction: column;
   gap: 1px;
+  position: relative;
+  z-index: 2;
 }
 
 .hub-nav-item {
@@ -155,5 +180,16 @@ const navItems = [
   color: #9ca3af;
   line-height: 1.7;
   border-top: 1px solid #f0f0f0;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes hub-sidebar-shine {
+  0%, 25% {
+    transform: translate(-160%, -20%) rotate(12deg);
+  }
+  65%, 100% {
+    transform: translate(160%, -20%) rotate(12deg);
+  }
 }
 </style>
