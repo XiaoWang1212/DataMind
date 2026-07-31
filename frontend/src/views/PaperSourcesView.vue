@@ -9,7 +9,7 @@
           icon="mdi-arrow-left"
           size="small"
           variant="text"
-          @click="router.push(`/results?project=${projectId}`)"
+          @click="router.push(`/hub/projects/${projectId}/result`)"
         />
         <h2 class="sources-title">選擇參考文獻</h2>
       </header>
@@ -19,9 +19,9 @@
       </section>
 
       <section v-else-if="!miningResults" class="sources-status">
-        <p>找不到這個專案的探勘結果,請先從 /results 頁面進入。</p>
-        <v-btn class="bg-accent" color="accent" size="small" @click="router.push(`/results?project=${projectId}`)">
-          回到 /results
+        <p>找不到這個專案的探勘結果,請先從結果頁進入。</p>
+        <v-btn class="bg-accent" color="accent" size="small" @click="router.push(`/hub/projects/${projectId}/result`)">
+          回到結果頁
         </v-btn>
       </section>
 
