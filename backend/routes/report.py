@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 report_bp = Blueprint("report", __name__)
 
+VALID_CITATION_STYLES = {"apa", "ieee", "mla"}
+
 
 @report_bp.route("/<project_id>", methods=["POST"])
 def save_report(project_id: str):
@@ -29,6 +31,8 @@ def save_report(project_id: str):
     content = data.get("content")
     citations = data.get("citations", [])
     citation_style = data.get("citationStyle", "apa")
+    if citation_style not in VALID_CITATION_STYLES:
+        citation_style = "apa"
 
     if not title or content is None:
         return jsonify({"success": False, "error": "title 和 content 為必填欄位"}), 400

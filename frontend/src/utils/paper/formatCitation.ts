@@ -42,7 +42,8 @@ function formatFallback (citation: Citation, style: CitationStyle, index: number
 }
 
 export function formatCitation (citation: Citation, style: CitationStyle, index: number): string {
+  const safeStyle = style in citationStyleLabels ? style : 'apa'
   return citation.arxivId
-    ? formatArxiv(citation, style, index)
-    : formatFallback(citation, style, index)
+    ? formatArxiv(citation, safeStyle, index)
+    : formatFallback(citation, safeStyle, index)
 }

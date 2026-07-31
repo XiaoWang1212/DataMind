@@ -1,14 +1,14 @@
 <template>
   <section v-if="citations.length > 0" class="references-section">
     <h3 class="references-title">參考文獻</h3>
-    <ol v-if="style === 'ieee'" class="references-list references-list--numbered">
+    <ol v-if="citationStyle === 'ieee'" class="references-list references-list--numbered">
       <li v-for="(citation, index) in citations" :key="citation.id">
-        {{ formatCitation(citation, style, index + 1) }}
+        {{ formatCitation(citation, citationStyle, index + 1) }}
       </li>
     </ol>
     <ul v-else class="references-list">
       <li v-for="(citation, index) in citations" :key="citation.id">
-        {{ formatCitation(citation, style, index + 1) }}
+        {{ formatCitation(citation, citationStyle, index + 1) }}
       </li>
     </ul>
   </section>
@@ -20,7 +20,7 @@
 
   defineProps<{
     citations: Citation[]
-    style: CitationStyle
+    citationStyle: CitationStyle
   }>()
 </script>
 

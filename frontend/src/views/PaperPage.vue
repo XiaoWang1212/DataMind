@@ -57,7 +57,7 @@
             :project-id="projectId"
             @citation-click="onCitationClick"
           />
-          <ReferencesSection :citations="report.citations" :style="report.citationStyle" />
+          <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" />
         </article>
       </div>
 
@@ -152,6 +152,7 @@
 
   async function onCitationStyleChange () {
     if (!projectId.value) return
+    const previousStyle = savedSnapshot.citationStyle
     try {
       await saveReport(projectId.value, {
         title: report.value.title,
@@ -162,6 +163,7 @@
       savedSnapshot = structuredClone(toRaw(report.value))
     } catch (error) {
       saveError.value = error instanceof Error ? error.message : String(error)
+      report.value.citationStyle = previousStyle
     }
   }
 
