@@ -44,6 +44,7 @@ function buildCitations (result: ArxivGenerateResult): Citation[] {
         journal: String(ref.journal ?? 'arXiv'),
         year: Number(ref.year) || 0,
         snippet: snippetEntry?.relevant_chunk ?? '',
+        arxivId: ref.arxiv_id || undefined,
       }
     })
 }
@@ -82,5 +83,6 @@ export function transformArxivResultToPaperReport (result: ArxivGenerateResult, 
     title: topic,
     content: { type: 'doc', content: docContent },
     citations: buildCitations(result),
+    citationStyle: 'apa',
   }
 }
