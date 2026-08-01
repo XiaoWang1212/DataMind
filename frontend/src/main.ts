@@ -10,6 +10,9 @@ import { createApp } from 'vue'
 // Plugins
 import { registerPlugins } from '@/plugins'
 
+// Store
+import { useAuthStore } from '@/store/authStore'
+
 // Components
 import App from './App.vue'
 
@@ -22,4 +25,8 @@ const app = createApp(App)
 
 registerPlugins(app)
 
-app.mount('#app')
+const authStore = useAuthStore()
+
+authStore.checkSession().finally(() => {
+  app.mount('#app')
+})
