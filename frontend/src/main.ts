@@ -12,6 +12,8 @@ import { registerPlugins } from '@/plugins'
 
 // Store
 import { useAuthStore } from '@/store/authStore'
+import { useFrameworkStore } from '@/store/frameworkStore'
+import { useProjectStore } from '@/store/projectStore'
 
 // Components
 import App from './App.vue'
@@ -26,7 +28,11 @@ const app = createApp(App)
 registerPlugins(app)
 
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
+const frameworkStore = useFrameworkStore()
 
 authStore.checkSession().finally(() => {
   app.mount('#app')
 })
+projectStore.loadProjects()
+frameworkStore.loadFrameworks()
