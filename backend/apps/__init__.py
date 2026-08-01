@@ -36,6 +36,7 @@ def create_app() -> Flask:
     db.init_app(app)
     login_manager.init_app(app)
 
+    from routes.auth import auth_bp
     from routes.health import health_bp
     from routes.rag import rag_bp
     from routes.report import report_bp
@@ -44,6 +45,7 @@ def create_app() -> Flask:
     from routes.mineru import mineru_bp
     from routes.model import model_bp
 
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(health_bp)
     app.register_blueprint(rag_bp, url_prefix="/api/rag")
     app.register_blueprint(report_bp, url_prefix="/api/report")
