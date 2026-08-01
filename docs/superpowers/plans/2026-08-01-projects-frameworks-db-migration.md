@@ -40,7 +40,7 @@
   - `PATCH /api/projects/<int:project_id>`，body 任意子集 `{status?, progress?, datasetName?, accuracy?, keyFinding?}` → `{"success": true, "result": Project}`
   - 序列化後的 `Project` JSON 形狀：`{id, name, description, frameworkId, datasetName, status, progress, accuracy, keyFinding, variables, date}`
 
-- [ ] **Step 1: 建立 `backend/routes/project.py`**
+- [x] **Step 1: 建立 `backend/routes/project.py`**
 
 ```python
 """專案 CRUD API"""
@@ -137,7 +137,7 @@ def update_project(project_id):
     return jsonify({"success": True, "result": _serialize_project(project)})
 ```
 
-- [ ] **Step 2: 在 `backend/apps/__init__.py` 註冊 blueprint**
+- [x] **Step 2: 在 `backend/apps/__init__.py` 註冊 blueprint**
 
 找到這一段（大約在檔案中段的 import 區）：
 ```python
@@ -183,7 +183,7 @@ def update_project(project_id):
     app.register_blueprint(model_bp, url_prefix="/api/models")
 ```
 
-- [ ] **Step 3: 手動驗證（curl，帶 cookie jar 保持登入）**
+- [x] **Step 3: 手動驗證（curl，帶 cookie jar 保持登入）**
 
 ```bash
 COOKIE_JAR=/tmp/project-api-verify-cookies.txt
@@ -225,7 +225,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -b "$COOKIE_JAR" -X PATCH http://localh
 ```
 Expected: `404`
 
-- [ ] **Step 4: 清理測試資料**
+- [x] **Step 4: 清理測試資料**
 
 ```bash
 docker exec datamind-postgres psql -U datamind -d datamind -c "DELETE FROM projects WHERE name = '驗證用專案';"
@@ -233,7 +233,7 @@ rm -f /tmp/project-api-verify-cookies.txt
 ```
 Expected: `DELETE 1`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/routes/project.py backend/apps/__init__.py
@@ -256,7 +256,7 @@ git commit -m "feat: add project CRUD API"
   - 序列化後的 `Framework` JSON 形狀：`{id, title, subtitle, tag, variables, paperTitle, description, independentVars, dependentVars, hypotheses, workflowJson, date}`
   - 沒有 `PATCH`/`DELETE`（現況前端沒有編輯/刪除框架的介面）
 
-- [ ] **Step 1: 建立 `backend/routes/framework.py`**
+- [x] **Step 1: 建立 `backend/routes/framework.py`**
 
 ```python
 """框架庫 CRUD API"""
@@ -327,7 +327,7 @@ def create_framework():
     return jsonify({"success": True, "result": _serialize_framework(framework)})
 ```
 
-- [ ] **Step 2: 在 `backend/apps/__init__.py` 註冊 blueprint**
+- [x] **Step 2: 在 `backend/apps/__init__.py` 註冊 blueprint**
 
 找到（Task 1 已經改過一次的版本）：
 ```python
@@ -359,7 +359,7 @@ def create_framework():
     app.register_blueprint(health_bp)
 ```
 
-- [ ] **Step 3: 手動驗證（curl）**
+- [x] **Step 3: 手動驗證（curl）**
 
 ```bash
 COOKIE_JAR=/tmp/framework-api-verify-cookies.txt
@@ -383,7 +383,7 @@ curl -s -b "$COOKIE_JAR" http://localhost:5001/api/frameworks
 ```
 Expected: `result` 陣列包含剛建立的框架
 
-- [ ] **Step 4: 清理測試資料**
+- [x] **Step 4: 清理測試資料**
 
 ```bash
 docker exec datamind-postgres psql -U datamind -d datamind -c "DELETE FROM frameworks WHERE title = '驗證用框架';"
@@ -391,7 +391,7 @@ rm -f /tmp/framework-api-verify-cookies.txt
 ```
 Expected: `DELETE 1`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/routes/framework.py backend/apps/__init__.py
@@ -414,7 +414,7 @@ git commit -m "feat: add framework CRUD API"
   - `export async function createProject(payload: CreateProjectPayload): Promise<ProjectDTO>`
   - `export async function updateProject(id: number, patch: Partial<{ status: string, progress: number, datasetName: string, accuracy: string, keyFinding: string }>): Promise<ProjectDTO>`
 
-- [ ] **Step 1: 建立檔案**
+- [x] **Step 1: 建立檔案**
 
 ```ts
 export interface ProjectDTO {
@@ -484,7 +484,7 @@ export async function updateProject (id: number, patch: UpdateProjectPatch): Pro
 }
 ```
 
-- [ ] **Step 2: 型別檢查與 lint**
+- [x] **Step 2: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤，輸出不含 `src/api/project.ts` 相關錯誤
@@ -514,7 +514,7 @@ git commit -m "feat: add frontend project API wrapper"
   - `export async function listFrameworks(): Promise<FrameworkDTO[]>`
   - `export async function createFramework(payload: CreateFrameworkPayload): Promise<FrameworkDTO>`
 
-- [ ] **Step 1: 建立檔案**
+- [x] **Step 1: 建立檔案**
 
 ```ts
 export interface FrameworkDTO {
@@ -571,7 +571,7 @@ export async function createFramework (payload: CreateFrameworkPayload): Promise
 }
 ```
 
-- [ ] **Step 2: 型別檢查與 lint**
+- [x] **Step 2: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤
@@ -600,7 +600,7 @@ git commit -m "feat: add frontend framework API wrapper"
   - `export interface ActiveProjectContext { projectId: number; datasetFile: File | null; frameworkId: number | null }`
   - `useProjectStore()` 回傳：`projects`, `activeContext`, `loadProjects(): Promise<void>`, `addProject(p: CreateProjectPayload): Promise<Project>`, `updateProjectStatus(projectId: number, status): Promise<void>`, `updateProjectProgress(projectId: number, progress: number): Promise<void>`, `pollProjectJob(projectId: number, jobId: string): void`, `setActiveContext`, `clearActiveContext`
 
-- [ ] **Step 1: 整檔換成**
+- [x] **Step 1: 整檔換成**
 
 ```ts
 import { defineStore } from 'pinia'
@@ -742,7 +742,7 @@ export const useProjectStore = defineStore('project', () => {
 })
 ```
 
-- [ ] **Step 2: 型別檢查與 lint**
+- [x] **Step 2: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 會出現其他還沒改的檔案（`CreateProjectView.vue` 等）的型別錯誤，這是預期的——它們會在後面的 Task 修正。只要確認錯誤訊息都指向**其他檔案**、不是 `projectStore.ts` 本身的型別問題即可。
@@ -770,7 +770,7 @@ git commit -m "feat: rewrite projectStore to use database API"
   - `export interface Framework { id: number; title: string; subtitle: string; tag: string; date: string; variables: number; paperTitle: string; description: string; independentVars: string[]; dependentVars: string[]; hypotheses: string[]; workflowJson?: Record<string, unknown> }`（型別不變，只是資料來源換掉）
   - `useFrameworkStore()` 回傳：`frameworks`, `loadFrameworks(): Promise<void>`, `addFramework(fw: CreateFrameworkPayload): Promise<Framework>`
 
-- [ ] **Step 1: 整檔換成**
+- [x] **Step 1: 整檔換成**
 
 ```ts
 import { defineStore } from 'pinia'
@@ -813,7 +813,7 @@ export const useFrameworkStore = defineStore('framework', () => {
 })
 ```
 
-- [ ] **Step 2: 型別檢查與 lint**
+- [x] **Step 2: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 可能有其他還沒改的檔案（`ExtractFrameworkView.vue`）的型別錯誤，屬預期，後面 Task 會修
@@ -839,7 +839,7 @@ git commit -m "feat: rewrite frameworkStore to use database API"
 - Consumes: Task 5 的 `useProjectStore().loadProjects`、Task 6 的 `useFrameworkStore().loadFrameworks`
 - Produces: 無（純啟動流程調整）
 
-- [ ] **Step 1: 修改檔案**
+- [x] **Step 1: 修改檔案**
 
 把整個檔案內容換成：
 
@@ -886,7 +886,7 @@ frameworkStore.loadFrameworks()
 
 未登入時 `loadProjects()`/`loadFrameworks()` 打 API 會收到 401，依 Task 5/6 的 `catch` 邏輯保持空陣列即可，不影響後續路由守衛導去 `/login`。
 
-- [ ] **Step 2: 型別檢查與 lint**
+- [x] **Step 2: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤指向 `src/main.ts`
@@ -912,7 +912,7 @@ git commit -m "feat: load projects and frameworks on app boot"
 **Interfaces:**
 - Consumes: Task 5 的 `projectStore.addProject(payload: CreateProjectPayload): Promise<Project>`、Task 6 的 `frameworkStore.addFramework(payload: CreateFrameworkPayload): Promise<Framework>`
 
-- [ ] **Step 1: 修改 `CreateProjectView.vue` 的 `executeProject`**
+- [x] **Step 1: 修改 `CreateProjectView.vue` 的 `executeProject`**
 
 找到（在 `<script setup>` 裡）：
 ```ts
@@ -963,7 +963,7 @@ git commit -m "feat: load projects and frameworks on app boot"
 
 （`status`/`date`/`progress`/`frameworkName` 都改成由後端決定，不再由前端傳入；`today` 常數整個移除）
 
-- [ ] **Step 2: 修改 `ExtractFrameworkView.vue` 的 `saveFramework`**
+- [x] **Step 2: 修改 `ExtractFrameworkView.vue` 的 `saveFramework`**
 
 找到：
 ```ts
@@ -1017,7 +1017,7 @@ git commit -m "feat: load projects and frameworks on app boot"
 
 （`date`/`today` 整個移除，改由後端決定）
 
-- [ ] **Step 3: 型別檢查與 lint**
+- [x] **Step 3: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤指向這兩個檔案（`frameworkName` 相關的型別錯誤應該消失了）
@@ -1044,7 +1044,7 @@ git commit -m "feat: update project/framework creation flows for database-backed
 **Interfaces:**
 - Consumes: Task 5 的 `Project`（`id: number`，無 `frameworkName`）、Task 6 的 `Framework`（`id: number`, `title: string`）
 
-- [ ] **Step 1: `ProjectsView.vue`**
+- [x] **Step 1: `ProjectsView.vue`**
 
 在 `<script setup>` 裡，把：
 ```ts
@@ -1081,7 +1081,7 @@ template 裡把：
           <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
 ```
 
-- [ ] **Step 2: `ProjectDetailView.vue`**
+- [x] **Step 2: `ProjectDetailView.vue`**
 
 把：
 ```ts
@@ -1132,7 +1132,7 @@ template 裡把：
       <div class="framework-link">框架：{{ frameworkTitle }}</div>
 ```
 
-- [ ] **Step 3: `ResultView.vue`**
+- [x] **Step 3: `ResultView.vue`**
 
 把：
 ```ts
@@ -1183,7 +1183,7 @@ template 裡把：
           <p class="page-sub">結果總覽 · 框架：{{ frameworkTitle }}</p>
 ```
 
-- [ ] **Step 4: 型別檢查與 lint**
+- [x] **Step 4: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤指向這三個檔案
@@ -1210,7 +1210,7 @@ git commit -m "fix: look up framework title by id instead of denormalized field"
 
 這個檔案裡的 `projectId` computed（`const projectId = computed(() => route.query.project as string | undefined)`）**不要改**——它同時也拿去當 localStorage 相關 composable（`saveWorkflowStateToStorage`、`loadWorkflowStateFromStorage` 等）的 key，那些都吃字串，是這次計畫範圍外的東西。只在跟 `projectStore` 互動的地方，個別把 `projectId.value` 包一層 `Number(...)`。
 
-- [ ] **Step 1: 修正 `onProgress`/`onJobActive` callback**
+- [x] **Step 1: 修正 `onProgress`/`onJobActive` callback**
 
 找到：
 ```ts
@@ -1231,7 +1231,13 @@ git commit -m "fix: look up framework title by id instead of denormalized field"
     },
 ```
 
-- [ ] **Step 2: 修正 `markProjectRunning`**
+> **實作時的修正**：這裡的 `updateProjectProgress` 最後改成了只更新本地的 `setProjectProgress`。
+> `useWorkflowExecution` 有自己的 1.5 秒輪詢器，每個 tick 都會呼叫 `onProgress`；沿用會寫資料庫的
+> `updateProjectProgress` 會讓執行過程中每次輪詢都打一次 PATCH，牴觸設計文件「輪詢期間不寫資料庫」
+> 的要求（實測一次 21 秒的執行會產生 18 次 PATCH）。改用 `setProjectProgress` 後，進度只留在本地，
+> 由完成時的 `updateProjectStatus` 把 status 跟 progress 一起寫回。
+
+- [x] **Step 2: 修正 `markProjectRunning`**
 
 找到：
 ```ts
@@ -1256,7 +1262,7 @@ git commit -m "fix: look up framework title by id instead of denormalized field"
   }
 ```
 
-- [ ] **Step 3: 修正 `watch(workflowResult, ...)`**
+- [x] **Step 3: 修正 `watch(workflowResult, ...)`**
 
 找到：
 ```ts
@@ -1277,7 +1283,7 @@ git commit -m "fix: look up framework title by id instead of denormalized field"
   })
 ```
 
-- [ ] **Step 4: 修正 `onMounted` 裡的專案狀態檢查**
+- [x] **Step 4: 修正 `onMounted` 裡的專案狀態檢查**
 
 找到：
 ```ts
@@ -1294,7 +1300,7 @@ git commit -m "fix: look up framework title by id instead of denormalized field"
       }
 ```
 
-- [ ] **Step 5: 型別檢查與 lint**
+- [x] **Step 5: 型別檢查與 lint**
 
 Run: `cd frontend && npm run type-check`
 Expected: 無錯誤（改之前這個檔案應該會因為 `string`/`number` 不匹配而報型別錯誤，改完應該乾淨）
@@ -1318,7 +1324,7 @@ git commit -m "fix: convert project id to number when calling projectStore from 
 **Interfaces:**
 - Consumes: Task 1-10 全部產出
 
-- [ ] **Step 1: 確認容器正在跑且 type-check 全專案乾淨**
+- [x] **Step 1: 確認容器正在跑且 type-check 全專案乾淨**
 
 Run: `docker ps --format "{{.Names}}"`
 Expected: 包含 `datamind-frontend`、`datamind-backend`、`datamind-postgres`
@@ -1326,29 +1332,29 @@ Expected: 包含 `datamind-frontend`、`datamind-backend`、`datamind-postgres`
 Run: `cd frontend && npm run type-check`
 Expected: exit code 0，無錯誤
 
-- [ ] **Step 2: 瀏覽器驗證 — 空清單**
+- [x] **Step 2: 瀏覽器驗證 — 空清單**
 
 登入（用管理員帳號或新註冊一個帳號），開啟 Hub Dashboard、`/hub/projects`、`/hub/library`
 Expected: 專案跟框架都顯示空清單（沒有殘留的示範資料）
 
-- [ ] **Step 3: 瀏覽器驗證 — 建立框架後重新整理仍在**
+- [x] **Step 3: 瀏覽器驗證 — 建立框架後重新整理仍在**
 
 到 `/hub/library/extract`，走「擷取框架」流程建立一個框架 → 導回 `/hub/library` 應該看到剛建立的框架 → 重新整理頁面 → 框架仍然存在（代表真的寫進資料庫，不是只存在記憶體）
 
-- [ ] **Step 4: 瀏覽器驗證 — 建立專案並正確顯示框架名稱**
+- [x] **Step 4: 瀏覽器驗證 — 建立專案並正確顯示框架名稱**
 
 到 `/hub/projects/new`，選擇剛建立的框架，走完流程建立專案 → 應該導到 `/workflow?project=<id>`（`<id>` 是資料庫真實整數 id）→ 回到 `/hub/projects`，專案列表要正確顯示框架名稱（不是空白或 `undefined`）
 
-- [ ] **Step 5: 瀏覽器驗證 — 執行工作流程時狀態正確持久化**
+- [x] **Step 5: 瀏覽器驗證 — 執行工作流程時狀態正確持久化**
 
 在 `/workflow?project=<id>` 開始執行 → 重新整理頁面 → 專案狀態應該還是「進行中」（代表 `markProjectRunning` 有即時持久化）→ 等待執行完成 → 專案狀態變成「已完成」、`progress` 是 100 → 重新整理頁面確認最終值有持久化
 
-- [ ] **Step 6: 瀏覽器開發者工具驗證 — 輪詢不寫資料庫**
+- [x] **Step 6: 瀏覽器開發者工具驗證 — 輪詢不寫資料庫**
 
 執行工作流程期間，開瀏覽器 Network 分頁，篩選 `projects`
 Expected: 過程中的 2 秒輪詢**不會**觸發 `PATCH /api/projects/:id`，只有開始跟結束各出現一次
 
-- [ ] **Step 7: 資料隔離驗證**
+- [x] **Step 7: 資料隔離驗證**
 
 登出，用另一個帳號註冊並登入
 Expected: 看不到第一個帳號建立的專案或框架
