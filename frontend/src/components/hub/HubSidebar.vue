@@ -14,14 +14,21 @@
       <RouterLink
         v-for="item in navItems"
         :key="item.to"
-        :to="item.to"
         class="hub-nav-item"
         :class="{ 'hub-nav-item--active': route.path.startsWith(item.to) }"
+        :to="item.to"
       >
         <v-icon :icon="item.icon" size="19" />
         <span v-if="!collapsed" class="hub-nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
+
+    <div v-if="!collapsed && authStore.user" class="hub-sidebar-user">
+      <div class="hub-user-name">{{ authStore.user.displayName || authStore.user.email }}</div>
+      <button class="hub-logout-btn" title="登出" @click="handleLogout">
+        <v-icon icon="mdi-logout" size="16" />
+      </button>
+    </div>
 
     <div v-if="!collapsed" class="hub-sidebar-footer">
       <div>版本 1.0.0</div>
@@ -31,18 +38,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+  import { ref } from 'vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import { useAuthStore } from '@/store/authStore'
 
-const route = useRoute()
-const collapsed = ref(false)
+  const route = useRoute()
+  const router = useRouter()
+  const authStore = useAuthStore()
+  const collapsed = ref(false)
 
-const navItems = [
-  { to: '/hub/dashboard', icon: 'mdi-home-outline', label: '儀表板' },
-  { to: '/hub/library', icon: 'mdi-book-open-outline', label: '框架庫' },
-  { to: '/hub/projects', icon: 'mdi-folder-outline', label: '專案' },
-  { to: '/hub/settings', icon: 'mdi-cog-outline', label: '設定' },
-]
+  async function handleLogout (): Promise<void> {
+    await authStore.logout()
+    router.push('/login')
+  }
+
+  const navItems = [
+    { to: '/hub/dashboard', icon: 'mdi-home-outline', label: '儀表板' },
+    { to: '/hub/library', icon: 'mdi-book-open-outline', label: '框架庫' },
+    { to: '/hub/projects', icon: 'mdi-folder-outline', label: '專案' },
+    { to: '/hub/settings', icon: 'mdi-cog-outline', label: '設定' },
+  ]
 </script>
 
 <style scoped>
@@ -174,6 +189,45 @@ const navItems = [
 
 .hub-nav-label {
   overflow: hidden;
+}
+
+.hub-sidebar-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #f0f0f0;
+  position: relative;
+  z-index: 2;
+}
+
+.hub-user-name {
+  font-size: 12.5px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-logout-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.hub-logout-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+  color: var(--color-ink);
 }
 
 .hub-sidebar-footer {
