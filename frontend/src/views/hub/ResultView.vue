@@ -9,7 +9,7 @@
       <div class="page-header-top">
         <div>
           <h1 class="page-title">{{ project.name }}</h1>
-          <p class="page-sub">結果總覽 · 框架：{{ project.frameworkName }}</p>
+          <p class="page-sub">結果總覽 · 框架：{{ frameworkTitle }}</p>
         </div>
         <RouterLink
           v-if="summary.length > 0"
@@ -172,6 +172,7 @@
     saveChatHistoryToStorage,
     saveStructuredAnalysisToStorage,
   } from '@/composables/workflow/useWorkflowStorage'
+  import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
@@ -185,11 +186,18 @@
 
   const route = useRoute()
   const store = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
+  // 注意：projectId 維持字串型別——這個變數後面還會拿去當 localStorage 的 key
+  // （loadWorkflowStateFromStorage 等函式都吃字串），只有跟 store.projects 比對時才轉數字
   const projectId = computed(() => route.params.id as string)
 
   const project = computed(() =>
-    store.projects.find(p => p.id === projectId.value),
+    store.projects.find(p => p.id === Number(projectId.value)),
+  )
+
+  const frameworkTitle = computed(() =>
+    frameworkStore.frameworks.find(fw => fw.id === project.value?.frameworkId)?.title ?? '（未選擇）',
   )
 
   const summary = computed<ModelMetricSummary[]>(() => {

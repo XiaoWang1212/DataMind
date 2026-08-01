@@ -14,7 +14,7 @@
           {{ statusLabel[project.status] }}
         </span>
       </div>
-      <div class="framework-link">框架：{{ project.frameworkName }}</div>
+      <div class="framework-link">框架：{{ frameworkTitle }}</div>
     </div>
 
     <!-- Detail panels -->
@@ -94,11 +94,13 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
   const route = useRoute()
   const router = useRouter()
   const store = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
   const statusLabel: Record<string, string> = {
     completed: '已完成',
@@ -107,7 +109,11 @@
   }
 
   const project = computed(() =>
-    store.projects.find(p => p.id === route.params.id),
+    store.projects.find(p => p.id === Number(route.params.id)),
+  )
+
+  const frameworkTitle = computed(() =>
+    frameworkStore.frameworks.find(fw => fw.id === project.value?.frameworkId)?.title ?? '（未選擇）',
   )
 
   // 這裡是打開「已存在」的專案，畫布狀態要從 localStorage 還原；

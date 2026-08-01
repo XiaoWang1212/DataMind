@@ -27,7 +27,7 @@
               {{ statusLabel[project.status] }}
             </span>
           </div>
-          <div class="project-meta">框架：{{ project.frameworkName }}</div>
+          <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
           <div class="project-date">
             <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
             {{ project.date }}
@@ -51,14 +51,20 @@
 <script setup lang="ts">
   import type { Project } from '@/store/projectStore'
   import { RouterLink } from 'vue-router'
+  import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
   const store = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
   const statusLabel: Record<string, string> = {
     completed: '已完成',
     running: '進行中',
     draft: '草稿',
+  }
+
+  function frameworkTitle (project: Project): string {
+    return frameworkStore.frameworks.find(fw => fw.id === project.frameworkId)?.title ?? '（未選擇）'
   }
 
   // 進行中代表 workflow 還沒跑完，直接點進去繼續；其他狀態先進詳情頁
