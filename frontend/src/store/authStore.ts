@@ -17,6 +17,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function checkSession (): Promise<void> {
     try {
       user.value = await fetchCurrentUser()
+    } catch {
+      user.value = null
     } finally {
       isReady.value = true
     }

@@ -48,7 +48,11 @@
   const collapsed = ref(false)
 
   async function handleLogout (): Promise<void> {
-    await authStore.logout()
+    try {
+      await authStore.logout()
+    } catch {
+      // even if the logout request failed, don't leave the user stuck on this page
+    }
     router.push('/login')
   }
 
