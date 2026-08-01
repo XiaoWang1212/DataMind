@@ -52,8 +52,22 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: datamind-postgres
+    environment:
+      POSTGRES_USER: datamind
+      POSTGRES_PASSWORD: datamind
+      POSTGRES_DB: datamind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
 volumes:
   whisper-cache:
   n8n_data:
   frontend_node_modules:
   backend_venv:
+  postgres_data:
