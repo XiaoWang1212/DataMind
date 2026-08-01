@@ -138,6 +138,25 @@ users
 | embedding | vector(384) | pgvector；384 維對應現行 `BAAI/bge-small-zh-v1.5` embedding 模型（`backend/docs/rag-paper-generation.md`） |
 | chunk_index | 整數 | 段落順序 |
 
+### `alembic_version`（Alembic 內部表，非應用程式資料）
+
+Alembic（資料庫遷移工具）自動維護，只有一欄：
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| version_num | 字串 | 目前資料庫套用到哪一版 migration |
+
+值對應 `backend/migrations/versions/` 底下某個檔名開頭的版本號，代表資料庫目前的 schema 版本：
+
+```
+77c645048f79  → users / frameworks / projects
+32767854d864  → datasets / workflow_states
+220db2337cb8  → reports / citations
+97e81ea64538  → rag_papers / rag_chunks（最新）
+```
+
+每次 `alembic upgrade head` 會讀這張表決定要往下套用哪些新的 migration，再把值更新成最新版本號。**不需要手動編輯**，完全由 `alembic upgrade`/`alembic downgrade` 自動維護。
+
 ---
 
 ## 三、本機環境啟動方式（實作時參考）
@@ -209,8 +228,55 @@ python scripts/seed_admin.py
 
 ### 7. 直接檢視資料庫內容
 
+三種方式，任選一種：
+
+**方式一：psql 指令列**
+
 ```bash
 docker exec -it datamind-postgres psql -U datamind -d datamind
 ```
 
-`\dt` 列出所有表；`SELECT * FROM users;` 等指令直接查詢。亦可用 DBeaver、TablePlus 等 GUI 工具，連線資訊同 `.env` 設定。
+`\dt` 列出所有表；`SELECT * FROM users;` 等指令直接查詢。
+
+**方式二：Adminer（瀏覽器版，免安裝）**
+
+`docker-compose.yml` 已內建 `adminer` 服務，`docker compose up -d adminer` 啟動後，瀏覽器開：
+
+**http://localhost:8080**
+
+登入表單填：
+
+| 欄位 | 值 |
+|---|---|
+| System | PostgreSQL |
+| Server | `postgres` |
+| Username | `datamind` |
+| Password | `datamind` |
+| Database | `datamind` |
+
+**方式三：DBeaver（桌面軟體，介面較好讀，推薦）**
+
+安裝（Windows，用 winget，免手動下載安裝檔）：
+
+```powershell
+winget install --id DBeaver.DBeaver.Community --source winget --silent --accept-package-agreements --accept-source-agreements
+```
+
+安裝路徑為 `%LOCALAPPDATA%\DBeaver\dbeaver.exe`，開始選單搜尋 DBeaver 也可以開啟。
+
+開啟後：
+
+1. 左上角「新增資料庫連線」（插頭+號圖示）
+2. 選 **PostgreSQL**
+3. 填入：
+   | 欄位 | 值 |
+   |---|---|
+   | Host | `localhost` |
+   | Port | `5432` |
+   | Database | `datamind` |
+   | Username | `datamind` |
+   | Password | `datamind` |
+4. 按「測試連線」，若提示缺少驅動程式，按下載即可（僅第一次）
+5. 完成後左側 Database Navigator 會列出所有表，可直接瀏覽資料或下 SQL 查詢
+
+注意：DBeaver 跑在本機（非 docker 容器），所以 Host 用 `localhost` 而不是 `postgres`——這跟第三節「連線字串」提到的容器對容器連線是不同情境，`backend` 容器連 Postgres 才需要用服務名稱 `postgres`。

@@ -1,0 +1,172 @@
+<h2>Sidebar 毛玻璃質感：漂浮版</h2>
+<p class="subtitle">Sidebar 改成絕對定位漂在內容上方，下面模擬了會被蓋住的內容（含彩色卡片），這樣比較看得出模糊效果。比較幾種色調。</p>
+
+<div class="options" style="margin-bottom:20px">
+  <div class="option" data-choice="a-current" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>現況</h3><p>不透明白底，並排（非漂浮，當基準對照）</p></div>
+  </div>
+  <div class="option" data-choice="b-light-glass" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>淺色毛玻璃</h3><p>半透明白 + 模糊，細白邊、輕陰影</p></div>
+  </div>
+  <div class="option" data-choice="c-dark-glass" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>深色毛玻璃</h3><p>半透明深藏青（像 macOS 深色側欄）</p></div>
+  </div>
+  <div class="option" data-choice="d-tinted-glass" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>米色毛玻璃</h3><p>半透明米色，跟頁面底色同色系但更亮</p></div>
+  </div>
+</div>
+
+<style>
+  .glass-frame { position:relative; height:320px; border-radius:8px; overflow:hidden; border:1px solid #e2e4ea; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .glass-bg { position:absolute; inset:0; background:#f6f5f2; padding:20px 20px 20px 210px; overflow:hidden; }
+  .glass-bg .bg-title { font-size:18px; font-weight:700; color:#1c2130; margin:0 0 4px; }
+  .glass-bg .bg-sub { font-size:11px; color:#5b677e; margin:0 0 14px; }
+  .glass-bg .bg-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .glass-bg .bg-card { border-radius:10px; padding:12px; color:#fff; font-size:11px; font-weight:600; }
+  .glass-bg .bg-card .n { font-size:20px; font-weight:800; margin-top:4px; }
+  .c1 { background:linear-gradient(135deg,#e8a33d,#c9860f); }
+  .c2 { background:linear-gradient(135deg,#4f46e5,#3730a3); }
+  .c3 { background:linear-gradient(135deg,#16a34a,#0f7a37); }
+
+  .glass-sb { position:absolute; top:0; left:0; bottom:0; width:190px; padding:16px 12px; box-sizing:border-box; }
+  .glass-sb .sb-brand { font-size:13px; font-weight:700; margin-bottom:2px; }
+  .glass-sb .sb-sub { font-size:10px; margin-bottom:16px; opacity:0.7; }
+  .glass-sb .sb-item { display:flex; align-items:center; gap:8px; padding:8px 9px; border-radius:7px; font-size:12px; font-weight:500; margin-bottom:2px; }
+  .glass-sb .sb-item .dot { width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.55; flex-shrink:0; }
+  .glass-sb .sb-item--active { background:#e8a33d; color:#1c2130; font-weight:700; }
+
+  /* A: current opaque, side-by-side (no overlap, so bg padding matches sidebar width but no blur) */
+  .frame-a .glass-bg { padding-left:210px; }
+  .frame-a .glass-sb { background:#ffffff; border-right:1px solid #e8e8e8; color:#334155; }
+  .frame-a .sb-brand, .frame-a .sb-sub { color:#1c2130; }
+  .frame-a .sb-item--active { color:#1c2130; }
+
+  /* B: light glass */
+  .frame-b .glass-sb { background:rgba(255,255,255,0.55); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-right:1px solid rgba(255,255,255,0.6); box-shadow:4px 0 24px rgba(28,33,48,0.08); color:#334155; }
+  .frame-b .sb-brand, .frame-b .sb-sub { color:#1c2130; }
+  .frame-b .sb-item--active { color:#1c2130; }
+
+  /* C: dark glass */
+  .frame-c .glass-sb { background:rgba(28,33,48,0.55); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-right:1px solid rgba(255,255,255,0.08); box-shadow:4px 0 24px rgba(0,0,0,0.15); color:rgba(255,255,255,0.75); }
+  .frame-c .sb-brand { color:#fff; }
+  .frame-c .sb-sub { color:rgba(255,255,255,0.55); }
+  .frame-c .sb-item--active { color:#1c2130; }
+
+  /* D: beige tinted glass */
+  .frame-d .glass-sb { background:rgba(246,245,242,0.6); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-right:1px solid rgba(255,255,255,0.5); box-shadow:4px 0 24px rgba(28,33,48,0.08); color:#5b677e; }
+  .frame-d .sb-brand, .frame-d .sb-sub { color:#1c2130; }
+  .frame-d .sb-item--active { color:#1c2130; }
+
+  .compare-row { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .compare-col .mockup-header { text-align:center; font-weight:600; }
+
+  .sidebar-inner {} /* placeholder */
+</style>
+
+<div class="compare-row">
+  <div class="mockup compare-col">
+    <div class="mockup-header">A · 現況（並排，非漂浮）</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-a">
+        <div class="glass-bg">
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">B · 淺色毛玻璃</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-b">
+        <div class="glass-bg">
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">C · 深色毛玻璃</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-c">
+        <div class="glass-bg">
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">D · 米色毛玻璃</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-d">
+        <div class="glass-bg">
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px">提醒：這個 mockup 把彩色卡片刻意畫在 sidebar 底下方便看模糊效果，實際頁面內容（儀表板數字卡片等）是米色底 + 白色卡片，色彩沒有這麼鮮豔，毛玻璃效果會比 mockup 這裡看到的更含蓄一些。</p>

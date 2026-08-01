@@ -1,0 +1,136 @@
+<h2>加回光澤動畫 + 邊緣反光</h2>
+<p class="subtitle">把光澤掃過動畫加回來，並加上玻璃邊緣的反光質感（頂部/左側邊緣有一道亮邊，模擬玻璃斜切面反光，21st.dev 範例卡片邊緣就是這種效果）。光暈球維持不動當背景。</p>
+
+<div class="options" style="margin-bottom:20px">
+  <div class="option" data-choice="b-final" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>淺色玻璃</h3><p>光澤 + 邊緣反光 + 光暈球</p></div>
+  </div>
+  <div class="option" data-choice="c-final" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>深色玻璃</h3><p>光澤 + 邊緣反光 + 光暈球</p></div>
+  </div>
+</div>
+
+<style>
+  .glass-frame { position:relative; height:340px; border-radius:8px; overflow:hidden; border:1px solid #e2e4ea; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .glass-bg { position:absolute; inset:0; background:#f6f5f2; padding:20px 20px 20px 210px; overflow:hidden; }
+  .glass-bg .bg-title { font-size:18px; font-weight:700; color:#1c2130; margin:0 0 4px; }
+  .glass-bg .bg-sub { font-size:11px; color:#5b677e; margin:0 0 14px; }
+  .glass-bg .bg-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .glass-bg .bg-card { border-radius:10px; padding:12px; color:#fff; font-size:11px; font-weight:600; }
+  .glass-bg .bg-card .n { font-size:20px; font-weight:800; margin-top:4px; }
+  .c1 { background:linear-gradient(135deg,#e8a33d,#c9860f); }
+  .c2 { background:linear-gradient(135deg,#4f46e5,#3730a3); }
+  .c3 { background:linear-gradient(135deg,#16a34a,#0f7a37); }
+
+  .orb { position:absolute; border-radius:50%; filter:blur(38px); pointer-events:none; z-index:0; }
+  .orb-1 { width:160px; height:160px; top:-40px; left:-30px; background:radial-gradient(circle, #e8a33d 0%, transparent 70%); opacity:0.55; }
+  .orb-2 { width:130px; height:130px; bottom:-30px; left:60px; background:radial-gradient(circle, #f4c261 0%, transparent 70%); opacity:0.5; }
+  .orb-3 { width:110px; height:110px; top:120px; left:-20px; background:radial-gradient(circle, #c9860f 0%, transparent 70%); opacity:0.35; }
+
+  .glass-sb {
+    position:absolute; top:0; left:0; bottom:0; width:190px; padding:16px 12px; box-sizing:border-box;
+    z-index:2; overflow:hidden;
+    /* 邊緣反光：頂部+左側亮邊、右下角較暗，模擬玻璃斜切反光 */
+    border-top: 1px solid rgba(255,255,255,0.65);
+    border-left: 1px solid rgba(255,255,255,0.5);
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.25),
+      inset -12px -12px 24px -20px rgba(0,0,0,0.15),
+      4px 0 24px rgba(28,33,48,0.1);
+  }
+  .glass-sb .sb-brand { font-size:13px; font-weight:700; margin-bottom:2px; position:relative; z-index:2; }
+  .glass-sb .sb-sub { font-size:10px; margin-bottom:16px; opacity:0.7; position:relative; z-index:2; }
+  .glass-sb .sb-item { display:flex; align-items:center; gap:8px; padding:8px 9px; border-radius:7px; font-size:12px; font-weight:500; margin-bottom:2px; position:relative; z-index:2; }
+  .glass-sb .sb-item .dot { width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.55; flex-shrink:0; }
+  .glass-sb .sb-item--active { background:#e8a33d; color:#1c2130; font-weight:700; }
+
+  .sb-shine {
+    position:absolute; top:0; left:0; width:70%; height:220%;
+    background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+    transform: translate(-160%, -20%) rotate(12deg);
+    animation: shine-sweep 4.5s ease-in-out infinite;
+    pointer-events: none; z-index: 1;
+  }
+  @keyframes shine-sweep {
+    0%, 25% { transform: translate(-160%, -20%) rotate(12deg); }
+    65%, 100% { transform: translate(160%, -20%) rotate(12deg); }
+  }
+
+  /* B: light glass */
+  .frame-b .glass-sb { background:rgba(255,255,255,0.42); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); color:#334155; }
+  .frame-b .sb-brand, .frame-b .sb-sub { color:#1c2130; }
+  .frame-b .sb-item--active { color:#1c2130; }
+  .frame-b .sb-shine { background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.7) 50%, transparent 65%); }
+
+  /* C: dark glass */
+  .frame-c .glass-sb { background:rgba(28,33,48,0.48); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); color:rgba(255,255,255,0.75); border-top-color:rgba(255,255,255,0.2); border-left-color:rgba(255,255,255,0.12); }
+  .frame-c .sb-brand { color:#fff; }
+  .frame-c .sb-sub { color:rgba(255,255,255,0.55); }
+  .frame-c .sb-item--active { color:#1c2130; }
+  .frame-c .sb-shine { background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.25) 50%, transparent 65%); }
+
+  .compare-row { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .compare-col .mockup-header { text-align:center; font-weight:600; }
+</style>
+
+<div class="compare-row">
+  <div class="mockup compare-col">
+    <div class="mockup-header">B · 淺色玻璃（最終版）</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-b">
+        <div class="glass-bg">
+          <div class="orb orb-1"></div>
+          <div class="orb orb-2"></div>
+          <div class="orb orb-3"></div>
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-shine"></div>
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">C · 深色玻璃（最終版）</div>
+    <div class="mockup-body">
+      <div class="glass-frame frame-c">
+        <div class="glass-bg">
+          <div class="orb orb-1"></div>
+          <div class="orb orb-2"></div>
+          <div class="orb orb-3"></div>
+          <div class="bg-title">儀表板</div>
+          <div class="bg-sub">歡迎回來，這是您的研究概覽。</div>
+          <div class="bg-cards">
+            <div class="bg-card c1">框架總數<div class="n">24</div></div>
+            <div class="bg-card c2">活躍專案<div class="n">8</div></div>
+            <div class="bg-card c3">已完成分析<div class="n">156</div></div>
+          </div>
+        </div>
+        <div class="glass-sb">
+          <div class="sb-shine"></div>
+          <div class="sb-brand">研究中心</div>
+          <div class="sb-sub">框架分析系統</div>
+          <div class="sb-item sb-item--active"><span class="dot"></span>儀表板</div>
+          <div class="sb-item"><span class="dot"></span>框架庫</div>
+          <div class="sb-item"><span class="dot"></span>專案</div>
+          <div class="sb-item"><span class="dot"></span>設定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
