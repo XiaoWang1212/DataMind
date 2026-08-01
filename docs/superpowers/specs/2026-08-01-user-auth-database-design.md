@@ -172,7 +172,7 @@ DataMind 目前完全沒有資料庫、沒有使用者、沒有登入機制。�
 | id | 整數 PK | |
 | paper_id | 整數, FK → rag_papers.id, not null | |
 | content | 文字 | |
-| embedding | vector(N) | pgvector 型別，N 對照目前 `sentence-transformers` 模型實際輸出維度，實作時確認 |
+| embedding | vector(384) | pgvector 型別；384 維對照現行 `BAAI/bge-small-zh-v1.5` embedding 模型的實際輸出維度（`backend/docs/rag-paper-generation.md`） |
 | chunk_index | 整數 | 在論文裡的順序 |
 
 ### 段落 J：登入機制細節
