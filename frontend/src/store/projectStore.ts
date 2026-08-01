@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
+import { createProject, type CreateProjectPayload, listProjects, updateProject } from '@/api/project'
 import { fetchWorkflowJob, WorkflowJobNotFoundError } from '@/api/workflow'
 import { clearActiveJobIdFromStorage, loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
 
 const JOB_POLL_INTERVAL_MS = 2000
 
 export interface Project {
-  id: string
+  id: number
   name: string
   description: string
   frameworkId: number | null
-  frameworkName: string
   datasetName: string
   status: 'draft' | 'running' | 'completed'
   date: string
@@ -21,100 +21,53 @@ export interface Project {
 }
 
 export interface ActiveProjectContext {
-  projectId: string
+  projectId: number
   datasetFile: File | null
   frameworkId: number | null
 }
 
-const STORAGE_KEY = 'datamind_projects'
-
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: '1',
-    name: '市場情緒研究',
-    description: '',
-    status: 'completed',
-    frameworkId: 2,
-    frameworkName: '市場情緒回歸',
-    datasetName: 'customer_data.csv',
-    date: '2026-05-29',
-    progress: 100,
-    accuracy: '87.3%',
-    keyFinding: '購買頻率是流失率最強的預測因子（p < 0.001）',
-    variables: 8,
-  },
-  {
-    id: '2',
-    name: '圖像分類實驗',
-    description: '',
-    status: 'running',
-    frameworkId: 1,
-    frameworkName: 'CNN 圖像分類',
-    datasetName: 'image_dataset.csv',
-    date: '2026-06-01',
-    progress: 67,
-    variables: 12,
-  },
-  {
-    id: '3',
-    name: '用戶導航分析',
-    description: '',
-    status: 'draft',
-    frameworkId: 3,
-    frameworkName: '用戶行為 RNN',
-    datasetName: '',
-    date: '2026-06-02',
-    progress: 0,
-    variables: 0,
-  },
-]
-
-function loadFromStorage (): { projects: Project[], nextId: number } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return { projects: [...INITIAL_PROJECTS], nextId: INITIAL_PROJECTS.length + 1 }
-    }
-    const parsed = JSON.parse(raw) as { projects: Project[], nextId: number }
-    if (Array.isArray(parsed.projects) && parsed.projects.length > 0) {
-      return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return { projects: [...INITIAL_PROJECTS], nextId: INITIAL_PROJECTS.length + 1 }
-}
-
 export const useProjectStore = defineStore('project', () => {
-  const saved = loadFromStorage()
-  const projects = ref<Project[]>(saved.projects)
+  const projects = ref<Project[]>([])
   const activeContext = ref<ActiveProjectContext | null>(null)
-  let nextId = saved.nextId
 
-  watch(
-    projects,
-    val => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects: val, nextId }))
-      } catch { /* ignore */ }
-    },
-    { deep: true },
-  )
+  async function loadProjects (): Promise<void> {
+    try {
+      projects.value = await listProjects()
+    } catch (error) {
+      console.error('載入專案列表失敗', error)
+      return
+    }
 
-  function addProject (p: Omit<Project, 'id'>): Project {
-    const newProject: Project = { id: String(nextId++), ...p }
-    projects.value = [newProject, ...projects.value]
-    return newProject
+    // App 重新載入時，把上次還在跑的 job 接續輪詢起來
+    for (const p of projects.value) {
+      const state = loadWorkflowStateFromStorage(String(p.id))
+      if (state?.activeJobId) {
+        pollProjectJob(p.id, state.activeJobId)
+      }
+    }
   }
 
-  function updateProjectStatus (projectId: string, status: Project['status']): void {
+  async function addProject (p: CreateProjectPayload): Promise<Project> {
+    const created = await createProject(p)
+    projects.value = [created, ...projects.value]
+    return created
+  }
+
+  async function updateProjectStatus (projectId: number, status: Project['status']): Promise<void> {
     const target = projects.value.find(p => p.id === projectId)
     if (target) {
       target.status = status
     }
+    try {
+      await updateProject(projectId, { status, progress: target?.progress })
+    } catch (error) {
+      console.error('更新專案狀態失敗', error)
+    }
   }
 
-  function updateProjectProgress (projectId: string, progress: number): void {
+  // 執行過程中的進度只更新本地畫面；真正寫回資料庫的時機是狀態轉換
+  // （updateProjectStatus 會把當下的 progress 一併帶進 PATCH），避免每次輪詢都打一次 API
+  function setProjectProgress (projectId: number, progress: number): void {
     const target = projects.value.find(p => p.id === projectId)
     if (target) {
       target.progress = progress
@@ -123,9 +76,9 @@ export const useProjectStore = defineStore('project', () => {
 
   // store 是整個 App 生命週期內的單一實例，輪詢掛在這裡才不會因為離開 WorkflowWorkspace
   // 畫面（例如切回專案列表）就被砍掉，導致列表上的進度卡住、即使後端早就跑完了
-  const jobPollers = new Map<string, { intervalId: number, jobId: string }>()
+  const jobPollers = new Map<number, { intervalId: number, jobId: string }>()
 
-  function pollProjectJob (projectId: string, jobId: string): void {
+  function pollProjectJob (projectId: number, jobId: string): void {
     const existing = jobPollers.get(projectId)
     if (existing) {
       if (existing.jobId === jobId) {
@@ -146,6 +99,7 @@ export const useProjectStore = defineStore('project', () => {
           }
 
           if (job.totalModels > 0) {
+            // 進行中的 tick 只改本地畫面，不寫回資料庫；完成時才持久化（見下方）
             target.progress = Math.round((job.completedModels.length / job.totalModels) * 100)
           }
 
@@ -154,7 +108,7 @@ export const useProjectStore = defineStore('project', () => {
             jobPollers.delete(projectId)
             if (job.status === 'done') {
               target.progress = 100
-              target.status = 'completed'
+              await updateProjectStatus(projectId, 'completed')
             }
           }
         } catch (error) {
@@ -162,7 +116,7 @@ export const useProjectStore = defineStore('project', () => {
             // job 在後端已經永久消失（重啟／超過 TTL），不是暫時性錯誤，停止輪詢並清掉過期紀錄
             window.clearInterval(intervalId)
             jobPollers.delete(projectId)
-            clearActiveJobIdFromStorage(projectId)
+            clearActiveJobIdFromStorage(String(projectId))
             return
           }
           // 輪詢暫時失敗（網路抖動等），下一輪再試
@@ -170,14 +124,6 @@ export const useProjectStore = defineStore('project', () => {
       })()
     }, JOB_POLL_INTERVAL_MS)
     jobPollers.set(projectId, { intervalId, jobId })
-  }
-
-  // App 重新載入時，把上次還在跑的 job 接續輪詢起來
-  for (const p of projects.value) {
-    const state = loadWorkflowStateFromStorage(p.id)
-    if (state?.activeJobId) {
-      pollProjectJob(p.id, state.activeJobId)
-    }
   }
 
   function setActiveContext (ctx: ActiveProjectContext): void {
@@ -188,5 +134,5 @@ export const useProjectStore = defineStore('project', () => {
     activeContext.value = null
   }
 
-  return { projects, activeContext, addProject, updateProjectStatus, updateProjectProgress, pollProjectJob, setActiveContext, clearActiveContext }
+  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, setActiveContext, clearActiveContext }
 })
