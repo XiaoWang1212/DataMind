@@ -2,7 +2,7 @@
 
 設計決策與理由（為什麼選 PostgreSQL、為什麼 session 不用 JWT、為什麼文獻庫要跟著 project 走等）記在設計文件：`docs/superpowers/specs/2026-08-01-user-auth-database-design.md`。這份文件是技術參考：架構、schema、環境啟動方式。
 
-> 目前這份資料庫設計**還沒有實作**——專案裡尚未建立 PostgreSQL、SQLAlchemy model 或 migration 檔案。本文件描述實作後的架構樣貌，供之後動手實作時參考。
+> 這份資料庫設計已經實作完成——PostgreSQL、SQLAlchemy model（`backend/models/`）、Alembic migration（`backend/migrations/`）、登入 API（`backend/routes/auth.py`）都已存在。以下的「本機環境啟動方式」段落沿用建置時的操作記錄，供之後重新建置或除錯時參考。
 
 ---
 
@@ -152,7 +152,7 @@ users
     container_name: datamind-postgres
     environment:
       POSTGRES_USER: datamind
-      POSTGRES_PASSWORD: <從 .env 讀，不寫死>
+      POSTGRES_PASSWORD: datamind
       POSTGRES_DB: datamind
     ports:
       - "5432:5432"
@@ -161,19 +161,15 @@ users
     restart: unless-stopped
 ```
 
-並在 `volumes:` 區塊加上 `postgres_data:`。
+並在 `volumes:` 區塊加上 `postgres_data:`。密碼採明碼本地開發預設值，跟這個檔案裡既有的 `N8N_SECURE_COOKIE=false` 等明碼設定一致，不特別從 `.env` 讀。
 
 ### 2. Python 套件
 
-`backend/requirements.txt` 新增：
+用 `uv add`（不是手動編輯 `pyproject.toml` 或 `pip install`）：
 
-```
-flask-sqlalchemy
-flask-login
-alembic
-psycopg2-binary
-bcrypt
-pgvector
+```bash
+cd backend
+uv add flask-sqlalchemy flask-login alembic psycopg2-binary bcrypt pgvector
 ```
 
 ### 3. 連線字串
@@ -181,10 +177,10 @@ pgvector
 `backend/.env`：
 
 ```
-DATABASE_URL=postgresql://datamind:<密碼>@localhost:5432/datamind
+DATABASE_URL=postgresql://datamind:datamind@postgres:5432/datamind
 ```
 
-docker-compose 內部服務互連時，`localhost` 改為服務名稱 `postgres`。
+這裡用服務名稱 `postgres` 而不是 `localhost`——因為 `backend` 也是跑在 docker-compose 的容器裡（不是本機直接跑），容器之間要用 docker-compose 內部網路的服務名稱互連，`localhost` 在容器裡指的是容器自己，連不到 Postgres。
 
 ### 4. 啟用 pgvector 擴充套件
 

@@ -27,6 +27,9 @@ def register():
     if not email or not password:
         return jsonify({"success": False, "error": "email 和 password 為必填欄位"}), 400
 
+    if len(password.encode("utf-8")) > 72:
+        return jsonify({"success": False, "error": "password 過長（bcrypt 上限為 72 bytes）"}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"success": False, "error": "此 email 已被註冊"}), 409
 
@@ -50,6 +53,9 @@ def login():
 
     if not email or not password:
         return jsonify({"success": False, "error": "email 和 password 為必填欄位"}), 400
+
+    if len(password.encode("utf-8")) > 72:
+        return jsonify({"success": False, "error": "帳號或密碼錯誤"}), 401
 
     user = User.query.filter_by(email=email).first()
     if not user or not user.password_hash:

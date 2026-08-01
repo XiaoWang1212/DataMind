@@ -15,7 +15,11 @@ def create_app() -> Flask:
     max_content_length_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "100"))
     app.config["MAX_CONTENT_LENGTH"] = max_content_length_mb * 1024 * 1024
     app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable is not set")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     @app.errorhandler(RequestEntityTooLarge)
