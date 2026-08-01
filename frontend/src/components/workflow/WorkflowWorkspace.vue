@@ -231,10 +231,10 @@
     selectedNodeId,
     expandDrawer,
     onProgress: pct => {
-      if (projectId.value) projectStore.updateProjectProgress(projectId.value, pct)
+      if (projectId.value) projectStore.setProjectProgress(Number(projectId.value), pct)
     },
     onJobActive: jobId => {
-      if (projectId.value) projectStore.pollProjectJob(projectId.value, jobId)
+      if (projectId.value) projectStore.pollProjectJob(Number(projectId.value), jobId)
     },
   })
 
@@ -289,9 +289,9 @@
   // 專案狀態：草稿建立後從未變動過，這裡讓它跟著 workflow 實際進度走
   function markProjectRunning (): void {
     if (!projectId.value) return
-    const target = projectStore.projects.find(p => p.id === projectId.value)
+    const target = projectStore.projects.find(p => p.id === Number(projectId.value))
     if (target && target.status !== 'running') {
-      projectStore.updateProjectStatus(projectId.value, 'running')
+      projectStore.updateProjectStatus(Number(projectId.value), 'running')
     }
   }
 
@@ -505,14 +505,14 @@
   // workflow 真正跑出結果才算「已完成」；調整設定後重新執行會在 markProjectRunning() 退回「進行中」
   watch(workflowResult, val => {
     if (val && projectId.value) {
-      projectStore.updateProjectStatus(projectId.value, 'completed')
+      projectStore.updateProjectStatus(Number(projectId.value), 'completed')
     }
   })
 
   onMounted(async () => {
     try {
       if (projectId.value) {
-        const target = projectStore.projects.find(p => p.id === projectId.value)
+        const target = projectStore.projects.find(p => p.id === Number(projectId.value))
         if (target && target.status !== 'completed') markProjectRunning()
       }
 
