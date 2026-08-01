@@ -42,6 +42,7 @@ def create_app() -> Flask:
 
     from routes.auth import auth_bp
     from routes.health import health_bp
+    from routes.project import project_bp
     from routes.rag import rag_bp
     from routes.report import report_bp
     from routes.stt import stt_bp
@@ -50,6 +51,7 @@ def create_app() -> Flask:
     from routes.model import model_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(project_bp, url_prefix="/api/projects")
     app.register_blueprint(health_bp)
     app.register_blueprint(rag_bp, url_prefix="/api/rag")
     app.register_blueprint(report_bp, url_prefix="/api/report")
