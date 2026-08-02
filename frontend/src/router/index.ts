@@ -81,6 +81,11 @@ const router = createRouter({
           component: () => import("@/views/hub/ProjectDetailView.vue"),
         },
         {
+          path: "projects/:id/mapping",
+          name: "hub-project-mapping",
+          component: () => import("@/views/hub/FieldMappingView.vue"),
+        },
+        {
           path: "projects/:id/result",
           name: "hub-project-result",
           component: () => import("@/views/hub/ResultView.vue"),
