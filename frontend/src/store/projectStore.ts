@@ -148,6 +148,7 @@ export const useProjectStore = defineStore('project', () => {
   ): Promise<void> {
     const variables = Object.keys(mapping).length
     const target = projects.value.find(p => p.id === projectId)
+    const previous = target && { columnMapping: target.columnMapping, variables: target.variables }
     if (target) {
       target.columnMapping = mapping
       target.variables = variables
@@ -155,6 +156,12 @@ export const useProjectStore = defineStore('project', () => {
     try {
       await updateProject(projectId, { columnMapping: mapping, variables })
     } catch (error) {
+      // API 失敗時要把本地狀態復原：store 絕不能在資料庫拒絕寫入的情況下，
+      // 還讓畫面顯示這筆對映已經存檔
+      if (target && previous) {
+        target.columnMapping = previous.columnMapping
+        target.variables = previous.variables
+      }
       console.error('儲存欄位對映失敗', error)
       throw error
     }
