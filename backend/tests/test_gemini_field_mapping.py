@@ -36,6 +36,38 @@ class FakeModel:
         return FakeResponse(self._text)
 
 
+class FakeCandidate:
+    def __init__(self, finish_reason):
+        self.finish_reason = finish_reason
+
+
+class FakeUsage:
+    def __init__(self, prompt_tokens, candidates_tokens, total_tokens):
+        self.prompt_token_count = prompt_tokens
+        self.candidates_token_count = candidates_tokens
+        self.total_token_count = total_tokens
+
+
+class TruncatedResponse:
+    """模擬真實情境下被 max_output_tokens 腰斬的回應：
+
+    text 是斷在一半的無效 JSON，finish_reason=2（MAX_TOKENS），usage_metadata
+    帶著實測那組數字（thinking token 吃光額度、可見輸出被截斷）。
+    """
+
+    def __init__(self, text: str):
+        self.text = text
+        self.candidates = [FakeCandidate(finish_reason=2)]
+        self.usage_metadata = FakeUsage(
+            prompt_tokens=1825, candidates_tokens=333, total_tokens=5906
+        )
+
+
+class TruncatedModel:
+    def generate_content(self, *args, **kwargs):
+        return TruncatedResponse('{"matches": [{"paper_variable": "braden_sc')
+
+
 @pytest.fixture
 def service(monkeypatch):
     """繞過 __init__ 的 API key 檢查，直接生出一個可用的實例。"""
@@ -160,4 +192,10 @@ class TestSemanticMatch:
 
     def test_api_error_returns_none(self, service, monkeypatch):
         patch_model(service, monkeypatch, FakeModel(error=RuntimeError("timeout")))
+        assert service.semantic_match(ITEMS, COLUMNS) is None
+
+    def test_truncated_by_max_tokens_returns_none_without_raising(self, service, monkeypatch):
+        # 真實規模下 thinking token 會把 max_output_tokens 用光，可見 JSON
+        # 被腰斬。這種情況要跟其他解析失敗一樣優雅地回傳 None，不能拋例外。
+        monkeypatch.setattr(service, "_field_mapping_model", lambda: TruncatedModel(), raising=False)
         assert service.semantic_match(ITEMS, COLUMNS) is None

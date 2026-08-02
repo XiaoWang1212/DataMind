@@ -320,6 +320,14 @@ class GeminiService:
 
     _VALID_STATUSES = {"AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"}
 
+    # Gemini 2.5 系列會消耗「thinking」token，這些 token 一樣算進
+    # max_output_tokens，卻不會出現在可見輸出（response.text）裡。實測規模
+    # （22 個論文變數 × 55 個資料集欄位）光 thinking 就吃掉 3700+ tokens，
+    # 把可見 JSON 從中間截斷、變成無法解析。這兩個上限刻意留了很大餘裕，
+    # 之後不要因為「看起來很大」就把它們調小。
+    _SEMANTIC_MATCH_MAX_OUTPUT_TOKENS = 16384
+    _CHAT_REFINE_MAX_OUTPUT_TOKENS = 8192
+
     def _field_mapping_model(self) -> genai.GenerativeModel:
         """欄位對齊專用的 model 實例。
 
@@ -365,6 +373,35 @@ class GeminiService:
                 break
         return result
 
+    @staticmethod
+    def _log_if_truncated(response, caller: str) -> None:
+        """回應若因觸及 max_output_tokens 而被截斷，記錄明確原因方便排查。
+
+        截斷後的 JSON 跟「格式本來就爛」在下游看起來一模一樣，靠這個 log
+        才分得出來是額度不夠、還是模型真的亂回。只負責記錄，不改變任何回傳值；
+        用 getattr 一路防守是因為測試用的 fake response 只有 .text 這個屬性，
+        絕不能讓這段診斷邏輯反過來把原本會成功的呼叫弄壞。
+        """
+        try:
+            candidates = getattr(response, "candidates", None) or []
+            first = candidates[0] if candidates else None
+            finish_reason = getattr(first, "finish_reason", None)
+            is_max_tokens = finish_reason == 2 or str(finish_reason).endswith("MAX_TOKENS")
+            if not is_max_tokens:
+                return
+            usage = getattr(response, "usage_metadata", None)
+            logger.error(
+                "%s：Gemini 回應因達到 max_output_tokens 上限而截斷"
+                "（thinking token 也計入此額度），請調高上限。"
+                "usage_metadata: prompt_tokens=%s, candidates_tokens=%s, total_tokens=%s",
+                caller,
+                getattr(usage, "prompt_token_count", None),
+                getattr(usage, "candidates_token_count", None),
+                getattr(usage, "total_token_count", None),
+            )
+        except Exception:
+            logger.debug("%s：檢查 finish_reason 時發生例外，略過診斷 log", caller)
+
     def semantic_match(self, items: list, user_columns: list) -> Optional[list]:
         """對演算法配不出來的項目做語意配對建議。
 
@@ -378,12 +415,15 @@ class GeminiService:
         try:
             response = self._field_mapping_model().generate_content(
                 prompt,
-                generation_config=self._field_mapping_config(SEMANTIC_MATCH_SCHEMA, 4096),
+                generation_config=self._field_mapping_config(
+                    SEMANTIC_MATCH_SCHEMA, self._SEMANTIC_MATCH_MAX_OUTPUT_TOKENS
+                ),
             )
         except Exception:
             logger.exception("semantic_match 呼叫 Gemini 失敗")
             return None
 
+        self._log_if_truncated(response, "semantic_match")
         parsed = self._safe_parse_json(getattr(response, "text", "") or "")
         if not isinstance(parsed, dict):
             logger.warning("semantic_match 回應無法解析為 JSON 物件")
@@ -438,7 +478,9 @@ class GeminiService:
             )
             response = self._field_mapping_model().generate_content(
                 prompt,
-                generation_config=self._field_mapping_config(CHAT_REFINE_SCHEMA, 2048),
+                generation_config=self._field_mapping_config(
+                    CHAT_REFINE_SCHEMA, self._CHAT_REFINE_MAX_OUTPUT_TOKENS
+                ),
             )
         except Exception:
             logger.exception("chat_refine 呼叫 Gemini 失敗")
@@ -447,6 +489,7 @@ class GeminiService:
                 "reply": "AI 目前無法回應，請改用下拉選單手動對應。",
             }
 
+        self._log_if_truncated(response, "chat_refine")
         parsed = self._safe_parse_json(getattr(response, "text", "") or "")
         if not isinstance(parsed, dict):
             logger.warning("chat_refine 回應無法解析為 JSON 物件")
