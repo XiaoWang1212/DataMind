@@ -28,6 +28,11 @@ dependencies = [
   "pgvector>=0.5.0",
 ]
 
+[dependency-groups]
+dev = [
+  "pytest",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
