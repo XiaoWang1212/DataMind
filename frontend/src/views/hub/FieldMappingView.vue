@@ -343,6 +343,16 @@
       if (!item || locked.value.has(item.paper_variable)) continue
 
       if (action.matched_user_column) {
+        // 這個欄位如果目前是被使用者手動鎖定的列占用，整個動作直接放棄：
+        // 使用者手動選過的列不容許被 AI 建議覆蓋，而半套用（新列設定了、
+        // 舊列卻沒清，或反過來）比什麼都不做更糟，所以連目標列都不動。
+        const lockedHolder = items.value.find(
+          other => other.paper_variable !== item.paper_variable
+            && other.matched_user_column === action.matched_user_column
+            && locked.value.has(other.paper_variable),
+        )
+        if (lockedHolder) continue
+
         // 搶欄位：原持有者退回未對應，同樣要閃給使用者看
         for (const other of items.value) {
           if (
