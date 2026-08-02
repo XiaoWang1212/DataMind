@@ -432,10 +432,10 @@ class GeminiService:
         mapping_status = current_mapping_state.get("mapping_status") or []
         user_columns = current_mapping_state.get("user_columns") or []
 
-        prompt = build_chat_refine_prompt(
-            mapping_status, user_columns, chat_history, user_message
-        )
         try:
+            prompt = build_chat_refine_prompt(
+                mapping_status, user_columns, chat_history, user_message
+            )
             response = self._field_mapping_model().generate_content(
                 prompt,
                 generation_config=self._field_mapping_config(CHAT_REFINE_SCHEMA, 2048),

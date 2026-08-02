@@ -131,3 +131,15 @@ class TestChatRefine:
             '{"actions": [], "reply": "   "}'
         ))
         assert service.chat_refine(STATE, "隨便", [])["reply"].strip()
+
+    def test_malformed_state_degrades_gracefully_instead_of_raising(self, service, monkeypatch):
+        # mapping_status 裡的項目缺少 build_chat_refine_prompt 會直接用 [] 索引的 key，
+        # 這種格式錯誤必須在 try 內被擋下，不能讓例外往上炸穿整頁。
+        patch_model(service, monkeypatch, FakeModel(action()))
+        malformed_state = {
+            "mapping_status": [{"no_such_key": 1}],
+            "user_columns": [{"name": "a", "sample_values": []}],
+        }
+        result = service.chat_refine(malformed_state, "隨便", [])
+        assert result["actions"] == []
+        assert isinstance(result["reply"], str) and result["reply"]
