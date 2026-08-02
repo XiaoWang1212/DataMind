@@ -138,3 +138,132 @@ def boost_by_sample_values(
 
     adjusted = score + _TYPE_BONUS if expected == inferred else score - _TYPE_PENALTY
     return max(0.0, min(1.0, adjusted))
+
+
+def normalize_user_columns(user_columns: list) -> list[dict]:
+    """把使用者欄位統一成 {"name": str, "sample_values": list[str]}。
+
+    只給字串的呼叫端（沒帶樣本值）也接受，不報錯 —— 樣本值只是輔助訊號，
+    沒有它配對照樣能跑，只是準確率會差一點。
+    """
+    normalized: list[dict] = []
+    for column in user_columns or []:
+        if isinstance(column, str):
+            name, samples = column.strip(), []
+        elif isinstance(column, dict):
+            name = str(column.get("name", "")).strip()
+            samples = [str(value) for value in (column.get("sample_values") or [])]
+        else:
+            continue
+        if not name:
+            continue
+        normalized.append({"name": name, "sample_values": samples})
+    return normalized
+
+
+def _status_for(score: float) -> str:
+    if score >= AUTO_THRESHOLD:
+        return AUTO_MATCHED
+    if score >= REVIEW_THRESHOLD:
+        return NEEDS_REVIEW
+    return UNMATCHED
+
+
+def _score_candidates(name: str, required_type: str, columns: list[dict]) -> list[tuple[str, float]]:
+    """算出這個論文變數對每個欄位的分數，由高到低排序。
+
+    正規化後完全相同的欄位直接給 1.0 且不做型態加減分：名稱完全一致已經是
+    夠強的證據，不該被樣本值推翻（例如欄位真的叫 age、但裡面資料很髒）。
+    """
+    column_names = [column["name"] for column in columns]
+    samples = {column["name"]: column["sample_values"] for column in columns}
+    exact = exact_match(name, column_names)
+
+    scored = []
+    for column_name, ratio in fuzzy_match(name, column_names):
+        if column_name == exact:
+            scored.append((column_name, 1.0))
+        else:
+            scored.append((
+                column_name,
+                boost_by_sample_values(ratio, required_type, samples[column_name]),
+            ))
+    scored.sort(key=lambda item: item[1], reverse=True)
+    return scored
+
+
+def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> dict:
+    """字串比對 + 樣本值輔助的自動對映，產出初始對映狀態。"""
+    columns = normalize_user_columns(user_columns)
+    samples_by_name = {column["name"]: column["sample_values"] for column in columns}
+
+    variables: list[dict] = []
+    for raw in paper_variables or []:
+        name = str(raw.get("name", "")).strip()
+        if not name:
+            continue
+        is_target = bool(raw.get("is_target", False))
+        required_type = str(raw.get("type", "") or "")
+        variables.append({
+            "name": name,
+            "type": required_type,
+            "is_target": is_target,
+            # target 一律視為必要，不管呼叫端傳什麼
+            "required": True if is_target else bool(raw.get("required", True)),
+            "candidates": _score_candidates(name, required_type, columns),
+        })
+
+    # target 先分配，確保它不會被其他變數搶走欄位；其餘依最佳分數由高到低
+    order = sorted(
+        variables,
+        key=lambda item: (
+            0 if item["is_target"] else 1,
+            -(item["candidates"][0][1] if item["candidates"] else 0.0),
+        ),
+    )
+
+    taken: set[str] = set()
+    assignment: dict[str, tuple[str | None, float]] = {}
+    for variable in order:
+        chosen_name: str | None = None
+        chosen_score = 0.0
+        for column_name, score in variable["candidates"]:
+            if score < REVIEW_THRESHOLD:
+                break  # 已排序，後面只會更低
+            if column_name in taken:
+                continue
+            chosen_name, chosen_score = column_name, score
+            break
+        if chosen_name is not None:
+            taken.add(chosen_name)
+        assignment[variable["name"]] = (chosen_name, chosen_score)
+
+    mapping_status = []
+    for variable in variables:  # 依輸入順序輸出，前端不需要再排
+        matched, score = assignment[variable["name"]]
+        if matched is None:
+            status = UNMATCHED
+            score = 0.0
+        else:
+            status = _status_for(score)
+            if variable["is_target"] and status == AUTO_MATCHED:
+                status = NEEDS_REVIEW  # target 一律人工確認
+        mapping_status.append({
+            "paper_variable": variable["name"],
+            "required_type": variable["type"],
+            "matched_user_column": matched,
+            "confidence_score": round(score, 4),
+            "status": status,
+            "sample_values": samples_by_name.get(matched, []) if matched else [],
+            "candidate_columns": (
+                [name for name, _ in variable["candidates"][:3]]
+                if status == UNMATCHED
+                else []
+            ),
+        })
+
+    return {
+        "total_required": sum(1 for variable in variables if variable["required"]),
+        "matched_count": sum(1 for item in mapping_status if item["status"] == AUTO_MATCHED),
+        "mapping_status": mapping_status,
+    }
