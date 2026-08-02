@@ -21,6 +21,7 @@ def _serialize_project(project: Project) -> dict:
         "accuracy": project.accuracy,
         "keyFinding": project.key_finding,
         "variables": project.variables,
+        "columnMapping": project.column_mapping,
         "date": project.created_at.strftime("%Y-%m-%d"),
     }
 
@@ -87,6 +88,10 @@ def update_project(project_id):
         project.accuracy = data["accuracy"]
     if "keyFinding" in data:
         project.key_finding = data["keyFinding"]
+    if "columnMapping" in data:
+        project.column_mapping = data["columnMapping"]
+    if "variables" in data:
+        project.variables = data["variables"]
 
     db.session.commit()
     return jsonify({"success": True, "result": _serialize_project(project)})

@@ -18,6 +18,8 @@ export interface Project {
   accuracy?: string
   keyFinding?: string
   variables: number
+  /** 對映關係：{ 論文變數名: 使用者欄位名 }。供資料表面板顯示對照來源用。 */
+  columnMapping?: Record<string, string> | null
 }
 
 export interface ActiveProjectContext {
@@ -134,5 +136,29 @@ export const useProjectStore = defineStore('project', () => {
     activeContext.value = null
   }
 
-  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, setActiveContext, clearActiveContext }
+  /**
+   * 把欄位對映存回資料庫。
+   *
+   * store 是 API-backed 的：只改本地 ref 不等於存檔，一定要打 API，
+   * 否則使用者重新整理就會發現對映不見了。
+   */
+  async function saveColumnMapping (
+    projectId: number,
+    mapping: Record<string, string>,
+  ): Promise<void> {
+    const variables = Object.keys(mapping).length
+    const target = projects.value.find(p => p.id === projectId)
+    if (target) {
+      target.columnMapping = mapping
+      target.variables = variables
+    }
+    try {
+      await updateProject(projectId, { columnMapping: mapping, variables })
+    } catch (error) {
+      console.error('儲存欄位對映失敗', error)
+      throw error
+    }
+  }
+
+  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, setActiveContext, clearActiveContext, saveColumnMapping }
 })

@@ -9,6 +9,7 @@ export interface ProjectDTO {
   accuracy?: string
   keyFinding?: string
   variables: number
+  columnMapping?: Record<string, string> | null
   date: string
 }
 
@@ -26,6 +27,8 @@ export interface UpdateProjectPatch {
   datasetName?: string
   accuracy?: string
   keyFinding?: string
+  columnMapping?: Record<string, string>
+  variables?: number
 }
 
 async function parseProjectResponse (response: Response): Promise<Record<string, unknown>> {
