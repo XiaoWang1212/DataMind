@@ -99,19 +99,68 @@
         </div>
       </section>
 
-      <!-- 右：AI 對話（Task 13 填入） -->
-      <aside class="mapping-chat" />
+      <!-- 右：AI 對話 -->
+      <aside class="mapping-chat">
+        <div class="chat-head">
+          <v-icon icon="mdi-robot-outline" size="18" color="#2347c5" />
+          <span>AI 助理</span>
+        </div>
+
+        <div v-if="!aiAvailable" class="chat-offline">
+          AI 建議暫時無法使用，可用左側下拉選單手動對應。
+        </div>
+
+        <div ref="chatScroll" class="chat-body">
+          <div
+            v-for="(message, i) in chatHistory"
+            :key="i"
+            class="chat-bubble"
+            :class="`chat-bubble--${message.role}`"
+          >
+            {{ message.content }}
+          </div>
+          <div v-if="chatPending" class="chat-bubble chat-bubble--assistant chat-bubble--pending">
+            思考中…
+          </div>
+        </div>
+
+        <form class="chat-input" @submit.prevent="sendMessage">
+          <input
+            v-model="chatDraft"
+            class="chat-field"
+            :disabled="!aiAvailable || chatPending"
+            placeholder="例如：Braden 分數是 braden_total"
+          />
+          <button
+            class="chat-send"
+            type="submit"
+            :disabled="!aiAvailable || chatPending || !chatDraft.trim()"
+          >
+            送出
+          </button>
+        </form>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { MappingItem, PaperVariable, UserColumn } from '@/types/fieldMapping'
-  import { computed, onMounted, ref } from 'vue'
+  import type {
+    ChatMessage,
+    MappingAction,
+    MappingItem,
+    PaperVariable,
+    UserColumn,
+  } from '@/types/fieldMapping'
+  import { computed, nextTick, onMounted, ref } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
-  import { initFieldMapping } from '@/api/fieldMapping'
+  import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
   import CustomSelect from '@/components/common/CustomSelect.vue'
-  import { loadWorkflowDataFileFromStorage } from '@/composables/workflow/useWorkflowStorage'
+  import {
+    loadChatHistoryFromStorage,
+    loadWorkflowDataFileFromStorage,
+    saveChatHistoryToStorage,
+  } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import { parseCsvPreview } from '@/utils/csv'
@@ -148,6 +197,11 @@
   const aiAvailable = ref(false)
   // 確認並執行失敗時顯示給使用者；下次改選項就清掉，避免舊錯誤一直卡著
   const saveError = ref('')
+
+  const chatHistory = ref<ChatMessage[]>([])
+  const chatDraft = ref('')
+  const chatPending = ref(false)
+  const chatScroll = ref<HTMLElement | null>(null)
 
   function isTarget (item: MappingItem): boolean {
     return item.paper_variable === targetName.value
@@ -281,6 +335,88 @@
     return await loadWorkflowDataFileFromStorage(String(projectId.value))
   }
 
+  /** 把 AI 回傳的 diff 套用到本地狀態；使用者手動選過的列不覆蓋。 */
+  function applyActions (actions: MappingAction[]): string[] {
+    const changed: string[] = []
+    for (const action of actions) {
+      const item = items.value.find(i => i.paper_variable === action.paper_variable)
+      if (!item || locked.value.has(item.paper_variable)) continue
+
+      if (action.matched_user_column) {
+        // 搶欄位：原持有者退回未對應，同樣要閃給使用者看
+        for (const other of items.value) {
+          if (
+            other.paper_variable !== item.paper_variable
+            && other.matched_user_column === action.matched_user_column
+          ) {
+            other.matched_user_column = null
+            other.sample_values = []
+            other.confidence_score = 0
+            other.status = 'UNMATCHED'
+            changed.push(other.paper_variable)
+          }
+        }
+        const column = userColumns.value.find(c => c.name === action.matched_user_column)
+        item.matched_user_column = action.matched_user_column
+        item.sample_values = column?.sample_values ?? []
+        item.candidate_columns = []
+      } else {
+        item.matched_user_column = null
+        item.sample_values = []
+      }
+
+      item.confidence_score = action.confidence_score
+      item.status = action.status
+      changed.push(item.paper_variable)
+    }
+    return changed
+  }
+
+  async function sendMessage (): Promise<void> {
+    const message = chatDraft.value.trim()
+    if (!message || chatPending.value) return
+
+    chatDraft.value = ''
+    chatHistory.value.push({ role: 'user', content: message })
+    chatPending.value = true
+    await scrollChatToBottom()
+
+    try {
+      const { actions, reply } = await refineFieldMapping({
+        mappingState: {
+          total_required: items.value.length,
+          matched_count: matchedCount.value,
+          mapping_status: items.value,
+        },
+        userColumns: userColumns.value,
+        userMessage: message,
+        chatHistory: chatHistory.value.slice(0, -1),
+      })
+      for (const variable of applyActions(actions)) flash(variable)
+      chatHistory.value.push({ role: 'assistant', content: reply })
+    } catch (error) {
+      chatHistory.value.push({
+        role: 'assistant',
+        content: error instanceof Error ? error.message : 'AI 目前無法回應，請改用下拉選單。',
+      })
+    } finally {
+      chatPending.value = false
+      // key 加 mapping- 前綴，避免和 ResultView 的結果分析聊天撞在一起
+      // saveChatHistoryToStorage 是共用 ResultView 的結果分析聊天沿用的函式，
+      // 型別綁在 { role, text }；這裡的 ChatMessage 是 { role, content }，形狀不同但都是純本地暫存，用 unknown 轉型即可
+      saveChatHistoryToStorage(
+        `mapping-${projectId.value}`,
+        chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
+      )
+      await scrollChatToBottom()
+    }
+  }
+
+  async function scrollChatToBottom (): Promise<void> {
+    await nextTick()
+    if (chatScroll.value) chatScroll.value.scrollTop = chatScroll.value.scrollHeight
+  }
+
   async function confirmAndRun (): Promise<void> {
     const mapping: Record<string, string> = {}
     for (const item of items.value) {
@@ -303,6 +439,11 @@
   onMounted(async () => {
     try {
       await ensureStoresLoaded()
+
+      // 同上，loadChatHistoryFromStorage 回傳的型別也是 ResultView 那組 { role, text }，轉成本頁用的形狀
+      chatHistory.value = loadChatHistoryFromStorage(
+        `mapping-${projectId.value}`,
+      ) as unknown as ChatMessage[]
 
       const file = await loadDataset()
       if (!file) {
@@ -605,9 +746,100 @@
   }
 
   .mapping-chat {
-    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    height: 620px;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     background: #fff;
+    overflow: hidden;
+  }
+
+  .chat-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .chat-offline {
+    padding: 10px 16px;
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+    font-size: 12px;
+    color: #b45309;
+  }
+
+  .chat-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chat-bubble {
+    max-width: 88%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  .chat-bubble--user {
+    align-self: flex-end;
+    background: #2347c5;
+    color: #fff;
+  }
+
+  .chat-bubble--assistant {
+    align-self: flex-start;
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  .chat-bubble--pending {
+    color: #94a3b8;
+  }
+
+  .chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .chat-field {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .chat-field:disabled {
+    background: #f8fafc;
+  }
+
+  .chat-send {
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #2347c5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .chat-send:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
   }
 </style>
