@@ -323,12 +323,14 @@
 
       const seen = new Set<string>()
       userColumns.value = preview.columns
-        .filter(name => {
+        // 先綁住原始欄位位置：dedup 會改變陣列索引，之後再用索引取值就會取到別欄的資料
+        .map((name, index) => ({ name, index }))
+        .filter(({ name }) => {
           if (seen.has(name)) return false  // 重複欄位名只留第一個
           seen.add(name)
           return true
         })
-        .map((name, index) => ({
+        .map(({ name, index }) => ({
           name,
           sample_values: preview.rows.map(row => row[index] ?? '').filter(Boolean),
         }))
