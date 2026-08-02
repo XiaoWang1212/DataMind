@@ -92,9 +92,9 @@
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
-          <button class="confirm-btn" :disabled="!canConfirm" @click="confirmAndRun">
-            確認並執行
-            <v-icon icon="mdi-arrow-right" size="17" />
+          <button class="confirm-btn" :disabled="!canConfirm || confirming" @click="confirmAndRun">
+            {{ confirming ? '處理中…' : '確認並執行' }}
+            <v-icon v-if="!confirming" icon="mdi-arrow-right" size="17" />
           </button>
         </div>
       </section>
@@ -160,10 +160,11 @@
     loadChatHistoryFromStorage,
     loadWorkflowDataFileFromStorage,
     saveChatHistoryToStorage,
+    saveWorkflowDataFileToStorage,
   } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
-  import { parseCsvPreview } from '@/utils/csv'
+  import { decodeFileText, parseCsvLine, parseCsvPreview } from '@/utils/csv'
 
   const SKIP_VALUE = '__skip__'
 
@@ -202,6 +203,7 @@
   const chatDraft = ref('')
   const chatPending = ref(false)
   const chatScroll = ref<HTMLElement | null>(null)
+  const confirming = ref(false)
 
   function isTarget (item: MappingItem): boolean {
     return item.paper_variable === targetName.value
@@ -427,23 +429,71 @@
     if (chatScroll.value) chatScroll.value.scrollTop = chatScroll.value.scrollHeight
   }
 
+  /**
+   * 依對映改寫 CSV 表頭後交給 workflow。
+   *
+   * 只改名、不刪欄位：使用者沒對應到的欄位在 workflow 那邊還是可以選用，
+   * 在這裡刪掉只會讓他失去選擇。
+   */
   async function confirmAndRun (): Promise<void> {
+    if (!datasetFile.value) return
+    confirming.value = true
+
     const mapping: Record<string, string> = {}
     for (const item of items.value) {
       if (item.matched_user_column && item.status !== 'SKIPPED') {
         mapping[item.paper_variable] = item.matched_user_column
       }
     }
+
     try {
       await projectStore.saveColumnMapping(projectId.value, mapping)
       saveError.value = ''
+
+      // 使用者欄位 → 論文變數（改寫表頭時要反查）
+      const renameByColumn = new Map<string, string>()
+      for (const [variable, column] of Object.entries(mapping)) {
+        renameByColumn.set(column, variable)
+      }
+
+      const text = await decodeFileText(datasetFile.value)
+      const lines = text.replace(/\r\n/g, '\n').split('\n')
+      const headerIndex = lines.findIndex(line => line.trim().length > 0)
+      if (headerIndex >= 0) {
+        const header = parseCsvLine(lines[headerIndex]!)
+        lines[headerIndex] = header
+          .map(name => escapeCsvCell(renameByColumn.get(name) ?? name))
+          .join(',')
+      }
+
+      const renamed = new File(
+        [lines.join('\n')],
+        datasetFile.value.name,
+        { type: datasetFile.value.type || 'text/csv' },
+      )
+      await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
+      projectStore.setActiveContext({
+        projectId: projectId.value,
+        datasetFile: renamed,
+        frameworkId:
+          projectStore.projects.find(p => p.id === projectId.value)?.frameworkId ?? null,
+      })
+
       router.push(`/workflow?project=${projectId.value}`)
     } catch (error) {
       // saveColumnMapping 失敗時已經把本地狀態復原，但畫面上必須告訴使用者，
       // 不然按鈕悄悄恢復可按，使用者只會覺得「怎麼沒反應」再按一次
       const detail = error instanceof Error ? error.message : ''
       saveError.value = detail ? `儲存失敗，請再試一次（${detail}）` : '儲存失敗，請再試一次'
+    } finally {
+      confirming.value = false
     }
+  }
+
+  /** 欄位名含逗號或引號時要包起來，否則改寫後的表頭會被拆錯欄。 */
+  function escapeCsvCell (value: string): string {
+    if (!/[",\n]/.test(value)) return value
+    return `"${value.replace(/"/g, '""')}"`
   }
 
   onMounted(async () => {

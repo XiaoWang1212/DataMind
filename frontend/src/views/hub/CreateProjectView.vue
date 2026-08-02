@@ -133,6 +133,7 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
+  import { saveWorkflowDataFileToStorage } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
@@ -191,7 +192,14 @@
       frameworkId: form.value.frameworkId,
     })
 
-    router.push(`/workflow?project=${project.id}`)
+    // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
+    // 使用者在對齊頁按重新整理就會遺失。
+    // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
+    if (form.value.datasetFile) {
+      await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
+    }
+
+    router.push(`/hub/projects/${project.id}/mapping`)
   }
 </script>
 
