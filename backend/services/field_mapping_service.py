@@ -16,6 +16,11 @@ UNMATCHED = "UNMATCHED"
 AUTO_THRESHOLD = 0.8
 REVIEW_THRESHOLD = 0.5
 
+# AI 語意建議的信心度上限：刻意壓在 AUTO_THRESHOLD 之下，
+# 讓綠勾勾只保留給演算法層有把握的配對
+SEMANTIC_SCORE_CAP = 0.79
+_MAX_CANDIDATES = 5
+
 # 前綴要有分隔符號才算前綴，避免把 "tblname" 這種名字誤剝成 "name"
 _PREFIX_RE = re.compile(r"^(?:tbl|col)[\s_-]+", re.IGNORECASE)
 _SEPARATOR_RE = re.compile(r"[\s_-]+")
@@ -267,3 +272,56 @@ def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> d
         "matched_count": sum(1 for item in mapping_status if item["status"] == AUTO_MATCHED),
         "mapping_status": mapping_status,
     }
+
+
+def merge_semantic_suggestions(
+    result: dict,
+    suggestions: list[dict],
+    user_columns: list[dict],
+) -> dict:
+    """把 Gemini 的語意建議併回 run_auto_mapping() 的結果（原地修改並回傳）。
+
+    只影響非 AUTO_MATCHED 的項目：演算法層已經有把握的配對不容 AI 推翻。
+    AI 建議產生的配對一律標成 NEEDS_REVIEW、信心度上限 SEMANTIC_SCORE_CAP，
+    確保使用者一定會親眼確認過。
+    """
+    samples_by_name = {column["name"]: column["sample_values"] for column in user_columns}
+    by_variable = {item["paper_variable"]: item for item in result["mapping_status"]}
+    taken = {
+        item["matched_user_column"]
+        for item in result["mapping_status"]
+        if item["matched_user_column"]
+    }
+
+    for suggestion in suggestions or []:
+        item = by_variable.get(suggestion.get("paper_variable"))
+        if item is None or item["status"] == AUTO_MATCHED:
+            continue
+
+        column = suggestion.get("matched_user_column")
+        extra = list(suggestion.get("candidate_columns") or [])
+
+        if column and column not in taken:
+            item["matched_user_column"] = column
+            item["confidence_score"] = min(
+                float(suggestion.get("confidence_score") or 0.0),
+                SEMANTIC_SCORE_CAP,
+            )
+            item["status"] = NEEDS_REVIEW
+            item["sample_values"] = samples_by_name.get(column, [])
+            item["candidate_columns"] = []
+            taken.add(column)
+            continue
+
+        if column:
+            extra.append(column)  # 欄位已被佔用 → 降格為候選，讓使用者自己決定要不要搶
+        merged = list(item["candidate_columns"])
+        for name in extra:
+            if name not in merged:
+                merged.append(name)
+        item["candidate_columns"] = merged[:_MAX_CANDIDATES]
+
+    result["matched_count"] = sum(
+        1 for item in result["mapping_status"] if item["status"] == AUTO_MATCHED
+    )
+    return result
