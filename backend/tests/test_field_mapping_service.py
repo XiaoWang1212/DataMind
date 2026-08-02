@@ -1,4 +1,7 @@
+import pytest
+
 from services.field_mapping_service import exact_match, fuzzy_match, normalize_field
+from services.field_mapping_service import boost_by_sample_values, infer_value_type
 
 
 class TestNormalizeField:
@@ -43,3 +46,65 @@ class TestFuzzyMatch:
     def test_identical_name_scores_one(self):
         scored = fuzzy_match("age", ["age"])
         assert scored[0][1] == 1.0
+
+
+class TestInferValueType:
+    def test_detects_iso_date(self):
+        assert infer_value_type(["2024-01-03", "2024-02-11", "2024-3-5"]) == "date"
+
+    def test_detects_slash_date(self):
+        assert infer_value_type(["2024/01/03", "2024/02/11"]) == "date"
+
+    def test_detects_compact_date(self):
+        assert infer_value_type(["20240103", "20240211"]) == "date"
+
+    def test_detects_numeric(self):
+        assert infer_value_type(["65", "72", "48.5"]) == "numeric"
+
+    def test_detects_text(self):
+        assert infer_value_type(["男", "女", "男"]) == "text"
+
+    def test_ignores_empty_values(self):
+        assert infer_value_type(["65", "", "  ", "72"]) == "numeric"
+
+    def test_returns_none_when_no_usable_values(self):
+        assert infer_value_type([]) is None
+        assert infer_value_type(["", "  "]) is None
+
+    def test_minority_mismatch_still_counts_as_numeric(self):
+        # 4 筆數字 + 1 筆文字 = 80% >= 60%
+        assert infer_value_type(["1", "2", "3", "4", "n/a"]) == "numeric"
+
+    def test_below_threshold_falls_back_to_text(self):
+        # 只有 40% 是數字，達不到 60% 門檻
+        assert infer_value_type(["1", "2", "甲", "乙", "丙"]) == "text"
+
+
+class TestBoostBySampleValues:
+    def test_matching_type_adds_bonus(self):
+        assert boost_by_sample_values(0.75, "numerical", ["65", "72"]) == pytest.approx(0.85)
+
+    def test_mismatched_type_applies_penalty(self):
+        assert boost_by_sample_values(0.75, "numerical", ["男", "女"]) == pytest.approx(0.55)
+
+    def test_date_type_matches(self):
+        assert boost_by_sample_values(0.6, "date", ["2024-01-03", "2024-02-11"]) == pytest.approx(0.7)
+
+    def test_categorical_matches_text(self):
+        assert boost_by_sample_values(0.6, "categorical", ["男", "女"]) == pytest.approx(0.7)
+
+    def test_no_samples_leaves_score_unchanged(self):
+        assert boost_by_sample_values(0.75, "numerical", []) == 0.75
+
+    def test_unknown_required_type_leaves_score_unchanged(self):
+        assert boost_by_sample_values(0.75, "mystery", ["65"]) == 0.75
+        assert boost_by_sample_values(0.75, "", ["65"]) == 0.75
+
+    def test_type_comparison_is_case_insensitive(self):
+        assert boost_by_sample_values(0.75, "Numerical", ["65"]) == pytest.approx(0.85)
+
+    def test_clamps_to_upper_bound(self):
+        assert boost_by_sample_values(0.95, "numerical", ["65"]) == 1.0
+
+    def test_clamps_to_lower_bound(self):
+        assert boost_by_sample_values(0.1, "numerical", ["男"]) == 0.0

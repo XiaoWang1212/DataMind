@@ -56,3 +56,85 @@ def fuzzy_match(paper_var: str, user_columns: list[str]) -> list[tuple[str, floa
     ]
     scored.sort(key=lambda item: item[1], reverse=True)
     return scored
+
+
+_TYPE_BONUS = 0.1
+_TYPE_PENALTY = 0.2
+
+# 非空樣本值中至少要有這個比例符合，才算是該型態
+_TYPE_MAJORITY = 0.6
+
+_DATE_PATTERNS = (
+    re.compile(r"^\d{4}-\d{1,2}-\d{1,2}$"),
+    re.compile(r"^\d{4}/\d{1,2}/\d{1,2}$"),
+    re.compile(r"^\d{8}$"),
+)
+
+# 論文變數的 type 字串 → 推斷型態。不在表內的一律視為無法判斷。
+_TYPE_ALIASES = {
+    "date": "date",
+    "datetime": "date",
+    "numerical": "numeric",
+    "numeric": "numeric",
+    "int": "numeric",
+    "integer": "numeric",
+    "float": "numeric",
+    "continuous": "numeric",
+    "categorical": "text",
+    "category": "text",
+    "string": "text",
+    "text": "text",
+    "nominal": "text",
+}
+
+
+def _is_numeric(value: str) -> bool:
+    try:
+        float(value)
+    except ValueError:
+        return False
+    return True
+
+
+def infer_value_type(sample_values: list[str]) -> str | None:
+    """從樣本值推斷欄位型態，無法判斷時回傳 None。
+
+    日期先於數字判斷：YYYYMMDD 這種寫法同時符合兩者，但它是日期。
+    """
+    values = [str(value).strip() for value in sample_values or [] if str(value).strip()]
+    if not values:
+        return None
+
+    threshold = len(values) * _TYPE_MAJORITY
+    date_hits = sum(1 for value in values if any(p.match(value) for p in _DATE_PATTERNS))
+    if date_hits >= threshold:
+        return "date"
+
+    numeric_hits = sum(1 for value in values if _is_numeric(value))
+    if numeric_hits >= threshold:
+        return "numeric"
+
+    return "text"
+
+
+def boost_by_sample_values(
+    score: float,
+    required_type: str,
+    sample_values: list[str],
+) -> float:
+    """用樣本值的型態調整信心度。
+
+    型態相符 +0.1、不符 -0.2、無法判斷不調整，結果 clamp 在 [0, 1]。
+    不對稱是刻意的：型態不符是「這大概配錯了」的強訊號，
+    型態相符只是「沒有反證」的弱訊號。
+    """
+    inferred = infer_value_type(sample_values)
+    if inferred is None:
+        return score
+
+    expected = _TYPE_ALIASES.get((required_type or "").strip().lower())
+    if expected is None:
+        return score
+
+    adjusted = score + _TYPE_BONUS if expected == inferred else score - _TYPE_PENALTY
+    return max(0.0, min(1.0, adjusted))
