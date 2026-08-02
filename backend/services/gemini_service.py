@@ -8,6 +8,12 @@ from typing import Optional
 
 import google.generativeai as genai
 
+from services.field_mapping_prompts import (
+    FIELD_MAPPING_SYSTEM_INSTRUCTION,
+    SEMANTIC_MATCH_SCHEMA,
+    build_semantic_match_prompt,
+)
+
 logger = logging.getLogger(__name__)
 
 _AVAILABLE_MODELS = (
@@ -303,6 +309,108 @@ class GeminiService:
             "raw": raw,
             "usage": self._usage_dict(usage),
         }
+
+    # ── Field mapping（欄位對齊）─────────────────────────────────────────────
+    #
+    # 以下方法與上面的論文分析完全獨立：另建 model 實例、另一組 generation
+    # config，不共用 self.model 也不共用 _generation_config()。
+
+    _VALID_STATUSES = {"AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"}
+
+    def _field_mapping_model(self) -> genai.GenerativeModel:
+        """欄位對齊專用的 model 實例。
+
+        每次呼叫都重新建構：GenerativeModel 只是本地物件，不會發出網路請求，
+        這樣就不必動到 __init__（既有論文分析邏輯必須零修改）。
+        """
+        return genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction=FIELD_MAPPING_SYSTEM_INSTRUCTION,
+        )
+
+    @staticmethod
+    def _field_mapping_config(schema: dict, max_output_tokens: int) -> genai.GenerationConfig:
+        """配對是判斷題，temperature 設 0；格式交給 response_schema 強制。"""
+        return genai.GenerationConfig(
+            temperature=0,
+            max_output_tokens=max_output_tokens,
+            response_mime_type="application/json",
+            response_schema=schema,
+        )
+
+    @staticmethod
+    def _valid_score(value) -> Optional[float]:
+        """信心度必須是 0~1 的數值，否則視為無效。
+
+        bool 是 int 的子類別，得先擋掉，不然 True 會被當成 1.0。
+        """
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        score = float(value)
+        if score < 0.0 or score > 1.0:
+            return None
+        return score
+
+    @staticmethod
+    def _sanitize_columns(values, allowed: set, limit: int) -> list:
+        """只保留白名單內、且不重複的欄位名，最多 limit 個。"""
+        result: list = []
+        for value in values or []:
+            if isinstance(value, str) and value in allowed and value not in result:
+                result.append(value)
+            if len(result) >= limit:
+                break
+        return result
+
+    def semantic_match(self, items: list, user_columns: list) -> Optional[list]:
+        """對演算法配不出來的項目做語意配對建議。
+
+        回傳 [] 代表「AI 可用但沒有有效建議」，回傳 None 代表「AI 不可用」——
+        路由層靠這個區別決定要不要在前端顯示「AI 建議暫時無法使用」。
+        """
+        if not items:
+            return []
+
+        prompt = build_semantic_match_prompt(items, user_columns)
+        try:
+            response = self._field_mapping_model().generate_content(
+                prompt,
+                generation_config=self._field_mapping_config(SEMANTIC_MATCH_SCHEMA, 4096),
+            )
+        except Exception:
+            logger.exception("semantic_match 呼叫 Gemini 失敗")
+            return None
+
+        parsed = self._safe_parse_json(getattr(response, "text", "") or "")
+        if not isinstance(parsed, dict):
+            logger.warning("semantic_match 回應無法解析為 JSON 物件")
+            return None
+
+        allowed_columns = {column["name"] for column in user_columns}
+        allowed_variables = {item["paper_variable"] for item in items}
+
+        results = []
+        for entry in parsed.get("matches") or []:
+            if not isinstance(entry, dict):
+                continue
+            variable = entry.get("paper_variable")
+            if variable not in allowed_variables:
+                continue
+            score = self._valid_score(entry.get("confidence_score"))
+            if score is None:
+                continue
+            column = entry.get("matched_user_column")
+            if column not in allowed_columns:
+                column = None  # 掰出來的欄位名 → 當作沒配到，其餘欄位照收
+            results.append({
+                "paper_variable": variable,
+                "matched_user_column": column,
+                "confidence_score": score,
+                "candidate_columns": self._sanitize_columns(
+                    entry.get("candidate_columns"), allowed_columns, 3
+                ),
+            })
+        return results
 
 
 def truncate_content(text: str, max_chars: int = 18000) -> str:
