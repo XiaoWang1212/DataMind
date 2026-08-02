@@ -40,8 +40,10 @@ class FakeService:
     def __init__(self, semantic=None, chat=None):
         self._semantic = semantic
         self._chat = chat or {"actions": [], "reply": "ok"}
+        self.semantic_match_calls = 0
 
     def semantic_match(self, items, user_columns):
+        self.semantic_match_calls += 1
         return self._semantic
 
     def chat_refine(self, state, message, history):
@@ -60,6 +62,34 @@ class TestInitRoute:
         assert body["success"] is True
         variables = [i["paper_variable"] for i in body["result"]["mapping_status"]]
         assert variables == ["age", "braden_score"]
+        assert body["ai_available"] is True
+
+    def test_empty_suggestions_still_means_ai_available(self, client, monkeypatch):
+        """semantic_match 回傳 [] 代表「AI 有跑，只是沒給出建議」，
+        跟回傳 None（AI 不可用）是兩件不同的事 —— ai_available 要維持 True。
+        """
+        monkeypatch.setattr(
+            field_mapping_route, "GeminiService",
+            lambda: FakeService(semantic=[]),
+        )
+        body = client.post("/api/field-mapping/init", json=PAYLOAD).get_json()
+        assert body["ai_available"] is True
+
+    def test_no_pending_items_skips_ai_and_reports_available(self, client, monkeypatch):
+        """所有變數都自動配對成功時，不該呼叫 semantic_match，
+        而且 ai_available 仍然是 True（沒有需要 AI 介入的理由，不代表 AI 不可用）。
+        """
+        fake = FakeService(semantic=[])
+        monkeypatch.setattr(field_mapping_route, "GeminiService", lambda: fake)
+        response = client.post("/api/field-mapping/init", json={
+            "paper_variables": [{"name": "age", "type": "numerical"}],
+            "user_columns": [{"name": "age", "sample_values": ["65", "72"]}],
+        })
+        assert response.status_code == 200
+        body = response.get_json()
+        assert body["ai_available"] is True
+        assert body["result"]["mapping_status"][0]["status"] == "AUTO_MATCHED"
+        assert fake.semantic_match_calls == 0
 
     def test_applies_semantic_suggestions(self, client, monkeypatch):
         monkeypatch.setattr(
