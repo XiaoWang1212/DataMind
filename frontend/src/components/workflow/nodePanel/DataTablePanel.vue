@@ -135,6 +135,7 @@
   import { computed, ref, watch } from 'vue'
   import * as XLSX from 'xlsx'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import { decodeFileText, parseCsvLine } from '@/utils/csv'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
@@ -466,68 +467,6 @@
     })
   }
 
-  async function decodeFileText (file: File) {
-    const buffer = await file.arrayBuffer()
-    const decoderUtf8 = new TextDecoder('utf-8', { fatal: true })
-    let utf8Text: string | null = null
-    try {
-      utf8Text = decoderUtf8.decode(buffer)
-    } catch {
-      utf8Text = null
-    }
-
-    const decoderBig5 = new TextDecoder('big5')
-    const big5Text = decoderBig5.decode(buffer)
-
-    if (!utf8Text) {
-      return big5Text
-    }
-
-    const scoreText = (text: string) => {
-      const headerLine = text.split(/\r?\n/, 1)[0] ?? ''
-      const cjkCount = (headerLine.match(/[\u4E00-\u9FFF]/g) || []).length
-      const replacementCount = (text.match(/\uFFFD/g) || []).length
-      return cjkCount * 10 - replacementCount * 20
-    }
-
-    const utf8Score = scoreText(utf8Text)
-    const big5Score = scoreText(big5Text)
-
-    return big5Score > utf8Score ? big5Text : utf8Text
-  }
-
-  function parseCsvLine (line: string): string[] {
-    const out: string[] = []
-    let cur = ''
-    let inQuotes = false
-
-    for (let i = 0; i < line.length; i += 1) {
-      const ch = line[i]
-      const next = line[i + 1]
-
-      if (ch === '"' && inQuotes && next === '"') {
-        cur += '"'
-        i += 1
-        continue
-      }
-
-      if (ch === '"') {
-        inQuotes = !inQuotes
-        continue
-      }
-
-      if (ch === ',' && !inQuotes) {
-        out.push(cur.trim())
-        cur = ''
-        continue
-      }
-
-      cur += ch
-    }
-
-    out.push(cur.trim())
-    return out
-  }
 </script>
 
 <style scoped>
