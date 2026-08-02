@@ -9,8 +9,11 @@ from typing import Optional
 import google.generativeai as genai
 
 from services.field_mapping_prompts import (
+    CHAT_REFINE_SCHEMA,
     FIELD_MAPPING_SYSTEM_INSTRUCTION,
+    MAX_CHAT_ACTIONS,
     SEMANTIC_MATCH_SCHEMA,
+    build_chat_refine_prompt,
     build_semantic_match_prompt,
 )
 
@@ -411,6 +414,92 @@ class GeminiService:
                 ),
             })
         return results
+
+    def chat_refine(
+        self,
+        current_mapping_state: dict,
+        user_message: str,
+        chat_history: list,
+    ) -> dict:
+        """依使用者的自然語言指令，產出這一輪的對映變更 diff。
+
+        current_mapping_state 形狀：
+          {"mapping_status": [...], "user_columns": [{"name", "sample_values"}]}
+
+        永遠回傳可用的結果，不拋例外 —— 聊天壞掉時使用者還有下拉選單可用，
+        不該讓整頁跟著掛掉。
+        """
+        mapping_status = current_mapping_state.get("mapping_status") or []
+        user_columns = current_mapping_state.get("user_columns") or []
+
+        prompt = build_chat_refine_prompt(
+            mapping_status, user_columns, chat_history, user_message
+        )
+        try:
+            response = self._field_mapping_model().generate_content(
+                prompt,
+                generation_config=self._field_mapping_config(CHAT_REFINE_SCHEMA, 2048),
+            )
+        except Exception:
+            logger.exception("chat_refine 呼叫 Gemini 失敗")
+            return {
+                "actions": [],
+                "reply": "AI 目前無法回應，請改用下拉選單手動對應。",
+            }
+
+        parsed = self._safe_parse_json(getattr(response, "text", "") or "")
+        if not isinstance(parsed, dict):
+            logger.warning("chat_refine 回應無法解析為 JSON 物件")
+            return {
+                "actions": [],
+                "reply": "AI 的回覆格式無法解析，請換個說法再試一次，或改用下拉選單。",
+            }
+
+        raw_actions = parsed.get("actions") or []
+        if len(raw_actions) > MAX_CHAT_ACTIONS:
+            # 一次要改這麼多筆，多半是模型誤解了指令範圍。整批拒絕比部分套用安全。
+            return {
+                "actions": [],
+                "reply": (
+                    f"這個要求會一次更動 {len(raw_actions)} 個欄位，超出單次修改上限，"
+                    "已暫停套用。請說得更具體一點，例如指名要改哪一個變數。"
+                ),
+            }
+
+        allowed_columns = {
+            column.get("name") for column in user_columns if isinstance(column, dict)
+        }
+        allowed_variables = {
+            item.get("paper_variable") for item in mapping_status if isinstance(item, dict)
+        }
+
+        actions = []
+        for entry in raw_actions:
+            if not isinstance(entry, dict):
+                continue
+            variable = entry.get("paper_variable")
+            if variable not in allowed_variables:
+                continue
+            column = entry.get("matched_user_column")
+            if column is not None and column not in allowed_columns:
+                continue  # 欄位不存在 → 整筆丟棄，不猜使用者想要哪一欄
+            status = entry.get("status")
+            if status not in self._VALID_STATUSES:
+                continue
+            score = self._valid_score(entry.get("confidence_score"))
+            if score is None:
+                continue
+            actions.append({
+                "paper_variable": variable,
+                "matched_user_column": column,
+                "status": status,
+                "confidence_score": score,
+            })
+
+        reply = parsed.get("reply")
+        if not isinstance(reply, str) or not reply.strip():
+            reply = "已更新對映，請確認左側表格。"
+        return {"actions": actions, "reply": reply}
 
 
 def truncate_content(text: str, max_chars: int = 18000) -> str:
