@@ -62,8 +62,8 @@
         <!-- Open in Workflow button -->
         <div class="open-workflow-wrap">
           <button class="open-workflow-btn" @click="openInWorkflow">
-            <v-icon icon="mdi-sitemap-outline" size="16" />
-            在 Workflow 中開啟
+            <v-icon :icon="needsMapping ? 'mdi-table-arrow-right' : 'mdi-sitemap-outline'" size="16" />
+            {{ needsMapping ? '繼續欄位對齊' : '在 Workflow 中開啟' }}
           </button>
         </div>
       </div>
@@ -116,12 +116,23 @@
     frameworkStore.frameworks.find(fw => fw.id === project.value?.frameworkId)?.title ?? '（未選擇）',
   )
 
+  // 欄位對映還沒完成的話，先回對齊頁 —— 這時候進 workflow 也是什麼都不能做
+  const needsMapping = computed(() =>
+    !!project.value
+    && project.value.status !== 'completed'
+    && Object.keys(project.value.columnMapping ?? {}).length === 0,
+  )
+
   // 這裡是打開「已存在」的專案，畫布狀態要從 localStorage 還原；
   // 不能像 CreateProjectView 一樣呼叫 setActiveContext，否則 WorkflowWorkspace
   // 會誤判成全新專案而呼叫 executeWorkflow() 把已完成的 workflow 整個清空重來
   function openInWorkflow (): void {
     if (!project.value) return
-    router.push(`/workflow?project=${project.value.id}`)
+    router.push(
+      needsMapping.value
+        ? `/hub/projects/${project.value.id}/mapping`
+        : `/workflow?project=${project.value.id}`,
+    )
   }
 </script>
 

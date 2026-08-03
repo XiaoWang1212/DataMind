@@ -67,8 +67,15 @@
     return frameworkStore.frameworks.find(fw => fw.id === project.frameworkId)?.title ?? '（未選擇）'
   }
 
+  // 欄位對映還沒完成的話，先回對齊頁把它做完 —— 這時候進 workflow 也是什麼都不能做
+  function needsMapping (project: Project): boolean {
+    return project.status !== 'completed'
+      && Object.keys(project.columnMapping ?? {}).length === 0
+  }
+
   // 進行中代表 workflow 還沒跑完，直接點進去繼續；其他狀態先進詳情頁
   function projectLink (project: Project): string {
+    if (needsMapping(project)) return `/hub/projects/${project.id}/mapping`
     return project.status === 'running'
       ? `/workflow?project=${project.id}`
       : `/hub/projects/${project.id}`
