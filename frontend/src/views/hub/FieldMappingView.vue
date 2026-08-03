@@ -182,6 +182,7 @@
 
   // Project.id 在資料庫裡是 int；useWorkflowStorage 的參數是字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
+  const draftKey = computed(() => `datamind_field_mapping_draft_${projectId.value}`)
 
   const loading = ref(true)
   const loadError = ref('')
@@ -261,6 +262,7 @@
       item.candidate_columns = []
       item.confidence_score = 0
       item.status = 'SKIPPED'
+      saveDraft()
       return
     }
 
@@ -281,6 +283,59 @@
     item.candidate_columns = []
     item.confidence_score = 1
     item.status = 'NEEDS_REVIEW'
+    saveDraft()
+  }
+
+  /**
+   * 把編輯中的對映存進瀏覽器。
+   *
+   * 沒有這個的話，使用者在這一頁按重新整理就會前功盡棄：手動改的全部消失，
+   * 而且會再打一次 Gemini。存的是「還沒按確認並執行」的草稿，
+   * 真正的結果在按下按鈕時才寫進資料庫。
+   */
+  function saveDraft (): void {
+    if (!projectId.value) return
+    try {
+      localStorage.setItem(draftKey.value, JSON.stringify({
+        columns: columnSignature(),
+        items: items.value,
+        locked: [...locked.value],
+      }))
+    } catch (error) {
+      console.warn('無法保存欄位對映草稿', error)
+    }
+  }
+
+  function loadDraft (): boolean {
+    try {
+      const raw = localStorage.getItem(draftKey.value)
+      if (!raw) return false
+      const saved = JSON.parse(raw) as {
+        columns?: string
+        items?: MappingItem[]
+        locked?: string[]
+      }
+      // 換了資料集就不能沿用舊草稿，裡面的欄位名已經對不上了
+      if (saved.columns !== columnSignature()) {
+        clearDraft()
+        return false
+      }
+      if (!Array.isArray(saved.items) || saved.items.length === 0) return false
+      items.value = saved.items
+      locked.value = new Set<string>(saved.locked)
+      return true
+    } catch {
+      localStorage.removeItem(draftKey.value)
+      return false
+    }
+  }
+
+  function columnSignature (): string {
+    return userColumns.value.map(c => c.name).join('|')
+  }
+
+  function clearDraft (): void {
+    localStorage.removeItem(draftKey.value)
   }
 
   /** 被改動的列閃一下：沒有這個提示，使用者不知道剛才那一步改到了哪裡。 */
@@ -476,6 +531,8 @@
           projectStore.projects.find(p => p.id === projectId.value)?.frameworkId ?? null,
       })
 
+      // 已經寫進資料庫了，草稿不用留
+      clearDraft()
       router.push(`/workflow?project=${projectId.value}`)
     } catch (error) {
       // saveColumnMapping 失敗時已經把本地狀態復原，但畫面上必須告訴使用者，
@@ -540,12 +597,19 @@
         return
       }
 
+      // 有草稿就直接還原，不重跑配對：重跑會蓋掉使用者改過的東西，也會白花一次 Gemini
+      if (loadDraft()) {
+        aiAvailable.value = true
+        return
+      }
+
       const { state, aiAvailable: available } = await initFieldMapping({
         paperVariables,
         userColumns: userColumns.value,
       })
       items.value = state.mapping_status
       aiAvailable.value = available
+      saveDraft()
     } catch (error) {
       loadError.value = error instanceof Error ? error.message : '欄位對齊初始化失敗'
     } finally {
