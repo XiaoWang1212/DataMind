@@ -231,7 +231,7 @@
     SKIPPED: '不使用',
   }
 
-  // 滑過標籤時顯示。避免「信心度」這類系統內部用語，但維持正式的語氣
+  // 滑過標籤時顯示。用一般說法，避免「信心度」這類系統內部用語
   const STATUS_HINT: Record<string, string> = {
     CONFIRMED: '您已確認此對應正確。如需修改，請點選右側的復原按鈕。',
     AUTO_MATCHED: '欄位名稱與資料內容皆相符，可直接使用。',
@@ -325,11 +325,7 @@
     return options
   }
 
-  /**
-   * 使用者看過這一列、覺得沒問題。
-   *
-   * 順手鎖住：既然已經親自確認過，後續 AI 建議就不該再改動它。
-   */
+  /** 順手鎖住：親自確認過的列，後續 AI 建議不該再改動它。 */
   function confirmRow (item: MappingItem): void {
     if (item.status !== 'NEEDS_REVIEW') return
     pushHistory()
@@ -339,12 +335,7 @@
     saveDraft()
   }
 
-  /**
-   * 每次改動前先存一份快照，供 Ctrl+Z 復原。
-   *
-   * 這一頁是「一連串小編輯」的操作，使用者難免點錯；沒有復原的話，
-   * 唯一的退路是把整頁重跑，等於把先前的確認全部作廢。
-   */
+  /** 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。 */
   function pushHistory (): void {
     undoStack.value.push(structuredClone(toRaw(items.value)))
     if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
@@ -370,10 +361,7 @@
     saveDraft()
   }
 
-  /**
-   * 焦點在輸入框時不攔截 —— 那時候使用者要復原的是自己打的字，
-   * 那是瀏覽器的事，搶過來會很難用。
-   */
+  /** 焦點在輸入框時不攔截：那時使用者要復原的是自己打的字。 */
   function onKeydown (event: KeyboardEvent): void {
     if (!(event.metaKey || event.ctrlKey)) return
 
@@ -451,11 +439,8 @@
   }
 
   /**
-   * 把編輯中的對映存進瀏覽器。
-   *
-   * 沒有這個的話，使用者在這一頁按重新整理就會前功盡棄：手動改的全部消失，
-   * 而且會再打一次 Gemini。存的是「還沒按確認並執行」的草稿，
-   * 真正的結果在按下按鈕時才寫進資料庫。
+   * 存編輯中的草稿。沒有它的話重新整理會把改過的全部沖掉，還會再打一次 Gemini。
+   * 真正的結果是按下「確認並執行」才寫進資料庫。
    */
   function saveDraft (): void {
     if (!projectId.value) return
@@ -513,8 +498,6 @@
   }
 
   /**
-   * 確保 store 已經載好。
-   *
    * main.ts 那兩個 load 沒有 await，重新整理時 onMounted 可能先跑完，
    * 拿到空陣列就會誤判成「框架沒有變數清單」。
    */
@@ -1003,7 +986,6 @@
     color: #15803d;
   }
 
-  /* 三種顏色一次講完。比寫一整段說明好掃，而且直接用真的標籤當範例 */
   .status-chip[tabindex] {
     cursor: help;
   }
@@ -1019,8 +1001,7 @@
     gap: 6px;
   }
 
-  /* 狀態標籤照舊顯示，勾勾另外放旁邊：
-     使用者要先看懂「這是待確認的」，才知道按勾勾是什麼意思 */
+  /* 標籤先講清楚是什麼狀態，使用者才知道旁邊的勾勾是要確認什麼 */
   .check-btn {
     position: relative;
     display: inline-flex;
@@ -1037,13 +1018,11 @@
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
-  /* hover 用中性灰而非綠色：
-     綠色是「已確認」的語意色，擺在黃色的「待確認」旁邊會像狀態互相打架，
-     而且觸控裝置沒有 hover，靠它傳達意義本來就不成立 */
+  /* 不用綠色：那是「已確認」的語意色，跟旁邊黃色的「待確認」會打架 */
   .check-btn:hover {
     background: #f0f1f3;
     border-color: #94a3b8;
-    /* 從色票推導出來的淺一階，不另外引入游離色碼 */
+    /* 從色票推導，不另外引入游離色碼 */
     color: color-mix(in oklab, var(--color-secondary) 60%, white);
   }
 
@@ -1156,8 +1135,7 @@
     font-weight: 600;
   }
 
-  /* 尺寸與圓角比照 ProjectsView 的 .new-btn。
-     border: none 是必要的 —— <button> 會帶瀏覽器預設外框，那圈深色不是設計 */
+  /* 尺寸比照 ProjectsView 的 .new-btn。border: none 不能省，<button> 預設帶外框 */
   .confirm-btn {
     display: inline-flex;
     align-items: center;

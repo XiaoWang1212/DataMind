@@ -375,12 +375,10 @@ class GeminiService:
 
     @staticmethod
     def _log_if_truncated(response, caller: str) -> None:
-        """回應若因觸及 max_output_tokens 而被截斷，記錄明確原因方便排查。
+        """回應被 max_output_tokens 截斷時記一筆，方便排查。
 
-        截斷後的 JSON 跟「格式本來就爛」在下游看起來一模一樣，靠這個 log
-        才分得出來是額度不夠、還是模型真的亂回。只負責記錄，不改變任何回傳值；
-        用 getattr 一路防守是因為測試用的 fake response 只有 .text 這個屬性，
-        絕不能讓這段診斷邏輯反過來把原本會成功的呼叫弄壞。
+        截斷的 JSON 跟「模型亂回」在下游長得一模一樣，沒這個 log 分不出來。
+        全程 getattr 是因為測試的 fake response 只有 .text，診斷邏輯不能反過來弄壞呼叫。
         """
         try:
             candidates = getattr(response, "candidates", None) or []
