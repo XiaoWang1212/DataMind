@@ -8,10 +8,19 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `demo_paper.md` | 人造論文（英文），可上傳到 `/api/gemini/ai-analyze` 測整條「論文 → workflow JSON」的路徑 |
+| `demo_paper.pdf` | **從 UI 測試請用這個。** 論文 PDF，由 `demo_paper.md` 轉出 |
+| `demo_paper.md` | 同一篇論文的原始 markdown，方便閱讀或修改後重新轉檔 |
 | `demo_workflow.json` | 已經寫好的 workflow JSON，跳過 Gemini 分析直接測對齊（免費、結果穩定） |
 | `demo_dataset.csv` | 使用者資料集，14 欄、15 筆 |
 | `demo_answers.json` | 人工答案卷，給驗證腳本算準確率用 |
+
+**為什麼要有 PDF 版**：後端的 `ALLOWED_EXTENSIONS` 其實收 `txt / md / pdf`，
+但前端上傳論文的檔案選擇器寫死 `accept=".pdf"`（`ExtractFrameworkView.vue`），
+所以從畫面上只選得到 PDF。要改成三種都能選的話，改那一行 `accept` 即可。
+
+`demo_paper.pdf` 已實測可用：Gemini 正確抽出全部 10 個變數、`target_col=readmission_30d`、
+三個模型與 SMOTE 都符合論文內容（唯一小差異是 `admission_date` 被判成 `categorical` 而非 `date`，
+不影響配對結果）。
 
 ## 資料集的欄位是刻意取名的
 
@@ -32,7 +41,17 @@
 | `ward` | （無） | 誘餌 |
 | `attending_physician` | （無） | 誘餌 |
 
-## 怎麼跑
+## 從畫面上手動測（推薦，會走到完整流程）
+
+1. 先萃取框架：Hub → 框架庫 → 萃取框架，上傳 `demo_paper.pdf`
+2. 建立專案：Hub → 專案 → 建立新專案，選剛才那個框架，資料集上傳 `demo_dataset.csv`
+3. 按「執行分析」→ 會自動導向欄位對齊頁
+4. 左邊應該看到 4 個綠勾（`age`、`gender`、`bmi`、`hba1c`）、7 個黃色待確認，沒有紅色未對應
+5. 右邊聊天框可以試：「readmit_30d 就是再入院那個變數」、「patient_id 不要用」、
+   「為什麼你把 dm_dx 配到 diabetes_diagnosis？」
+6. 按「確認並執行」→ 進 workflow 頁，Data Table 面板的欄位名應該已經變成論文的變數名
+
+## 用腳本跑（快、可重複、會算準確率）
 
 ```bash
 cd backend
