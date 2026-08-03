@@ -1,13 +1,27 @@
 <template>
   <div class="mapping-page">
-    <RouterLink :to="`/hub/projects/${projectId}`" class="back-link">
+    <RouterLink class="back-link" to="/hub/projects">
       <v-icon icon="mdi-arrow-left" size="15" />
-      返回專案
+      返回專案列表
     </RouterLink>
 
     <div class="page-header">
       <h1 class="page-title">欄位對齊</h1>
-      <p class="page-sub">確認論文需要的變數對應到資料表的哪一個欄位</p>
+      <span v-if="!loading && !loadError" class="page-progress">
+        已確認 {{ confirmedCount }} / {{ items.length }}
+        <template v-if="reviewCount > 0">
+          <span class="page-progress-sep">·</span>
+          <span class="page-progress-review">{{ reviewCount }} 個待確認</span>
+        </template>
+      </span>
+      <button
+        v-if="reviewCount > 0"
+        class="confirm-all-btn"
+        type="button"
+        @click="confirmAll"
+      >
+        全部確認
+      </button>
     </div>
 
     <div v-if="loadError" class="load-error">
@@ -40,16 +54,22 @@
               :class="{ 'row-flash': flashed.has(item.paper_variable) }"
             >
               <td class="col-var">
-                <span v-if="isTarget(item)" class="target-badge" title="預測目標">★</span>
+                <span
+                  v-if="isTarget(item)"
+                  aria-label="預測目標"
+                  class="target-badge"
+                  role="img"
+                >★</span>
                 <span class="var-name">{{ item.paper_variable }}</span>
                 <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
               </td>
               <td class="col-col">
                 <CustomSelect
+                  :aria-label="`${item.paper_variable} 對應到的資料表欄位`"
+                  :highlight="item.status === 'UNMATCHED'"
                   :model-value="item.matched_user_column ?? selectionKey(item)"
                   :options="optionsFor(item)"
                   placeholder="請選擇"
-                  :highlight="item.status === 'UNMATCHED'"
                   @update:model-value="value => applySelection(item, value)"
                 />
                 <div v-if="item.sample_values.length" class="col-samples">
@@ -135,7 +155,9 @@
       <!-- 右：AI 對話 -->
       <aside class="mapping-chat">
         <div class="chat-head">
-          <v-icon icon="mdi-robot-outline" size="18" color="#2347c5" />
+          <div class="chat-head-icon">
+            <v-icon icon="mdi-chat-processing-outline" size="18" />
+          </div>
           <span>AI 助理</span>
         </div>
 
@@ -751,28 +773,61 @@
   .mapping-page {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 12px;
+  }
+
+  /* 標題、進度、全部確認擠在同一列，把垂直空間留給對映表 */
+  .page-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .page-progress {
+    font-size: 13px;
+    color: var(--color-secondary);
+  }
+
+  .page-progress-sep {
+    margin: 0 6px;
+    color: #cbd5e1;
+  }
+
+  .page-progress-review {
+    color: #b45309;
+  }
+
+  .confirm-all-btn {
+    padding: 5px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fff;
+    color: var(--color-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+
+  .confirm-all-btn:hover {
+    background: #f0f1f3;
+    border-color: #94a3b8;
   }
 
   .back-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #64748b;
+    color: var(--color-secondary);
     font-size: 13px;
     text-decoration: none;
   }
 
   .page-title {
-    font-size: 24px;
+    font-size: 19px;
     font-weight: 700;
-    color: #0f172a;
-  }
-
-  .page-sub {
-    margin-top: 4px;
-    font-size: 13px;
-    color: #64748b;
+    color: var(--color-ink);
   }
 
   .load-error {
@@ -781,7 +836,7 @@
     gap: 10px;
     padding: 16px;
     border: 1px solid #fecaca;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #fef2f2;
     color: #b91c1c;
     font-size: 14px;
@@ -804,7 +859,7 @@
     flex-direction: column;
     gap: 14px;
     padding: 18px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e8e8e8;
     border-radius: 12px;
     background: #fff;
   }
@@ -818,12 +873,12 @@
   .mapping-title {
     font-size: 15px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .mapping-count {
     font-size: 13px;
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   .mapping-loading {
@@ -832,12 +887,18 @@
     gap: 10px;
     padding: 40px 0;
     justify-content: center;
-    color: #64748b;
+    color: var(--color-secondary);
     font-size: 14px;
+  }
+
+  /* 下拉欄固定寬度，視窗窄的時候讓表格自己捲，不要把整頁撐開 */
+  .mapping-scroll {
+    overflow-x: auto;
   }
 
   .mapping-table {
     width: 100%;
+    min-width: 520px;
     border-collapse: collapse;
     font-size: 13px;
   }
@@ -846,18 +907,19 @@
     padding: 8px 10px;
     text-align: left;
     font-weight: 600;
-    color: #64748b;
-    border-bottom: 1px solid #e2e8f0;
+    color: var(--color-secondary);
+    border-bottom: 1px solid #e8e8e8;
   }
 
   .mapping-table td {
     padding: 10px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f0f1f3;
     vertical-align: top;
   }
 
+  /* 要放得下「待確認」標籤 + 勾勾按鈕，不然標籤會被擠到換行 */
   .col-status {
-    width: 92px;
+    width: 124px;
   }
 
   .col-col {
@@ -871,7 +933,7 @@
 
   .var-name {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .var-type {
@@ -889,10 +951,12 @@
 
   .status-chip {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
+    padding: 3px 9px;
+    border-radius: 99px;
     font-size: 11px;
     font-weight: 600;
+    /* 不換行：三個字被擠成兩行的話，圓角會把它變成一顆球 */
+    white-space: nowrap;
   }
 
   .status-chip--auto_matched {
@@ -911,8 +975,87 @@
   }
 
   .status-chip--skipped {
-    background: #f1f5f9;
-    color: #64748b;
+    background: #f0f1f3;
+    color: var(--color-secondary);
+  }
+
+  .status-chip--confirmed {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  /* 三種顏色一次講完。比寫一整段說明好掃，而且直接用真的標籤當範例 */
+  .status-chip[tabindex] {
+    cursor: help;
+  }
+
+  .status-chip[tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .status-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* 狀態標籤照舊顯示，勾勾另外放旁邊：
+     使用者要先看懂「這是待確認的」，才知道按勾勾是什麼意思 */
+  .check-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid #cbd5e1;
+    border-radius: 50%;
+    background: #fff;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .check-btn:hover {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #15803d;
+  }
+
+  .check-btn:focus-visible,
+  .undo-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* 視覺上 26px，但用 ::after 把可點範圍撐到 40px，手指才按得到 */
+  .check-btn::after,
+  .undo-btn::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+
+  .undo-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  .undo-btn:hover {
+    background: #f0f1f3;
+    color: var(--color-secondary);
   }
 
   /* AI 或搶欄位造成的變動閃一下，讓使用者看見改到哪一列 */
@@ -925,15 +1068,27 @@
     100% { background: transparent; }
   }
 
+  /* 有人對動態效果敏感（會頭暈）；改成靜態底色淡出，資訊不減 */
+  @media (prefers-reduced-motion: reduce) {
+    .row-flash {
+      animation: none;
+      background: #fef9c3;
+    }
+
+    .confirm-all-btn,
+    .confirm-row-btn {
+      transition: none;
+    }
+  }
+
   .preview-block {
-    border-top: 1px solid #e2e8f0;
-    padding-top: 12px;
+    padding-top: 4px;
   }
 
   .preview-title {
     font-size: 13px;
     font-weight: 600;
-    color: #475569;
+    color: var(--color-secondary);
     margin-bottom: 8px;
   }
 
@@ -950,12 +1105,12 @@
   .preview-table th,
   .preview-table td {
     padding: 6px 10px;
-    border: 1px solid #f1f5f9;
-    color: #475569;
+    border: 1px solid #f0f1f3;
+    color: var(--color-secondary);
   }
 
   .preview-table th {
-    background: #f8fafc;
+    background: var(--color-background);
     font-weight: 600;
   }
 
@@ -978,16 +1133,27 @@
     font-weight: 600;
   }
 
+  /* 尺寸與圓角比照 ProjectsView 的 .new-btn。
+     border: none 是必要的 —— <button> 會帶瀏覽器預設外框，那圈深色不是設計 */
   .confirm-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    border-radius: 8px;
-    background: #2347c5;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
+    gap: 7px;
+    height: 38px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 7px;
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .confirm-btn:hover:not(:disabled),
+  .chat-send:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-accent) 85%, black);
   }
 
   .confirm-btn:disabled {
@@ -998,11 +1164,24 @@
   .mapping-chat {
     display: flex;
     flex-direction: column;
-    height: 620px;
-    border: 1px solid #e2e8f0;
+    /* 跟著視窗高度走：筆電上不會被擠到要捲，大螢幕也不會留一大片空白 */
+    height: clamp(420px, calc(100vh - 190px), 720px);
+    border: 1px solid #e8e8e8;
     border-radius: 12px;
     background: #fff;
     overflow: hidden;
+  }
+
+  /* 圖示樣式比照 ResultView 的 .analysis-icon-wrap，兩邊的 AI 區塊看起來才是一組的 */
+  .chat-head-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #eef1ff;
+    color: var(--color-accent);
   }
 
   .chat-head {
@@ -1010,10 +1189,10 @@
     align-items: center;
     gap: 8px;
     padding: 14px 16px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e8e8e8;
     font-size: 14px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .chat-offline {
@@ -1036,8 +1215,8 @@
 
   .chat-bubble {
     max-width: 88%;
-    padding: 9px 12px;
-    border-radius: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
     font-size: 13px;
     line-height: 1.55;
     white-space: pre-wrap;
@@ -1045,14 +1224,14 @@
 
   .chat-bubble--user {
     align-self: flex-end;
-    background: #2347c5;
-    color: #fff;
+    background: var(--color-chat-user);
+    color: var(--color-inverted);
   }
 
   .chat-bubble--assistant {
     align-self: flex-start;
-    background: #f1f5f9;
-    color: #0f172a;
+    background: var(--color-chat-system);
+    color: var(--color-ink);
   }
 
   .chat-bubble--pending {
@@ -1063,7 +1242,7 @@
     display: flex;
     gap: 8px;
     padding: 12px 14px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid #e8e8e8;
   }
 
   .chat-field {
@@ -1071,19 +1250,23 @@
     min-width: 0;
     padding: 8px 10px;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    border-radius: 7px;
     font-size: 13px;
   }
 
   .chat-field:disabled {
-    background: #f8fafc;
+    background: var(--color-background);
   }
 
   .chat-send {
-    padding: 8px 14px;
-    border-radius: 8px;
-    background: #2347c5;
-    color: #fff;
+    padding: 0 16px;
+    height: 36px;
+    border: none;
+    border-radius: 7px;
+    background: var(--color-accent);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background 0.15s;
     font-size: 13px;
     font-weight: 600;
   }
@@ -1091,5 +1274,14 @@
   .chat-send:disabled {
     background: #cbd5e1;
     cursor: not-allowed;
+  }
+</style>
+
+<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，所以另開一個全域區塊 -->
+<style>
+  .status-tooltip {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
   }
 </style>
