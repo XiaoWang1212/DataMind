@@ -1,0 +1,13 @@
+{
+  "age": "age",
+  "gender": "col_gender",
+  "bmi": "BMI",
+  "hba1c": "hba1c_pct",
+  "systolic_blood_pressure": "bp_sys",
+  "length_of_stay": "los_days",
+  "admission_date": "adm_dt",
+  "diabetes_diagnosis": "dm_dx",
+  "pain_score": "疼痛分數",
+  "charlson_index": "charlson_comorbidity_idx",
+  "readmission_30d": "readmit_30d"
+}

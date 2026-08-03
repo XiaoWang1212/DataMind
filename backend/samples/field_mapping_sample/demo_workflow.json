@@ -1,0 +1,45 @@
+{
+  "target_col": "readmission_30d",
+  "models": [
+    {"name": "Logistic Regression", "type": "Classification", "purpose_zh": "建立基線分類模型"},
+    {"name": "Random Forest", "type": "Classification", "purpose_zh": "集成方法提升準確率"},
+    {"name": "XGBoost", "type": "Classification", "purpose_zh": "梯度提升處理非線性關係"}
+  ],
+  "preprocessing": [
+    {"type": "fill_na", "strategy": "mean"},
+    {"type": "standardize"},
+    {"type": "one_hot"}
+  ],
+  "featureEngineering": [],
+  "validation": {
+    "method": "k_fold",
+    "n_splits": 10,
+    "stratified": true,
+    "train_size": 0.8
+  },
+  "metrics": ["balanced_accuracy", "auc", "auprc", "f1", "recall", "specificity"],
+  "resampling": {
+    "method": "smote",
+    "config": {"k_neighbors": 5}
+  },
+  "tuning": {
+    "method": "none",
+    "cv": 3,
+    "n_iter": 20,
+    "scoring": "roc_auc"
+  },
+  "compute_ci": false,
+  "features": [
+    {"name": "age", "type": "numerical", "description_zh": "入院時年齡"},
+    {"name": "gender", "type": "categorical", "description_zh": "生理性別"},
+    {"name": "bmi", "type": "numerical", "description_zh": "入院時身體質量指數"},
+    {"name": "hba1c", "type": "numerical", "description_zh": "糖化血色素百分比"},
+    {"name": "systolic_blood_pressure", "type": "numerical", "description_zh": "入院時收縮壓"},
+    {"name": "length_of_stay", "type": "numerical", "description_zh": "本次住院天數"},
+    {"name": "admission_date", "type": "date", "description_zh": "入院日期"},
+    {"name": "diabetes_diagnosis", "type": "categorical", "description_zh": "是否診斷第二型糖尿病"},
+    {"name": "pain_score", "type": "numerical", "description_zh": "入院時疼痛評分（0-10）"},
+    {"name": "charlson_index", "type": "numerical", "description_zh": "Charlson 共病指數"},
+    {"name": "readmission_30d", "type": "categorical", "description_zh": "出院後 30 天內是否非計畫性再入院"}
+  ]
+}
