@@ -5,13 +5,14 @@
     :class="{ 'is-disabled': disabled, 'is-highlight': highlight, 'is-open': open }"
   >
     <button
-      type="button"
-      class="cs-trigger"
-      role="combobox"
-      aria-haspopup="listbox"
-      :aria-expanded="open"
       :aria-activedescendant="open && activeIndex >= 0 ? `${uid}-opt-${activeIndex}` : undefined"
+      :aria-expanded="open"
+      aria-haspopup="listbox"
+      :aria-label="ariaLabel"
+      class="cs-trigger"
       :disabled="disabled"
+      role="combobox"
+      type="button"
       @click="toggle"
       @keydown="onTriggerKeydown"
     >
@@ -68,6 +69,8 @@
     placeholder?: string
     disabled?: boolean
     highlight?: boolean
+    /** 沒有可見標籤時給讀螢幕軟體用，否則它只會唸出目前選到的值 */
+    ariaLabel?: string
   }>()
 
   const emit = defineEmits<{
@@ -301,10 +304,10 @@
     justify-content: space-between;
     gap: 6px;
     padding: 0 8px;
-    border: 1px solid rgba(0, 93, 255, 0.18);
+    border: 1px solid #e8e8e8;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #0f172a;
+    background: #fff;
+    color: var(--color-ink);
     font-size: 13px;
     cursor: pointer;
     text-align: left;
@@ -317,6 +320,17 @@
 
   .is-highlight .cs-trigger {
     border-color: #94a3b8;
+  }
+
+  /* 展開跟聚焦排在 highlight 後面，才蓋得掉未對應的灰框 */
+  .cs-trigger:focus-visible,
+  .is-open .cs-trigger {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+
+  .cs-trigger:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 20%, transparent);
   }
 
   .cs-label {
@@ -333,13 +347,14 @@
 
   .cs-chevron {
     display: flex;
-    color: #005dff;
+    color: #94a3b8;
     flex-shrink: 0;
-    transition: transform 0.15s;
+    transition: transform 0.15s, color 0.15s;
   }
 
   .is-open .cs-chevron {
     transform: rotate(180deg);
+    color: var(--color-accent);
   }
 
   .cs-popup {
@@ -349,7 +364,7 @@
     max-height: 240px;
     overflow-y: auto;
     background: #fff;
-    border: 1px solid rgba(0, 93, 255, 0.18);
+    border: 1px solid #e8e8e8;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
     z-index: 3000;
@@ -359,7 +374,7 @@
     padding: 7px 10px;
     border-radius: 6px;
     font-size: 13px;
-    color: #0f172a;
+    color: var(--color-ink);
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
@@ -367,11 +382,12 @@
   }
 
   .cs-option.is-active {
-    background: rgba(0, 93, 255, 0.08);
+    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
   }
 
+  /* accent 本人在白底只有 2.2:1，當文字讀不清楚，改用同色系的深琥珀 */
   .cs-option.is-selected {
-    color: #005dff;
+    color: #b45309;
     font-weight: 600;
   }
 
