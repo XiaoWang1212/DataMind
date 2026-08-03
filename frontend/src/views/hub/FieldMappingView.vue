@@ -19,19 +19,13 @@
     <div v-else class="mapping-layout">
       <!-- 左：對映表 + 資料預覽 -->
       <section class="mapping-main">
-        <div class="mapping-head">
-          <span class="mapping-title">論文變數對應</span>
-          <span class="mapping-count">
-            已對照 {{ matchedCount }} / {{ items.length }}
-          </span>
-        </div>
-
         <div v-if="loading" class="mapping-loading">
-          <v-progress-circular indeterminate size="28" color="#2347c5" />
+          <v-progress-circular indeterminate size="28" color="accent" />
           <span>正在自動配對…</span>
         </div>
 
-        <table v-else class="mapping-table">
+        <div v-else class="mapping-scroll">
+        <table class="mapping-table">
           <thead>
             <tr>
               <th class="col-var">論文變數</th>
@@ -63,13 +57,52 @@
                 </div>
               </td>
               <td class="col-status">
-                <span class="status-chip" :class="`status-chip--${item.status.toLowerCase()}`">
-                  {{ STATUS_LABEL[item.status] }}
-                </span>
+                <div class="status-cell">
+                  <!-- 用 v-tooltip 而非 CSS 絕對定位：外層 .mapping-scroll 有 overflow，
+                       自製的提示會被裁掉，v-tooltip 會 teleport 出去 -->
+                  <v-tooltip
+                    content-class="status-tooltip"
+                    location="bottom end"
+                    max-width="210"
+                    :text="STATUS_HINT[item.status]"
+                  >
+                    <template #activator="{ props }">
+                      <span
+                        v-bind="props"
+                        class="status-chip"
+                        :class="`status-chip--${item.status.toLowerCase()}`"
+                        tabindex="0"
+                      >
+                        {{ STATUS_LABEL[item.status] }}
+                      </span>
+                    </template>
+                  </v-tooltip>
+                  <button
+                    v-if="item.status === 'NEEDS_REVIEW'"
+                    :aria-label="`${item.paper_variable}：對應正確，標記為已確認`"
+                    class="check-btn"
+                    title="對應正確，標記為已確認"
+                    type="button"
+                    @click="confirmRow(item)"
+                  >
+                    <v-icon icon="mdi-check" size="16" />
+                  </button>
+                  <button
+                    v-else-if="item.status === 'CONFIRMED'"
+                    :aria-label="`${item.paper_variable}：取消確認`"
+                    class="undo-btn"
+                    title="取消確認"
+                    type="button"
+                    @click="unconfirmRow(item)"
+                  >
+                    <v-icon icon="mdi-undo-variant" size="14" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
 
         <div v-if="!loading && previewColumns.length" class="preview-block">
           <div class="preview-title">資料預覽（前 {{ previewRows.length }} 筆）</div>
@@ -152,7 +185,7 @@
     PaperVariable,
     UserColumn,
   } from '@/types/fieldMapping'
-  import { computed, nextTick, onMounted, ref } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
   import CustomSelect from '@/components/common/CustomSelect.vue'
@@ -169,10 +202,20 @@
   const SKIP_VALUE = '__skip__'
 
   const STATUS_LABEL: Record<string, string> = {
+    CONFIRMED: '已確認',
     AUTO_MATCHED: '已對應',
     NEEDS_REVIEW: '待確認',
     UNMATCHED: '未對應',
     SKIPPED: '不使用',
+  }
+
+  // 滑過標籤時顯示。避免「信心度」這類系統內部用語，但維持正式的語氣
+  const STATUS_HINT: Record<string, string> = {
+    CONFIRMED: '您已確認此對應正確。如需修改，請點選右側的復原按鈕。',
+    AUTO_MATCHED: '欄位名稱與資料內容皆相符，可直接使用。',
+    NEEDS_REVIEW: '兩邊名稱不同，此為 AI 依語意提供的建議對應，請確認無誤後點選右側的勾選按鈕。',
+    UNMATCHED: '資料表中沒有相符的欄位，請由左側選單自行指定。',
+    SKIPPED: '您已指定資料表中沒有此變數，執行時將會略過。',
   }
 
   const route = useRoute()
@@ -206,6 +249,10 @@
   const chatScroll = ref<HTMLElement | null>(null)
   const confirming = ref(false)
 
+  // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
+  const MAX_UNDO = 50
+  const undoStack = ref<MappingItem[][]>([])
+
   function isTarget (item: MappingItem): boolean {
     return item.paper_variable === targetName.value
   }
@@ -217,11 +264,14 @@
     return list
   })
 
-  // SKIPPED 不算「已對照」：使用者是主動表示資料裡沒有這個變數
-  const matchedCount = computed(
+  // 綠色的兩種：演算法有把握的，和使用者親自點過確認的
+  const confirmedCount = computed(
     () => items.value.filter(
-      i => i.status !== 'UNMATCHED' && i.status !== 'SKIPPED',
+      i => i.status === 'AUTO_MATCHED' || i.status === 'CONFIRMED',
     ).length,
+  )
+  const reviewCount = computed(
+    () => items.value.filter(i => i.status === 'NEEDS_REVIEW').length,
   )
   const unmatchedCount = computed(
     () => items.value.filter(i => i.status === 'UNMATCHED').length,
@@ -242,17 +292,90 @@
     const options = userColumns.value.map(column => ({
       value: column.name,
       label: taken.has(column.name)
-        ? `${column.name}（目前給 ${taken.get(column.name)}）`
+        ? `${column.name}（已對應至 ${taken.get(column.name)}）`
         : column.name,
     }))
     // target 一定要有對應欄位，不提供「沒有這個變數」的選項
     if (!isTarget(item)) {
-      options.push({ value: SKIP_VALUE, label: '我的資料沒有這個變數' })
+      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數' })
     }
     return options
   }
 
+  /**
+   * 使用者看過這一列、覺得沒問題。
+   *
+   * 順手鎖住：既然已經親自確認過，後續 AI 建議就不該再改動它。
+   */
+  function confirmRow (item: MappingItem): void {
+    if (item.status !== 'NEEDS_REVIEW') return
+    pushHistory()
+    item.status = 'CONFIRMED'
+    locked.value.add(item.paper_variable)
+    saveError.value = ''
+    saveDraft()
+  }
+
+  /**
+   * 每次改動前先存一份快照，供 Ctrl+Z 復原。
+   *
+   * 這一頁是「一連串小編輯」的操作，使用者難免點錯；沒有復原的話，
+   * 唯一的退路是把整頁重跑，等於把先前的確認全部作廢。
+   */
+  function pushHistory (): void {
+    undoStack.value.push(structuredClone(toRaw(items.value)))
+    if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
+  }
+
+  function undo (): void {
+    const previous = undoStack.value.pop()
+    if (!previous) return
+    items.value = previous
+    saveError.value = ''
+    saveDraft()
+  }
+
+  /**
+   * 焦點在輸入框時不攔截 —— 那時候使用者要復原的是自己打的字，
+   * 那是瀏覽器的事，搶過來會很難用。
+   */
+  function onKeydown (event: KeyboardEvent): void {
+    const key = event.key.toLowerCase()
+    if (key !== 'z' || !(event.metaKey || event.ctrlKey) || event.shiftKey) return
+
+    const target = event.target as HTMLElement | null
+    const tag = target?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+
+    event.preventDefault()
+    undo()
+  }
+
+  /** 按錯了要能反悔，不然使用者只敢把整頁重跑一次。 */
+  function unconfirmRow (item: MappingItem): void {
+    if (item.status !== 'CONFIRMED') return
+    pushHistory()
+    item.status = 'NEEDS_REVIEW'
+    locked.value.delete(item.paper_variable)
+    saveDraft()
+  }
+
+  /** 整批當成一步：不然使用者要按 N 次 Ctrl+Z 才回得去 */
+  function confirmAll (): void {
+    if (reviewCount.value === 0) return
+    pushHistory()
+    for (const item of items.value) {
+      if (item.status === 'NEEDS_REVIEW') {
+        item.status = 'CONFIRMED'
+        locked.value.add(item.paper_variable)
+      }
+    }
+    saveError.value = ''
+    saveDraft()
+  }
+
   function applySelection (item: MappingItem, value: string): void {
+    pushHistory()
     locked.value.add(item.paper_variable)
     saveError.value = ''
 
@@ -450,14 +573,17 @@
       const { actions, reply } = await refineFieldMapping({
         mappingState: {
           total_required: items.value.length,
-          matched_count: matchedCount.value,
+          matched_count: confirmedCount.value,
           mapping_status: items.value,
         },
         userColumns: userColumns.value,
         userMessage: message,
         chatHistory: chatHistory.value.slice(0, -1),
       })
-      for (const variable of applyActions(actions)) flash(variable)
+      if (actions.length > 0) pushHistory()
+      const changed = applyActions(actions)
+      for (const variable of changed) flash(variable)
+      if (changed.length > 0) saveDraft()
       chatHistory.value.push({ role: 'assistant', content: reply })
     } catch (error) {
       chatHistory.value.push({
@@ -549,6 +675,9 @@
     if (!/[",\n]/.test(value)) return value
     return `"${value.replace(/"/g, '""')}"`
   }
+
+  onMounted(() => window.addEventListener('keydown', onKeydown))
+  onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
   onMounted(async () => {
     try {
