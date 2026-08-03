@@ -296,8 +296,7 @@
   /**
    * 確保 store 已經載好。
    *
-   * main.ts 的 loadProjects() / loadFrameworks() 是 fire-and-forget 的，
-   * 使用者直接開這個網址或按重新整理時，onMounted 可能比它們先跑完，
+   * main.ts 那兩個 load 沒有 await，重新整理時 onMounted 可能先跑完，
    * 拿到空陣列就會誤判成「框架沒有變數清單」。
    */
   async function ensureStoresLoaded (): Promise<void> {
@@ -345,9 +344,8 @@
       if (!item || locked.value.has(item.paper_variable)) continue
 
       if (action.matched_user_column) {
-        // 這個欄位如果目前是被使用者手動鎖定的列占用，整個動作直接放棄：
-        // 使用者手動選過的列不容許被 AI 建議覆蓋，而半套用（新列設定了、
-        // 舊列卻沒清，或反過來）比什麼都不做更糟，所以連目標列都不動。
+        // 欄位被手動鎖定的列占用時，整個動作放棄。
+        // 只做一半（新的設了、舊的沒清）比什麼都不做更糟。
         const lockedHolder = items.value.find(
           other => other.paper_variable !== item.paper_variable
             && other.matched_user_column === action.matched_user_column
@@ -413,9 +411,8 @@
       })
     } finally {
       chatPending.value = false
-      // key 加 mapping- 前綴，避免和 ResultView 的結果分析聊天撞在一起
-      // saveChatHistoryToStorage 是共用 ResultView 的結果分析聊天沿用的函式，
-      // 型別綁在 { role, text }；這裡的 ChatMessage 是 { role, content }，形狀不同但都是純本地暫存，用 unknown 轉型即可
+      // 前綴 mapping- 才不會和 ResultView 的聊天撞 key。
+      // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存所以轉型即可。
       saveChatHistoryToStorage(
         `mapping-${projectId.value}`,
         chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
@@ -500,7 +497,7 @@
     try {
       await ensureStoresLoaded()
 
-      // 同上，loadChatHistoryFromStorage 回傳的型別也是 ResultView 那組 { role, text }，轉成本頁用的形狀
+      // 同上，回傳型別是 ResultView 那組，轉成本頁的形狀
       chatHistory.value = loadChatHistoryFromStorage(
         `mapping-${projectId.value}`,
       ) as unknown as ChatMessage[]

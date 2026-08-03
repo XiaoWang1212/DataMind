@@ -1,8 +1,7 @@
 /**
  * CSV 解析共用工具。
  *
- * parseCsvLine 與 decodeFileText 原本在 DataTablePanel 和 DistributionPanel
- * 各有一份完全相同的實作，欄位對齊頁需要第三份，因此抽出來共用。
+ * DataTablePanel、DistributionPanel、欄位對齊頁三處共用，不要各自再抄一份。
  */
 
 /** 解析一行 CSV，處理雙引號包住的欄位與跳脫的雙引號。 */
