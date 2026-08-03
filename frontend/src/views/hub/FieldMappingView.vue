@@ -1018,10 +1018,14 @@
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
+  /* hover 用中性灰而非綠色：
+     綠色是「已確認」的語意色，擺在黃色的「待確認」旁邊會像狀態互相打架，
+     而且觸控裝置沒有 hover，靠它傳達意義本來就不成立 */
   .check-btn:hover {
-    background: #dcfce7;
-    border-color: #22c55e;
-    color: #15803d;
+    background: #f0f1f3;
+    border-color: #94a3b8;
+    /* 從色票推導出來的淺一階，不另外引入游離色碼 */
+    color: color-mix(in oklab, var(--color-secondary) 60%, white);
   }
 
   .check-btn:focus-visible,
