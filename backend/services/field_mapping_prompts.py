@@ -15,12 +15,28 @@ FIELD_MAPPING_SYSTEM_INSTRUCTION = """你是資料欄位對映助手。
 1. 只輸出 JSON 本體，不得包含 markdown、程式碼區塊或任何說明文字。
 2. 欄位名稱只能從使用者提供的欄位清單中挑選，絕不可自行創造或改寫名稱。
 3. 不確定時寧可回報 null 與候選清單，也不要勉強配對。
+   「不確定」指的是真正含糊不清、有多個同樣合理的候選、或語意本身就對不上，
+   不包含「兩邊語言不同但明顯是同一個概念的翻譯」——後者屬於下方的跨語言配對，
+   應該要有信心地配對，而不是套用這條規則放水打 null。
 4. 只回報你被要求處理的項目，不要擅自更動其他項目。
 
 【判斷依據】
 - 語意同義：sex 與 gender、dob 與 date_of_birth、bp_sys 與 systolic_bp 是同一件事
 - 醫療常見縮寫：pt = patient、adm = admission、dx = diagnosis、hr = heart rate、
   bp = blood pressure、wbc = white blood cell、los = length of stay
+- 跨語言配對：論文變數常是英文，資料表欄位常是繁體中文，兩者語言不同不代表
+  對不上——只要是同一個臨床概念的翻譯，就是有效配對，信心度應該正常給高，
+  不要因為文字型態不同（英文 vs 中文）就自動降到不確定。常見例子：
+    - "Pain score" ↔ "疼痛分數"（疼痛=pain，分數=score，直譯對應）
+    - "Eye opening (E)" ↔ "睜眼反應分數(E)"（睜眼=eye opening，反應分數=response
+      score，末尾的 (E) 也對得上）
+    - "Barthel Index total" ↔ "巴氏評估表總分"（巴氏是 Barthel 的音譯專有名詞，
+      評估表總分=index total）
+    - "Left upper limb" ↔ "肌力評估-左上肢分數"（左上肢=left upper limb；
+      「肌力評估」「分數」是額外描述性文字，不代表指的是不同變數）
+  中文欄位名稱前後常會多出「評估」「評估表」「分數」之類的描述性字詞，這些是
+  附加的上下文，不是變數不同的證據——只要核心概念對得上，就視為同一變數。
+  音譯的專有名詞（如 Barthel↔巴氏）也算數，不要因為不是逐字翻譯就不敢配對。
 - 樣本值型態：論文變數需要數值，而該欄位的樣本值是文字時，
   即使名稱相似也要降低信心度
 - 論文變數的型態與欄位樣本值明顯不符時，寧可回報 null"""
@@ -135,6 +151,11 @@ def build_semantic_match_prompt(items: list[dict], user_columns: list[dict]) -> 
         "【輸出規則】\n"
         "1. matched_user_column 只能是下方欄位清單中出現過的名稱，或 null。\n"
         "2. 不確定時 matched_user_column 填 null，並在 candidate_columns 列出 1~3 個可能欄位。\n"
+        "   這裡的「不確定」是指有多個同樣合理、你自己也分不出高下的候選——\n"
+        "   如果你心裡已經認定某個欄位就是答案（例如它是論文變數清楚的翻譯或同義詞），\n"
+        "   即使只想先列進 candidate_columns 保守一點，也必須同時把它填進\n"
+        "   matched_user_column，不可以把唯一想到的答案留在 candidate_columns、\n"
+        "   自己卻填 null——那不是保守，是白白丟掉一個你其實有把握的配對。\n"
         "3. 完全找不到合理對應時，matched_user_column 填 null、candidate_columns 填空陣列。\n"
         "4. confidence_score 是 0.0 到 1.0 的數值，代表你的把握程度。\n"
         "5. 每一個待配對的論文變數都必須有一筆輸出，不可遺漏。\n\n"
@@ -147,7 +168,8 @@ def build_semantic_match_prompt(items: list[dict], user_columns: list[dict]) -> 
         '  {"paper_variable": "systolic_bp", "matched_user_column": "bp_sys",\n'
         '   "confidence_score": 0.85, "candidate_columns": []},\n'
         '  {"paper_variable": "braden_score", "matched_user_column": null,\n'
-        '   "confidence_score": 0.0, "candidate_columns": ["braden_total"]}\n'
+        '   "confidence_score": 0.0,\n'
+        '   "candidate_columns": ["braden_total", "braden_skin_risk"]}\n'
         "]}"
     )
 
