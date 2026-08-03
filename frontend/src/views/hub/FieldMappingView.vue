@@ -274,6 +274,7 @@
   // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
   const MAX_UNDO = 50
   const undoStack = ref<MappingItem[][]>([])
+  const redoStack = ref<MappingItem[][]>([])
 
   function isTarget (item: MappingItem): boolean {
     return item.paper_variable === targetName.value
@@ -347,12 +348,24 @@
   function pushHistory (): void {
     undoStack.value.push(structuredClone(toRaw(items.value)))
     if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
+    // 做了新動作，原本能重做的那條分支就失效了
+    redoStack.value = []
   }
 
   function undo (): void {
     const previous = undoStack.value.pop()
     if (!previous) return
+    redoStack.value.push(structuredClone(toRaw(items.value)))
     items.value = previous
+    saveError.value = ''
+    saveDraft()
+  }
+
+  function redo (): void {
+    const next = redoStack.value.pop()
+    if (!next) return
+    undoStack.value.push(structuredClone(toRaw(items.value)))
+    items.value = next
     saveError.value = ''
     saveDraft()
   }
@@ -362,15 +375,21 @@
    * 那是瀏覽器的事，搶過來會很難用。
    */
   function onKeydown (event: KeyboardEvent): void {
+    if (!(event.metaKey || event.ctrlKey)) return
+
+    // 重做的按法各家不同：Mac 是 ⌘⇧Z，Windows 上 Ctrl+Y 與 Ctrl+Shift+Z 都常見，三種都收
     const key = event.key.toLowerCase()
-    if (key !== 'z' || !(event.metaKey || event.ctrlKey) || event.shiftKey) return
+    const isRedo = (key === 'z' && event.shiftKey) || key === 'y'
+    const isUndo = key === 'z' && !event.shiftKey
+    if (!isRedo && !isUndo) return
 
     const target = event.target as HTMLElement | null
     const tag = target?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
 
     event.preventDefault()
-    undo()
+    if (isRedo) redo()
+    else undo()
   }
 
   /** 按錯了要能反悔，不然使用者只敢把整頁重跑一次。 */
