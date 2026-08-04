@@ -6,6 +6,7 @@
 
 import pytest
 
+from services.field_mapping_prompts import SEMANTIC_MATCH_SCHEMA
 from services.gemini_service import GeminiService
 
 COLUMNS = [
@@ -22,15 +23,22 @@ class FakeResponse:
 
 
 class FakeModel:
-    """假的 GenerativeModel：回傳預設好的字串，或拋出指定的例外。"""
+    """假的 GenerativeModel：回傳預設好的字串，或拋出指定的例外。
+
+    會把 generation_config 收下來，讓測試能檢查真的有帶 schema 與 token 額度——
+    先前就是因為沒人檢查這些，thinking token 吃光額度導致 JSON 被截斷的問題
+    躲過了整套單元測試，直到拿真實資料跑才發現。
+    """
 
     def __init__(self, text: str = "", error: Exception | None = None):
         self._text = text
         self._error = error
         self.calls = 0
+        self.last_config = None
 
     def generate_content(self, *args, **kwargs):
         self.calls += 1
+        self.last_config = kwargs.get("generation_config")
         if self._error:
             raise self._error
         return FakeResponse(self._text)
@@ -199,3 +207,23 @@ class TestSemanticMatch:
         # 被腰斬。這種情況要跟其他解析失敗一樣優雅地回傳 None，不能拋例外。
         monkeypatch.setattr(service, "_field_mapping_model", lambda: TruncatedModel(), raising=False)
         assert service.semantic_match(ITEMS, COLUMNS) is None
+
+
+class TestGenerationConfig:
+    """送出去的 generation_config 必須帶對東西。
+
+    這些值錯掉不會讓任何功能測試變紅，只會讓 Gemini 悄悄回傳爛格式或被截斷。
+    """
+
+    def test_semantic_match_sends_schema_and_zero_temperature(self, service, monkeypatch):
+        fake = FakeModel('{"matches": []}')
+        patch_model(service, monkeypatch, fake)
+        service.semantic_match(ITEMS, COLUMNS)
+
+        config = fake.last_config
+        assert config is not None
+        assert config.temperature == 0
+        assert config.response_mime_type == "application/json"
+        assert config.response_schema is SEMANTIC_MATCH_SCHEMA
+        # thinking token 也吃這個額度，不夠的話 JSON 會在寫到一半時被切斷
+        assert config.max_output_tokens >= 16384

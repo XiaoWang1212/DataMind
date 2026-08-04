@@ -18,9 +18,11 @@ class TestSchemas:
         assert SEMANTIC_MATCH_SCHEMA["type"] == "object"
         assert SEMANTIC_MATCH_SCHEMA["properties"]["matches"]["type"] == "array"
 
-    def test_chat_schema_restricts_status_values(self):
+    def test_chat_schema_cannot_produce_auto_matched(self):
+        # AUTO_MATCHED 刻意不在 enum 裡：綠勾勾只留給演算法層有把握的配對，
+        # AI 提的一律要人確認。靠 prompt 要求模型不要填是擋不住的
         status = CHAT_REFINE_SCHEMA["properties"]["actions"]["items"]["properties"]["status"]
-        assert status["enum"] == ["AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"]
+        assert status["enum"] == ["NEEDS_REVIEW", "UNMATCHED"]
 
     def test_chat_schema_requires_reply(self):
         assert "reply" in CHAT_REFINE_SCHEMA["required"]
