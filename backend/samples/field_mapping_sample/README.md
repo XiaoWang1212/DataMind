@@ -11,7 +11,7 @@
 | `demo_paper.pdf` | **從 UI 測試請用這個。** 論文 PDF，由 `demo_paper.md` 轉出 |
 | `demo_paper.md` | 同一篇論文的原始 markdown，方便閱讀或修改後重新轉檔 |
 | `demo_workflow.json` | 已經寫好的 workflow JSON，跳過 Gemini 分析直接測對齊（免費、結果穩定） |
-| `demo_dataset.csv` | 使用者資料集，14 欄、15 筆 |
+| `demo_dataset.csv` | 使用者資料集，14 欄、60 筆 |
 | `demo_answers.json` | 人工答案卷，給驗證腳本算準確率用 |
 
 **為什麼要有 PDF 版**：後端的 `ALLOWED_EXTENSIONS` 其實收 `txt / md / pdf`，
