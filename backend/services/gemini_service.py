@@ -320,6 +320,10 @@ class GeminiService:
 
     _VALID_STATUSES = {"AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"}
 
+    # 聊天路徑不接受 AUTO_MATCHED：SEMANTIC_SCORE_CAP 只擋得住 /init，
+    # 這裡若放行，使用者打一句話就能讓某列（含 target）直接變綠而沒人確認過
+    _CHAT_STATUSES = {"NEEDS_REVIEW", "UNMATCHED"}
+
     # Gemini 2.5 系列會消耗「thinking」token，這些 token 一樣算進
     # max_output_tokens，卻不會出現在可見輸出（response.text）裡。實測規模
     # （22 個論文變數 × 55 個資料集欄位）光 thinking 就吃掉 3700+ tokens，
@@ -525,7 +529,7 @@ class GeminiService:
             if column is not None and column not in allowed_columns:
                 continue  # 欄位不存在 → 整筆丟棄，不猜使用者想要哪一欄
             status = entry.get("status")
-            if status not in self._VALID_STATUSES:
+            if status not in self._CHAT_STATUSES:
                 continue
             score = self._valid_score(entry.get("confidence_score"))
             if score is None:

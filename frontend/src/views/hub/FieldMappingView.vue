@@ -578,7 +578,8 @@
       }
 
       item.confidence_score = action.confidence_score
-      item.status = action.status
+      // 後端已擋一層，這裡再擋一層：AI 提的對應一律要人確認，不能自己變綠
+      item.status = action.status === 'AUTO_MATCHED' ? 'NEEDS_REVIEW' : action.status
       changed.push(item.paper_variable)
     }
     return changed

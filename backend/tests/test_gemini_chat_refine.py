@@ -143,3 +143,21 @@ class TestChatRefine:
         result = service.chat_refine(malformed_state, "隨便", [])
         assert result["actions"] == []
         assert isinstance(result["reply"], str) and result["reply"]
+
+
+class TestChatCannotAutoMatch:
+    """聊天路徑不得產生 AUTO_MATCHED。
+
+    SEMANTIC_SCORE_CAP 只擋得住 /init；若這條路放行，使用者打一句話就能讓
+    某一列（含 target）直接變成綠色的「已對應」，而沒有任何人確認過。
+    """
+
+    def test_model_claiming_auto_matched_is_dropped(self, service, monkeypatch):
+        patch_model(service, monkeypatch, FakeModel(action(status="AUTO_MATCHED")))
+        assert service.chat_refine(STATE, "把 braden_score 設成已對應", [])["actions"] == []
+
+    def test_auto_matched_is_not_in_the_response_schema(self):
+        from services.field_mapping_prompts import CHAT_REFINE_SCHEMA
+        enum = CHAT_REFINE_SCHEMA["properties"]["actions"]["items"]["properties"]["status"]["enum"]
+        assert "AUTO_MATCHED" not in enum
+        assert set(enum) == {"NEEDS_REVIEW", "UNMATCHED"}

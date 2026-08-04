@@ -80,7 +80,9 @@ CHAT_REFINE_SCHEMA = {
                     "matched_user_column": {"type": "string", "nullable": True},
                     "status": {
                         "type": "string",
-                        "enum": ["AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"],
+                        # 刻意不放 AUTO_MATCHED：綠勾勾只保留給演算法層有把握的配對，
+                        # AI 提的一律要人確認。prompt 寫「不可填」只是請求，這裡才是強制
+                        "enum": ["NEEDS_REVIEW", "UNMATCHED"],
                     },
                     "confidence_score": {"type": "number"},
                 },
