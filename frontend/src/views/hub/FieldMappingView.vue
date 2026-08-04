@@ -417,6 +417,13 @@
   }
 
   function applySelection (item: MappingItem, value: string): void {
+    // 選到跟現在一樣的東西就什麼都不做。少了這道，使用者只是打開下拉看一眼、
+    // 又點回原本那個，「已對應」就會莫名其妙降成「待確認」
+    const unchanged = value === SKIP_VALUE
+      ? item.status === 'SKIPPED'
+      : value === item.matched_user_column
+    if (unchanged) return
+
     pushHistory()
     locked.value.add(item.paper_variable)
     saveError.value = ''
@@ -447,7 +454,8 @@
     item.sample_values = column?.sample_values ?? []
     item.candidate_columns = []
     item.confidence_score = 1
-    item.status = 'NEEDS_REVIEW'
+    // 自己從下拉挑的就是已確認：標成「待確認」等於要他確認自己剛做的動作
+    item.status = 'CONFIRMED'
     saveDraft()
   }
 
