@@ -73,21 +73,3 @@ export async function decodeFileText (file: File): Promise<string> {
   return big5Score > utf8Score ? big5Text : utf8Text
 }
 
-/** 讀出表頭與前 sampleRows 筆資料列。 */
-export async function parseCsvPreview (
-  file: File,
-  sampleRows = 5,
-): Promise<{ columns: string[]; rows: string[][] }> {
-  const text = await decodeFileText(file)
-  const lines = text
-    .replace(/\r\n/g, '\n')
-    .split('\n')
-    .filter(line => line.trim().length > 0)
-
-  if (lines.length === 0) return { columns: [], rows: [] }
-
-  return {
-    columns: parseCsvLine(lines[0]!),
-    rows: lines.slice(1, sampleRows + 1).map(line => parseCsvLine(line)),
-  }
-}

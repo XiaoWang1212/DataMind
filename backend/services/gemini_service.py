@@ -318,8 +318,6 @@ class GeminiService:
     # 以下方法與上面的論文分析完全獨立：另建 model 實例、另一組 generation
     # config，不共用 self.model 也不共用 _generation_config()。
 
-    _VALID_STATUSES = {"AUTO_MATCHED", "NEEDS_REVIEW", "UNMATCHED"}
-
     # 聊天路徑不接受 AUTO_MATCHED：SEMANTIC_SCORE_CAP 只擋得住 /init，
     # 這裡若放行，使用者打一句話就能讓某列（含 target）直接變綠而沒人確認過
     _CHAT_STATUSES = {"NEEDS_REVIEW", "UNMATCHED"}
