@@ -120,7 +120,8 @@
   const needsMapping = computed(() =>
     !!project.value
     && project.value.status !== 'completed'
-    && Object.keys(project.value.columnMapping ?? {}).length === 0,
+    // 用 null 判斷而非空物件：全部選「資料表中沒有此變數」時對映是 {}，但流程已走完
+    && project.value.columnMapping == null,
   )
 
   // 這裡是打開「已存在」的專案，畫布狀態要從 localStorage 還原；
