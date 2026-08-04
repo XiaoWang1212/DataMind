@@ -113,7 +113,7 @@
 <script setup lang="ts">
   import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, ref, watch } from 'vue'
-  import { decodeFileText, parseCsvLine } from '@/utils/csv'
+  import { getFileExtension, readTableRows } from '@/utils/dataset'
 
   const props = defineProps<{
     file?: File | null
@@ -232,25 +232,20 @@
     previewColumns.value = []
     filePreviewRows.value = []
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      errorMessage.value = '目前僅支援 CSV 檔案格式。'
+    if (!['csv', 'xlsx', 'xls'].includes(getFileExtension(file))) {
+      errorMessage.value = '目前僅支援 CSV 與 Excel 檔案格式。'
       return
     }
 
-    const text = await decodeFileText(file)
-    const lines: string[] = text
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .filter(line => typeof line === 'string' && line.trim().length > 0)
-
-    if (lines.length === 0) {
-      errorMessage.value = 'CSV 檔案為空。'
+    // 分布圖要算整份資料的統計，不能只讀預覽的前幾筆
+    const rows = await readTableRows(file)
+    if (rows.length === 0) {
+      errorMessage.value = '檔案沒有資料。'
       return
     }
 
-    const headerLine = lines[0]!
-    previewColumns.value = parseCsvLine(headerLine)
-    const allDataRows = lines.slice(1).map(line => parseCsvLine(line))
+    previewColumns.value = rows[0]!
+    const allDataRows = rows.slice(1)
     allRows.value = allDataRows
     filePreviewRows.value = allDataRows.slice(0, 10)
   }

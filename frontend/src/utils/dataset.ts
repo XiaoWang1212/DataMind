@@ -42,25 +42,24 @@ export async function readExcelRows (file: File): Promise<string[][]> {
     .filter(row => row.some(cell => cell.trim().length > 0))
 }
 
-/** 讀出表頭與前 sampleRows 筆資料列，CSV 與 Excel 都能吃。 */
+/** 讀出整張表（第一列是表頭），CSV 與 Excel 都能吃。 */
+export async function readTableRows (file: File): Promise<string[][]> {
+  if (isExcelFile(file)) return readExcelRows(file)
+
+  const text = await decodeFileText(file)
+  return text
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .filter(line => line.trim().length > 0)
+    .map(line => parseCsvLine(line))
+}
+
+/** 只要表頭與前幾筆的話用這個，畫分布圖那種要全部資料的用 readTableRows。 */
 export async function readTablePreview (
   file: File,
   sampleRows = 5,
 ): Promise<{ columns: string[], rows: string[][] }> {
-  if (!isExcelFile(file)) {
-    const text = await decodeFileText(file)
-    const lines = text
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-    if (lines.length === 0) return { columns: [], rows: [] }
-    return {
-      columns: parseCsvLine(lines[0]!),
-      rows: lines.slice(1, sampleRows + 1).map(line => parseCsvLine(line)),
-    }
-  }
-
-  const rows = await readExcelRows(file)
+  const rows = await readTableRows(file)
   if (rows.length === 0) return { columns: [], rows: [] }
   return { columns: rows[0]!, rows: rows.slice(1, sampleRows + 1) }
 }

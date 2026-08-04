@@ -134,8 +134,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
-  import { decodeFileText, parseCsvLine } from '@/utils/csv'
-  import { getFileExtension, readExcelRows } from '@/utils/dataset'
+  import { readTableRows } from '@/utils/dataset'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
@@ -384,43 +383,11 @@
     { deep: true },
   )
 
-  async function loadExcelFile (file: File): Promise<void> {
-    const rows = await readExcelRows(file)
-    if (rows.length === 0) {
-      previewColumns.value = []
-      previewDataRows.value = []
-      return
-    }
-
-    previewColumns.value = rows[0]!
-    previewDataRows.value = rows.slice(1)
-  }
-
-  async function loadCsvFile (file: File): Promise<void> {
-    const text = await decodeFileText(file)
-    const lines = text
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-
-    if (lines.length === 0) {
-      previewColumns.value = []
-      previewDataRows.value = []
-      return
-    }
-
-    previewColumns.value = parseCsvLine(lines[0]!)
-    previewDataRows.value = lines.slice(1).map(line => parseCsvLine(line))
-  }
-
   async function loadFile (file: File): Promise<void> {
     try {
-      const ext = getFileExtension(file)
-      if (ext === 'xlsx' || ext === 'xls') {
-        await loadExcelFile(file)
-      } else {
-        await loadCsvFile(file)
-      }
+      const rows = await readTableRows(file)
+      previewColumns.value = rows[0] ?? []
+      previewDataRows.value = rows.slice(1)
       buildColumnSettings()
     } catch {
       previewColumns.value = []
