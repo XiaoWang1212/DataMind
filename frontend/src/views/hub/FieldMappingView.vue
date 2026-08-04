@@ -273,8 +273,9 @@
 
   // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
   const MAX_UNDO = 50
-  const undoStack = ref<MappingItem[][]>([])
-  const redoStack = ref<MappingItem[][]>([])
+  interface Snapshot { items: MappingItem[], locked: string[] }
+  const undoStack = ref<Snapshot[]>([])
+  const redoStack = ref<Snapshot[]>([])
 
   function isTarget (item: MappingItem): boolean {
     return item.paper_variable === targetName.value
@@ -335,9 +336,25 @@
     saveDraft()
   }
 
-  /** 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。 */
+  /**
+   * 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。
+   *
+   * locked 一定要跟著存：只還原 items 的話，復原後那一列看起來回到未對應，
+   * 但它還留在 locked 裡，之後所有 AI 建議都會被靜默忽略，而聊天仍回「已更新」。
+   */
+  function snapshot (): Snapshot {
+    return { items: structuredClone(toRaw(items.value)), locked: [...locked.value] }
+  }
+
+  function restore (snap: Snapshot): void {
+    items.value = snap.items
+    locked.value = new Set(snap.locked)
+    saveError.value = ''
+    saveDraft()
+  }
+
   function pushHistory (): void {
-    undoStack.value.push(structuredClone(toRaw(items.value)))
+    undoStack.value.push(snapshot())
     if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
     // 做了新動作，原本能重做的那條分支就失效了
     redoStack.value = []
@@ -346,19 +363,15 @@
   function undo (): void {
     const previous = undoStack.value.pop()
     if (!previous) return
-    redoStack.value.push(structuredClone(toRaw(items.value)))
-    items.value = previous
-    saveError.value = ''
-    saveDraft()
+    redoStack.value.push(snapshot())
+    restore(previous)
   }
 
   function redo (): void {
     const next = redoStack.value.pop()
     if (!next) return
-    undoStack.value.push(structuredClone(toRaw(items.value)))
-    items.value = next
-    saveError.value = ''
-    saveDraft()
+    undoStack.value.push(snapshot())
+    restore(next)
   }
 
   /** 焦點在輸入框時不攔截：那時使用者要復原的是自己打的字。 */
