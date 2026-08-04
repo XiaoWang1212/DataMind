@@ -462,6 +462,7 @@
         columns: columnSignature(),
         items: items.value,
         locked: [...locked.value],
+        aiAvailable: aiAvailable.value,
       }))
     } catch (error) {
       console.warn('無法保存欄位對映草稿', error)
@@ -476,6 +477,7 @@
         columns?: string
         items?: MappingItem[]
         locked?: string[]
+        aiAvailable?: boolean
       }
       // 換了資料集就不能沿用舊草稿，裡面的欄位名已經對不上了
       if (saved.columns !== columnSignature()) {
@@ -485,6 +487,9 @@
       if (!Array.isArray(saved.items) || saved.items.length === 0) return false
       items.value = saved.items
       locked.value = new Set<string>(saved.locked)
+      // 沿用當初的可用狀態：寫死 true 的話，Gemini 掛掉時重整會讓離線提示消失、
+      // 輸入框又變成可打，送出才發現還是不通
+      aiAvailable.value = saved.aiAvailable ?? true
       return true
     } catch {
       localStorage.removeItem(draftKey.value)
@@ -754,10 +759,7 @@
       }
 
       // 有草稿就直接還原，不重跑配對：重跑會蓋掉使用者改過的東西，也會白花一次 Gemini
-      if (loadDraft()) {
-        aiAvailable.value = true
-        return
-      }
+      if (loadDraft()) return
 
       const { state, aiAvailable: available } = await initFieldMapping({
         paperVariables,
@@ -867,23 +869,6 @@
     border: 1px solid #e8e8e8;
     border-radius: 12px;
     background: #fff;
-  }
-
-  .mapping-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-  }
-
-  .mapping-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-ink);
-  }
-
-  .mapping-count {
-    font-size: 13px;
-    color: var(--color-secondary);
   }
 
   .mapping-loading {
@@ -1081,7 +1066,7 @@
     }
 
     .confirm-all-btn,
-    .confirm-row-btn {
+    .check-btn {
       transition: none;
     }
   }
