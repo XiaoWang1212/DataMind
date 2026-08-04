@@ -219,7 +219,7 @@
   } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
-  import { decodeFileText, parseCsvLine, parseCsvPreview } from '@/utils/csv'
+  import { readTablePreview, rewriteDatasetHeader } from '@/utils/dataset'
 
   const SKIP_VALUE = '__skip__'
 
@@ -632,7 +632,7 @@
   }
 
   /**
-   * 依對映改寫 CSV 表頭後交給 workflow。
+   * 依對映改寫表頭後交給 workflow。
    *
    * 只改名、不刪欄位：使用者沒對應到的欄位在 workflow 那邊還是可以選用，
    * 在這裡刪掉只會讓他失去選擇。
@@ -649,7 +649,6 @@
     }
 
     try {
-      await projectStore.saveColumnMapping(projectId.value, mapping)
       saveError.value = ''
 
       // 使用者欄位 → 論文變數（改寫表頭時要反查）
@@ -658,22 +657,18 @@
         renameByColumn.set(column, variable)
       }
 
-      const text = await decodeFileText(datasetFile.value)
-      const lines = text.replace(/\r\n/g, '\n').split('\n')
-      const headerIndex = lines.findIndex(line => line.trim().length > 0)
-      if (headerIndex >= 0) {
-        const header = parseCsvLine(lines[headerIndex]!)
-        lines[headerIndex] = header
-          .map(name => escapeCsvCell(renameByColumn.get(name) ?? name))
-          .join(',')
+      // 先改寫檔案再寫資料庫：反過來的話，檔案沒寫成功但對映已存檔，
+      // 下次點專案就會帶著沒改過表頭的資料集直接進 workflow，錯得無聲無息
+      const renamed = await rewriteDatasetHeader(datasetFile.value, renameByColumn)
+      await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
+
+      // IndexedDB 寫入失敗只會在 console 留紀錄、不會拋例外，只好回讀確認
+      const stored = await loadWorkflowDataFileFromStorage(String(projectId.value))
+      if (!stored || stored.size !== renamed.size) {
+        throw new Error('資料檔案沒有存進瀏覽器儲存空間')
       }
 
-      const renamed = new File(
-        [lines.join('\n')],
-        datasetFile.value.name,
-        { type: datasetFile.value.type || 'text/csv' },
-      )
-      await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
+      await projectStore.saveColumnMapping(projectId.value, mapping)
       projectStore.setActiveContext({
         projectId: projectId.value,
         datasetFile: renamed,
@@ -685,19 +680,13 @@
       clearDraft()
       router.push(`/workflow?project=${projectId.value}`)
     } catch (error) {
-      // saveColumnMapping 失敗時已經把本地狀態復原，但畫面上必須告訴使用者，
+      // 失敗時本地狀態都已復原，但畫面上必須告訴使用者，
       // 不然按鈕悄悄恢復可按，使用者只會覺得「怎麼沒反應」再按一次
       const detail = error instanceof Error ? error.message : ''
       saveError.value = detail ? `儲存失敗，請再試一次（${detail}）` : '儲存失敗，請再試一次'
     } finally {
       confirming.value = false
     }
-  }
-
-  /** 欄位名含逗號或引號時要包起來，否則改寫後的表頭會被拆錯欄。 */
-  function escapeCsvCell (value: string): string {
-    if (!/[",\n]/.test(value)) return value
-    return `"${value.replace(/"/g, '""')}"`
   }
 
   onMounted(() => window.addEventListener('keydown', onKeydown))
@@ -720,7 +709,7 @@
       }
       datasetFile.value = file
 
-      const preview = await parseCsvPreview(file, 5)
+      const preview = await readTablePreview(file, 5)
       if (preview.columns.length === 0) {
         loadError.value = '資料集沒有欄位，請確認檔案內容。'
         loading.value = false

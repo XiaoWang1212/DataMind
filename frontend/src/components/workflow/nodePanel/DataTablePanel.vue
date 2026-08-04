@@ -133,9 +133,9 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
-  import * as XLSX from 'xlsx'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import { decodeFileText, parseCsvLine } from '@/utils/csv'
+  import { getFileExtension, readExcelRows } from '@/utils/dataset'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
@@ -384,37 +384,16 @@
     { deep: true },
   )
 
-  function getFileExtension (file: File): string {
-    const name = file.name || ''
-    const dot = name.lastIndexOf('.')
-    return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()
-  }
-
   async function loadExcelFile (file: File): Promise<void> {
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const firstSheetName = workbook.SheetNames[0]
-    if (!firstSheetName) {
+    const rows = await readExcelRows(file)
+    if (rows.length === 0) {
       previewColumns.value = []
       previewDataRows.value = []
       return
     }
 
-    const sheet = workbook.Sheets[firstSheetName]!
-    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
-    const stringRows = rows.map(row =>
-      row.map(cell => (cell === null || cell === undefined ? '' : String(cell))),
-    )
-    const nonEmptyRows = stringRows.filter(row => row.some(cell => cell.trim().length > 0))
-
-    if (nonEmptyRows.length === 0) {
-      previewColumns.value = []
-      previewDataRows.value = []
-      return
-    }
-
-    previewColumns.value = nonEmptyRows[0]!
-    previewDataRows.value = nonEmptyRows.slice(1)
+    previewColumns.value = rows[0]!
+    previewDataRows.value = rows.slice(1)
   }
 
   async function loadCsvFile (file: File): Promise<void> {
