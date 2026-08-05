@@ -161,11 +161,17 @@
           <span>AI 助理</span>
         </div>
 
-        <div v-if="!aiAvailable" class="chat-offline">
+        <div v-if="loading" class="chat-offline">
+          AI 助理需等待欄位對應結果產生後才能使用。
+        </div>
+        <div v-else-if="!aiAvailable" class="chat-offline">
           AI 建議暫時無法使用，可用左側下拉選單手動對應。
         </div>
 
         <div ref="chatScroll" class="chat-body">
+          <div v-if="!loading && aiAvailable" class="chat-bubble chat-bubble--assistant chat-bubble--opener">
+            {{ CHAT_OPENER }}
+          </div>
           <div
             v-for="(message, i) in chatHistory"
             :key="i"
@@ -180,11 +186,15 @@
         </div>
 
         <form class="chat-input" @submit.prevent="sendMessage">
-          <input
+          <textarea
+            ref="chatFieldRef"
             v-model="chatDraft"
             class="chat-field"
             :disabled="!aiAvailable || chatPending"
             placeholder="例如：Braden 分數是 braden_total"
+            rows="1"
+            @input="autoGrowChatField"
+            @keydown="onChatFieldKeydown"
           />
           <button
             class="chat-send"
@@ -231,6 +241,10 @@
     SKIPPED: '不使用',
   }
 
+  // 開場白：不進 chatHistory，不存草稿
+  const CHAT_OPENER = '我可以協助調整左側的欄位對應，請直接以文字說明您的需求，'
+    + '例如「年齡對應到 pt_age」或「BMI 這一欄資料表中沒有」。'
+
   // 滑過標籤時顯示。用一般說法，避免「信心度」這類系統內部用語
   const STATUS_HINT: Record<string, string> = {
     CONFIRMED: '您已確認此對應正確。如需修改，請點選右側的復原按鈕。',
@@ -269,7 +283,26 @@
   const chatDraft = ref('')
   const chatPending = ref(false)
   const chatScroll = ref<HTMLElement | null>(null)
+  const chatFieldRef = ref<HTMLTextAreaElement | null>(null)
   const confirming = ref(false)
+
+  // 約 5 行，超過就內部捲動
+  const CHAT_FIELD_MAX_HEIGHT = 118
+
+  function autoGrowChatField (): void {
+    const el = chatFieldRef.value
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, CHAT_FIELD_MAX_HEIGHT)}px`
+    // 沒滿高度就不留 scrollbar，一行字的時候才不會看起來怪怪的
+    el.style.overflowY = el.scrollHeight > CHAT_FIELD_MAX_HEIGHT ? 'auto' : 'hidden'
+  }
+
+  function onChatFieldKeydown (event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
+    event.preventDefault()
+    void sendMessage()
+  }
 
   // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
   const MAX_UNDO = 50
@@ -315,13 +348,12 @@
     }
     const options = userColumns.value.map(column => ({
       value: column.name,
-      label: taken.has(column.name)
-        ? `${column.name}（已對應至 ${taken.get(column.name)}）`
-        : column.name,
+      label: column.name,
+      hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
     }))
     // target 一定要有對應欄位，不提供「沒有這個變數」的選項
     if (!isTarget(item)) {
-      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數' })
+      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined })
     }
     return options
   }
@@ -616,6 +648,10 @@
     if (!message || chatPending.value) return
 
     chatDraft.value = ''
+    if (chatFieldRef.value) {
+      chatFieldRef.value.style.height = 'auto'
+      chatFieldRef.value.style.overflowY = 'hidden'
+    }
     chatHistory.value.push({ role: 'user', content: message })
     chatPending.value = true
     await scrollChatToBottom()
@@ -1235,8 +1271,15 @@
     color: #94a3b8;
   }
 
+  .chat-bubble--opener {
+    align-self: flex-start;
+    background: var(--color-background);
+    color: var(--color-secondary);
+  }
+
   .chat-input {
     display: flex;
+    align-items: flex-end;
     gap: 8px;
     padding: 12px 14px;
     border-top: 1px solid #e8e8e8;
@@ -1245,10 +1288,15 @@
   .chat-field {
     flex: 1;
     min-width: 0;
+    max-height: 118px;
     padding: 8px 10px;
     border: 1px solid #cbd5e1;
     border-radius: 7px;
     font-size: 13px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: none;
+    overflow-y: hidden;
   }
 
   .chat-field:disabled {
@@ -1256,6 +1304,7 @@
   }
 
   .chat-send {
+    flex-shrink: 0;
     padding: 0 16px;
     height: 36px;
     border: none;

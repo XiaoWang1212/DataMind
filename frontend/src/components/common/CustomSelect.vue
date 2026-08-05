@@ -50,7 +50,8 @@
           @mouseenter="activeIndex = i"
           @click="selectOption(opt)"
         >
-          {{ opt.label }}
+          <span class="cs-option-label">{{ opt.label }}</span>
+          <span v-if="opt.hint" class="cs-option-hint">{{ opt.hint }}</span>
         </li>
       </ul>
       </Transition>
@@ -61,7 +62,7 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-  interface Option { value: string, label: string, disabled?: boolean }
+  interface Option { value: string, label: string, hint?: string, disabled?: boolean }
 
   const props = defineProps<{
     modelValue: string
@@ -103,11 +104,15 @@
       close()
       return
     }
+    // 不小於按鈕寬度，但不超出視窗右緣
+    const maxWidth = Math.max(r.width, Math.min(360, window.innerWidth - r.left - 16))
     popupStyle.value = {
       position: 'fixed',
       top: `${r.bottom + 4}px`,
       left: `${r.left}px`,
-      width: `${r.width}px`,
+      minWidth: `${r.width}px`,
+      maxWidth: `${maxWidth}px`,
+      width: 'max-content',
     }
   }
 
@@ -371,11 +376,25 @@
   }
 
   .cs-option {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
     padding: 7px 10px;
     border-radius: 6px;
     font-size: 13px;
     color: var(--color-ink);
     cursor: pointer;
+  }
+
+  .cs-option-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cs-option-hint {
+    font-size: 11px;
+    color: #94a3b8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
