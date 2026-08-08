@@ -130,7 +130,7 @@ def google_login():
 
     email = payload.get("email")
     google_sub = payload.get("sub")
-    if not email or not google_sub:
+    if not email or not google_sub or not payload.get("email_verified"):
         return jsonify({"success": False, "error": "Google 登入驗證失敗"}), 401
 
     user = User.query.filter_by(email=email).first()
@@ -175,7 +175,12 @@ def forgot_password():
 
         frontend_origin = os.getenv("CORS_ORIGIN", "http://localhost:5173")
         reset_link = f"{frontend_origin}/reset-password?token={token}"
-        send_reset_password_email(user.email, reset_link)
+        try:
+            send_reset_password_email(user.email, reset_link)
+        except Exception:
+            # Must not let a send failure change the response — that would leak
+            # whether this email is registered, defeating the anti-enumeration design.
+            logger.exception("寄送重設密碼信失敗: user_id=%s", user.id)
 
     return jsonify(generic_result)
 

@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/store/authStore";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+// Reachable even with an active session — e.g. a reset-password email link opened
+// in a browser tab where the user is still logged in from before.
+const ALWAYS_ACCESSIBLE_PATHS = ["/reset-password"];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -123,7 +126,7 @@ router.beforeEach(async to => {
     return "/login";
   }
 
-  if (isPublicPath && authStore.isAuthenticated) {
+  if (isPublicPath && authStore.isAuthenticated && !ALWAYS_ACCESSIBLE_PATHS.includes(to.path)) {
     return "/hub/dashboard";
   }
 });

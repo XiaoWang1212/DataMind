@@ -12,6 +12,7 @@
 執行後會清除腳本建立的測試帳號，不會在資料庫留下垃圾資料。
 """
 
+import datetime
 import os
 import sys
 from urllib.parse import parse_qs, urlparse
@@ -52,7 +53,12 @@ def cleanup(app):
 
 
 def test_google_login_creates_new_user(app, client):
-    fake_payload = {"email": GOOGLE_NEW_USER_EMAIL, "sub": "google-sub-new-user", "name": "Google Test"}
+    fake_payload = {
+        "email": GOOGLE_NEW_USER_EMAIL,
+        "sub": "google-sub-new-user",
+        "name": "Google Test",
+        "email_verified": True,
+    }
     with patch("routes.auth.verify_google_id_token", return_value=fake_payload):
         response = client.post("/api/auth/google", json={"idToken": "fake-token"})
 
@@ -76,7 +82,12 @@ def test_google_login_links_existing_password_account(app, client):
     )
     assert register_response.get_json()["success"] is True
 
-    fake_payload = {"email": PASSWORD_USER_EMAIL, "sub": "google-sub-linked", "name": "Reset Test"}
+    fake_payload = {
+        "email": PASSWORD_USER_EMAIL,
+        "sub": "google-sub-linked",
+        "name": "Reset Test",
+        "email_verified": True,
+    }
     with patch("routes.auth.verify_google_id_token", return_value=fake_payload):
         response = client.post("/api/auth/google", json={"idToken": "fake-token"})
 
@@ -134,6 +145,33 @@ def test_used_token_is_rejected(client, used_token):
     print("[PASS] 已使用過的重設 token 再次使用會被拒絕")
 
 
+def test_expired_token_is_rejected(app, client):
+    captured_links = {}
+
+    def fake_send(to, reset_link):
+        captured_links[to] = reset_link
+
+    with patch("routes.auth.send_reset_password_email", side_effect=fake_send):
+        response = client.post("/api/auth/forgot-password", json={"email": PASSWORD_USER_EMAIL})
+
+    assert response.status_code == 200
+    assert response.get_json()["success"] is True
+    assert PASSWORD_USER_EMAIL in captured_links, "忘記密碼應該要寄出（印出）重設連結"
+
+    reset_link = captured_links[PASSWORD_USER_EMAIL]
+    token = parse_qs(urlparse(reset_link).query)["token"][0]
+
+    with app.app_context():
+        user = User.query.filter_by(email=PASSWORD_USER_EMAIL).first()
+        user.reset_token_expires_at = datetime.datetime.utcnow() - datetime.timedelta(minutes=1)
+        db.session.commit()
+
+    response = client.post("/api/auth/reset-password", json={"token": token, "password": "ExpiredFlow789"})
+    assert response.status_code == 400
+    assert response.get_json()["success"] is False
+    print("[PASS] 過期但未使用過的重設 token 會被拒絕")
+
+
 def main():
     app = create_app()
     app.config["TESTING"] = True
@@ -145,6 +183,7 @@ def main():
         test_google_login_links_existing_password_account(app, client)
         used_token = test_forgot_and_reset_password_flow(app, client)
         test_used_token_is_rejected(client, used_token)
+        test_expired_token_is_rejected(app, client)
         print("\n全部通過")
     finally:
         cleanup(app)
