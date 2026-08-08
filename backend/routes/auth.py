@@ -1,7 +1,10 @@
 """使用者註冊/登入/登出 API"""
 
+import datetime
+import hashlib
 import logging
 import os
+import secrets
 
 import bcrypt
 from flask import Blueprint, jsonify, request
@@ -12,10 +15,13 @@ from google.oauth2 import id_token as google_id_token
 
 from extensions import db
 from models.user import User
+from services.email_sender import send_reset_password_email
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
+
+RESET_TOKEN_TTL = datetime.timedelta(hours=1)
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -142,3 +148,59 @@ def google_login():
     db.session.commit()
     login_user(user)
     return jsonify({"success": True, "result": {"id": user.id, "email": user.email}})
+
+
+def _hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    email = data.get("email")
+    if not email:
+        return jsonify({"success": False, "error": "email 為必填欄位"}), 400
+
+    generic_result = {"success": True, "result": {"message": "若此 email 已註冊，重設密碼信已寄出"}}
+
+    user = User.query.filter_by(email=email).first()
+    if user is not None and user.password_hash is not None:
+        token = secrets.token_urlsafe(32)
+        user.reset_token_hash = _hash_reset_token(token)
+        user.reset_token_expires_at = datetime.datetime.utcnow() + RESET_TOKEN_TTL
+        db.session.commit()
+
+        frontend_origin = os.getenv("CORS_ORIGIN", "http://localhost:5173")
+        reset_link = f"{frontend_origin}/reset-password?token={token}"
+        send_reset_password_email(user.email, reset_link)
+
+    return jsonify(generic_result)
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    token = data.get("token")
+    password = data.get("password")
+    if not token or not password:
+        return jsonify({"success": False, "error": "token 和 password 為必填欄位"}), 400
+
+    if len(password.encode("utf-8")) > 72:
+        return jsonify({"success": False, "error": "password 過長（bcrypt 上限為 72 bytes）"}), 400
+
+    user = User.query.filter_by(reset_token_hash=_hash_reset_token(token)).first()
+    now = datetime.datetime.utcnow()
+    if user is None or user.reset_token_expires_at is None or user.reset_token_expires_at < now:
+        return jsonify({"success": False, "error": "重設連結已失效，請重新申請"}), 400
+
+    user.password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    user.reset_token_hash = None
+    user.reset_token_expires_at = None
+    db.session.commit()
+    return jsonify({"success": True})

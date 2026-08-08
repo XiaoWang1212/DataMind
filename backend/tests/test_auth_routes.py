@@ -48,3 +48,25 @@ class TestGoogleLoginRoute:
         response = client.post("/api/auth/google", json={"idToken": "bad-issuer-token"})
         assert response.status_code == 401
         assert response.get_json()["success"] is False
+
+
+class TestForgotPasswordRoute:
+    def test_missing_email_returns_400(self, client):
+        response = client.post("/api/auth/forgot-password", json={"foo": "bar"})
+        assert response.status_code == 400
+        assert response.get_json()["success"] is False
+
+
+class TestResetPasswordRoute:
+    def test_missing_fields_returns_400(self, client):
+        response = client.post("/api/auth/reset-password", json={"foo": "bar"})
+        assert response.status_code == 400
+        assert response.get_json()["success"] is False
+
+    def test_password_too_long_returns_400(self, client):
+        response = client.post(
+            "/api/auth/reset-password",
+            json={"token": "sometoken", "password": "a" * 100},
+        )
+        assert response.status_code == 400
+        assert response.get_json()["success"] is False
