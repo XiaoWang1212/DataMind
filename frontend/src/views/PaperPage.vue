@@ -14,13 +14,15 @@
         <h2 class="paper-title">{{ report.title }}</h2>
         <v-btn
           class="score-btn"
-          :loading="scoring"
-          prepend-icon="mdi-school-outline"
+          :disabled="scoring"
           size="small"
           variant="tonal"
           @click="handleScorePaper"
         >
-          期刊評分
+          <template #prepend>
+            <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
+          </template>
+          {{ scoreButtonLabel }}
         </v-btn>
       </header>
 
@@ -41,12 +43,18 @@
           />
         </article>
 
-        <CitationPanel
-          :active-citation-id="activeCitationId"
-          :citations="report.citations"
-          class="paper-citations"
-          @select="onPanelSelect"
-        />
+        <div class="paper-citations">
+          <JournalScorePanel
+            :journal-scores="journalScores"
+            :scoring="scoring"
+            @open-report="scoreDialogVisible = true"
+          />
+          <CitationPanel
+            :active-citation-id="activeCitationId"
+            :citations="report.citations"
+            @select="onPanelSelect"
+          />
+        </div>
       </div>
     </main>
 
@@ -60,12 +68,13 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { type JournalScore, scorePaper } from '@/api/arxiv'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPanel from '@/components/paper/CitationPanel.vue'
   import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
+  import JournalScorePanel from '@/components/paper/JournalScorePanel.vue'
   import PaperSection from '@/components/paper/PaperSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
@@ -88,6 +97,11 @@
   const scoreDialogVisible = ref(false)
   const journalScores = ref<JournalScore[]>([])
   const failedJournals = ref<string[]>([])
+
+  const scoreButtonLabel = computed(() => {
+    if (scoring.value) return '評分中...'
+    return journalScores.value.length > 0 ? '再次評分' : '期刊評分'
+  })
 
   onMounted(() => {
     document.title = 'DataMind'
@@ -217,6 +231,9 @@
     align-self: flex-start;
     max-height: calc(100vh - 150px);
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   @media (max-width: 1100px) {
