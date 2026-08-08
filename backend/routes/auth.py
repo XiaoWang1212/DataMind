@@ -1,10 +1,13 @@
 """使用者註冊/登入/登出 API"""
 
 import logging
+import os
 
 import bcrypt
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 
 from extensions import db
 from models.user import User
@@ -89,3 +92,51 @@ def me():
             },
         }
     )
+
+
+def verify_google_id_token(token: str) -> dict:
+    """驗證 Google ID token 的簽章與 audience，回傳解碼後的 payload。
+
+    Token 無效（過期、簽章錯誤、aud 不符）時，底層函式會拋出 ValueError。
+    """
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    if not client_id:
+        raise ValueError("GOOGLE_CLIENT_ID 未設定")
+    return google_id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+
+
+@auth_bp.route("/google", methods=["POST"])
+def google_login():
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    id_token_value = data.get("idToken")
+    if not id_token_value:
+        return jsonify({"success": False, "error": "idToken 為必填欄位"}), 400
+
+    try:
+        payload = verify_google_id_token(id_token_value)
+    except ValueError:
+        return jsonify({"success": False, "error": "Google 登入驗證失敗"}), 401
+
+    email = payload.get("email")
+    google_sub = payload.get("sub")
+    if not email or not google_sub:
+        return jsonify({"success": False, "error": "Google 登入驗證失敗"}), 401
+
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        user = User(
+            email=email,
+            password_hash=None,
+            display_name=payload.get("name", ""),
+            google_id=google_sub,
+        )
+        db.session.add(user)
+    elif not user.google_id:
+        user.google_id = google_sub
+
+    db.session.commit()
+    login_user(user)
+    return jsonify({"success": True, "result": {"id": user.id, "email": user.email}})
