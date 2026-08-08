@@ -161,13 +161,10 @@
     --line-soft: #e8ebf1;
     --text-main: var(--color-ink);
     --text-secondary: var(--color-secondary);
-    min-height: calc(100vh - 64px);
+    min-height: 100vh;
     display: flex;
-    padding: 16px;
-    background:
-      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-accent) 16%, transparent) 0%, transparent 30%),
-      var(--page-bg);
+    padding: 0;
+    background: var(--page-bg);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
   }
@@ -177,9 +174,9 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--line);
-    border-radius: 0 12px 12px 0;
-    background: var(--card-bg);
+    background:
+      radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
+      var(--page-bg);
     padding: 12px 20px 24px;
     overflow: auto;
   }
