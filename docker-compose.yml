@@ -8,6 +8,8 @@ services:
       - ./backend/.env
     ports:
       - "5002:5001"
+    depends_on:
+      - postgres
     environment:
       FLASK_HOST: 0.0.0.0
       FLASK_PORT: 5001
@@ -17,6 +19,7 @@ services:
       WHISPER_MODEL: base
       UPLOAD_DIR: uploads
       MAX_CONTENT_LENGTH_MB: 100
+      DATABASE_URL: postgresql://datamind:datamind@postgres:5432/datamind
     volumes:
       - ./backend:/app
       - backend_venv:/app/.venv
@@ -60,7 +63,7 @@ services:
       POSTGRES_PASSWORD: datamind
       POSTGRES_DB: datamind
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped

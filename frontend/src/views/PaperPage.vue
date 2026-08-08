@@ -14,6 +14,30 @@
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
+          <v-select
+            v-model="report.citationStyle"
+            class="citation-style-select"
+            density="compact"
+            :disabled="loading || mode === 'edit'"
+            hide-details
+            :items="citationStyleItems"
+            variant="outlined"
+            @update:model-value="onCitationStyleChange"
+          />
+          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
+          <div v-if="mode === 'edit'" class="edit-actions">
+            <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
+            <v-btn
+              class="bg-accent"
+              color="accent"
+              :disabled="!projectId"
+              :loading="saving"
+              size="small"
+              @click="save"
+            >
+              儲存
+            </v-btn>
+          </div>
           <v-btn
             class="score-btn"
             :class="{ 'score-btn--loading': scoring }"
@@ -27,30 +51,6 @@
             </template>
             {{ scoreButtonLabel }}
           </v-btn>
-          <v-select
-            v-model="report.citationStyle"
-            class="citation-style-select"
-            density="compact"
-            :disabled="loading || mode === 'edit'"
-            hide-details
-            :items="citationStyleItems"
-            variant="outlined"
-            @update:model-value="onCitationStyleChange"
-          />
-          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
-          <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
-            <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
-            <v-btn
-              class="bg-accent"
-              color="accent"
-              :disabled="!projectId"
-              :loading="saving"
-              size="small"
-              @click="save"
-            >
-              儲存
-            </v-btn>
-          </div>
         </div>
       </header>
 
@@ -299,6 +299,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
+    max-width: 1064px;
+    margin: 0 auto;
     padding: 0 2px 10px;
     border-bottom: 1px solid var(--line-soft);
   }
@@ -364,11 +367,6 @@
     gap: 6px;
   }
 
-  .edit-actions--hidden {
-    visibility: hidden;
-    pointer-events: none;
-  }
-
   .save-hint {
     margin: 8px 2px 0;
     font-size: 12px;
@@ -391,15 +389,16 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    margin-top: 14px;
+    width: 100%;
+    max-width: 1064px;
+    gap: 24px;
+    margin: 14px auto 0;
     overflow: auto;
   }
 
   .paper-sheet {
     flex: 1;
     min-width: 0;
-    max-width: 760px;
-    margin: 0 auto;
     background: var(--card-bg);
     border: 1px solid var(--line);
     border-radius: 12px;
