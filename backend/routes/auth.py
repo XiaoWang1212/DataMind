@@ -6,6 +6,7 @@ import os
 import bcrypt
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
+from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
 
@@ -97,7 +98,8 @@ def me():
 def verify_google_id_token(token: str) -> dict:
     """驗證 Google ID token 的簽章與 audience，回傳解碼後的 payload。
 
-    Token 無效（過期、簽章錯誤、aud 不符）時，底層函式會拋出 ValueError。
+    Token 無效時，底層函式可能拋出 ValueError（過期、簽章錯誤、aud 不符）
+    或 google.auth.exceptions.GoogleAuthError（issuer 不符，非 ValueError 子類別）。
     """
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     if not client_id:
@@ -117,7 +119,7 @@ def google_login():
 
     try:
         payload = verify_google_id_token(id_token_value)
-    except ValueError:
+    except (ValueError, google_auth_exceptions.GoogleAuthError):
         return jsonify({"success": False, "error": "Google 登入驗證失敗"}), 401
 
     email = payload.get("email")

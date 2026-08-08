@@ -35,3 +35,16 @@ class TestGoogleLoginRoute:
         response = client.post("/api/auth/google", json={"idToken": "bad-token"})
         assert response.status_code == 401
         assert response.get_json()["success"] is False
+
+    def test_wrong_issuer_google_auth_error_returns_401(self, client, monkeypatch):
+        """google.oauth2.id_token.verify_oauth2_token 在 issuer 不符時拋出的是
+        google.auth.exceptions.GoogleAuthError，並非 ValueError 子類別，
+        必須確認路由也能把它轉成 401 而非未攔截的 500。"""
+
+        def fake_verify(token):
+            raise auth_route.google_auth_exceptions.GoogleAuthError("Wrong issuer.")
+
+        monkeypatch.setattr(auth_route, "verify_google_id_token", fake_verify)
+        response = client.post("/api/auth/google", json={"idToken": "bad-issuer-token"})
+        assert response.status_code == 401
+        assert response.get_json()["success"] is False
