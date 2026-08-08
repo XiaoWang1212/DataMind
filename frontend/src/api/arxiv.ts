@@ -101,6 +101,7 @@ export interface JournalScore {
   journal: string
   journalFullName: string
   overallScore: number
+  overallComment: string
   criteria: CriterionScore[]
   suggestions: string[]
 }
@@ -131,6 +132,7 @@ export async function scorePaper (paperText: string): Promise<ScorePaperResult> 
       journal: String(js.journal ?? ''),
       journalFullName: String(js.journal_full_name ?? ''),
       overallScore: Number(js.overall_score ?? 0),
+      overallComment: String(js.overall_comment ?? ''),
       criteria: Array.isArray(js.criteria)
         ? (js.criteria as Record<string, unknown>[]).map(c => ({
             name: String(c.name ?? ''),
