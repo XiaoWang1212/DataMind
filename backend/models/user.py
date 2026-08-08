@@ -14,6 +14,9 @@ class User(UserMixin, db.Model):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    reset_token_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reset_token_expires_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow, nullable=False
