@@ -44,8 +44,10 @@
         </button>
       </form>
 
-      <div class="auth-divider"><span>或</span></div>
-      <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
+      <template v-if="hasGoogleClientId">
+        <div class="auth-divider"><span>或</span></div>
+        <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
+      </template>
 
       <p class="auth-switch">
         已經有帳號？<RouterLink to="/login">登入</RouterLink>
@@ -59,6 +61,8 @@
   import { RouterLink, useRouter } from 'vue-router'
   import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
   import { useAuthStore } from '@/store/authStore'
+
+  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
   const router = useRouter()
   const authStore = useAuthStore()

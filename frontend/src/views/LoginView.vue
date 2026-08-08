@@ -37,8 +37,10 @@
         </button>
       </form>
 
-      <div class="auth-divider"><span>或</span></div>
-      <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
+      <template v-if="hasGoogleClientId">
+        <div class="auth-divider"><span>或</span></div>
+        <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
+      </template>
 
       <button class="auth-dev-btn" type="button" @click="fillAdminCredentials">
         使用管理員帳號（開發用）
@@ -59,6 +61,8 @@
 
   const DEV_ADMIN_EMAIL = 'admin@datamind.local'
   const DEV_ADMIN_PASSWORD = 'changeme-locally'
+
+  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
   const router = useRouter()
   const authStore = useAuthStore()

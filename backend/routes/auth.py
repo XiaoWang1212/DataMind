@@ -12,6 +12,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
+from sqlalchemy.exc import IntegrityError
 
 from extensions import db
 from models.user import User
@@ -133,7 +134,10 @@ def google_login():
     if not email or not google_sub or not payload.get("email_verified"):
         return jsonify({"success": False, "error": "Google 登入驗證失敗"}), 401
 
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter_by(google_id=google_sub).first()
+    if user is None:
+        user = User.query.filter_by(email=email).first()
+
     if user is None:
         user = User(
             email=email,
@@ -145,7 +149,12 @@ def google_login():
     elif not user.google_id:
         user.google_id = google_sub
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"success": False, "error": "此 Google 帳號或 email 已被使用"}), 409
+
     login_user(user)
     return jsonify({"success": True, "result": {"id": user.id, "email": user.email}})
 
