@@ -460,7 +460,7 @@ def score_paper():
         - paper_text : 論文全文純文字（必填）
 
     回傳：
-        - journal_scores  : 各期刊評分結果（journal/journal_full_name/overall_score/criteria/suggestions）
+        - journal_scores  : 各期刊評分結果（journal/journal_full_name/overall_score/overall_comment/criteria/suggestions）
         - failed_journals : 評分失敗的期刊名稱清單
         - usage           : Gemini token 用量
     """

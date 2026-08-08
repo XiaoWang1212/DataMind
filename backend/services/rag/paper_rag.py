@@ -422,6 +422,7 @@ class PaperRAGService:
                     "journal": rubric["name"],
                     "journal_full_name": rubric["full_name"],
                     "overall_score": int(parsed["overall_score"]),
+                    "overall_comment": str(parsed["overall_comment"]),
                     "criteria": [
                         {
                             "name": str(c["name"]),
@@ -626,6 +627,9 @@ class PaperRAGService:
         if not isinstance(parsed.get("overall_score"), (int, float)):
             raise ValueError(f"overall_score 缺漏或非數字：{parsed.get('overall_score')!r}")
 
+        if not isinstance(parsed.get("overall_comment"), str) or not parsed["overall_comment"].strip():
+            raise ValueError(f"overall_comment 缺漏或非文字：{parsed.get('overall_comment')!r}")
+
         criteria = parsed.get("criteria")
         if not isinstance(criteria, list) or len(criteria) != len(_SCORE_CRITERIA):
             raise ValueError(
@@ -696,12 +700,14 @@ class PaperRAGService:
             f"你是《{rubric['full_name']}》（{rubric['name']}）的資深審稿人。"
             f"該期刊特別重視：{rubric['emphasis']}。\n\n"
             "請依照以下 6 項準則評估這篇論文，每項給 0 到 100 分並附上簡短的中文理由，"
-            "最後再給一個 0 到 100 的總分，以及 2 到 5 條具體的修改建議。\n\n"
+            "最後再給一個 0 到 100 的總分、一句總評，以及 2 到 5 條具體的修改建議。\n\n"
             f"【評分準則】\n{criteria_list}\n\n"
             f"【論文全文】\n{paper_text}\n\n"
             "請「只」輸出以下形狀的 JSON，不要有其他文字或 Markdown 圍欄：\n"
             "{\n"
             '  "overall_score": <0-100 整數>,\n'
+            '  "overall_comment": "<一句話總評，20 到 40 字繁體中文，'
+            "須具體點出本文相對於本期刊發表門檻的主要優勢與待加強之處，不可只是空泛的鼓勵語句>,\n"
             '  "criteria": [\n'
             '    {"name": "<準則名稱，須完全比照上面清單>", "score": <0-100 整數>, "comment": "<中文理由>"},\n'
             "    ...\n"
