@@ -13,7 +13,7 @@
 
     <div v-else class="score-panel-summary">
       <div class="score-panel-summary__head">
-        <ScoreRing :font-size="15" :score="averageScore" :size="40" :stroke-width="4" />
+        <ScoreRing :score="averageScore" :size="40" :stroke-width="4" />
         <span class="score-panel-summary__avg-label">avg</span>
       </div>
 
@@ -68,7 +68,7 @@
 
 <style scoped>
   .score-panel {
-    margin-bottom: 12px;
+    margin-bottom: 0;
   }
 
   .score-panel-empty {

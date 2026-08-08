@@ -14,9 +14,10 @@
         <h2 class="paper-title">{{ report.title }}</h2>
         <v-btn
           class="score-btn"
+          :class="{ 'score-btn--loading': scoring }"
           :disabled="scoring"
           size="small"
-          variant="tonal"
+          variant="flat"
           @click="handleScorePaper"
         >
           <template #prepend>
@@ -191,6 +192,23 @@
 
   .score-btn {
     margin-left: auto;
+    background: #6f5613 !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  .score-btn :deep(.v-icon) {
+    color: #ffffff;
+  }
+
+  .score-btn.score-btn--loading {
+    background: #fffbe8 !important;
+    color: #8a6d1a !important;
+    border: 1px solid #c9ad2a;
+  }
+
+  .score-btn.score-btn--loading :deep(.v-icon) {
+    color: #8a6d1a;
   }
 
   .score-error {

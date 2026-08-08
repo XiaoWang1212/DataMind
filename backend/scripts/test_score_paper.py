@@ -65,8 +65,8 @@ def main():
     for js in result["journal_scores"]:
         print(f"\n▶ {js['journal']}（總分 {js['overall_score']}）")
         assert 0 <= js["overall_score"] <= 100
-        assert js["overall_comment"].strip(), "overall_comment 不可為空字串"
-        print(f"    總評：{js['overall_comment']}")
+        assert isinstance(js["overall_comment"], str), "overall_comment 應為字串"
+        print(f"    總評：{js['overall_comment'] or '(未提供)'}")
         assert len(js["criteria"]) == 6, f"應有 6 項準則：{js['criteria']}"
         for c in js["criteria"]:
             assert 0 <= c["score"] <= 100

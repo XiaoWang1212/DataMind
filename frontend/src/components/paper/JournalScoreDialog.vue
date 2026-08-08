@@ -40,7 +40,9 @@
 
           <div class="journal-score-overview__text">
             <p class="journal-score-overview__name">{{ activeJournal.journalFullName }}</p>
-            <p class="journal-score-overview__comment">{{ activeJournal.overallComment }}</p>
+            <p v-if="activeJournal.overallComment" class="journal-score-overview__comment">
+              {{ activeJournal.overallComment }}
+            </p>
 
             <div class="journal-score-overview__minis">
               <ScoreRing
