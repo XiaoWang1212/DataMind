@@ -30,7 +30,7 @@ class Project(db.Model):
     accuracy: Mapped[str | None] = mapped_column(String(50), nullable=True)
     key_finding: Mapped[str | None] = mapped_column(Text, nullable=True)
     variables: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    # { 論文變數名: 使用者欄位名 }，由欄位對齊頁寫入
+    # { 論文變數名: { column: 使用者欄位名, type: 變數型別 } }，由欄位對齊頁寫入
     column_mapping: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow, nullable=False
