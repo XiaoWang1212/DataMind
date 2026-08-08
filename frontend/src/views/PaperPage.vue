@@ -12,36 +12,69 @@
           @click="router.back()"
         />
         <h2 class="paper-title">{{ report.title }}</h2>
-        <v-btn
-          class="score-btn"
-          :class="{ 'score-btn--loading': scoring }"
-          :disabled="scoring"
-          size="small"
-          variant="flat"
-          @click="handleScorePaper"
-        >
-          <template #prepend>
-            <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
-          </template>
-          {{ scoreButtonLabel }}
-        </v-btn>
+
+        <div class="toolbar-actions">
+          <v-btn
+            class="score-btn"
+            :class="{ 'score-btn--loading': scoring }"
+            :disabled="scoring"
+            size="small"
+            variant="flat"
+            @click="handleScorePaper"
+          >
+            <template #prepend>
+              <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
+            </template>
+            {{ scoreButtonLabel }}
+          </v-btn>
+          <v-select
+            v-model="report.citationStyle"
+            class="citation-style-select"
+            density="compact"
+            :disabled="loading || mode === 'edit'"
+            hide-details
+            :items="citationStyleItems"
+            variant="outlined"
+            @update:model-value="onCitationStyleChange"
+          />
+          <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
+          <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
+            <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
+            <v-btn
+              class="bg-accent"
+              color="accent"
+              :disabled="!projectId"
+              :loading="saving"
+              size="small"
+              @click="save"
+            >
+              儲存
+            </v-btn>
+          </div>
+        </div>
       </header>
 
       <p v-if="scoreError" class="score-error">
         {{ scoreError }}
         <v-btn size="small" variant="text" @click="handleScorePaper">重試</v-btn>
       </p>
+      <p v-if="mode === 'edit' && !projectId" class="save-hint">
+        此論文尚未關聯專案,無法儲存
+      </p>
+      <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
-      <div class="paper-body">
-        <article ref="sheetRef" class="paper-sheet">
-          <PaperSection
-            v-for="section in report.sections"
-            :key="section.heading"
-            :active-citation-id="activeCitationId"
-            :citation-index="citationIndex"
-            :section="section"
+      <p v-if="loading" class="loading-hint">載入中...</p>
+
+      <div v-else class="paper-body">
+        <article class="paper-sheet">
+          <PaperEditor
+            v-model="report.content"
+            :citations="report.citations"
+            :editable="mode === 'edit'"
+            :project-id="projectId"
             @citation-click="onCitationClick"
           />
+          <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" />
         </article>
 
         <div class="paper-citations">
@@ -50,13 +83,15 @@
             :scoring="scoring"
             @open-report="scoreDialogVisible = true"
           />
-          <CitationPanel
-            :active-citation-id="activeCitationId"
-            :citations="report.citations"
-            @select="onPanelSelect"
-          />
         </div>
       </div>
+
+      <CitationPopover
+        :citation="popoverCitation"
+        :index="popoverIndex"
+        :target="popoverTarget"
+        @close="activeCitationId = null"
+      />
     </main>
 
     <JournalScoreDialog
@@ -69,29 +104,45 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import type { PaperReport } from '@/constants/reportData'
+  import { computed, onMounted, ref, toRaw } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { type JournalScore, scorePaper } from '@/api/arxiv'
+  import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
-  import CitationPanel from '@/components/paper/CitationPanel.vue'
+  import CitationPopover from '@/components/paper/CitationPopover.vue'
   import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
   import JournalScorePanel from '@/components/paper/JournalScorePanel.vue'
-  import PaperSection from '@/components/paper/PaperSection.vue'
+  import ModeSwitch from '@/components/paper/ModeSwitch.vue'
+  import PaperEditor from '@/components/paper/PaperEditor.vue'
+  import ReferencesSection from '@/components/paper/ReferencesSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
+  import { citationStyleLabels } from '@/utils/paper/formatCitation'
   import { buildPaperText } from '@/utils/paperTransform'
 
+  const route = useRoute()
   const router = useRouter()
   const paperStore = usePaperStore()
-  const report = paperStore.generatedReport ?? mockPaperReport
-  paperStore.clearGeneratedReport()
 
-  const citationIndex = Object.fromEntries(
-    report.citations.map((citation, index) => [citation.id, index + 1]),
+  const projectId = computed(() => route.query.project as string | undefined)
+
+  const report = ref<PaperReport>(mockPaperReport)
+  const loading = ref(true)
+  const mode = ref<'view' | 'edit'>('view')
+  const saving = ref(false)
+  const saveError = ref<string | null>(null)
+  const activeCitationId = ref<string | null>(null)
+  const popoverTarget = ref<HTMLElement | null>(null)
+
+  const popoverCitation = computed(() =>
+    report.value.citations.find(c => c.id === activeCitationId.value) ?? null,
+  )
+  const popoverIndex = computed(() =>
+    report.value.citations.findIndex(c => c.id === activeCitationId.value) + 1,
   )
 
-  const activeCitationId = ref<string | null>(null)
-  const sheetRef = ref<HTMLElement | null>(null)
+  let savedSnapshot: PaperReport = mockPaperReport
 
   const scoring = ref(false)
   const scoreError = ref<string | null>(null)
@@ -104,26 +155,104 @@
     return journalScores.value.length > 0 ? '再次評分' : '期刊評分'
   })
 
-  onMounted(() => {
-    document.title = 'DataMind'
+  const citationIndex = computed(() => {
+    const index: Record<string, number> = {}
+    for (const [i, citation] of report.value.citations.entries()) {
+      index[citation.id] = i + 1
+    }
+    return index
   })
 
-  function onCitationClick (citationId: string) {
+  onMounted(async () => {
+    document.title = 'DataMind'
+
+    if (paperStore.generatedReport) {
+      report.value = paperStore.generatedReport
+      paperStore.clearGeneratedReport()
+    } else if (projectId.value) {
+      try {
+        const saved = await getReport(projectId.value)
+        if (saved) {
+          report.value = {
+            title: saved.title,
+            content: saved.content,
+            citations: saved.citations,
+            citationStyle: saved.citationStyle ?? 'apa',
+          }
+        }
+      } catch (error) {
+        saveError.value = error instanceof Error ? error.message : String(error)
+      }
+    }
+
+    savedSnapshot = structuredClone(toRaw(report.value))
+    loading.value = false
+  })
+
+  function onCitationClick ({ citationId, target }: { citationId: string, target: HTMLElement }) {
+    if (activeCitationId.value === citationId) {
+      activeCitationId.value = null
+      return
+    }
     activeCitationId.value = citationId
+    popoverTarget.value = target
   }
 
-  function onPanelSelect (citationId: string) {
-    activeCitationId.value = citationId
-    sheetRef.value
-      ?.querySelector(`[data-citation-id~="${CSS.escape(citationId)}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const citationStyleItems = Object.entries(citationStyleLabels).map(([value, title]) => ({ value, title }))
+
+  function cancelEdit () {
+    report.value = structuredClone(savedSnapshot)
+    mode.value = 'view'
+  }
+
+  async function onCitationStyleChange () {
+    if (!projectId.value) return
+    const previousStyle = savedSnapshot.citationStyle
+    try {
+      await saveReport(projectId.value, {
+        title: report.value.title,
+        content: report.value.content,
+        citations: report.value.citations,
+        citationStyle: report.value.citationStyle,
+      })
+      savedSnapshot = structuredClone(toRaw(report.value))
+    } catch (error) {
+      saveError.value = error instanceof Error ? error.message : String(error)
+      report.value.citationStyle = previousStyle
+    }
+  }
+
+  async function save () {
+    if (!projectId.value) return
+    saving.value = true
+    saveError.value = null
+    try {
+      const result = await saveReport(projectId.value, {
+        title: report.value.title,
+        content: report.value.content,
+        citations: report.value.citations,
+        citationStyle: report.value.citationStyle,
+      })
+      report.value = {
+        title: result.title,
+        content: result.content,
+        citations: result.citations,
+        citationStyle: result.citationStyle,
+      }
+      savedSnapshot = structuredClone(toRaw(report.value))
+      mode.value = 'view'
+    } catch (error) {
+      saveError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      saving.value = false
+    }
   }
 
   async function handleScorePaper (): Promise<void> {
     scoring.value = true
     scoreError.value = null
     try {
-      const paperText = buildPaperText(report, citationIndex)
+      const paperText = buildPaperText(report.value, citationIndex.value)
       const result = await scorePaper(paperText)
       journalScores.value = result.journalScores
       failedJournals.value = result.failedJournals
@@ -138,22 +267,19 @@
 
 <style scoped>
   .paper-page {
-    --page-bg: #e4e4e8;
-    --card-bg: #ffffff;
+    --page-bg: var(--color-primary);
+    --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: #15181e;
-    --text-secondary: #6f7480;
-    --brand: #1058d6;
-    min-height: calc(100vh - 64px);
+    --text-main: var(--color-ink);
+    --text-secondary: var(--color-secondary);
+    --brand: var(--color-accent);
+    min-height: 100vh;
     display: flex;
     gap: 0;
-    padding: 16px;
-    background:
-      radial-gradient(circle at 8% 12%, rgba(99, 146, 238, 0.18) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, rgba(88, 157, 255, 0.16) 0%, transparent 30%),
-      linear-gradient(180deg, #d7d9df 0%, #dedfe4 100%);
-    font-family: 'Noto Sans TC', 'Segoe UI', sans-serif;
+    padding: 0;
+    background: var(--color-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
   }
 
@@ -162,11 +288,9 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--line);
-    border-radius: 0 12px 12px 0;
     background:
-      radial-gradient(circle, #cdd0d8 1px, transparent 1px) 0 0 / 18px 18px,
-      linear-gradient(180deg, #f3f4f8 0%, #eff1f6 100%);
+      radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
+      var(--color-primary);
     padding: 12px 20px 18px;
     overflow: hidden;
   }
@@ -190,8 +314,14 @@
     color: #1c2130;
   }
 
-  .score-btn {
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-left: auto;
+  }
+
+  .score-btn {
     background: #6f5613 !important;
     color: #ffffff !important;
     opacity: 1 !important;
@@ -220,11 +350,47 @@
     color: #b91c1c;
   }
 
+  .citation-style-select {
+    width: 92px;
+  }
+
+  .citation-style-select :deep(.v-field) {
+    font-size: 12px;
+  }
+
+  .edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .edit-actions--hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .save-hint {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    color: #b45309;
+  }
+
+  .save-error {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    color: #dc2626;
+  }
+
+  .loading-hint {
+    margin: 24px 2px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
   .paper-body {
     flex: 1;
     min-height: 0;
     display: flex;
-    gap: 16px;
     margin-top: 14px;
     overflow: auto;
   }

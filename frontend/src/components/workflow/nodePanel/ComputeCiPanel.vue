@@ -181,13 +181,13 @@
     margin: 0 0 2px;
     font-size: 14px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-ink);
   }
 
   .ci-panel__sub {
     margin: 0;
     font-size: 11px;
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   /* ── 模型區塊 ── */
@@ -196,15 +196,15 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px;
-    background: rgba(0, 93, 255, 0.03);
-    border: 1px solid rgba(0, 93, 255, 0.1);
+    background: color-mix(in oklab, var(--color-accent) 3%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
     border-radius: 8px;
   }
 
   .ci-model-block__name {
     font-size: 12px;
     font-weight: 700;
-    color: #005dff;
+    color: var(--color-accent);
   }
 
   /* ── Split ── */
@@ -217,7 +217,7 @@
   .ci-split__label {
     font-size: 11px;
     font-weight: 600;
-    color: #64748b;
+    color: var(--color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.03em;
   }
@@ -242,8 +242,8 @@
 
   .ci-table__header {
     font-weight: 600;
-    color: #94a3b8;
-    background: #f8fafc;
+    color: var(--color-secondary);
+    background: var(--color-surface);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
@@ -252,15 +252,15 @@
   }
 
   .ci-table__row {
-    background: #fff;
+    background: var(--color-surface);
   }
 
   .ci-table__row:nth-child(even) {
-    background: #f8fafc;
+    background: var(--color-surface);
   }
 
   .ci-table__metric {
-    color: #334155;
+    color: var(--color-secondary);
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -270,17 +270,17 @@
   .ci-table__num {
     text-align: center;
     font-variant-numeric: tabular-nums;
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   .ci-table__num--val {
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-ink);
   }
 
   .ci-table__num--lo,
   .ci-table__num--hi {
-    color: #94a3b8;
+    color: var(--color-secondary);
   }
 
   /* ── 無結果：靜態介紹 ── */
@@ -300,13 +300,13 @@
     margin: 0 0 2px;
     font-size: 14px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-ink);
   }
 
   .ci-info__sub {
     margin: 0;
     font-size: 11px;
-    color: #64748b;
+    color: var(--color-secondary);
   }
 
   .ci-info__section {
@@ -319,7 +319,7 @@
     margin: 0;
     font-size: 12px;
     font-weight: 600;
-    color: #334155;
+    color: var(--color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -327,7 +327,7 @@
   .ci-info__text {
     margin: 0;
     font-size: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     line-height: 1.6;
   }
 
@@ -338,7 +338,7 @@
     flex-direction: column;
     gap: 4px;
     font-size: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     line-height: 1.5;
   }
 
@@ -365,15 +365,15 @@
     align-items: flex-start;
     gap: 8px;
     padding: 10px 12px;
-    background: rgba(0, 93, 255, 0.04);
-    border: 1px solid rgba(0, 93, 255, 0.12);
+    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
     border-radius: 8px;
     font-size: 12px;
-    color: #475569;
+    color: var(--color-secondary);
     line-height: 1.5;
   }
 
   .ci-info__footer strong {
-    color: #005dff;
+    color: var(--color-accent);
   }
 </style>

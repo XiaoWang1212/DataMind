@@ -76,13 +76,13 @@ function projectLink(project: Project): string {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -93,7 +93,7 @@ function projectLink(project: Project): string {
   gap: 7px;
   padding: 0 18px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border-radius: 7px;
   text-decoration: none;
@@ -104,7 +104,7 @@ function projectLink(project: Project): string {
 }
 
 .new-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 /* ── Project list ── */
@@ -145,7 +145,7 @@ function projectLink(project: Project): string {
 .project-name {
   font-size: 14.5px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 /* ── Badges ── */
@@ -168,13 +168,13 @@ function projectLink(project: Project): string {
 
 .badge--draft {
   background: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 /* ── Meta ── */
 .project-meta {
   font-size: 12.5px;
-  color: #6b7280;
+  color: var(--color-secondary);
   margin-bottom: 5px;
 }
 
@@ -183,11 +183,11 @@ function projectLink(project: Project): string {
   align-items: center;
   gap: 5px;
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .date-icon {
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── Progress ── */
@@ -203,12 +203,12 @@ function projectLink(project: Project): string {
 
 .progress-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 .progress-pct {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 .progress-track {

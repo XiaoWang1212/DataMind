@@ -51,7 +51,7 @@
           開始提取
         </button>
         <div v-if="extracting" class="extracting-indicator">
-          <v-progress-circular color="#2347c5" indeterminate size="20" width="2" />
+          <v-progress-circular color="var(--color-accent)" indeterminate size="20" width="2" />
           <span>正在提取框架...</span>
         </div>
       </div>
@@ -209,14 +209,14 @@ function saveFramework(): void {
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.12s;
 }
 
 .back-link:hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .page-header {
@@ -226,13 +226,13 @@ function saveFramework(): void {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -247,7 +247,7 @@ function saveFramework(): void {
 .panel-label {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 12px;
 }
 
@@ -267,24 +267,24 @@ function saveFramework(): void {
 
 .drop-zone:hover,
 .drop-zone--over {
-  border-color: #2347c5;
-  background: #f0f4ff;
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
 }
 
 .drop-icon {
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 4px;
 }
 
 .drop-text {
   font-size: 14px;
-  color: #374151;
+  color: var(--color-secondary);
   font-weight: 500;
 }
 
 .drop-hint {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── File info ── */
@@ -302,7 +302,7 @@ function saveFramework(): void {
 .file-name {
   flex: 1;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -312,7 +312,7 @@ function saveFramework(): void {
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-secondary);
   display: flex;
   align-items: center;
   padding: 0;
@@ -326,7 +326,7 @@ function saveFramework(): void {
   margin-top: 14px;
   width: 100%;
   height: 40px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -337,7 +337,7 @@ function saveFramework(): void {
 }
 
 .extract-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .extracting-indicator {
@@ -346,7 +346,7 @@ function saveFramework(): void {
   gap: 10px;
   margin-top: 14px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 /* ── Result zone ── */
@@ -362,14 +362,14 @@ function saveFramework(): void {
 }
 
 .result-placeholder {
-  color: #9ca3af;
+  color: var(--color-secondary);
   font-size: 13.5px;
   margin: auto;
   text-align: center;
 }
 
 .result-error {
-  color: #b91c1c;
+  color: #ef4444;
   font-size: 13px;
   font-weight: 500;
   padding: 10px 12px;
@@ -380,13 +380,13 @@ function saveFramework(): void {
 
 .result-field-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 6px;
 }
 
 .result-field-value {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-ink);
   font-weight: 500;
 }
 
@@ -419,7 +419,7 @@ function saveFramework(): void {
 .save-btn {
   margin-top: 4px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 7px;
@@ -430,6 +430,6 @@ function saveFramework(): void {
 }
 
 .save-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 </style>

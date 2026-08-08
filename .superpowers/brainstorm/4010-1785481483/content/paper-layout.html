@@ -1,0 +1,134 @@
+<h2>論文編輯頁：版面寬度 + 背景</h2>
+<p class="subtitle">現況的「紙張」欄寬只有 760px，兩側留白很多，在寬螢幕上會覺得整體縮小。這裡比較加寬版面，搭配幾種背景處理方式。</p>
+
+<div class="options" style="margin-bottom:20px">
+  <div class="option" data-choice="a-current" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>現況</h3><p>760px 窄欄 + 光暈與網點背景</p></div>
+  </div>
+  <div class="option" data-choice="b-wide-samebg" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>加寬 + 拿掉網點</h3><p>欄寬加大、保留光暈、去掉網點紋理</p></div>
+  </div>
+  <div class="option" data-choice="c-wide-plain" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>加寬 + 純白底</h3><p>欄寬加大、卡片外整片改純白，無裝飾</p></div>
+  </div>
+  <div class="option" data-choice="d-wide-tint" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>加寬 + 米色純底</h3><p>欄寬加大、卡片外用米色底色，無光暈無網點</p></div>
+  </div>
+</div>
+
+<style>
+  .paper-frame { display:flex; height:340px; border-radius:8px; overflow:hidden; border:1px solid #e2e4ea; }
+  .paper-sidebar-stub { width:34px; background:#1c2130; flex-shrink:0; }
+  .paper-frame-main { flex:1; min-width:0; padding:14px; overflow:hidden; position:relative; }
+  .paper-toolbar-stub { display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:1px solid #e8ebf1; margin-bottom:12px; font-size:10px; color:#334155; font-family:'Noto Sans TC','Segoe UI',sans-serif; }
+  .paper-toolbar-stub .t-title { font-weight:700; color:#1c2130; font-size:11px; }
+  .paper-toolbar-stub .t-save { margin-left:auto; background:#e8a33d; color:#fff; border-radius:5px; padding:2px 8px; font-size:9.5px; }
+  .paper-sheet-stub { background:#fff; border:1px solid #d8dbe3; border-radius:8px; padding:14px 18px; height: 250px; overflow:hidden; font-family:'Noto Sans TC','Segoe UI',sans-serif; }
+  .paper-sheet-stub h4 { font-size:12px; margin:0 0 6px; color:#1c2130; }
+  .paper-sheet-stub p { font-size:9px; line-height:1.6; color:#334155; margin:0 0 8px; }
+  .paper-sheet-stub .cite { color:#e8a33d; font-weight:600; }
+
+  /* A: current, narrow, glow+dots */
+  .bg-a { background:
+      radial-gradient(circle at 8% 12%, rgba(232,163,61,0.18) 0%, transparent 38%),
+      radial-gradient(circle at 91% 89%, rgba(232,163,61,0.16) 0%, transparent 30%),
+      #f6f5f2; }
+  .bg-a .paper-sheet-stub { max-width:66%; margin:0 auto; background:
+      radial-gradient(circle, rgba(51,65,85,0.08) 1px, transparent 1px) 0 0/9px 9px, #fff; }
+
+  /* B: wide, glow only */
+  .bg-b { background:
+      radial-gradient(circle at 8% 12%, rgba(232,163,61,0.18) 0%, transparent 38%),
+      radial-gradient(circle at 91% 89%, rgba(232,163,61,0.16) 0%, transparent 30%),
+      #f6f5f2; }
+  .bg-b .paper-sheet-stub { max-width:92%; margin:0 auto; }
+
+  /* C: wide, plain white */
+  .bg-c { background:#ffffff; }
+  .bg-c .paper-sheet-stub { max-width:92%; margin:0 auto; border-color:#e8ebf1; }
+
+  /* D: wide, tinted flat */
+  .bg-d { background:#f6f5f2; }
+  .bg-d .paper-sheet-stub { max-width:92%; margin:0 auto; }
+
+  .compare-row { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .compare-col .mockup-header { text-align:center; font-weight:600; }
+</style>
+
+<div class="compare-row">
+  <div class="mockup compare-col">
+    <div class="mockup-header">A · 現況</div>
+    <div class="mockup-body">
+      <div class="paper-frame">
+        <div class="paper-sidebar-stub"></div>
+        <div class="paper-frame-main bg-a">
+          <div class="paper-toolbar-stub"><span class="t-title">CNN 圖像分類架構比較研究</span><span class="t-save">儲存</span></div>
+          <div class="paper-sheet-stub">
+            <h4>摘要</h4>
+            <p>本研究比較三種卷積神經網路架構在圖像分類任務上的表現<span class="cite">[1]</span>，結果顯示殘差連接對深層網路的收斂速度有顯著影響。</p>
+            <h4>研究方法</h4>
+            <p>我們使用相同的資料前處理流程與訓練超參數，確保各模型間的比較具有可比性<span class="cite">[2]</span>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">B · 加寬 + 拿掉網點</div>
+    <div class="mockup-body">
+      <div class="paper-frame">
+        <div class="paper-sidebar-stub"></div>
+        <div class="paper-frame-main bg-b">
+          <div class="paper-toolbar-stub"><span class="t-title">CNN 圖像分類架構比較研究</span><span class="t-save">儲存</span></div>
+          <div class="paper-sheet-stub">
+            <h4>摘要</h4>
+            <p>本研究比較三種卷積神經網路架構在圖像分類任務上的表現<span class="cite">[1]</span>，結果顯示殘差連接對深層網路的收斂速度有顯著影響。</p>
+            <h4>研究方法</h4>
+            <p>我們使用相同的資料前處理流程與訓練超參數，確保各模型間的比較具有可比性<span class="cite">[2]</span>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">C · 加寬 + 純白底</div>
+    <div class="mockup-body">
+      <div class="paper-frame">
+        <div class="paper-sidebar-stub"></div>
+        <div class="paper-frame-main bg-c">
+          <div class="paper-toolbar-stub"><span class="t-title">CNN 圖像分類架構比較研究</span><span class="t-save">儲存</span></div>
+          <div class="paper-sheet-stub">
+            <h4>摘要</h4>
+            <p>本研究比較三種卷積神經網路架構在圖像分類任務上的表現<span class="cite">[1]</span>，結果顯示殘差連接對深層網路的收斂速度有顯著影響。</p>
+            <h4>研究方法</h4>
+            <p>我們使用相同的資料前處理流程與訓練超參數，確保各模型間的比較具有可比性<span class="cite">[2]</span>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">D · 加寬 + 米色純底</div>
+    <div class="mockup-body">
+      <div class="paper-frame">
+        <div class="paper-sidebar-stub"></div>
+        <div class="paper-frame-main bg-d">
+          <div class="paper-toolbar-stub"><span class="t-title">CNN 圖像分類架構比較研究</span><span class="t-save">儲存</span></div>
+          <div class="paper-sheet-stub">
+            <h4>摘要</h4>
+            <p>本研究比較三種卷積神經網路架構在圖像分類任務上的表現<span class="cite">[1]</span>，結果顯示殘差連接對深層網路的收斂速度有顯著影響。</p>
+            <h4>研究方法</h4>
+            <p>我們使用相同的資料前處理流程與訓練超參數，確保各模型間的比較具有可比性<span class="cite">[2]</span>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

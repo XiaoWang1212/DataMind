@@ -6,8 +6,19 @@
     </RouterLink>
 
     <div v-if="project" class="page-header">
-      <h1 class="page-title">{{ project.name }}</h1>
-      <p class="page-sub">結果總覽 · 框架：{{ project.frameworkName }}</p>
+      <div class="page-header-top">
+        <div>
+          <h1 class="page-title">{{ project.name }}</h1>
+          <p class="page-sub">結果總覽 · 框架：{{ project.frameworkName }}</p>
+        </div>
+        <RouterLink
+          v-if="summary.length > 0"
+          class="generate-paper-btn"
+          :to="`/paper/sources?project=${projectId}`"
+        >
+          生成論文
+        </RouterLink>
+      </div>
     </div>
 
     <div v-if="!project" class="not-found">找不到該專案</div>
@@ -62,16 +73,107 @@
           </table>
         </div>
       </section>
+
+      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card">
+        <div class="analysis-header">
+          <div class="analysis-icon-wrap">
+            <v-icon icon="mdi-shimmer" size="18" />
+          </div>
+          <h2 class="analysis-title">AI 結構化分析</h2>
+        </div>
+
+        <p v-if="analysisLoading" class="analysis-loading">正在生成分析...</p>
+        <template v-else-if="analysisError">
+          <p class="analysis-error">分析生成失敗：{{ analysisError }}</p>
+          <button class="analysis-retry-btn" type="button" @click="loadAnalysis">重試</button>
+        </template>
+        <div v-else-if="analysis" class="analysis-grid">
+          <article class="analysis-block">
+            <h3>模型比較與選擇建議</h3>
+            <p>{{ analysis.model_comparison }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>資料與特徵層面洞察</h3>
+            <p>{{ analysis.data_insights }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>風險與限制提示</h3>
+            <p>{{ analysis.risks }}</p>
+          </article>
+          <article class="analysis-block">
+            <h3>後續建議行動</h3>
+            <p>{{ analysis.recommendations }}</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="chat-card">
+        <div class="analysis-header">
+          <div class="analysis-icon-wrap">
+            <v-icon icon="mdi-chat-processing-outline" size="18" />
+          </div>
+          <h2 class="analysis-title">與 AI 對話</h2>
+        </div>
+
+        <div class="chat-messages">
+          <p v-if="chatMessages.length === 0" class="chat-empty">針對這份結果有任何問題，都可以在下方提問。</p>
+          <div
+            v-for="(msg, index) in chatMessages"
+            :key="index"
+            class="chat-bubble"
+            :class="[msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--model', { 'chat-bubble--failed': msg.failed }]"
+          >
+            <p class="chat-bubble-text">{{ msg.text }}</p>
+            <p v-if="msg.failed" class="chat-bubble-failed-hint">傳送失敗</p>
+            <div v-if="msg.papers && msg.papers.length > 0" class="chat-papers">
+              <a
+                v-for="paper in msg.papers"
+                :key="paper.arxiv_id"
+                class="chat-paper-card"
+                :href="paper.pdf_url"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <p class="chat-paper-title">{{ paper.title }}</p>
+                <p class="chat-paper-meta">{{ paper.authors }}<span v-if="paper.year">（{{ paper.year }}）</span></p>
+              </a>
+            </div>
+          </div>
+          <p v-if="chatLoading" class="chat-loading">AI 思考中...</p>
+          <p v-if="chatError" class="chat-error">傳送失敗：{{ chatError }}</p>
+        </div>
+
+        <form class="chat-input-row" @submit.prevent="sendMessage">
+          <input
+            v-model="chatInput"
+            class="chat-input"
+            :disabled="chatLoading"
+            placeholder="針對這份結果提問..."
+            type="text"
+          >
+          <button class="chat-send-btn" :disabled="chatLoading || !chatInput.trim()" type="submit">
+            送出
+          </button>
+        </form>
+      </section>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import type { ArxivCandidate } from '@/api/arxiv'
+  import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
-  import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
+  import { type ChatMessage, fetchStructuredAnalysis, sendChatMessage, type StructuredAnalysis } from '@/api/resultAnalysis'
+  import {
+    loadChatHistoryFromStorage,
+    loadStructuredAnalysisFromStorage,
+    loadWorkflowStateFromStorage,
+    saveChatHistoryToStorage,
+    saveStructuredAnalysisToStorage,
+  } from '@/composables/workflow/useWorkflowStorage'
   import { useProjectStore } from '@/store/projectStore'
-  import { summarizeWorkflowResult, type ModelMetricSummary } from '@/utils/workflow/summarizeWorkflowResult'
+  import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
   interface MetricCard {
     key: string
@@ -158,6 +260,82 @@
     if (row.errors[metric]) return '錯誤'
     return '—'
   }
+
+  interface DisplayChatMessage extends ChatMessage {
+    papers?: ArxivCandidate[]
+    failed?: boolean
+  }
+
+  const analysis = ref<StructuredAnalysis | null>(null)
+  const analysisLoading = ref(false)
+  const analysisError = ref<string | null>(null)
+
+  async function loadAnalysis (): Promise<void> {
+    const cached = loadStructuredAnalysisFromStorage(projectId.value)
+    if (cached) {
+      analysis.value = cached
+      return
+    }
+
+    const miningResult = loadWorkflowStateFromStorage(projectId.value)?.workflowResult
+    if (!miningResult) return
+
+    analysisLoading.value = true
+    analysisError.value = null
+    try {
+      analysis.value = await fetchStructuredAnalysis(miningResult)
+      const isAllEmpty = Object.values(analysis.value).every(v => v === '')
+      if (isAllEmpty) {
+        analysis.value = null
+        throw new Error('AI 分析生成失敗，請稍後重試')
+      }
+      saveStructuredAnalysisToStorage(projectId.value, analysis.value)
+    } catch (error) {
+      analysisError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      analysisLoading.value = false
+    }
+  }
+
+  const chatMessages = ref<DisplayChatMessage[]>([])
+  const chatInput = ref('')
+  const chatLoading = ref(false)
+  const chatError = ref<string | null>(null)
+
+  async function sendMessage (): Promise<void> {
+    const text = chatInput.value.trim()
+    if (!text || chatLoading.value) return
+
+    const miningResult = loadWorkflowStateFromStorage(projectId.value)?.workflowResult
+    if (!miningResult) return
+
+    chatMessages.value.push({ role: 'user', text })
+    chatInput.value = ''
+    chatLoading.value = true
+    chatError.value = null
+
+    try {
+      const historyForApi: ChatMessage[] = chatMessages.value
+        .slice(0, -1)
+        .filter(m => !m.failed)
+        .map(m => ({ role: m.role, text: m.text }))
+      const { reply, papers } = await sendChatMessage(miningResult, historyForApi, text)
+      chatMessages.value.push({ role: 'model', text: reply, papers: papers.length > 0 ? papers : undefined })
+      saveChatHistoryToStorage(projectId.value, chatMessages.value)
+    } catch (error) {
+      chatError.value = error instanceof Error ? error.message : String(error)
+      const lastMessage = chatMessages.value[chatMessages.value.length - 1]
+      if (lastMessage) lastMessage.failed = true
+    } finally {
+      chatLoading.value = false
+    }
+  }
+
+  onMounted(() => {
+    if (summary.value.length === 0) return
+    loadAnalysis()
+    chatMessages.value = loadChatHistoryFromStorage(projectId.value) as DisplayChatMessage[]
+  })
 </script>
 
 <style scoped>
@@ -166,37 +344,66 @@
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.12s;
 }
 
 .back-link:hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .page-header {
   margin-bottom: 24px;
 }
 
+.page-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.generate-paper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  height: 38px;
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.generate-paper-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
+}
+
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
 .not-found {
   text-align: center;
   padding: 48px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   font-size: 14px;
 }
 
@@ -215,7 +422,7 @@
 .empty-text {
   margin: 0;
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .open-workflow-btn {
@@ -224,7 +431,7 @@
   gap: 7px;
   padding: 0 18px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 7px;
@@ -236,7 +443,7 @@
 }
 
 .open-workflow-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .metric-grid {
@@ -253,14 +460,14 @@
 }
 
 .metric-card--accent .metric-value {
-  color: #18a836;
+  color: #16a34a;
 }
 
 .metric-title {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #20232a;
+  color: var(--color-ink);
 }
 
 .metric-value {
@@ -268,13 +475,13 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .metric-hint {
   margin: 0;
   font-size: 12px;
-  color: #6f7480;
+  color: var(--color-secondary);
 }
 
 .comparison-card {
@@ -294,7 +501,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .table-wrap {
@@ -318,7 +525,7 @@
 
 .result-table th {
   font-weight: 700;
-  color: #2a2f39;
+  color: var(--color-ink);
   background: #fafbff;
 }
 
@@ -328,12 +535,213 @@
 
 .model-name {
   font-weight: 700;
-  color: #1f2532;
+  color: var(--color-ink);
 }
 
 .score-best {
-  color: #18a836;
+  color: #16a34a;
   font-weight: 700;
+}
+
+.analysis-card,
+.chat-card {
+  margin-top: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.analysis-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef1ff;
+  color: var(--color-accent);
+}
+
+.analysis-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.analysis-loading {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.analysis-error {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #ef4444;
+}
+
+.analysis-retry-btn {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analysis-block h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.analysis-block p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-secondary);
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.chat-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-secondary);
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  background: var(--color-chat-user);
+  color: var(--color-inverted);
+}
+
+.chat-bubble--model {
+  align-self: flex-start;
+  background: var(--color-chat-system);
+  color: var(--color-ink);
+}
+
+.chat-bubble--failed {
+  opacity: 0.65;
+  outline: 1px solid #ef4444;
+}
+
+.chat-bubble-failed-hint {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: #ffd7d7;
+}
+
+.chat-bubble-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-papers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chat-paper-card {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  text-decoration: none;
+  border: 1px solid #e2e4ea;
+}
+
+.chat-paper-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.chat-paper-meta {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--color-secondary);
+}
+
+.chat-loading,
+.chat-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-secondary);
+}
+
+.chat-error {
+  color: #ef4444;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e2e4ea;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.chat-input:disabled {
+  background: #f7f7f9;
+}
+
+.chat-send-btn {
+  height: 38px;
+  padding: 0 18px;
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chat-send-btn:disabled {
+  background: #b7c2e6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 1260px) {

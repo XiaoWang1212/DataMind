@@ -29,11 +29,19 @@ export interface WorkflowJobStatus {
   error: string | null
 }
 
+// 後端 job 是記憶體狀態，重啟後端或超過 TTL 後就永遠查不到了；跟這個錯誤區分開來，
+// 讓輪詢端知道「這個 job 不會再回來了」，而不是當成暫時性網路錯誤一直重試
+export class WorkflowJobNotFoundError extends Error {}
+
 export async function fetchWorkflowJob (jobId: string): Promise<WorkflowJobStatus> {
   const response = await fetch(`/api/models/workflow/jobs/${jobId}`)
   const result = (await response.json()) as Record<string, unknown>
   if (!response.ok) {
-    throw new Error(result.error ? String(result.error) : `HTTP ${response.status}`)
+    const message = result.error ? String(result.error) : `HTTP ${response.status}`
+    if (response.status === 404) {
+      throw new WorkflowJobNotFoundError(message)
+    }
+    throw new Error(message)
   }
 
   return {

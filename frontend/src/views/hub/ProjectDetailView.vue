@@ -122,14 +122,14 @@ function openInWorkflow(): void {
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.12s;
 }
 
 .back-link:hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .page-header {
@@ -146,7 +146,7 @@ function openInWorkflow(): void {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0;
 }
 
@@ -159,7 +159,7 @@ function openInWorkflow(): void {
 
 .badge--completed {
   background: #dbeafe;
-  color: #1d4ed8;
+  color: #2347c5;
 }
 
 .badge--running {
@@ -169,12 +169,12 @@ function openInWorkflow(): void {
 
 .badge--draft {
   background: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 .framework-link {
   font-size: 13px;
-  color: #2347c5;
+  color: var(--color-accent);
 }
 
 /* ── Panels ── */
@@ -196,7 +196,7 @@ function openInWorkflow(): void {
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 20px;
 }
 
@@ -212,13 +212,13 @@ function openInWorkflow(): void {
 
 .result-label {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 6px;
 }
 
 .result-value {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .result-value.large {
@@ -233,12 +233,12 @@ function openInWorkflow(): void {
   padding-top: 14px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #2347c5;
+  color: var(--color-accent);
   text-decoration: none;
 }
 
 .view-result-btn:hover {
-  color: #1b3ca0;
+  color: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 /* ── Running state ── */
@@ -252,7 +252,7 @@ function openInWorkflow(): void {
 
 .running-text {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 /* ── Draft state ── */
@@ -262,7 +262,7 @@ function openInWorkflow(): void {
   justify-content: center;
   min-height: 120px;
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── Open workflow button ── */
@@ -278,7 +278,7 @@ function openInWorkflow(): void {
   gap: 7px;
   padding: 0 18px;
   height: 38px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 7px;
@@ -289,7 +289,7 @@ function openInWorkflow(): void {
 }
 
 .open-workflow-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 /* ── Project info ── */
@@ -304,13 +304,13 @@ function openInWorkflow(): void {
 
 .info-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 4px;
 }
 
 .info-value {
   font-size: 13.5px;
-  color: #111827;
+  color: var(--color-ink);
   font-weight: 500;
 }
 
@@ -318,7 +318,7 @@ function openInWorkflow(): void {
 .not-found {
   text-align: center;
   padding: 48px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   font-size: 14px;
 }
 </style>

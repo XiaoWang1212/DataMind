@@ -57,6 +57,7 @@ export interface ArxivReference {
   author?: string
   year?: string | number
   journal?: string
+  arxiv_id?: string
 }
 
 export interface ArxivGenerateResult {

@@ -134,13 +134,13 @@
   }
 
   .node-highlighted {
-    box-shadow: 0 0 0 4px var(--highlight-color, #005dff);
+    box-shadow: 0 0 0 4px var(--highlight-color, var(--color-accent));
     animation: highlight-pulse 1.4s ease-in-out infinite;
   }
 
   @keyframes highlight-pulse {
-    0%, 100% { box-shadow: 0 0 0 3px var(--highlight-color, #005dff); }
-    50% { box-shadow: 0 0 0 6px var(--highlight-color, #005dff); }
+    0%, 100% { box-shadow: 0 0 0 3px var(--highlight-color, var(--color-accent)); }
+    50% { box-shadow: 0 0 0 6px var(--highlight-color, var(--color-accent)); }
   }
 
   .node-spinner,
@@ -170,7 +170,7 @@
     font-size: 13px;
     line-height: 1.2;
     font-weight: 600;
-    color: #242424;
+    color: var(--color-ink);
     white-space: pre-line;
   }
 

@@ -84,7 +84,7 @@
           <input ref="datasetInput" type="file" accept=".csv,.xlsx,.xls" hidden @change="handleDatasetChange" />
         </div>
         <div v-if="form.datasetFile" class="file-info">
-          <v-icon icon="mdi-file-table-outline" size="18" color="#2347c5" />
+          <v-icon icon="mdi-file-table-outline" size="18" color="var(--color-accent)" />
           <span class="file-name">{{ form.datasetFile.name }}</span>
         </div>
       </template>
@@ -206,14 +206,14 @@ function executeProject(): void {
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-secondary);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.12s;
 }
 
 .back-link:hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .page-header {
@@ -223,13 +223,13 @@ function executeProject(): void {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -275,18 +275,18 @@ function executeProject(): void {
 }
 
 .step-circle--active {
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
 }
 
 .step-circle--done {
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
 }
 
 .step-circle--inactive {
   background: #ffffff;
-  color: #9ca3af;
+  color: var(--color-secondary);
   border: 2px solid #e5e7eb;
 }
 
@@ -298,16 +298,16 @@ function executeProject(): void {
 .step-title {
   font-size: 13px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .step-title--active {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .step-sub {
   font-size: 11.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-top: 2px;
 }
 
@@ -318,7 +318,7 @@ function executeProject(): void {
   border-radius: 8px;
   padding: 28px;
   margin-bottom: 0;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .form-field {
@@ -329,7 +329,7 @@ function executeProject(): void {
   display: block;
   font-size: 13.5px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-secondary);
   margin-bottom: 7px;
 }
 
@@ -340,7 +340,7 @@ function executeProject(): void {
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 14px;
-  color: #111827;
+  color: var(--color-ink);
   background-color: #ffffff;
   outline: none;
   box-sizing: border-box;
@@ -349,11 +349,11 @@ function executeProject(): void {
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .form-input:focus {
-  border-color: #2347c5;
+  border-color: var(--color-accent);
 }
 
 .form-textarea {
@@ -362,7 +362,7 @@ function executeProject(): void {
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 14px;
-  color: #111827;
+  color: var(--color-ink);
   background-color: #ffffff;
   outline: none;
   box-sizing: border-box;
@@ -373,11 +373,11 @@ function executeProject(): void {
 }
 
 .form-textarea::placeholder {
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .form-textarea:focus {
-  border-color: #2347c5;
+  border-color: var(--color-accent);
 }
 
 /* ── Framework select ── */
@@ -400,8 +400,8 @@ function executeProject(): void {
 }
 
 .fw-select-card--selected {
-  border-color: #2347c5;
-  background: #f0f4ff;
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
 }
 
 .fw-select-icon {
@@ -418,13 +418,13 @@ function executeProject(): void {
 .fw-select-name {
   font-size: 13.5px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 4px;
 }
 
 .fw-select-tag {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-secondary);
 }
 
 /* ── Drop zone ── */
@@ -441,24 +441,24 @@ function executeProject(): void {
 }
 
 .drop-zone:hover {
-  border-color: #2347c5;
-  background: #f0f4ff;
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
 }
 
 .drop-icon {
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 4px;
 }
 
 .drop-text {
   font-size: 14px;
-  color: #374151;
+  color: var(--color-secondary);
   font-weight: 500;
 }
 
 .drop-hint {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .file-info {
@@ -474,7 +474,7 @@ function executeProject(): void {
 
 .file-name {
   font-size: 13px;
-  color: #374151;
+  color: var(--color-secondary);
 }
 
 /* ── Review ── */
@@ -487,7 +487,7 @@ function executeProject(): void {
 .review-title {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 16px;
 }
 
@@ -501,11 +501,11 @@ function executeProject(): void {
 .review-key {
   width: 120px;
   flex-shrink: 0;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .review-val {
-  color: #111827;
+  color: var(--color-ink);
   font-weight: 500;
 }
 
@@ -516,7 +516,7 @@ function executeProject(): void {
   align-items: center;
   padding: 18px 28px;
   background: #ffffff;
-  color: #111827;
+  color: var(--color-ink);
   border-radius: 0 0 8px 8px;
   border: 1px solid #e8e8e8;
   border-top: 1px solid #f0f0f0;
@@ -528,7 +528,7 @@ function executeProject(): void {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-secondary);
   padding: 0 8px;
   transition: color 0.12s;
 }
@@ -539,7 +539,7 @@ function executeProject(): void {
 }
 
 .prev-btn:not(:disabled):hover {
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .next-btn {
@@ -548,7 +548,7 @@ function executeProject(): void {
   gap: 6px;
   padding: 0 22px;
   height: 40px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -559,6 +559,6 @@ function executeProject(): void {
 }
 
 .next-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 </style>

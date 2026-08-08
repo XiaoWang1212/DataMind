@@ -1,0 +1,99 @@
+<h2>論文編輯器工具列改版</h2>
+<p class="subtitle">加了新按鈕（超連結、上標/下標、表格列列控制、插入圖片、字數統計）之後，比較維持現在扁平樣式，還是改成毛玻璃浮動 dock 樣式（滑鼠移過圖示會顯示文字提示）。</p>
+
+<div class="options" style="margin-bottom:20px">
+  <div class="option" data-choice="a-flat" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>維持現在扁平樣式</h3><p>白底、細邊框，只是加新按鈕</p></div>
+  </div>
+  <div class="option" data-choice="b-glass-dock" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>毛玻璃浮動 Dock</h3><p>跟 sidebar 一致的玻璃質感，圖示 hover 有文字提示</p></div>
+  </div>
+</div>
+
+<style>
+  .tb-frame { background:#f6f5f2; border-radius:8px; padding:24px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .tb-row { display:flex; flex-wrap:wrap; align-items:center; gap:2px; }
+  .tb-btn { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:14px; color:#334155; cursor:pointer; position:relative; }
+  .tb-div { width:1px; height:20px; margin:0 5px; background:#d8dbe3; flex-shrink:0; }
+
+  /* A: flat */
+  .tb-a { border:1px solid #d8dbe3; border-radius:8px; background:#fff; padding:6px 8px; }
+  .tb-a .tb-btn:hover { background:#f1f2f4; }
+
+  /* B: glass dock */
+  .tb-b {
+    display:inline-flex;
+    border-radius:16px;
+    padding:8px 10px;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 20px rgba(28,33,48,0.12);
+  }
+  .tb-b .tb-btn { transition: transform 0.15s ease, background 0.15s ease; }
+  .tb-b .tb-btn:hover { background: rgba(255,255,255,0.7); transform: translateY(-2px); }
+  .tb-b .tb-btn .tip {
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+    background:#1c2130; color:#fff; font-size:10px; padding:3px 7px; border-radius:5px;
+    white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.15s ease;
+  }
+  .tb-b .tb-btn:hover .tip { opacity:1; }
+  .tb-b .tb-div { background: rgba(28,33,48,0.15); }
+</style>
+
+<div class="mockup">
+  <div class="mockup-header">A · 維持扁平樣式</div>
+  <div class="mockup-body">
+    <div class="tb-frame">
+      <div class="tb-row tb-a">
+        <div class="tb-btn">B</div>
+        <div class="tb-btn"><i>I</i></div>
+        <div class="tb-btn"><u>U</u></div>
+        <div class="tb-btn">🔗</div>
+        <div class="tb-btn">x²</div>
+        <div class="tb-btn">x₂</div>
+        <div class="tb-div"></div>
+        <div class="tb-btn">H1</div>
+        <div class="tb-btn">H2</div>
+        <div class="tb-btn">H3</div>
+        <div class="tb-div"></div>
+        <div class="tb-btn">🖼️</div>
+        <div class="tb-btn">▦</div>
+        <div class="tb-btn">↩</div>
+        <div class="tb-btn">↪</div>
+        <div class="tb-div"></div>
+        <div class="tb-btn" style="width:auto;padding:0 8px;font-size:11px;color:#5b677e">128 字</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px">
+  <div class="mockup-header">B · 毛玻璃浮動 Dock（hover 看文字提示）</div>
+  <div class="mockup-body">
+    <div class="tb-frame">
+      <div class="tb-row tb-b">
+        <div class="tb-btn">B<span class="tip">粗體</span></div>
+        <div class="tb-btn"><i>I</i><span class="tip">斜體</span></div>
+        <div class="tb-btn"><u>U</u><span class="tip">底線</span></div>
+        <div class="tb-btn">🔗<span class="tip">插入連結</span></div>
+        <div class="tb-btn">x²<span class="tip">上標</span></div>
+        <div class="tb-btn">x₂<span class="tip">下標</span></div>
+        <div class="tb-div"></div>
+        <div class="tb-btn">H1<span class="tip">標題 1</span></div>
+        <div class="tb-btn">H2<span class="tip">標題 2</span></div>
+        <div class="tb-btn">H3<span class="tip">標題 3</span></div>
+        <div class="tb-div"></div>
+        <div class="tb-btn">🖼️<span class="tip">插入圖片</span></div>
+        <div class="tb-btn">▦<span class="tip">插入表格</span></div>
+        <div class="tb-btn">↩<span class="tip">復原</span></div>
+        <div class="tb-btn">↪<span class="tip">重做</span></div>
+        <div class="tb-div"></div>
+        <div class="tb-btn" style="width:auto;padding:0 8px;font-size:11px;color:#5b677e">128 字</div>
+      </div>
+    </div>
+  </div>
+</div>

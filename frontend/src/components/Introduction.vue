@@ -37,7 +37,7 @@
 
           <template #subtitle>
             <div class="mt-2">
-              Change this page by updating <v-code>components/HelloWorld.vue</v-code>.
+              Start building your app with the Hub dashboard.
             </div>
           </template>
         </v-card>
@@ -102,7 +102,7 @@
 }
 
 .hero-card {
-  @apply md:col-span-2 md:py-4 sm:pr-30 w-full bg-primary-100 dark:bg-primary-900
+  @apply md:col-span-2 md:py-4 sm:pr-30 w-full bg-primary
 }
 
 .v-card-subtitle {
@@ -111,8 +111,7 @@
 }
 
 .feature-card {
-  @apply flex items-center [&>.v-card-item]:w-full bg-secondary-100;
-  @apply dark:bg-linear-to-r dark:from-secondary-800 dark:to-secondary-600 dark:text-white;
+  @apply flex items-center [&>.v-card-item]:w-full bg-secondary/10;
 
   .v-card-item {
     @apply self-stretch;

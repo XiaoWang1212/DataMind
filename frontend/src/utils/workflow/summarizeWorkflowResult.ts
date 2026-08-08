@@ -1,7 +1,7 @@
 export interface ModelMetricSummary {
   model_name: string
   split_name: string
-  metrics: { metric: string, valueFormatted: string }[]
+  metrics: { metric: string, valueFormatted: string, valueRaw: number }[]
   errors: Record<string, string>
 }
 
@@ -37,12 +37,14 @@ export function summarizeWorkflowResult (
   return Array.from(modelGroups.entries()).map(([modelName, group]) => ({
     model_name: modelName,
     split_name: `${group.count} splits`,
-    metrics: Object.entries(group.metrics).map(([metric, values]) => ({
-      metric,
-      valueFormatted: values.length > 0
-        ? (values.reduce((s, v) => s + v, 0) / values.length).toFixed(4)
-        : 'N/A',
-    })),
+    metrics: Object.entries(group.metrics).map(([metric, values]) => {
+      const average = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 0
+      return {
+        metric,
+        valueRaw: average,
+        valueFormatted: values.length > 0 ? average.toFixed(4) : 'N/A',
+      }
+    }),
     errors: group.errors,
   }))
 }

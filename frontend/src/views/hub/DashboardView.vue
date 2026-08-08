@@ -87,13 +87,13 @@ const activities = [
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -114,7 +114,7 @@ const activities = [
 
 .stat-label {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin-bottom: 10px;
   font-weight: 400;
 }
@@ -122,7 +122,7 @@ const activities = [
 .stat-number {
   font-size: 42px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   line-height: 1;
   margin-bottom: 12px;
   letter-spacing: -1px;
@@ -133,7 +133,7 @@ const activities = [
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── Actions ── */
@@ -182,13 +182,13 @@ const activities = [
 .action-title {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 3px;
 }
 
 .action-desc {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   line-height: 1.45;
 }
 
@@ -205,7 +205,7 @@ const activities = [
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .activity-title {
@@ -229,18 +229,18 @@ const activities = [
 .activity-name {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 4px;
 }
 
 .activity-status {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 .activity-time {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   white-space: nowrap;
   margin-left: 24px;
 }

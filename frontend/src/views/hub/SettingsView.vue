@@ -101,13 +101,13 @@ function saveSettings() {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-ink);
   margin: 0 0 5px;
 }
 
 .page-sub {
   font-size: 13.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
   margin: 0;
 }
 
@@ -118,13 +118,13 @@ function saveSettings() {
   border-radius: 8px;
   padding: 22px 24px;
   margin-bottom: 16px;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-ink);
   margin-bottom: 20px;
 }
 
@@ -150,13 +150,13 @@ function saveSettings() {
 .setting-name {
   font-size: 14px;
   font-weight: 500;
-  color: #2347c5;
+  color: var(--color-accent);
   margin-bottom: 3px;
 }
 
 .setting-desc {
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-secondary);
 }
 
 /* ── Timeout select ── */
@@ -167,7 +167,7 @@ function saveSettings() {
   border-radius: 7px;
   background-color: #ffffff;
   font-size: 13.5px;
-  color: #111827;
+  color: var(--color-ink);
   outline: none;
   cursor: pointer;
   appearance: auto;
@@ -176,7 +176,7 @@ function saveSettings() {
 }
 
 .timeout-select:focus {
-  border-color: #2347c5;
+  border-color: var(--color-accent);
 }
 
 /* ── Toggle ── */
@@ -193,7 +193,7 @@ function saveSettings() {
 }
 
 .toggle-btn--on {
-  background: #2347c5;
+  background: var(--color-accent);
 }
 
 .toggle-thumb {
@@ -225,7 +225,7 @@ function saveSettings() {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-secondary);
   margin-bottom: 7px;
 }
 
@@ -236,7 +236,7 @@ function saveSettings() {
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 13.5px;
-  color: #111827;
+  color: var(--color-ink);
   background-color: #f9fafb;
   outline: none;
   box-sizing: border-box;
@@ -246,7 +246,7 @@ function saveSettings() {
 }
 
 .api-input:focus {
-  border-color: #2347c5;
+  border-color: var(--color-accent);
   background-color: #ffffff;
 }
 
@@ -260,7 +260,7 @@ function saveSettings() {
 .save-btn {
   height: 40px;
   padding: 0 24px;
-  background: #2347c5;
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -271,7 +271,7 @@ function saveSettings() {
 }
 
 .save-btn:hover {
-  background: #1b3ca0;
+  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .save-msg {

@@ -211,9 +211,9 @@
     min-width: 0;
     border: none;
     border-radius: 12px;
-    background-color: #f8fbff;
+    background-color: var(--color-surface);
     background-image: radial-gradient(
-      rgba(0, 93, 255, 0.08) 0.9px,
+      color-mix(in oklab, var(--color-accent) 8%, transparent) 0.9px,
       transparent 0.9px
     );
     background-size: 14px 14px;
@@ -230,8 +230,17 @@
     cursor: grabbing;
   }
 
+  /* 可點的節點顯示手指；模型節點停用互動、顯示預設箭頭 */
+  :deep(.vue-flow__node) {
+    cursor: pointer;
+  }
+
+  :deep(.vue-flow__node.node-non-interactive) {
+    cursor: default;
+  }
+
   :deep(.vue-flow__edge-path) {
-    stroke: #005dff;
+    stroke: var(--color-accent);
     stroke-width: 2.4;
   }
 

@@ -7,7 +7,7 @@ services:
     env_file:
       - ./backend/.env
     ports:
-      - "5001:5001"
+      - "5002:5001"
     environment:
       FLASK_HOST: 0.0.0.0
       FLASK_PORT: 5001
@@ -19,6 +19,7 @@ services:
       MAX_CONTENT_LENGTH_MB: 100
     volumes:
       - ./backend:/app
+      - backend_venv:/app/.venv
       - whisper-cache:/root/.cache/whisper
     restart: unless-stopped
 
@@ -26,7 +27,8 @@ services:
     image: node:22-alpine
     container_name: datamind-frontend
     working_dir: /app
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    # --legacy-peer-deps: Tiptap v3 sub-packages pin exact @tiptap/core peer versions
+    command: sh -c "npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0 --port 5173"
     ports:
       - "5173:5173"
     depends_on:
@@ -50,7 +52,33 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: datamind-postgres
+    environment:
+      POSTGRES_USER: datamind
+      POSTGRES_PASSWORD: datamind
+      POSTGRES_DB: datamind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: datamind-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+
 volumes:
   whisper-cache:
   n8n_data:
   frontend_node_modules:
+  backend_venv:
+  postgres_data:

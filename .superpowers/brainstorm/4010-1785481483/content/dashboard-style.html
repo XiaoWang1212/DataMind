@@ -1,0 +1,166 @@
+<h2>三種視覺方向，哪個比較對你的胃口？</h2>
+<p class="subtitle">用 Hub 儀表板頁面當範例（實際頁面的真實文字/資料），比較字體、間距、卡片質感的差異。可以點選喜歡的選項，也可以在下面留言告訴我想混搭哪些元素。</p>
+
+<div class="options" style="margin-bottom:20px">
+  <div class="option" data-choice="a-current" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>現況</h3><p>目前正式環境長這樣</p></div>
+  </div>
+  <div class="option" data-choice="b-refined" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>精緻方向</h3><p>字體統一、陰影取代邊框、間距更緊實一致</p></div>
+  </div>
+  <div class="option" data-choice="c-bold" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>大氣方向</h3><p>字級放大、留白更多、強調色用得更大膽</p></div>
+  </div>
+</div>
+
+<style>
+  .dash-preview { background:#f6f5f2; padding:20px; border-radius:8px; }
+  .dash-preview * { box-sizing:border-box; }
+
+  /* A: current */
+  .dash-a .page-title { font-size:22px; font-weight:700; color:#1c2130; margin:0 0 4px; font-family: Arial, sans-serif; }
+  .dash-a .page-sub { font-size:12px; color:#334155; margin:0 0 14px; font-family: Arial, sans-serif; }
+  .dash-a .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px; }
+  .dash-a .stat-card { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:14px 14px 12px; }
+  .dash-a .stat-label { font-size:10.5px; color:#334155; margin-bottom:6px; font-family: Arial, sans-serif; }
+  .dash-a .stat-number { font-size:26px; font-weight:700; color:#1c2130; line-height:1; margin-bottom:6px; letter-spacing:-0.5px; font-family: Arial, sans-serif; }
+  .dash-a .stat-trend { display:flex; align-items:center; gap:3px; font-size:10px; color:#334155; font-family: Arial, sans-serif; }
+  .dash-a .action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:12px; }
+  .dash-a .action-card { background:#fff; border:1.5px dashed #d1d5db; border-radius:8px; padding:12px 14px; display:flex; align-items:center; gap:10px; }
+  .dash-a .action-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; }
+  .dash-a .icon-blue { background:#c7d2fe; color:#4f46e5; }
+  .dash-a .icon-orange { background:#fed7aa; color:#f59e0b; }
+  .dash-a .action-title { font-size:12px; font-weight:600; color:#1c2130; margin-bottom:2px; font-family: Arial, sans-serif; }
+  .dash-a .action-desc { font-size:10px; color:#334155; line-height:1.4; font-family: Arial, sans-serif; }
+  .dash-a .activity-card { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:14px 16px; }
+  .dash-a .activity-header { display:flex; align-items:center; gap:6px; margin-bottom:2px; color:#1c2130; font-size:12px; font-weight:600; font-family: Arial, sans-serif; }
+  .dash-a .activity-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f0f0; font-family: Arial, sans-serif; }
+  .dash-a .activity-item:last-child { border-bottom:none; padding-bottom:0; }
+  .dash-a .activity-name { font-size:11px; font-weight:500; color:#1c2130; margin-bottom:2px; }
+  .dash-a .activity-status, .dash-a .activity-time { font-size:10px; color:#334155; }
+
+  /* B: refined */
+  .dash-b { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; }
+  .dash-b .page-title { font-size:21px; font-weight:700; color:#1c2130; margin:0 0 3px; letter-spacing:-0.3px; }
+  .dash-b .page-sub { font-size:12px; color:#5b677e; margin:0 0 16px; }
+  .dash-b .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .dash-b .stat-card { background:#fff; border-radius:12px; padding:14px 14px 12px; box-shadow:0 1px 2px rgba(28,33,48,0.06), 0 1px 8px rgba(28,33,48,0.04); }
+  .dash-b .stat-label { font-size:10.5px; color:#5b677e; margin-bottom:7px; font-weight:500; }
+  .dash-b .stat-number { font-size:25px; font-weight:700; color:#1c2130; line-height:1; margin-bottom:7px; letter-spacing:-0.4px; }
+  .dash-b .stat-trend { display:flex; align-items:center; gap:3px; font-size:10px; color:#e8a33d; font-weight:600; }
+  .dash-b .action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
+  .dash-b .action-card { background:#fff; border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 2px rgba(28,33,48,0.06), 0 1px 8px rgba(28,33,48,0.04); }
+  .dash-b .action-icon { width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px; background:rgba(232,163,61,0.12); color:#c9860f; }
+  .dash-b .action-title { font-size:12px; font-weight:600; color:#1c2130; margin-bottom:2px; }
+  .dash-b .action-desc { font-size:10px; color:#5b677e; line-height:1.45; }
+  .dash-b .activity-card { background:#fff; border-radius:12px; padding:14px 16px; box-shadow:0 1px 2px rgba(28,33,48,0.06), 0 1px 8px rgba(28,33,48,0.04); }
+  .dash-b .activity-header { display:flex; align-items:center; gap:6px; margin-bottom:2px; color:#1c2130; font-size:12px; font-weight:600; }
+  .dash-b .activity-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f2f4; }
+  .dash-b .activity-item:last-child { border-bottom:none; padding-bottom:0; }
+  .dash-b .activity-name { font-size:11px; font-weight:500; color:#1c2130; margin-bottom:2px; }
+  .dash-b .activity-status, .dash-b .activity-time { font-size:10px; color:#5b677e; }
+
+  /* C: bold */
+  .dash-c { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; }
+  .dash-c .page-title { font-size:26px; font-weight:800; color:#1c2130; margin:0 0 6px; letter-spacing:-0.5px; }
+  .dash-c .page-sub { font-size:12.5px; color:#5b677e; margin:0 0 18px; }
+  .dash-c .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .dash-c .stat-card { background:#fff; border-radius:14px; padding:16px 16px 14px; border-bottom:3px solid #e8a33d; }
+  .dash-c .stat-label { font-size:10.5px; color:#5b677e; margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+  .dash-c .stat-number { font-size:30px; font-weight:800; color:#1c2130; line-height:1; margin-bottom:8px; letter-spacing:-0.6px; }
+  .dash-c .stat-trend { display:flex; align-items:center; gap:3px; font-size:10.5px; color:#16a34a; font-weight:600; }
+  .dash-c .action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:16px; }
+  .dash-c .action-card { background:#e8a33d; border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:10px; }
+  .dash-c .action-icon { width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; background:rgba(255,255,255,0.35); color:#fff; }
+  .dash-c .action-title { font-size:12.5px; font-weight:700; color:#fff; margin-bottom:2px; }
+  .dash-c .action-desc { font-size:10px; color:rgba(255,255,255,0.85); line-height:1.4; }
+  .dash-c .activity-card { background:#fff; border-radius:14px; padding:16px 18px; }
+  .dash-c .activity-header { display:flex; align-items:center; gap:6px; margin-bottom:4px; color:#1c2130; font-size:13px; font-weight:700; }
+  .dash-c .activity-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f1f2f4; }
+  .dash-c .activity-item:last-child { border-bottom:none; padding-bottom:0; }
+  .dash-c .activity-name { font-size:11.5px; font-weight:600; color:#1c2130; margin-bottom:2px; }
+  .dash-c .activity-status, .dash-c .activity-time { font-size:10px; color:#5b677e; }
+
+  .compare-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .compare-col .mockup-header { text-align:center; font-weight:600; }
+</style>
+
+<div class="compare-row">
+  <div class="mockup compare-col">
+    <div class="mockup-header">A · 現況</div>
+    <div class="mockup-body">
+      <div class="dash-preview dash-a">
+        <div class="page-title">儀表板</div>
+        <div class="page-sub">歡迎回來，這是您的研究概覽。</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">框架總數</div><div class="stat-number">24</div><div class="stat-trend">↑ 本週新增 3 個</div></div>
+          <div class="stat-card"><div class="stat-label">活躍專案</div><div class="stat-number">8</div><div class="stat-trend">↑ 2 個進行中</div></div>
+          <div class="stat-card"><div class="stat-label">已完成分析</div><div class="stat-number">156</div><div class="stat-trend">↑ 本月新增 12 個</div></div>
+        </div>
+        <div class="action-grid">
+          <div class="action-card"><div class="action-icon icon-blue">+</div><div><div class="action-title">提取新框架</div><div class="action-desc">上傳研究論文以提取方法論和變數</div></div></div>
+          <div class="action-card"><div class="action-icon icon-orange">+</div><div><div class="action-title">建立新專案</div><div class="action-desc">將框架套用至您的資料集並執行分析</div></div></div>
+        </div>
+        <div class="activity-card">
+          <div class="activity-header">🕐 最近活動</div>
+          <div class="activity-item"><div><div class="activity-name">CNN 架構分析</div><div class="activity-status">框架已提取</div></div><div class="activity-time">2 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">市場情緒研究</div><div class="activity-status">專案已完成</div></div><div class="activity-time">5 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">回歸模型模板</div><div class="activity-status">框架已儲存</div></div><div class="activity-time">1 天前</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">B · 精緻方向</div>
+    <div class="mockup-body">
+      <div class="dash-preview dash-b">
+        <div class="page-title">儀表板</div>
+        <div class="page-sub">歡迎回來，這是您的研究概覽。</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">框架總數</div><div class="stat-number">24</div><div class="stat-trend">↑ 本週新增 3 個</div></div>
+          <div class="stat-card"><div class="stat-label">活躍專案</div><div class="stat-number">8</div><div class="stat-trend">↑ 2 個進行中</div></div>
+          <div class="stat-card"><div class="stat-label">已完成分析</div><div class="stat-number">156</div><div class="stat-trend">↑ 本月新增 12 個</div></div>
+        </div>
+        <div class="action-grid">
+          <div class="action-card"><div class="action-icon">+</div><div><div class="action-title">提取新框架</div><div class="action-desc">上傳研究論文以提取方法論和變數</div></div></div>
+          <div class="action-card"><div class="action-icon">+</div><div><div class="action-title">建立新專案</div><div class="action-desc">將框架套用至您的資料集並執行分析</div></div></div>
+        </div>
+        <div class="activity-card">
+          <div class="activity-header">🕐 最近活動</div>
+          <div class="activity-item"><div><div class="activity-name">CNN 架構分析</div><div class="activity-status">框架已提取</div></div><div class="activity-time">2 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">市場情緒研究</div><div class="activity-status">專案已完成</div></div><div class="activity-time">5 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">回歸模型模板</div><div class="activity-status">框架已儲存</div></div><div class="activity-time">1 天前</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup compare-col">
+    <div class="mockup-header">C · 大氣方向</div>
+    <div class="mockup-body">
+      <div class="dash-preview dash-c">
+        <div class="page-title">儀表板</div>
+        <div class="page-sub">歡迎回來，這是您的研究概覽。</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">框架總數</div><div class="stat-number">24</div><div class="stat-trend">↑ 本週新增 3 個</div></div>
+          <div class="stat-card"><div class="stat-label">活躍專案</div><div class="stat-number">8</div><div class="stat-trend">↑ 2 個進行中</div></div>
+          <div class="stat-card"><div class="stat-label">已完成分析</div><div class="stat-number">156</div><div class="stat-trend">↑ 本月新增 12 個</div></div>
+        </div>
+        <div class="action-grid">
+          <div class="action-card"><div class="action-icon">+</div><div><div class="action-title">提取新框架</div><div class="action-desc">上傳研究論文以提取方法論和變數</div></div></div>
+          <div class="action-card"><div class="action-icon">+</div><div><div class="action-title">建立新專案</div><div class="action-desc">將框架套用至您的資料集並執行分析</div></div></div>
+        </div>
+        <div class="activity-card">
+          <div class="activity-header">🕐 最近活動</div>
+          <div class="activity-item"><div><div class="activity-name">CNN 架構分析</div><div class="activity-status">框架已提取</div></div><div class="activity-time">2 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">市場情緒研究</div><div class="activity-status">專案已完成</div></div><div class="activity-time">5 小時前</div></div>
+          <div class="activity-item"><div><div class="activity-name">回歸模型模板</div><div class="activity-status">框架已儲存</div></div><div class="activity-time">1 天前</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,25 +1,34 @@
+import type { JSONContent } from '@tiptap/core'
 import type { ArxivGenerateResult } from '@/api/arxiv'
-import type { Citation, PaperReport, PaperSection, PaperSegment } from '@/constants/reportData'
+import type { Citation, PaperReport } from '@/constants/reportData'
 
-function parseParagraph (paragraphText: string): PaperSegment[] {
+function parseParagraphToContent (paragraphText: string): JSONContent[] {
   const tokens = paragraphText.split(/((?:\[\d+\])+)/g).filter(token => token !== '')
-  const segments: PaperSegment[] = []
+  const nodes: JSONContent[] = []
 
   for (const token of tokens) {
     if (/^(?:\[\d+\])+$/.test(token)) {
-      const ids = Array.from(token.matchAll(/\d+/g)).map(match => `cite-${match[0]}`)
-      const prev = segments.at(-1)
-      if (prev && !prev.citationIds) {
-        prev.citationIds = ids
+      const firstDigits = token.match(/\d+/)?.[0]
+      if (!firstDigits) {
+        continue
+      }
+      const citationId = `cite-${firstDigits}`
+      const prev = nodes.at(-1)
+
+      if (prev && prev.type === 'text' && !prev.marks) {
+        // 引用標記依附在「前一句」文字上,不寫進文字內容本身
+        prev.marks = [{ type: 'citation', attrs: { citationId } }]
       } else {
-        segments.push({ text: '', citationIds: ids })
+        // 沒有前一句可依附(例如段落一開頭就是引用標記):用零寬空白當文字節點,
+        // 只是為了承載 citation mark,避免 ProseMirror 不允許空文字節點
+        nodes.push({ type: 'text', text: '​', marks: [{ type: 'citation', attrs: { citationId } }] })
       }
     } else {
-      segments.push({ text: token })
+      nodes.push({ type: 'text', text: token })
     }
   }
 
-  return segments
+  return nodes
 }
 
 function buildCitations (result: ArxivGenerateResult): Citation[] {
@@ -37,13 +46,14 @@ function buildCitations (result: ArxivGenerateResult): Citation[] {
         journal: String(ref.journal ?? 'arXiv'),
         year: Number(ref.year) || 0,
         snippet: snippetEntry?.relevant_chunk ?? '',
+        arxivId: ref.arxiv_id || undefined,
       }
     })
 }
 
 export function transformArxivResultToPaperReport (result: ArxivGenerateResult, topic: string): PaperReport {
   const blocks = result.paper_markdown.split('\n\n---\n\n')
-  const sections: PaperSection[] = []
+  const docContent: JSONContent[] = []
 
   for (const block of blocks) {
     const trimmed = block.trim()
@@ -55,38 +65,47 @@ export function transformArxivResultToPaperReport (result: ArxivGenerateResult, 
     const heading = trimmed.slice(3, newlineIndex === -1 ? undefined : newlineIndex).trim()
     const body = newlineIndex === -1 ? '' : trimmed.slice(newlineIndex + 2)
 
+    docContent.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: heading }],
+    })
+
     const paragraphs = body
       .split('\n\n')
       .map(p => p.trim())
       .filter(p => p.length > 0)
-      .map(p => parseParagraph(p))
 
-    sections.push({ heading, paragraphs })
+    for (const paragraph of paragraphs) {
+      docContent.push({ type: 'paragraph', content: parseParagraphToContent(paragraph) })
+    }
   }
 
   return {
     title: topic,
-    sections,
+    content: { type: 'doc', content: docContent },
     citations: buildCitations(result),
+    citationStyle: 'apa',
   }
+}
+
+function renderTextContent (node: JSONContent, citationIndex: Record<string, number>): string {
+  if (node.type === 'text') {
+    const citationId = node.marks?.find(mark => mark.type === 'citation')?.attrs?.citationId as string | undefined
+    const citationSuffix = citationId ? `[${citationIndex[citationId] ?? citationId}]` : ''
+    return (node.text ?? '') + citationSuffix
+  }
+  return (node.content ?? []).map(child => renderTextContent(child, citationIndex)).join('')
 }
 
 export function buildPaperText (report: PaperReport, citationIndex: Record<string, number>): string {
   const lines: string[] = [`# ${report.title}`]
 
-  for (const section of report.sections) {
-    lines.push(`## ${section.heading}`)
-
-    for (const paragraph of section.paragraphs) {
-      const paragraphText = paragraph
-        .map(segment => {
-          const marks = (segment.citationIds ?? [])
-            .map(id => `[${citationIndex[id] ?? id}]`)
-            .join('')
-          return segment.text + marks
-        })
-        .join('')
-      lines.push(paragraphText)
+  for (const node of report.content.content ?? []) {
+    if (node.type === 'heading') {
+      lines.push(`## ${renderTextContent(node, citationIndex)}`)
+    } else if (node.type === 'paragraph') {
+      lines.push(renderTextContent(node, citationIndex))
     }
   }
 

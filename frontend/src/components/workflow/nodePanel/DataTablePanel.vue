@@ -68,39 +68,23 @@
                   >
                 </td>
                 <td :class="{ 'target-cell': column.role === 'target' }">
-                  <select v-model="column.type">
-                    <option
-                      v-for="type in typeOptions"
-                      :key="type"
-                      :value="type"
-                    >
-                      {{ typeLabels[type] }}
-                    </option>
-                  </select>
+                  <CustomSelect
+                    :model-value="column.type"
+                    :options="typeOptions.map(t => ({ value: t, label: typeLabels[t] }))"
+                    @update:model-value="column.type = $event as ColumnType"
+                  />
                 </td>
                 <td :class="{ 'target-cell': column.role === 'target' }">
                   <div class="role-select-wrap">
-                    <select
-                      v-model="column.role"
+                    <CustomSelect
                       class="role-select"
-                      :class="{
-                        'role-select--attention': props.loading && !hasTarget && !roleSelectTouched,
-                      }"
-                      @focus="handleRoleSelectFocus"
-                    >
-                      <option
-                        v-for="role in roleOptions"
-                        :key="role"
-                        :disabled="
-                          role === 'target' &&
-                            hasOtherTarget(index) &&
-                            column.role !== 'target'
-                        "
-                        :value="role"
-                      >
-                        {{ roleLabels[role] }}
-                      </option>
-                    </select>
+                      :model-value="column.role"
+                      :options="roleOptions.map(r => ({ value: r, label: roleLabels[r] }))"
+                      :highlight="props.loading && !hasTarget && !roleSelectTouched"
+                      @update:model-value="column.role = $event as ColumnRole"
+                      @change="onRoleChange(index)"
+                      @focusin="handleRoleSelectFocus"
+                    />
                     <Transition v-if="index === 0" name="tap-hint-fade">
                       <span
                         v-if="props.loading && !roleSelectTouched && !hasTarget"
@@ -134,8 +118,8 @@
           </button>
           <button
             class="btn-apply"
-            :class="{ 'btn-apply--disabled': !hasTarget }"
-            :disabled="!hasTarget"
+            :class="{ 'btn-apply--disabled': !hasTarget || !props.loading }"
+            :disabled="!hasTarget || !props.loading"
             type="button"
             @click="applyColumnSettings"
           >
@@ -149,6 +133,8 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import * as XLSX from 'xlsx'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
   type ColumnRole = 'feature' | 'target' | 'meta' | 'skip'
@@ -247,12 +233,6 @@
     return [...new Set(candidates)]
   }
 
-  function hasOtherTarget (index: number): boolean {
-    return columnSettings.value.some(
-      (item, itemIndex) => itemIndex !== index && item.role === 'target',
-    )
-  }
-
   function buildColumnSettings (useExisting = true): void {
     columnSettings.value = previewColumns.value.map((header, index) => {
       const columnValues = previewDataRows.value.map(row => row[index] ?? '')
@@ -288,6 +268,15 @@
 
   function applyColumnSettings (): void {
     emit('apply-column-config')
+  }
+
+  function onRoleChange (index: number): void {
+    if (columnSettings.value[index]?.role !== 'target') return
+    columnSettings.value.forEach((col, i) => {
+      if (i !== index && col.role === 'target') {
+        col.role = 'feature'
+      }
+    })
   }
 
   function getColumnRawValues (index: number): string[] {
@@ -394,22 +383,64 @@
     { deep: true },
   )
 
+  function getFileExtension (file: File): string {
+    const name = file.name || ''
+    const dot = name.lastIndexOf('.')
+    return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()
+  }
+
+  async function loadExcelFile (file: File): Promise<void> {
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    if (!firstSheetName) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    const sheet = workbook.Sheets[firstSheetName]!
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
+    const stringRows = rows.map(row =>
+      row.map(cell => (cell === null || cell === undefined ? '' : String(cell))),
+    )
+    const nonEmptyRows = stringRows.filter(row => row.some(cell => cell.trim().length > 0))
+
+    if (nonEmptyRows.length === 0) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    previewColumns.value = nonEmptyRows[0]!
+    previewDataRows.value = nonEmptyRows.slice(1)
+  }
+
+  async function loadCsvFile (file: File): Promise<void> {
+    const text = await decodeFileText(file)
+    const lines = text
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+
+    if (lines.length === 0) {
+      previewColumns.value = []
+      previewDataRows.value = []
+      return
+    }
+
+    previewColumns.value = parseCsvLine(lines[0]!)
+    previewDataRows.value = lines.slice(1).map(line => parseCsvLine(line))
+  }
+
   async function loadFile (file: File): Promise<void> {
     try {
-      const text = await decodeFileText(file)
-      const lines = text
-        .replace(/\r\n/g, '\n')
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-
-      if (lines.length === 0) {
-        previewColumns.value = []
-        previewDataRows.value = []
-        return
+      const ext = getFileExtension(file)
+      if (ext === 'xlsx' || ext === 'xls') {
+        await loadExcelFile(file)
+      } else {
+        await loadCsvFile(file)
       }
-
-      previewColumns.value = parseCsvLine(lines[0]!)
-      previewDataRows.value = lines.slice(1).map(line => parseCsvLine(line))
       buildColumnSettings()
     } catch {
       previewColumns.value = []
@@ -524,7 +555,7 @@
     border-radius: 16px;
     border: 1px dashed rgba(96, 165, 250, 0.7);
     background: rgba(255, 255, 255, 0.88);
-    color: #005dff;
+    color: var(--color-accent);
     font-size: 14px;
     z-index: 10;
   }
@@ -545,22 +576,22 @@
   .data-table-file {
     flex-shrink: 0;
     margin-left: auto;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
   .data-table-empty {
     padding: 20px;
     border-radius: 12px;
-    background: #f8fafc;
-    color: #475569;
+    background: var(--color-surface);
+    color: var(--color-secondary);
   }
 
   .data-table-summary,
   .data-table-summary-inline {
     display: flex;
     gap: 14px;
-    color: #475569;
+    color: var(--color-secondary);
     font-size: 13px;
   }
 
@@ -580,17 +611,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #005dff;
+    color: var(--color-accent);
     font-size: 13px;
     line-height: 1.4;
   }
 
   .data-table-guide strong {
-    color: #005dff;
+    color: var(--color-accent);
   }
 
   .data-table-guide--ready {
-    color: #10b981;
+    color: #16a34a;
   }
 
   .data-table-column-settings {
@@ -598,8 +629,8 @@
     flex-direction: column;
     padding: 0;
     border-radius: 12px;
-    border: 1px solid rgba(0, 93, 255, 0.12);
-    background: #ffffff;
+    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
+    background: var(--color-surface);
     flex: 1 1 380px;
     min-height: 380px;
     overflow: hidden;
@@ -609,7 +640,7 @@
     flex-shrink: 0;
     padding: 10px 12px;
     font-size: 13px;
-    color: #475569;
+    color: var(--color-secondary);
     font-weight: 600;
   }
 
@@ -641,7 +672,7 @@
     gap: 10px;
     padding: 10px 12px;
     border-top: 1px solid rgba(148, 163, 184, 0.12);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 70%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-surface) 70%);
     flex-shrink: 0;
   }
 
@@ -674,7 +705,7 @@
   .column-settings-table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
+    background: var(--color-surface);
     font-weight: 600;
     z-index: 1;
   }
@@ -685,17 +716,17 @@
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
     text-align: left;
     font-size: 13px;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .column-name-input {
     width: 100%;
     padding: 8px 10px;
-    border: 1px solid rgba(0, 93, 255, 0.35);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
     border-radius: 8px;
-    background: #f8fafc;
+    background: var(--color-surface);
     font-size: 13px;
-    color: #0f172a;
+    color: var(--color-ink);
   }
 
   .values-cell {
@@ -715,13 +746,13 @@
   }
 
   .btn-reset {
-    background: #f8fafc;
-    color: #0f172a;
-    border: 1px solid rgba(0, 93, 255, 0.18);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
   }
 
   .btn-apply {
-    background: #005dff;
+    background: var(--color-accent);
     color: #fff;
   }
 
@@ -733,28 +764,28 @@
   .column-settings-table select {
     width: 100%;
     padding: 8px 30px 8px 10px;
-    border: 1px solid rgba(0, 93, 255, 0.35);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
     border-radius: 8px;
-    background-color: #fff;
+    background-color: var(--color-surface);
     font-size: 13px;
-    color: #0f172a;
+    color: var(--color-ink);
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
     /* 補上下拉箭頭，明確表示這是可點的下拉選單 */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23005DFF' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23E8A33D' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 8px center;
     transition: border-color 0.12s, box-shadow 0.12s;
   }
 
   .column-settings-table select:hover {
-    border-color: #005dff;
+    border-color: var(--color-accent);
   }
 
   .column-settings-table select:focus {
-    border-color: #005dff;
-    box-shadow: 0 0 0 3px rgba(0, 93, 255, 0.15);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 15%, transparent);
     outline: none;
   }
 
@@ -828,7 +859,7 @@
 
   .target-row td,
   .target-cell {
-    background: rgba(0, 93, 255, 0.1);
+    background: color-mix(in oklab, var(--color-accent) 10%, transparent);
   }
 
   .target-row {
@@ -838,8 +869,8 @@
   .loader {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(0, 93, 255, 0.25);
-    border-top-color: #005dff;
+    border: 2px solid color-mix(in oklab, var(--color-accent) 25%, transparent);
+    border-top-color: var(--color-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }

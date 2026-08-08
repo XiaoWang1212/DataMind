@@ -26,14 +26,6 @@
           </button>
         </div>
 
-        <v-btn
-          class="generate-paper-btn"
-          color="primary"
-          size="small"
-          @click="router.push(`/paper/sources?project=${projectId}`)"
-        >
-          生成論文
-        </v-btn>
       </header>
 
       <section v-if="!hasLoaded" class="empty-state">
@@ -42,7 +34,7 @@
 
       <section v-else-if="!workflowResult" class="empty-state">
         <p>尚無結果。請先在 workflow 頁面完成執行。</p>
-        <v-btn color="primary" size="small" @click="router.push('/workflow')">
+        <v-btn class="bg-accent" color="accent" size="small" @click="router.push('/workflow')">
           前往 Workflow
         </v-btn>
       </section>
@@ -329,25 +321,25 @@
 
 <style scoped>
   .results-page {
-    --page-bg: #e4e4e8;
-    --card-bg: #ffffff;
+    --page-bg: var(--color-primary);
+    --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: #15181e;
-    --text-secondary: #6f7480;
-    --brand: #1058d6;
-    --brand-soft: #ebf2ff;
-    --good: #18a836;
+    --text-main: var(--color-ink);
+    --text-secondary: var(--color-secondary);
+    --brand: var(--color-accent);
+    --brand-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+    --good: #16a34a;
     min-height: calc(100vh - 64px);
     display: flex;
     gap: 0;
     padding: 16px;
     position: relative;
     background:
-      radial-gradient(circle at 8% 12%, rgba(99, 146, 238, 0.18) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, rgba(88, 157, 255, 0.16) 0%, transparent 30%),
-      linear-gradient(180deg, #d7d9df 0%, #dedfe4 100%);
-    font-family: 'Noto Sans TC', 'Segoe UI', sans-serif;
+      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-accent) 16%, transparent) 0%, transparent 30%),
+      var(--page-bg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
   }
 
@@ -356,7 +348,7 @@
     min-width: 0;
     border: 1px solid var(--line);
     border-radius: 0 12px 12px 0;
-    background: linear-gradient(180deg, #f3f4f8 0%, #eff1f6 100%);
+    background: var(--card-bg);
     padding: 12px 20px 18px;
     overflow: auto;
   }
@@ -371,7 +363,7 @@
   }
 
   .back-btn {
-    color: #1f2430;
+    color: var(--color-ink);
   }
 
   .toolbar-tabs {
@@ -382,10 +374,6 @@
     gap: 4px;
   }
 
-  .generate-paper-btn {
-    margin-left: 12px;
-  }
-
   .toolbar-tab {
     border: none;
     padding: 6px 12px;
@@ -394,15 +382,15 @@
     align-items: center;
     gap: 5px;
     font-size: 12px;
-    color: #5f6571;
+    color: var(--color-secondary);
     cursor: pointer;
     background: transparent;
     transition: all 0.2s ease;
   }
 
   .toolbar-tab--active {
-    background: #ffffff;
-    color: #192235;
+    background: var(--color-surface);
+    color: var(--color-ink);
     box-shadow: 0 1px 3px rgba(20, 38, 84, 0.12);
   }
 
@@ -441,7 +429,7 @@
     margin: 0;
     font-size: 12px;
     font-weight: 700;
-    color: #20232a;
+    color: var(--color-ink);
   }
 
   .metric-value {
@@ -460,9 +448,9 @@
   .insight-card {
     margin-top: 12px;
     border-radius: 14px;
-    color: #f7f9ff;
+    color: var(--color-inverted);
     padding: 14px 16px;
-    background: linear-gradient(102deg, #4f86f0 0%, #4554df 100%);
+    background: linear-gradient(102deg, var(--color-accent) 0%, color-mix(in oklab, var(--color-accent) 70%, var(--color-ink)) 100%);
     animation: reveal-up 0.5s ease both;
     animation-delay: 0.12s;
   }
@@ -515,7 +503,7 @@
     margin-top: 12px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: #ffffff;
+    background: var(--color-surface);
     overflow: hidden;
     animation: reveal-up 0.55s ease both;
     animation-delay: 0.18s;
@@ -558,8 +546,8 @@
 
   .result-table th {
     font-weight: 700;
-    color: #2a2f39;
-    background: #fafbff;
+    color: var(--color-ink);
+    background: var(--color-surface);
   }
 
   .result-table tbody tr:last-child td {
@@ -568,7 +556,7 @@
 
   .model-name {
     font-weight: 700;
-    color: #1f2532;
+    color: var(--color-ink);
   }
 
   .score-best {
