@@ -261,7 +261,7 @@
 Run: `cd frontend && npm run type-check`
 Expected: exit code 0，無錯誤
 
-- [ ] **Step 6: 人工瀏覽器驗證**
+- [x] **Step 6: 人工瀏覽器驗證**
 
 啟動前端（`docker compose up -d frontend` 或既有跑著的 dev server），登入後到「框架庫 → 從論文提取框架」，上傳一份 PDF 並點「開始提取」。
 
@@ -270,7 +270,7 @@ Expected:
 - 播完第 4 則「正在整理成框架...」後停在該句，不會跳回第 1 則
 - 提取完成（成功或失敗）後文字與 spinner 一起消失，計時器不再跑（可用瀏覽器開發者工具觀察沒有殘留的 interval log，或重新點一次「開始提取」確認又從第 1 則開始，沒有疊加變快）
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/views/hub/ExtractFrameworkView.vue
