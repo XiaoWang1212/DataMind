@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import google.generativeai as genai
+from google import genai as genai_client
+from google.genai import types as genai_types
 
 from services.field_mapping_prompts import (
     CHAT_REFINE_SCHEMA,
@@ -543,6 +545,77 @@ class GeminiService:
         if not isinstance(reply, str) or not reply.strip():
             reply = "已更新對映，請確認左側表格。"
         return {"actions": actions, "reply": reply}
+
+    def analyze_pdf_stream(self, pdf_bytes: bytes, title: str = ""):
+        """Stream Gemini's thinking process while analyzing a PDF, then the final result.
+
+        Yields dicts of one of three shapes:
+        - {"type": "thought", "text": str} — one per thinking chunk
+        - {"type": "result", "data": {...same shape as analyze_pdf()'s return value...}}
+        - {"type": "error", "message": str}
+        """
+        prompt = (
+            f"{_WORKFLOW_SYSTEM_PROMPT}\n"
+            f"論文標題：{title or '（見上傳 PDF）'}\n"
+            "請根據上傳的 PDF 論文內容生成 workflow JSON。"
+        )
+
+        try:
+            client = genai_client.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
+            pdf_part = genai_types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+
+            stream = client.models.generate_content_stream(
+                model=self.model_name,
+                contents=[prompt, pdf_part],
+                config=genai_types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    thinking_config=genai_types.ThinkingConfig(
+                        include_thoughts=True,
+                        thinking_budget=-1,
+                    ),
+                ),
+            )
+
+            answer_parts: list[str] = []
+            last_chunk = None
+            for chunk in stream:
+                last_chunk = chunk
+                if not chunk.candidates:
+                    continue
+                content = chunk.candidates[0].content
+                if content is None or not content.parts:
+                    continue
+                for part in content.parts:
+                    text = getattr(part, "text", None)
+                    if not text:
+                        continue
+                    if getattr(part, "thought", False):
+                        yield {"type": "thought", "text": text}
+                    else:
+                        answer_parts.append(text)
+
+            answer = "".join(answer_parts)
+            workflow_json = self._safe_parse_json(answer)
+            raw = None
+            if workflow_json is None and answer.strip():
+                workflow_json = self._normalize_to_json(answer)
+            if workflow_json is None:
+                raw = answer.strip()
+
+            usage = getattr(last_chunk, "usage_metadata", None) if last_chunk is not None else None
+            yield {
+                "type": "result",
+                "data": {
+                    "provider": "gemini",
+                    "model": self.model_name,
+                    "workflow_json": self._fill_defaults(workflow_json),
+                    "raw": raw,
+                    "usage": self._usage_dict(usage),
+                },
+            }
+        except Exception as exc:
+            logger.exception("analyze_pdf_stream failed")
+            yield {"type": "error", "message": str(exc)}
 
 
 def truncate_content(text: str, max_chars: int = 18000) -> str:
