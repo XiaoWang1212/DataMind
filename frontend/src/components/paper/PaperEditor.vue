@@ -315,6 +315,24 @@
               @click="editor?.chain().focus().deleteTable().run()"
             />
           </div>
+          <v-menu location="bottom">
+            <template #activator="{ props: menuProps }">
+              <div class="toolbar-btn-wrap" data-tooltip="儲存格底色">
+                <v-btn icon="mdi-format-color-fill" size="small" variant="text" v-bind="menuProps" />
+              </div>
+            </template>
+            <v-card class="cell-color-menu-card">
+              <button
+                v-for="swatch in CELL_BACKGROUND_COLORS"
+                :key="swatch.label"
+                class="cell-color-swatch"
+                :style="{ backgroundColor: swatch.value ?? '#ffffff' }"
+                :title="swatch.label"
+                type="button"
+                @click="setCellBackgroundColor(swatch.value)"
+              />
+            </v-card>
+          </v-menu>
         </template>
         <div class="toolbar-btn-wrap" data-tooltip="插入圖片">
           <v-btn icon="mdi-image-plus" size="small" variant="text" @click="imageFileInputRef?.click()" />
@@ -367,8 +385,6 @@
   import { Subscript } from '@tiptap/extension-subscript'
   import { Superscript } from '@tiptap/extension-superscript'
   import { Table } from '@tiptap/extension-table'
-  import { TableCell } from '@tiptap/extension-table-cell'
-  import { TableHeader } from '@tiptap/extension-table-header'
   import { TableRow } from '@tiptap/extension-table-row'
   import { TextAlign } from '@tiptap/extension-text-align'
   import { Underline } from '@tiptap/extension-underline'
@@ -378,6 +394,7 @@
   import { getProject, type VariableMapping } from '@/api/project'
   import { AlignableImage } from '@/components/paper/alignableImage'
   import { CitationMark } from '@/components/paper/citationMark'
+  import { ColoredTableCell, ColoredTableHeader } from '@/components/paper/coloredTableCell'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
   import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
 
@@ -421,6 +438,18 @@
       .join('')
     const html = `<table><tbody><tr><th>變數名稱</th><th>定義</th><th>型別</th></tr>${rows}</tbody></table>`
     editor.value?.chain().focus().insertContent(html).run()
+  }
+
+  const CELL_BACKGROUND_COLORS: { label: string, value: string | null }[] = [
+    { label: '橘', value: '#fdecd2' },
+    { label: '灰藍', value: '#e2e8f0' },
+    { label: '淡黃', value: '#fdf6b2' },
+    { label: '淡綠', value: '#dcf5e3' },
+    { label: '無', value: null },
+  ]
+
+  function setCellBackgroundColor (color: string | null) {
+    editor.value?.chain().focus().setCellAttribute('backgroundColor', color).run()
   }
 
   function openLinkMenu () {
@@ -477,8 +506,8 @@
       Subscript,
       Table.configure({ resizable: true }),
       TableRow,
-      TableHeader,
-      TableCell,
+      ColoredTableHeader,
+      ColoredTableCell,
       AlignableImage.configure({ inline: false }),
       CitationMark.configure({ citationIndex }),
     ],
@@ -588,6 +617,24 @@
     display: flex;
     justify-content: flex-end;
     gap: 6px;
+  }
+
+  .cell-color-menu-card {
+    padding: 10px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .cell-color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(28, 33, 48, 0.15);
+    cursor: pointer;
+  }
+
+  .cell-color-swatch:hover {
+    border-color: rgba(28, 33, 48, 0.4);
   }
 
   .editor-status-bar {
