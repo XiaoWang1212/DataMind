@@ -6,7 +6,7 @@
     </section>
 
     <div ref="measureContentRef" aria-hidden="true" class="measure-container editor-content" />
-    <div ref="measureReferencesRef" aria-hidden="true" class="measure-container" />
+    <div ref="measureReferencesRef" aria-hidden="true" class="measure-container editor-content" />
   </div>
 </template>
 
@@ -40,11 +40,12 @@
   function measureFlow (elements: HTMLElement[]): number[] {
     return elements.map((el, i) => {
       const next = elements[i + 1]
-      return next ? next.offsetTop - el.offsetTop : el.getBoundingClientRect().height
+      const height = next ? next.offsetTop - el.offsetTop : el.getBoundingClientRect().height
+      return i === 0 ? height + el.offsetTop : height
     })
   }
 
-  function computePages () {
+  async function computePages () {
     const contentContainer = measureContentRef.value
     const referencesContainer = measureReferencesRef.value
     if (!contentContainer || !referencesContainer) return
@@ -56,6 +57,13 @@
 
     const contentHtml = generateHTML(props.content, buildPaperContentExtensions(citationIndex))
     contentContainer.innerHTML = contentHtml
+
+    const images = Array.from(contentContainer.querySelectorAll('img'))
+    await Promise.all([
+      document.fonts.ready,
+      ...images.map(img => img.decode().catch(() => {})),
+    ])
+
     const contentEls = Array.from(contentContainer.children) as HTMLElement[]
     const contentHeights = measureFlow(contentEls)
     const contentBlocks: PaginationBlock[] = contentEls.map((el, i) => ({
