@@ -246,98 +246,6 @@
             @click="insertVariableTable"
           />
         </div>
-        <template v-if="editor?.isActive('table')">
-          <div class="toolbar-btn-wrap" data-tooltip="新增列（前）">
-            <v-btn
-              icon="mdi-table-row-plus-before"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addRowBefore().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="新增列（後）">
-            <v-btn
-              icon="mdi-table-row-plus-after"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addRowAfter().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="刪除列">
-            <v-btn
-              icon="mdi-table-row-remove"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().deleteRow().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="新增欄（前）">
-            <v-btn
-              icon="mdi-table-column-plus-before"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addColumnBefore().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="新增欄（後）">
-            <v-btn
-              icon="mdi-table-column-plus-after"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addColumnAfter().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="刪除欄">
-            <v-btn
-              icon="mdi-table-column-remove"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().deleteColumn().run()"
-            />
-          </div>
-          <div v-if="editor?.can().mergeCells()" class="toolbar-btn-wrap" data-tooltip="合併儲存格">
-            <v-btn
-              icon="mdi-table-merge-cells"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().mergeCells().run()"
-            />
-          </div>
-          <div v-if="editor?.can().splitCell()" class="toolbar-btn-wrap" data-tooltip="拆分儲存格">
-            <v-btn
-              icon="mdi-table-split-cell"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().splitCell().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="刪除表格">
-            <v-btn
-              icon="mdi-table-remove"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().deleteTable().run()"
-            />
-          </div>
-          <v-menu location="bottom">
-            <template #activator="{ props: menuProps }">
-              <div class="toolbar-btn-wrap" data-tooltip="儲存格底色">
-                <v-btn icon="mdi-format-color-fill" size="small" variant="text" v-bind="menuProps" />
-              </div>
-            </template>
-            <v-card class="cell-color-menu-card">
-              <button
-                v-for="swatch in CELL_BACKGROUND_COLORS"
-                :key="swatch.label"
-                class="cell-color-swatch"
-                :style="{ backgroundColor: swatch.value ?? '#ffffff' }"
-                :title="swatch.label"
-                type="button"
-                @click="setCellBackgroundColor(swatch.value)"
-              />
-            </v-card>
-          </v-menu>
-        </template>
         <div class="toolbar-btn-wrap" data-tooltip="插入圖片">
           <v-btn icon="mdi-image-plus" size="small" variant="text" @click="imageFileInputRef?.click()" />
         </div>
@@ -356,6 +264,100 @@
         <div class="toolbar-btn-wrap" data-tooltip="重做">
           <v-btn icon="mdi-redo" size="small" variant="text" @click="editor?.chain().focus().redo().run()" />
         </div>
+      </div>
+
+      <div v-if="editor?.isActive('table')" class="editor-table-toolbar">
+        <div class="toolbar-btn-wrap" data-tooltip="新增列（前）">
+          <v-btn
+            icon="mdi-table-row-plus-before"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addRowBefore().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增列（後）">
+          <v-btn
+            icon="mdi-table-row-plus-after"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addRowAfter().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除列">
+          <v-btn
+            icon="mdi-table-row-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteRow().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增欄（前）">
+          <v-btn
+            icon="mdi-table-column-plus-before"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addColumnBefore().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增欄（後）">
+          <v-btn
+            icon="mdi-table-column-plus-after"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addColumnAfter().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除欄">
+          <v-btn
+            icon="mdi-table-column-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteColumn().run()"
+          />
+        </div>
+        <span class="toolbar-divider" />
+        <div v-if="editor?.can().mergeCells()" class="toolbar-btn-wrap" data-tooltip="合併儲存格">
+          <v-btn
+            icon="mdi-table-merge-cells"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().mergeCells().run()"
+          />
+        </div>
+        <div v-if="editor?.can().splitCell()" class="toolbar-btn-wrap" data-tooltip="拆分儲存格">
+          <v-btn
+            icon="mdi-table-split-cell"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().splitCell().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除表格">
+          <v-btn
+            icon="mdi-table-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteTable().run()"
+          />
+        </div>
+        <v-menu location="bottom">
+          <template #activator="{ props: menuProps }">
+            <div class="toolbar-btn-wrap" data-tooltip="儲存格底色">
+              <v-btn icon="mdi-format-color-fill" size="small" variant="text" v-bind="menuProps" />
+            </div>
+          </template>
+          <v-card class="cell-color-menu-card">
+            <button
+              v-for="swatch in CELL_BACKGROUND_COLORS"
+              :key="swatch.label"
+              class="cell-color-swatch"
+              :style="{ backgroundColor: swatch.value ?? '#ffffff' }"
+              :title="swatch.label"
+              type="button"
+              @click="setCellBackgroundColor(swatch.value)"
+            />
+          </v-card>
+        </v-menu>
       </div>
     </template>
 
@@ -578,6 +580,17 @@
       0 6px 20px rgba(28, 33, 48, 0.12);
   }
 
+  .editor-table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--color-accent) 8%, rgba(255, 255, 255, 0.5));
+    border: 1px solid rgba(28, 33, 48, 0.1);
+  }
+
   .toolbar-divider {
     width: 1px;
     height: 20px;
@@ -709,6 +722,16 @@
   :deep(.editor-content td) {
     border: 1px solid #d8dbe3;
     padding: 6px 10px;
+    position: relative;
+  }
+
+  :deep(.editor-content th.selectedCell)::after,
+  :deep(.editor-content td.selectedCell)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+    pointer-events: none;
   }
 
   :deep(.citation-mark) {

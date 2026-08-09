@@ -1,5 +1,11 @@
 <template>
   <aside :class="['hub-sidebar', { 'hub-sidebar--collapsed': collapsed }]">
+    <div aria-hidden="true" class="hub-sidebar-orbs">
+      <div class="orb orb-1" />
+      <div class="orb orb-2" />
+      <div class="orb orb-3" />
+    </div>
+
     <div class="hub-sidebar-header">
       <div v-if="!collapsed" class="hub-brand">
         <div class="hub-brand-title">研究中心</div>
@@ -100,6 +106,50 @@
   animation: hub-sidebar-shine 4.5s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
+}
+
+.hub-sidebar-orbs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(38px);
+}
+
+.orb-1 {
+  width: 160px;
+  height: 160px;
+  top: -40px;
+  left: -30px;
+  background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
+  opacity: 0.55;
+}
+
+.orb-2 {
+  width: 130px;
+  height: 130px;
+  top: 260px;
+  left: 40px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-accent) 60%, white) 0%, transparent 70%);
+  opacity: 0.5;
+}
+
+.orb-3 {
+  width: 110px;
+  height: 110px;
+  top: 480px;
+  left: -20px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-accent) 85%, black) 0%, transparent 70%);
+  opacity: 0.35;
 }
 
 .hub-sidebar--collapsed {

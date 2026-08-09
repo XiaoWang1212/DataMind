@@ -13,6 +13,6 @@
   font-weight: 700;
   line-height: 1;
   text-decoration: line-through;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 1.5px;
 }
 </style>
