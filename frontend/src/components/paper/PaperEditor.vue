@@ -243,7 +243,15 @@
           />
         </div>
         <template v-if="editor?.isActive('table')">
-          <div class="toolbar-btn-wrap" data-tooltip="新增列">
+          <div class="toolbar-btn-wrap" data-tooltip="新增列（前）">
+            <v-btn
+              icon="mdi-table-row-plus-before"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().addRowBefore().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="新增列（後）">
             <v-btn
               icon="mdi-table-row-plus-after"
               size="small"
@@ -259,7 +267,15 @@
               @click="editor?.chain().focus().deleteRow().run()"
             />
           </div>
-          <div class="toolbar-btn-wrap" data-tooltip="新增欄">
+          <div class="toolbar-btn-wrap" data-tooltip="新增欄（前）">
+            <v-btn
+              icon="mdi-table-column-plus-before"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().addColumnBefore().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="新增欄（後）">
             <v-btn
               icon="mdi-table-column-plus-after"
               size="small"
@@ -273,6 +289,30 @@
               size="small"
               variant="text"
               @click="editor?.chain().focus().deleteColumn().run()"
+            />
+          </div>
+          <div v-if="editor?.can().mergeCells()" class="toolbar-btn-wrap" data-tooltip="合併儲存格">
+            <v-btn
+              icon="mdi-table-merge-cells"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().mergeCells().run()"
+            />
+          </div>
+          <div v-if="editor?.can().splitCell()" class="toolbar-btn-wrap" data-tooltip="拆分儲存格">
+            <v-btn
+              icon="mdi-table-split-cell"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().splitCell().run()"
+            />
+          </div>
+          <div class="toolbar-btn-wrap" data-tooltip="刪除表格">
+            <v-btn
+              icon="mdi-table-remove"
+              size="small"
+              variant="text"
+              @click="editor?.chain().focus().deleteTable().run()"
             />
           </div>
         </template>
