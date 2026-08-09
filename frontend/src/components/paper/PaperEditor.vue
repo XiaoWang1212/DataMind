@@ -574,13 +574,15 @@
     gap: 2px;
     padding: 8px 10px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 6px 20px rgba(28, 33, 48, 0.12);
+      inset 0 1px 1px rgba(255, 255, 255, 0.75),
+      inset 0 -1px 1px rgba(28, 33, 48, 0.04),
+      0 2px 6px rgba(28, 33, 48, 0.06),
+      0 10px 28px rgba(28, 33, 48, 0.14);
   }
 
   .editor-table-toolbar {
@@ -590,13 +592,15 @@
     gap: 2px;
     padding: 6px 10px;
     border-radius: 12px;
-    background: color-mix(in oklab, var(--color-accent) 10%, rgba(255, 255, 255, 0.5));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: color-mix(in oklab, var(--color-accent) 12%, rgba(255, 255, 255, 0.55));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 6px 20px rgba(28, 33, 48, 0.12);
+      inset 0 1px 1px rgba(255, 255, 255, 0.75),
+      inset 0 -1px 1px rgba(28, 33, 48, 0.04),
+      0 2px 6px rgba(28, 33, 48, 0.06),
+      0 10px 28px rgba(28, 33, 48, 0.14);
   }
 
   .toolbar-divider {
