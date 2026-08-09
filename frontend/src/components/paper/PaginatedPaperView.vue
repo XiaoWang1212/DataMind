@@ -21,7 +21,7 @@
   import { buildPaperContentExtensions } from '@/components/paper/paperExtensions'
   import '@/components/paper/paperContentTypography.css'
 
-  const A4_CONTENT_HEIGHT_PX = 931
+  const A4_CONTENT_HEIGHT_PX = 890
 
   const props = defineProps<{
     content: JSONContent
@@ -122,7 +122,7 @@
 
 .a4-page {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
