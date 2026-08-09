@@ -51,10 +51,13 @@
           開始提取
         </button>
         <div v-if="extracting" class="extracting-indicator">
-          <v-progress-circular color="var(--color-accent)" indeterminate size="20" width="2" />
-          <Transition mode="out-in" name="fade">
-            <span :key="messageIndex">{{ EXTRACT_MESSAGES[messageIndex] }}</span>
-          </Transition>
+          <div class="extracting-header">
+            <v-progress-circular color="var(--color-accent)" indeterminate size="20" width="2" />
+            <span>正在提取框架...</span>
+          </div>
+          <div ref="thoughtLogEl" class="thought-log">
+            <p v-for="(t, i) in thoughtLog" :key="i" class="thought-log-line">{{ t }}</p>
+          </div>
         </div>
       </div>
 
@@ -108,9 +111,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { nextTick, ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
-  import { analyzeWorkflowFromPdf } from '@/api/gemini'
+  import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
   import { useFrameworkStore } from '@/store/frameworkStore'
 
   interface ExtractedFramework {
@@ -122,13 +125,6 @@
     metrics: string[]
   }
 
-  const EXTRACT_MESSAGES = [
-    '正在解析 PDF 內容...',
-    '正在辨識研究方法與模型架構...',
-    '正在提取前處理與特徵工程步驟...',
-    '正在整理成框架...',
-  ]
-
   const router = useRouter()
   const store = useFrameworkStore()
   const fileInput = ref<HTMLInputElement | null>(null)
@@ -138,8 +134,15 @@
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
-  const messageIndex = ref(0)
-  let messageTimer: ReturnType<typeof setInterval> | null = null
+  const thoughtLog = ref<string[]>([])
+  const thoughtLogEl = ref<HTMLElement | null>(null)
+
+  async function scrollThoughtLogToBottom (): Promise<void> {
+    await nextTick()
+    if (thoughtLogEl.value) {
+      thoughtLogEl.value.scrollTop = thoughtLogEl.value.scrollHeight
+    }
+  }
 
   function handleFileChange (e: Event): void {
     const input = e.target as HTMLInputElement
@@ -157,46 +160,49 @@
     extracting.value = true
     extractedData.value = null
     extractError.value = null
-    messageIndex.value = 0
-    messageTimer = setInterval(() => {
-      if (messageIndex.value < EXTRACT_MESSAGES.length - 1) {
-        messageIndex.value += 1
-      }
-    }, 2500)
+    thoughtLog.value = []
+
+    const file = selectedFile.value
+    const baseName = file.name.replace(/\.[^.]+$/, '')
 
     try {
-      const result = await analyzeWorkflowFromPdf({
-        file: selectedFile.value,
-        title: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-      })
+      await streamAnalyzeWorkflowFromPdf(
+        { file, title: baseName },
+        {
+          onThought: text => {
+            thoughtLog.value.push(text)
+            void scrollThoughtLogToBottom()
+          },
+          onResult: result => {
+            const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
+              typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+            )
+            const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
+              (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+            )
+            const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
+              (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+            )
 
-      const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
-        typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+            rawWorkflowJson.value = result
+            extractedData.value = {
+              name: baseName,
+              models,
+              preprocessing,
+              featureEngineering,
+              targetCol: String(result.target_col ?? result.targetCol ?? ''),
+              metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
+            }
+          },
+          onError: message => {
+            extractError.value = message
+          },
+        },
       )
-      const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-      const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-
-      rawWorkflowJson.value = result
-      extractedData.value = {
-        name: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-        models,
-        preprocessing,
-        featureEngineering,
-        targetCol: String(result.target_col ?? result.targetCol ?? ''),
-        metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
-      }
     } catch (error) {
       extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
     } finally {
       extracting.value = false
-      if (messageTimer !== null) {
-        clearInterval(messageTimer)
-        messageTimer = null
-      }
     }
   }
 
@@ -360,22 +366,36 @@
 }
 
 .extracting-indicator {
+  margin-top: 14px;
+}
+
+.extracting-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 14px;
   font-size: 13px;
   color: var(--color-secondary);
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
+.thought-log {
+  margin-top: 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--color-secondary);
+  line-height: 1.6;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.thought-log-line {
+  margin: 0 0 6px;
+}
+
+.thought-log-line:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Result zone ── */
