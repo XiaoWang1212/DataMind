@@ -400,6 +400,7 @@
   import { AlignableImage } from '@/components/paper/alignableImage'
   import { CitationMark } from '@/components/paper/citationMark'
   import { ColoredTableCell, ColoredTableHeader } from '@/components/paper/coloredTableCell'
+  import { ColumnResizeBalance } from '@/components/paper/columnResizeBalance'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
   import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
 
@@ -527,6 +528,7 @@
       TableRow,
       ColoredTableHeader,
       ColoredTableCell,
+      ColumnResizeBalance,
       AlignableImage.configure({ inline: false }),
       CitationMark.configure({ citationIndex }),
     ],
