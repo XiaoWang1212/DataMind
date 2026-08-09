@@ -1,5 +1,16 @@
 <template>
   <div class="paper-editor">
+    <svg aria-hidden="true" class="glass-distort-filter-defs">
+      <defs>
+        <filter id="paper-editor-glass-distort" color-interpolation-filters="sRGB" height="100%" width="100%" x="0%" y="0%">
+          <feTurbulence baseFrequency="0.01 0.05" numOctaves="1" result="turbulence" seed="2" type="fractalNoise" />
+          <feGaussianBlur in="turbulence" result="blurredNoise" stdDeviation="2" />
+          <feDisplacementMap in="SourceGraphic" in2="blurredNoise" result="displaced" scale="12" xChannelSelector="R" yChannelSelector="B" />
+          <feGaussianBlur in="displaced" stdDeviation="0.5" />
+        </filter>
+      </defs>
+    </svg>
+
     <template v-if="editable">
       <div v-if="editor?.isActive('image')" class="editor-toolbar">
         <div class="toolbar-btn-wrap" data-tooltip="靠左對齊">
@@ -569,6 +580,14 @@
     gap: 10px;
   }
 
+  /* SVG 濾鏡定義本身不用顯示，但不能用 display:none（會讓部分瀏覽器連濾鏡本身都失效）。 */
+  .glass-distort-filter-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
   .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -577,7 +596,7 @@
     padding: 8px 10px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
@@ -595,7 +614,7 @@
     padding: 6px 10px;
     border-radius: 12px;
     background: color-mix(in oklab, var(--color-accent) 12%, rgba(255, 255, 255, 0.55));
-    backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
