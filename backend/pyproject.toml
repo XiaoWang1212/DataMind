@@ -12,6 +12,7 @@ dependencies = [
   "flask-cors",
   "scikit-learn",
   "google-generativeai",
+  "google-genai",
   "openai-whisper",
   "xgboost",
   "lightgbm",
