@@ -106,99 +106,101 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { RouterLink, useRouter } from 'vue-router'
-  import { analyzeWorkflowFromPdf } from '@/api/gemini'
-  import { useFrameworkStore } from '@/store/frameworkStore'
+import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { analyzeWorkflowFromPdf } from '@/api/gemini'
+import { useFrameworkStore } from '@/store/frameworkStore'
 
-  interface ExtractedFramework {
-    name: string
-    models: string[]
-    preprocessing: string[]
-    featureEngineering: string[]
-    targetCol: string
-    metrics: string[]
-  }
+interface ExtractedFramework {
+  name: string
+  models: string[]
+  preprocessing: string[]
+  featureEngineering: string[]
+  targetCol: string
+  metrics: string[]
+}
 
-  const router = useRouter()
-  const store = useFrameworkStore()
-  const fileInput = ref<HTMLInputElement | null>(null)
-  const selectedFile = ref<File | null>(null)
-  const isDragOver = ref(false)
-  const extracting = ref(false)
-  const extractError = ref<string | null>(null)
-  const extractedData = ref<ExtractedFramework | null>(null)
-  const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
+const router = useRouter()
+const store = useFrameworkStore()
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const isDragOver = ref(false)
+const extracting = ref(false)
+const extractError = ref<string | null>(null)
+const extractedData = ref<ExtractedFramework | null>(null)
+const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
 
-  function handleFileChange (e: Event): void {
-    const input = e.target as HTMLInputElement
-    if (input.files?.[0]) selectedFile.value = input.files[0]
-  }
+function handleFileChange(e: Event): void {
+  const input = e.target as HTMLInputElement
+  if (input.files?.[0]) selectedFile.value = input.files[0]
+}
 
-  function handleDrop (e: DragEvent): void {
-    isDragOver.value = false
-    const file = e.dataTransfer?.files[0]
-    if (file && file.type === 'application/pdf') selectedFile.value = file
-  }
+function handleDrop(e: DragEvent): void {
+  isDragOver.value = false
+  const file = e.dataTransfer?.files[0]
+  if (file && file.type === 'application/pdf') selectedFile.value = file
+}
 
-  async function startExtract (): Promise<void> {
-    if (!selectedFile.value) return
-    extracting.value = true
-    extractedData.value = null
-    extractError.value = null
+async function startExtract(): Promise<void> {
+  if (!selectedFile.value) return
+  extracting.value = true
+  extractedData.value = null
+  extractError.value = null
 
-    try {
-      const result = await analyzeWorkflowFromPdf({
-        file: selectedFile.value,
-        title: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-      })
-
-      const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
-        typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
-      )
-      const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-      const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-
-      rawWorkflowJson.value = result
-      extractedData.value = {
-        name: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-        models,
-        preprocessing,
-        featureEngineering,
-        targetCol: String(result.target_col ?? result.targetCol ?? ''),
-        metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
-      }
-    } catch (error) {
-      extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
-    } finally {
-      extracting.value = false
-    }
-  }
-
-  async function saveFramework (): Promise<void> {
-    if (!extractedData.value) return
-    const d = extractedData.value
-    await store.addFramework({
-      title: d.name,
-      subtitle: d.models.join('、') || '未命名方法',
-      tag: d.models[0] ?? 'AI 提取',
-      variables: d.preprocessing.length + d.featureEngineering.length,
-      paperTitle: d.name,
-      description: `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
-      independentVars: [...d.preprocessing, ...d.featureEngineering],
-      dependentVars: d.targetCol ? [d.targetCol] : [],
-      hypotheses: [],
-      workflowJson: rawWorkflowJson.value ?? undefined,
+  try {
+    const result = await analyzeWorkflowFromPdf({
+      file: selectedFile.value,
+      title: selectedFile.value.name.replace(/\.[^.]+$/, ''),
     })
-    extractedData.value = null
-    rawWorkflowJson.value = null
-    selectedFile.value = null
-    router.push('/hub/library')
+
+    const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
+      typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+    )
+    const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
+      (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+    )
+    const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
+      (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+    )
+
+    rawWorkflowJson.value = result
+    extractedData.value = {
+      name: selectedFile.value.name.replace(/\.[^.]+$/, ''),
+      models,
+      preprocessing,
+      featureEngineering,
+      targetCol: String(result.target_col ?? result.targetCol ?? ''),
+      metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
+    }
+  } catch (error) {
+    extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+  } finally {
+    extracting.value = false
   }
+}
+
+function saveFramework(): void {
+  if (!extractedData.value) return
+  const d = extractedData.value
+  const today = new Date().toISOString().slice(0, 10)
+  store.addFramework({
+    title: d.name,
+    subtitle: d.models.join('、') || '未命名方法',
+    tag: d.models[0] ?? 'AI 提取',
+    date: today,
+    variables: d.preprocessing.length + d.featureEngineering.length,
+    paperTitle: d.name,
+    description: `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
+    independentVars: [...d.preprocessing, ...d.featureEngineering],
+    dependentVars: d.targetCol ? [d.targetCol] : [],
+    hypotheses: [],
+    workflowJson: rawWorkflowJson.value ?? undefined,
+  })
+  extractedData.value = null
+  rawWorkflowJson.value = null
+  selectedFile.value = null
+  router.push('/hub/library')
+}
 </script>
 
 <style scoped>

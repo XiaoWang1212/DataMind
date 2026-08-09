@@ -25,7 +25,7 @@
             @update:model-value="onCitationStyleChange"
           />
           <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
-          <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
+          <div v-if="mode === 'edit'" class="edit-actions">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
               class="bg-accent"
@@ -38,9 +38,26 @@
               儲存
             </v-btn>
           </div>
+          <v-btn
+            class="score-btn"
+            :class="{ 'score-btn--loading': scoring }"
+            :disabled="scoring"
+            size="small"
+            variant="flat"
+            @click="handleScorePaper"
+          >
+            <template #prepend>
+              <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
+            </template>
+            {{ scoreButtonLabel }}
+          </v-btn>
         </div>
       </header>
 
+      <p v-if="scoreError" class="score-error">
+        {{ scoreError }}
+        <v-btn size="small" variant="text" @click="handleScorePaper">重試</v-btn>
+      </p>
       <p v-if="mode === 'edit' && !projectId" class="save-hint">
         此論文尚未關聯專案,無法儲存
       </p>
@@ -67,6 +84,14 @@
           />
           <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" />
         </article>
+
+        <div class="paper-citations">
+          <JournalScorePanel
+            :journal-scores="journalScores"
+            :scoring="scoring"
+            @open-report="scoreDialogVisible = true"
+          />
+        </div>
       </div>
 
       <CitationPopover
@@ -76,6 +101,13 @@
         @close="activeCitationId = null"
       />
     </main>
+
+    <JournalScoreDialog
+      :failed-journals="failedJournals"
+      :journal-scores="journalScores"
+      :visible="scoreDialogVisible"
+      @close="scoreDialogVisible = false"
+    />
   </section>
 </template>
 
@@ -83,9 +115,12 @@
   import type { PaperReport } from '@/constants/reportData'
   import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { type JournalScore, scorePaper } from '@/api/arxiv'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPopover from '@/components/paper/CitationPopover.vue'
+  import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
+  import JournalScorePanel from '@/components/paper/JournalScorePanel.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
   import PaginatedPaperView from '@/components/paper/PaginatedPaperView.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
@@ -93,6 +128,7 @@
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
   import { citationStyleLabels } from '@/utils/paper/formatCitation'
+  import { buildPaperText } from '@/utils/paperTransform'
 
   const route = useRoute()
   const router = useRouter()
@@ -116,6 +152,25 @@
   )
 
   let savedSnapshot: PaperReport = mockPaperReport
+
+  const scoring = ref(false)
+  const scoreError = ref<string | null>(null)
+  const scoreDialogVisible = ref(false)
+  const journalScores = ref<JournalScore[]>([])
+  const failedJournals = ref<string[]>([])
+
+  const scoreButtonLabel = computed(() => {
+    if (scoring.value) return '評分中...'
+    return journalScores.value.length > 0 ? '再次評分' : '期刊評分'
+  })
+
+  const citationIndex = computed(() => {
+    const index: Record<string, number> = {}
+    for (const [i, citation] of report.value.citations.entries()) {
+      index[citation.id] = i + 1
+    }
+    return index
+  })
 
   onMounted(async () => {
     document.title = 'DataMind'
@@ -201,6 +256,22 @@
       saving.value = false
     }
   }
+
+  async function handleScorePaper (): Promise<void> {
+    scoring.value = true
+    scoreError.value = null
+    try {
+      const paperText = buildPaperText(report.value, citationIndex.value)
+      const result = await scorePaper(paperText)
+      journalScores.value = result.journalScores
+      failedJournals.value = result.failedJournals
+      scoreDialogVisible.value = true
+    } catch (error) {
+      scoreError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      scoring.value = false
+    }
+  }
 </script>
 
 <style scoped>
@@ -237,6 +308,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
+    max-width: 1064px;
+    margin: 0 auto;
     padding: 0 2px 10px;
     border-bottom: 1px solid var(--line-soft);
   }
@@ -259,6 +333,35 @@
     margin-left: auto;
   }
 
+  .score-btn {
+    background: #6f5613 !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  .score-btn :deep(.v-icon) {
+    color: #ffffff;
+  }
+
+  .score-btn.score-btn--loading {
+    background: #fffbe8 !important;
+    color: #8a6d1a !important;
+    border: 1px solid #c9ad2a;
+  }
+
+  .score-btn.score-btn--loading :deep(.v-icon) {
+    color: #8a6d1a;
+  }
+
+  .score-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 2px 0;
+    font-size: 12px;
+    color: #b91c1c;
+  }
+
   .citation-style-select {
     width: 92px;
   }
@@ -271,11 +374,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-  }
-
-  .edit-actions--hidden {
-    visibility: hidden;
-    pointer-events: none;
   }
 
   .save-hint {
@@ -300,20 +398,47 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    margin-top: 14px;
+    width: 100%;
+    max-width: 1064px;
+    gap: 24px;
+    margin: 14px auto 0;
     overflow: auto;
   }
 
   .paper-sheet {
     flex: 1;
     min-width: 0;
-    max-width: 760px;
-    margin: 0 auto;
     background: var(--card-bg);
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 28px 34px;
     height: fit-content;
+  }
+
+  .paper-citations {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  @media (max-width: 1100px) {
+    .paper-body {
+      flex-direction: column;
+    }
+
+    .paper-citations {
+      width: 100%;
+      position: static;
+      max-height: none;
+      overflow-y: visible;
+    }
   }
 
   .paper-sheet--paginated {

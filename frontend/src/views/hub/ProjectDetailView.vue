@@ -102,11 +102,11 @@
   const store = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
-  const statusLabel: Record<string, string> = {
-    completed: '已完成',
-    running: '進行中',
-    draft: '草稿',
-  }
+const statusLabel: Record<string, string> = {
+  completed: '已完成',
+  running: '進行中',
+  draft: '草稿',
+}
 
   const project = computed(() =>
     store.projects.find(p => p.id === Number(route.params.id)),
@@ -191,10 +191,6 @@
 .badge--draft {
   background: #f3f4f6;
   color: var(--color-secondary);
-}
-
-.page-header {
-  margin-bottom: 22px;
 }
 
 .framework-link {

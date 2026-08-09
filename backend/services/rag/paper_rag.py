@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,6 +53,40 @@ _SECTION_QUERIES: Dict[str, str] = {
 }
 
 _DEFAULT_STRUCTURE = ["摘要", "前言", "研究方法", "實驗結果", "討論", "結論"]
+
+# ── 期刊評分準則 ──────────────────────────────────────────────────────────────
+_JOURNAL_RUBRICS: List[Dict[str, str]] = [
+    {
+        "key": "jamia",
+        "name": "JAMIA",
+        "full_name": "Journal of the American Medical Informatics Association",
+        "emphasis": "方法嚴謹度、可重現性、資訊系統與臨床決策整合的實用性",
+    },
+    {
+        "key": "npj_digital_medicine",
+        "name": "npj Digital Medicine",
+        "full_name": "npj Digital Medicine",
+        "emphasis": "臨床/實務影響力、創新性、跨領域整合、敘事簡潔清楚",
+    },
+    {
+        "key": "bmc_midm",
+        "name": "BMC Medical Informatics and Decision Making",
+        "full_name": "BMC Medical Informatics and Decision Making",
+        "emphasis": "技術細節完整度、統計報告透明度（如信賴區間）、開放科學規範",
+    },
+]
+
+_SCORE_CRITERIA: List[str] = [
+    "研究貢獻與新穎性",
+    "方法嚴謹性",
+    "結果呈現與統計報告完整度",
+    "文獻回顧與引用品質",
+    "臨床/實務意義與限制討論",
+    "寫作結構與期刊格式規範",
+]
+
+_SCORE_MAX_ATTEMPTS = 3
+_SCORE_RETRY_DELAY_SECONDS = 2
 
 
 @dataclass
@@ -364,6 +399,85 @@ class PaperRAGService:
         text = self._call_gemini(prompt, usage_total)
         return text.strip()
 
+    def score_paper(self, paper_text: str) -> dict:
+        """依 _JOURNAL_RUBRICS 對論文全文逐期刊評分，各期刊各一次獨立的 Gemini JSON 呼叫。
+
+        單一期刊評分失敗（Gemini 例外或 JSON 解析失敗）時，最多重試 _SCORE_MAX_ATTEMPTS 次
+        （間隔 _SCORE_RETRY_DELAY_SECONDS 秒），全部嘗試皆失敗才跳過並記錄，不中斷整體流程；
+        若全部期刊皆失敗則回傳 {"success": False, "error": ...}。
+        """
+        journal_scores: List[dict] = []
+        failed_journals: List[str] = []
+        usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        for rubric in _JOURNAL_RUBRICS:
+            prompt = self._build_score_prompt(paper_text, rubric)
+            last_error: Exception | None = None
+
+            for attempt in range(1, _SCORE_MAX_ATTEMPTS + 1):
+                try:
+                    raw = self._call_gemini_json(prompt, usage_total)
+                except Exception as e:
+                    # Gemini 呼叫本身失敗（網路、逾時等）屬於暫時性錯誤，值得重試。
+                    last_error = e
+                    logger.warning(
+                        "期刊評分失敗（第 %d/%d 次嘗試，Gemini 呼叫失敗）：%s (%s)",
+                        attempt, _SCORE_MAX_ATTEMPTS, rubric["name"], e,
+                    )
+                    if attempt < _SCORE_MAX_ATTEMPTS:
+                        time.sleep(_SCORE_RETRY_DELAY_SECONDS)
+                    continue
+
+                try:
+                    parsed = self._safe_parse_json(raw)
+                    if parsed is None:
+                        raise ValueError("Gemini 回傳非合法 JSON")
+                    self._validate_score_shape(parsed)
+                except (ValueError, TypeError, AttributeError) as e:
+                    # temperature=0 下，同一個 prompt 的解析/驗證失敗幾乎是決定性的，
+                    # 重試無法改變結果，直接判定此期刊失敗、不再重試以節省成本與時間。
+                    last_error = e
+                    logger.warning(
+                        "期刊評分失敗（格式錯誤，不重試）：%s (%s)",
+                        rubric["name"], e,
+                    )
+                    break
+
+                journal_scores.append({
+                    "journal": rubric["name"],
+                    "journal_full_name": rubric["full_name"],
+                    "overall_score": int(parsed["overall_score"]),
+                    "overall_comment": str(parsed.get("overall_comment") or ""),
+                    "criteria": [
+                        {
+                            "name": str(c["name"]),
+                            "score": int(c["score"]),
+                            "comment": str(c["comment"]),
+                        }
+                        for c in parsed["criteria"]
+                    ],
+                    "suggestions": [str(s) for s in parsed.get("suggestions", [])],
+                })
+                last_error = None
+                break
+
+            if last_error is not None:
+                failed_journals.append(rubric["name"])
+
+        if not journal_scores:
+            return {
+                "success": False,
+                "error": "所有期刊評分皆失敗",
+                "failed_journals": failed_journals,
+            }
+
+        return {
+            "success": True,
+            "journal_scores": journal_scores,
+            "failed_journals": failed_journals,
+            "usage": usage_total,
+        }
+
     def generate_structured_analysis(self, mining_results: dict) -> dict:
         """讀 mining_results 摘要，用 Gemini 生成四個面向的結構化分析，供 ResultView.vue 顯示。"""
         results_text = self._format_datamind_output(mining_results)
@@ -603,6 +717,78 @@ class PaperRAGService:
             logger.error("Gemini 生成失敗：%s", e)
             return f"（生成失敗：{e}）"
 
+    def _call_gemini_json(self, prompt: str, usage_total: dict) -> str:
+        """比照 _call_gemini()，但要求 Gemini 以 JSON 格式回傳，且不吞掉例外——
+        由呼叫端（如 score_paper()）自行決定失敗時是否跳過。"""
+        resp = self._model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                temperature=0,
+                max_output_tokens=4096,
+                response_mime_type="application/json",
+            ),
+        )
+        text = getattr(resp, "text", "") or ""
+        usage = getattr(resp, "usage_metadata", None)
+        if usage:
+            usage_total["prompt_tokens"] = (
+                (usage_total["prompt_tokens"] or 0) + (getattr(usage, "prompt_token_count", 0) or 0)
+            )
+            usage_total["completion_tokens"] = (
+                (usage_total["completion_tokens"] or 0)
+                + (getattr(usage, "candidates_token_count", 0) or 0)
+            )
+            usage_total["total_tokens"] = (
+                (usage_total["total_tokens"] or 0) + (getattr(usage, "total_token_count", 0) or 0)
+            )
+        return text
+
+    @staticmethod
+    def _safe_parse_json(text: str) -> Optional[dict]:
+        """容錯解析 Gemini 回傳的 JSON 文字：先直接解析，失敗則剝除 ```json 圍欄，
+        再失敗則用正規表達式抓出第一個 {...} 區塊。全部失敗回傳 None。"""
+        raw = text.strip()
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+
+        fenced = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
+        fenced = re.sub(r"\s*```$", "", fenced)
+        try:
+            return json.loads(fenced.strip())
+        except json.JSONDecodeError:
+            pass
+
+        match = re.search(r"\{[\s\S]*\}", fenced)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    @staticmethod
+    def _validate_score_shape(parsed: dict) -> None:
+        """檢查 score_paper() 解析出的 JSON 是否符合預期結構，不符合則拋出 ValueError，
+        交由呼叫端的重試/失敗邏輯處理，避免不完整的 Gemini 回傳被當成成功結果。"""
+        if not isinstance(parsed.get("overall_score"), (int, float)):
+            raise ValueError(f"overall_score 缺漏或非數字：{parsed.get('overall_score')!r}")
+
+        criteria = parsed.get("criteria")
+        if not isinstance(criteria, list) or len(criteria) != len(_SCORE_CRITERIA):
+            raise ValueError(
+                f"criteria 應包含 {len(_SCORE_CRITERIA)} 項，實際：{criteria!r}"
+            )
+        for c in criteria:
+            if not isinstance(c, dict) or not isinstance(c.get("score"), (int, float)) \
+                    or not c.get("name") or not c.get("comment"):
+                raise ValueError(f"criteria 項目格式不正確：{c!r}")
+
+        suggestions = parsed.get("suggestions")
+        if not isinstance(suggestions, list) or len(suggestions) == 0:
+            raise ValueError(f"suggestions 應至少包含 1 項，實際：{suggestions!r}")
+
     # ── Prompt 建立 ───────────────────────────────────────────────────────────
 
     def _build_section_prompt(
@@ -650,6 +836,29 @@ class PaperRAGService:
             f"- 僅輸出「{section_name}」的段落內文，不需要章節標題\n"
             f"- 段落間以空行分隔\n\n"
             f"請直接輸出文章內容："
+        )
+
+    @staticmethod
+    def _build_score_prompt(paper_text: str, rubric: Dict[str, str]) -> str:
+        criteria_list = "\n".join(f"- {c}" for c in _SCORE_CRITERIA)
+        return (
+            f"你是《{rubric['full_name']}》（{rubric['name']}）的資深審稿人。"
+            f"該期刊特別重視：{rubric['emphasis']}。\n\n"
+            "請依照以下 6 項準則評估這篇論文，每項給 0 到 100 分並附上簡短的中文理由，"
+            "最後再給一個 0 到 100 的總分、一句總評，以及 2 到 5 條具體的修改建議。\n\n"
+            f"【評分準則】\n{criteria_list}\n\n"
+            f"【論文全文】\n{paper_text}\n\n"
+            "請「只」輸出以下形狀的 JSON，不要有其他文字或 Markdown 圍欄：\n"
+            "{\n"
+            '  "overall_score": <0-100 整數>,\n'
+            '  "overall_comment": "<一句話總評，20 到 40 字繁體中文，'
+            '須具體點出本文相對於本期刊發表門檻的主要優勢與待加強之處，不可只是空泛的鼓勵語句>",\n'
+            '  "criteria": [\n'
+            '    {"name": "<準則名稱，須完全比照上面清單>", "score": <0-100 整數>, "comment": "<中文理由>"},\n'
+            "    ...\n"
+            "  ],\n"
+            '  "suggestions": ["<修改建議1>", "<修改建議2>", ...]\n'
+            "}"
         )
 
     # ── 引用處理 ──────────────────────────────────────────────────────────────

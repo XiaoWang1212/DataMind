@@ -452,6 +452,37 @@ def generate_insight():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@rag_bp.route("/score-paper", methods=["POST"])
+def score_paper():
+    """對論文全文，依固定的期刊評分準則逐一評分
+
+    JSON body:
+        - paper_text : 論文全文純文字（必填）
+
+    回傳：
+        - journal_scores  : 各期刊評分結果（journal/journal_full_name/overall_score/overall_comment/criteria/suggestions）
+        - failed_journals : 評分失敗的期刊名稱清單
+        - usage           : Gemini token 用量
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    paper_text = (data or {}).get("paper_text", "").strip()
+    if not paper_text:
+        return jsonify({"success": False, "error": "paper_text 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        result = service.score_paper(paper_text)
+        status_code = 200 if result.get("success") else 422
+        return jsonify(result), status_code
+
+    except Exception as e:
+        logger.exception("期刊評分失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @rag_bp.route("/structured-analysis", methods=["POST"])
 def structured_analysis():
     """根據 DataMind 探勘結果，用 Gemini 生成結構化分析（模型比較、資料洞察、風險、建議）

@@ -58,6 +58,7 @@ const router = createRouter({
       name: "paper-sources",
       component: () => import("@/views/PaperSourcesView.vue"),
     },
+    // ── Research Hub ──
     {
       path: "/hub",
       component: () => import("@/layouts/HubLayout.vue"),
