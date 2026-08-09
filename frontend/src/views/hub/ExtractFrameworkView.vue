@@ -56,7 +56,7 @@
             <span>正在提取框架...</span>
           </div>
           <div ref="thoughtLogEl" class="thought-log">
-            <p v-for="(t, i) in thoughtLog" :key="i" class="thought-log-line">{{ t }}</p>
+            <p class="thought-log-line">{{ displayedThought }}</p>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, ref } from 'vue'
+  import { computed, nextTick, ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
   import { useFrameworkStore } from '@/store/frameworkStore'
@@ -134,8 +134,9 @@
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
-  const thoughtLog = ref<string[]>([])
+  const thoughtLog = ref('')
   const thoughtLogEl = ref<HTMLElement | null>(null)
+  const displayedThought = computed(() => thoughtLog.value.replace(/\*\*?/g, ''))
 
   async function scrollThoughtLogToBottom (): Promise<void> {
     await nextTick()
@@ -160,7 +161,7 @@
     extracting.value = true
     extractedData.value = null
     extractError.value = null
-    thoughtLog.value = []
+    thoughtLog.value = ''
 
     const file = selectedFile.value
     const baseName = file.name.replace(/\.[^.]+$/, '')
@@ -170,7 +171,7 @@
         { file, title: baseName },
         {
           onThought: text => {
-            thoughtLog.value.push(text)
+            thoughtLog.value += text
             void scrollThoughtLogToBottom()
           },
           onResult: result => {
