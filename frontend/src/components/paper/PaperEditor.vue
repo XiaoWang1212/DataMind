@@ -398,21 +398,12 @@
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
   import { CharacterCount } from '@tiptap/extension-character-count'
-  import { Link } from '@tiptap/extension-link'
-  import { Subscript } from '@tiptap/extension-subscript'
-  import { Superscript } from '@tiptap/extension-superscript'
-  import { Table } from '@tiptap/extension-table'
-  import { TableRow } from '@tiptap/extension-table-row'
-  import { TextAlign } from '@tiptap/extension-text-align'
-  import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
   import { computed, onMounted, ref, watch } from 'vue'
   import { getProject, type VariableMapping } from '@/api/project'
-  import { AlignableImage } from '@/components/paper/alignableImage'
-  import { CitationMark } from '@/components/paper/citationMark'
-  import { ColoredTableCell, ColoredTableHeader } from '@/components/paper/coloredTableCell'
   import { ColumnResizeBalance } from '@/components/paper/columnResizeBalance'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
+  import { buildPaperContentExtensions } from '@/components/paper/paperExtensions'
   import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
 
   const props = defineProps<{
@@ -529,19 +520,9 @@
     // 切換可編輯狀態不會補註冊。真正的可編輯狀態交給下面的 watch（immediate）同步。
     editable: true,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      ...buildPaperContentExtensions(citationIndex),
       CharacterCount.configure({}),
-      Link.configure({ openOnClick: false, autolink: true }),
-      Superscript,
-      Subscript,
-      Table.configure({ resizable: true }),
-      TableRow,
-      ColoredTableHeader,
-      ColoredTableCell,
       ColumnResizeBalance,
-      AlignableImage.configure({ inline: false }),
-      CitationMark.configure({ citationIndex }),
     ],
     editorProps: {
       handleClick: (_view, _pos, event) => {
