@@ -49,11 +49,19 @@
       <p v-if="loading" class="loading-hint">載入中...</p>
 
       <div v-else class="paper-body">
-        <article class="paper-sheet">
+        <article v-if="mode === 'view'" class="paper-sheet paper-sheet--paginated">
+          <PaginatedPaperView
+            :citation-style="report.citationStyle"
+            :citations="report.citations"
+            :content="report.content"
+            @citation-click="onCitationClick"
+          />
+        </article>
+        <article v-else class="paper-sheet">
           <PaperEditor
             v-model="report.content"
             :citations="report.citations"
-            :editable="mode === 'edit'"
+            :editable="true"
             :project-id="projectId"
             @citation-click="onCitationClick"
           />
@@ -79,6 +87,7 @@
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPopover from '@/components/paper/CitationPopover.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
+  import PaginatedPaperView from '@/components/paper/PaginatedPaperView.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
   import ReferencesSection from '@/components/paper/ReferencesSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
@@ -305,5 +314,13 @@
     border-radius: 12px;
     padding: 28px 34px;
     height: fit-content;
+  }
+
+  .paper-sheet--paginated {
+    max-width: none;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
   }
 </style>

@@ -405,6 +405,7 @@
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
   import { buildPaperContentExtensions } from '@/components/paper/paperExtensions'
   import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
+  import '@/components/paper/paperContentTypography.css'
 
   const props = defineProps<{
     modelValue: JSONContent
@@ -685,65 +686,8 @@
     padding: 0 4px;
   }
 
-  :deep(.editor-content img) {
-    display: block;
-    max-width: 100%;
-    height: auto;
-  }
-
-  :deep(.editor-content img[data-align='left']) {
-    margin: 0 auto 0 0;
-  }
-
-  :deep(.editor-content img[data-align='center']) {
-    margin: 0 auto;
-  }
-
-  :deep(.editor-content img[data-align='right']) {
-    margin: 0 0 0 auto;
-  }
-
-  :deep(.editor-content) {
-    font-size: 13.5px;
-    line-height: 1.9;
-    color: var(--color-ink);
-  }
-
   :deep(.editor-content .ProseMirror) {
     outline: none;
-  }
-
-  :deep(.editor-content h1),
-  :deep(.editor-content h2),
-  :deep(.editor-content h3) {
-    margin: 0 0 10px;
-    font-weight: 700;
-    color: var(--color-ink);
-  }
-
-  :deep(.editor-content p) {
-    margin: 0 0 12px;
-    text-align: justify;
-    text-indent: 2em;
-  }
-
-  :deep(.editor-content table) {
-    border-collapse: collapse;
-    table-layout: fixed;
-    width: 100%;
-    margin: 12px 0;
-  }
-
-  :deep(.editor-content th),
-  :deep(.editor-content td) {
-    border: 1px solid #d8dbe3;
-    padding: 6px 10px;
-    position: relative;
-    min-width: 1em;
-  }
-
-  :deep(.editor-content .tableWrapper) {
-    overflow-x: auto;
   }
 
   :deep(.editor-content .column-resize-handle) {
@@ -767,18 +711,6 @@
     inset: 0;
     background: color-mix(in oklab, var(--color-accent) 30%, transparent);
     pointer-events: none;
-  }
-
-  :deep(.citation-mark) {
-    background: #fdf0a8;
-    padding: 1px 2px;
-    border-radius: 3px;
-  }
-
-  :deep(.citation-mark::after) {
-    content: '[' attr(data-citation-number) ']';
-    font-size: 0.85em;
-    margin-left: 1px;
   }
 
   .editor-content--readonly :deep(.citation-mark) {
