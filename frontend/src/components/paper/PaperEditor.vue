@@ -232,6 +232,15 @@
             @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
           />
         </div>
+        <div class="toolbar-btn-wrap" data-tooltip="插入變數表格">
+          <v-btn
+            :disabled="!hasVariableMapping"
+            icon="mdi-table-account"
+            size="small"
+            variant="text"
+            @click="insertVariableTable"
+          />
+        </div>
         <template v-if="editor?.isActive('table')">
           <div class="toolbar-btn-wrap" data-tooltip="新增列">
             <v-btn
@@ -323,7 +332,8 @@
   import { TextAlign } from '@tiptap/extension-text-align'
   import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
-  import { ref, watch } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
+  import { getProject, type VariableMapping } from '@/api/project'
   import { AlignableImage } from '@/components/paper/alignableImage'
   import { CitationMark } from '@/components/paper/citationMark'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
@@ -338,6 +348,37 @@
   const chartDialogOpen = ref(false)
   const imageFileInputRef = ref<HTMLInputElement | null>(null)
   const linkUrlDraft = ref('')
+  const projectColumnMapping = ref<Record<string, VariableMapping> | null>(null)
+
+  onMounted(async () => {
+    if (!props.projectId) return
+    try {
+      const project = await getProject(Number(props.projectId))
+      projectColumnMapping.value = project.columnMapping ?? null
+    } catch {
+      projectColumnMapping.value = null
+    }
+  })
+
+  const hasVariableMapping = computed(
+    () => !!projectColumnMapping.value && Object.keys(projectColumnMapping.value).length > 0,
+  )
+
+  function escapeHtml (value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+  }
+
+  function insertVariableTable () {
+    if (!projectColumnMapping.value) return
+    const rows = Object.entries(projectColumnMapping.value)
+      .map(([name, info]) => `<tr><td>${escapeHtml(name)}</td><td></td><td>${escapeHtml(info.type)}</td></tr>`)
+      .join('')
+    const html = `<table><tbody><tr><th>變數名稱</th><th>定義</th><th>型別</th></tr>${rows}</tbody></table>`
+    editor.value?.chain().focus().insertContent(html).run()
+  }
 
   function openLinkMenu () {
     linkUrlDraft.value = editor.value?.getAttributes('link').href ?? ''
