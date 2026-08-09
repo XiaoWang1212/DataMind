@@ -92,11 +92,12 @@
         </div>
         <div class="toolbar-btn-wrap" data-tooltip="刪除線">
           <v-btn
-            icon="mdi-format-strikethrough"
             size="small"
             :variant="editor?.isActive('strike') ? 'tonal' : 'text'"
             @click="editor?.chain().focus().toggleStrike().run()"
-          />
+          >
+            <StrikethroughIcon />
+          </v-btn>
         </div>
         <v-menu :close-on-content-click="false" location="bottom">
           <template #activator="{ props: menuProps }">
@@ -330,6 +331,7 @@
   import { TableHeader } from '@tiptap/extension-table-header'
   import { TableRow } from '@tiptap/extension-table-row'
   import { TextAlign } from '@tiptap/extension-text-align'
+  import { Underline } from '@tiptap/extension-underline'
   import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
   import { computed, onMounted, ref, watch } from 'vue'
@@ -337,6 +339,7 @@
   import { AlignableImage } from '@/components/paper/alignableImage'
   import { CitationMark } from '@/components/paper/citationMark'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
+  import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
 
   const props = defineProps<{
     modelValue: JSONContent
@@ -426,6 +429,7 @@
     editable: props.editable,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
+      Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       CharacterCount.configure({}),
       Link.configure({ openOnClick: false, autolink: true }),
