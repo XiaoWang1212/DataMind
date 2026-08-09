@@ -92,6 +92,7 @@
         </div>
         <div class="toolbar-btn-wrap" data-tooltip="刪除線">
           <v-btn
+            icon
             size="small"
             :variant="editor?.isActive('strike') ? 'tonal' : 'text'"
             @click="editor?.chain().focus().toggleStrike().run()"
@@ -233,7 +234,10 @@
             @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
           />
         </div>
-        <div class="toolbar-btn-wrap" data-tooltip="插入變數表格">
+        <div
+          class="toolbar-btn-wrap"
+          :data-tooltip="hasVariableMapping ? '插入變數表格' : (mappingLoadError ? '無法載入欄位對應資料' : '尚未完成欄位對應')"
+        >
           <v-btn
             :disabled="!hasVariableMapping"
             icon="mdi-table-account"
@@ -387,7 +391,6 @@
   import { Table } from '@tiptap/extension-table'
   import { TableRow } from '@tiptap/extension-table-row'
   import { TextAlign } from '@tiptap/extension-text-align'
-  import { Underline } from '@tiptap/extension-underline'
   import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
   import { computed, onMounted, ref, watch } from 'vue'
@@ -408,33 +411,45 @@
   const chartDialogOpen = ref(false)
   const imageFileInputRef = ref<HTMLInputElement | null>(null)
   const linkUrlDraft = ref('')
-  const projectColumnMapping = ref<Record<string, VariableMapping> | null>(null)
+  const projectColumnMapping = ref<Record<string, VariableMapping>>({})
+  const mappingLoadError = ref(false)
+
+  function normalizeColumnMapping (raw: Record<string, VariableMapping | string> | null | undefined): Record<string, VariableMapping> {
+    const normalized: Record<string, VariableMapping> = {}
+    if (!raw) return normalized
+    for (const [key, value] of Object.entries(raw)) {
+      normalized[key] = typeof value === 'string'
+        ? { column: value, type: '' }
+        : { column: value?.column ?? '', type: value?.type ?? '' }
+    }
+    return normalized
+  }
 
   onMounted(async () => {
     if (!props.projectId) return
     try {
       const project = await getProject(Number(props.projectId))
-      projectColumnMapping.value = project.columnMapping ?? null
+      projectColumnMapping.value = normalizeColumnMapping(project.columnMapping)
     } catch {
-      projectColumnMapping.value = null
+      projectColumnMapping.value = {}
+      mappingLoadError.value = true
     }
   })
 
   const hasVariableMapping = computed(
-    () => !!projectColumnMapping.value && Object.keys(projectColumnMapping.value).length > 0,
+    () => Object.keys(projectColumnMapping.value).length > 0,
   )
 
   function escapeHtml (value: string): string {
-    return value
+    return String(value ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')
   }
 
   function insertVariableTable () {
-    if (!projectColumnMapping.value) return
     const rows = Object.entries(projectColumnMapping.value)
-      .map(([name, info]) => `<tr><td>${escapeHtml(name)}</td><td></td><td>${escapeHtml(info.type)}</td></tr>`)
+      .map(([name, info]) => `<tr><td>${escapeHtml(name)}</td><td></td><td>${escapeHtml(info.type || '型態未指定')}</td></tr>`)
       .join('')
     const html = `<table><tbody><tr><th>變數名稱</th><th>定義</th><th>型別</th></tr>${rows}</tbody></table>`
     editor.value?.chain().focus().insertContent(html).run()
@@ -498,7 +513,6 @@
     editable: props.editable,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
-      Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       CharacterCount.configure({}),
       Link.configure({ openOnClick: false, autolink: true }),
