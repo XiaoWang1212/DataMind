@@ -512,7 +512,10 @@
 
   const editor = useEditor({
     content: props.modelValue,
-    editable: props.editable,
+    // 一律用 editable:true 建立編輯器：Table 擴充套件的欄位縮放功能（resizable）
+    // 只在建立當下判斷 editor.isEditable 決定要不要註冊，之後用 setEditable()
+    // 切換可編輯狀態不會補註冊。真正的可編輯狀態交給下面的 watch（immediate）同步。
+    editable: true,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -546,7 +549,7 @@
 
   watch(() => props.editable, value => {
     editor.value?.setEditable(value)
-  })
+  }, { immediate: true })
 
   watch(() => props.modelValue, value => {
     if (!editor.value) return
@@ -587,8 +590,13 @@
     gap: 2px;
     padding: 6px 10px;
     border-radius: 12px;
-    background: color-mix(in oklab, var(--color-accent) 8%, rgba(255, 255, 255, 0.5));
-    border: 1px solid rgba(28, 33, 48, 0.1);
+    background: color-mix(in oklab, var(--color-accent) 10%, rgba(255, 255, 255, 0.5));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 6px 20px rgba(28, 33, 48, 0.12);
   }
 
   .toolbar-divider {
@@ -715,6 +723,8 @@
 
   :deep(.editor-content table) {
     border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
     margin: 12px 0;
   }
 
@@ -723,6 +733,25 @@
     border: 1px solid #d8dbe3;
     padding: 6px 10px;
     position: relative;
+    min-width: 1em;
+  }
+
+  :deep(.editor-content .tableWrapper) {
+    overflow-x: auto;
+  }
+
+  :deep(.editor-content .column-resize-handle) {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: -2px;
+    width: 4px;
+    background-color: var(--color-accent);
+    pointer-events: none;
+  }
+
+  :deep(.editor-content .ProseMirror.resize-cursor) {
+    cursor: col-resize;
   }
 
   :deep(.editor-content th.selectedCell)::after,
