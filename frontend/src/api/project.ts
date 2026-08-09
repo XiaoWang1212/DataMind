@@ -1,3 +1,8 @@
+export interface VariableMapping {
+  column: string
+  type: string
+}
+
 export interface ProjectDTO {
   id: number
   name: string
@@ -9,7 +14,7 @@ export interface ProjectDTO {
   accuracy?: string
   keyFinding?: string
   variables: number
-  columnMapping?: Record<string, string> | null
+  columnMapping?: Record<string, VariableMapping> | null
   date: string
 }
 
@@ -27,7 +32,7 @@ export interface UpdateProjectPatch {
   datasetName?: string
   accuracy?: string
   keyFinding?: string
-  columnMapping?: Record<string, string>
+  columnMapping?: Record<string, VariableMapping>
   variables?: number
 }
 
@@ -63,6 +68,12 @@ export async function updateProject (id: number, patch: UpdateProjectPatch): Pro
     credentials: 'include',
     body: JSON.stringify(patch),
   })
+  const result = await parseProjectResponse(response)
+  return result.result as ProjectDTO
+}
+
+export async function getProject (id: number): Promise<ProjectDTO> {
+  const response = await fetch(`/api/projects/${id}`, { credentials: 'include' })
   const result = await parseProjectResponse(response)
   return result.result as ProjectDTO
 }

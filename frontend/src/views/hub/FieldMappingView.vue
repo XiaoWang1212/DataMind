@@ -668,10 +668,10 @@
     if (!datasetFile.value) return
     confirming.value = true
 
-    const mapping: Record<string, string> = {}
+    const mapping: Record<string, { column: string, type: string }> = {}
     for (const item of items.value) {
       if (item.matched_user_column && item.status !== 'SKIPPED') {
-        mapping[item.paper_variable] = item.matched_user_column
+        mapping[item.paper_variable] = { column: item.matched_user_column, type: item.required_type }
       }
     }
 
@@ -680,8 +680,8 @@
 
       // 使用者欄位 → 論文變數（改寫表頭時要反查）
       const renameByColumn = new Map<string, string>()
-      for (const [variable, column] of Object.entries(mapping)) {
-        renameByColumn.set(column, variable)
+      for (const [variable, info] of Object.entries(mapping)) {
+        renameByColumn.set(info.column, variable)
       }
 
       // 先改寫檔案再寫資料庫：反過來的話，檔案沒寫成功但對映已存檔，
