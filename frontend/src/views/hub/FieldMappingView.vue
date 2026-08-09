@@ -75,6 +75,20 @@
                 <div v-if="item.sample_values.length" class="col-samples">
                   {{ item.sample_values.slice(0, 3).join('、') }}
                 </div>
+                <!-- 配不出來時給幾個最接近的讓使用者一鍵選，不必自己在幾十個欄位裡翻 -->
+                <div v-if="item.status === 'UNMATCHED' && item.candidate_columns.length" class="col-candidates">
+                  <span class="candidates-label">可能是</span>
+                  <button
+                    v-for="name in item.candidate_columns"
+                    :key="name"
+                    class="candidate-chip"
+                    :title="`選擇 ${name}`"
+                    type="button"
+                    @click="applySelection(item, name)"
+                  >
+                    {{ name }}
+                  </button>
+                </div>
               </td>
               <td class="col-status">
                 <div class="status-cell">
@@ -981,6 +995,40 @@
     margin-top: 4px;
     font-size: 11px;
     color: #94a3b8;
+  }
+
+  .col-candidates {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .candidates-label {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .candidate-chip {
+    padding: 2px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 11px;
+    color: var(--color-secondary);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+
+  .candidate-chip:hover {
+    background: var(--color-background);
+    border-color: var(--color-accent);
+  }
+
+  .candidate-chip:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   .status-chip {
