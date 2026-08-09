@@ -234,6 +234,8 @@ def truncate_content(text: str, max_chars: int = 18000) -> str:
 def truncate_content(text: str, max_chars: int = 18000) -> str:
 ```
 
+（Fix wave 後補上 `temperature=0.2`，見 commit history——上面 `GenerateContentConfig(...)` 呼叫應包含 `temperature=0.2` 作為第一個參數，對齊 `_generation_config()`。此區塊為歷史紀錄，不重寫。）
+
 - [ ] **Step 3: 手動驗證（跑一段 python 腳本，用既有的樣本 PDF）**
 
 Run:

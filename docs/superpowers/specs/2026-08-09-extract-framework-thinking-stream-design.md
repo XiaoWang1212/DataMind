@@ -38,7 +38,7 @@
 
 實作重點：
 
-1. 建立 `genai.Client(api_key=...)`，呼叫 `client.models.generate_content_stream(model=self.model_name, contents=[prompt, types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")], config=types.GenerateContentConfig(response_mime_type="application/json", thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=-1)))`。`prompt` 沿用既有 `_WORKFLOW_SYSTEM_PROMPT` 组合邏輯（與 `analyze_pdf()` 相同的組法）。
+1. 建立 `genai.Client(api_key=...)`，呼叫 `client.models.generate_content_stream(model=self.model_name, contents=[prompt, types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")], config=types.GenerateContentConfig(temperature=0.2, response_mime_type="application/json", thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=-1)))`。`prompt` 沿用既有 `_WORKFLOW_SYSTEM_PROMPT` 组合邏輯（與 `analyze_pdf()` 相同的組法）。`temperature=0.2` 對齊 `_generation_config()`（`analyze()`/`analyze_pdf()` 使用），確保同一份 PDF 走串流或非串流路徑產生一致的結果；不設 `max_output_tokens`，因為 `thinking_budget=-1` 與輸出共用同一預算，明確上限可能擠壓 JSON 答案。
 2. 逐 chunk 迭代：對每個 `chunk.candidates[0].content.parts`，`part.thought` 為真 → yield thought 事件；否則把 `part.text` 累加進答案緩衝區字串。
 3. 串流結束後，對答案緩衝區呼叫既有 `_safe_parse_json()`；失敗則呼叫既有 `_normalize_to_json()`（同步的修復呼叫，沿用舊 SDK，不變動其實作）；仍失敗則 yield error 事件；成功則用既有 `_fill_defaults()` 補齊欄位，組出跟 `analyze_pdf()` 相同形狀的 dict，yield result 事件。
 4. 整段包在 try/except，任何未預期例外都 yield error 事件（`message` 用 `str(exc)`），不讓 generator 直接拋出中斷連線。

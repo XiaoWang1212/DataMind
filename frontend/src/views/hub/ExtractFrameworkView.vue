@@ -392,6 +392,7 @@
 
 .thought-log-line {
   margin: 0 0 6px;
+  white-space: pre-wrap;
 }
 
 .thought-log-line:last-child {

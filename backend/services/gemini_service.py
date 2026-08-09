@@ -568,6 +568,7 @@ class GeminiService:
                 model=self.model_name,
                 contents=[prompt, pdf_part],
                 config=genai_types.GenerateContentConfig(
+                    temperature=0.2,
                     response_mime_type="application/json",
                     thinking_config=genai_types.ThinkingConfig(
                         include_thoughts=True,
@@ -601,6 +602,10 @@ class GeminiService:
                 workflow_json = self._normalize_to_json(answer)
             if workflow_json is None:
                 raw = answer.strip()
+
+            if not answer.strip():
+                yield {"type": "error", "message": "Gemini 沒有回傳任何內容（可能被安全機制阻擋或思考未收斂）"}
+                return
 
             usage = getattr(last_chunk, "usage_metadata", None) if last_chunk is not None else None
             yield {
