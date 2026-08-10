@@ -354,9 +354,10 @@ def arxiv_search():
 
     JSON body:
         - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+        - user_title     : 使用者想要的論文標題（選填，留空則主題完全由 AI 推論）
 
     回傳：
-        - topic       : AI 產生的研究主題
+        - topic       : 使用者標題（若有填）或 AI 產生的研究主題
         - arxiv_query : 用於查詢 arXiv 的關鍵字字串
         - candidates  : 候選論文清單（arxiv_id/title/authors/year/abstract/pdf_url）
     """
@@ -366,10 +367,11 @@ def arxiv_search():
     if not data or data.get("mining_results") is None:
         return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
 
+    user_title = data.get("user_title") or None
     service = get_paper_rag_service()
 
     try:
-        result = service.search_arxiv_candidates(data["mining_results"])
+        result = service.search_arxiv_candidates(data["mining_results"], user_title)
         return jsonify({"success": True, **result})
 
     except Exception as e:

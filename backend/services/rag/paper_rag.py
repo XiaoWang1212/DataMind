@@ -305,9 +305,32 @@ class PaperRAGService:
             "usage": usage_total,
         }
 
-    def classify_topic(self, mining_results: dict) -> dict:
-        """讀 mining_results 摘要，用 Gemini 產生研究主題與 arXiv 查詢字串。"""
+    def classify_topic(self, mining_results: dict, user_title: str | None = None) -> dict:
+        """讀 mining_results 摘要，用 Gemini 產生研究主題與 arXiv 查詢字串。
+
+        user_title 有值時，主題直接採用使用者給的標題，Gemini 只需要根據
+        「使用者標題 + 實際資料探勘結果」產生符合兩者的 arXiv 查詢關鍵字。
+        """
         results_text = self._format_datamind_output(mining_results)
+
+        if user_title:
+            prompt = (
+                "你是學術論文寫作助手。使用者想寫一篇標題為"
+                f"「{user_title}」的論文，以下是實際的資料探勘實驗結果。\n\n"
+                f"【資料探勘實驗結果】\n{results_text}\n\n"
+                "請判斷 2 到 6 個適合拿去查 arXiv 的英文關鍵字，"
+                "這些關鍵字必須同時符合這個標題的方向、也跟上述實際的模型/資料/方法相關。\n"
+                "請「只」輸出以下一行，不要有其他文字：\n"
+                "QUERY: <2 到 6 個英文關鍵字，空白分隔，不要加引號或布林運算子>"
+            )
+            usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            text = self._call_gemini(prompt, usage_total)
+
+            query_match = re.search(r"QUERY:\s*(.+)", text)
+            arxiv_query = query_match.group(1).strip() if query_match else user_title
+
+            return {"topic": user_title, "arxiv_query": arxiv_query}
+
         prompt = (
             "你是學術論文寫作助手。請根據以下資料探勘實驗結果，"
             "判斷這份研究適合的研究主題與 arXiv 查詢關鍵字。\n\n"
@@ -328,9 +351,9 @@ class PaperRAGService:
 
         return {"topic": topic, "arxiv_query": arxiv_query}
 
-    def search_arxiv_candidates(self, mining_results: dict) -> dict:
+    def search_arxiv_candidates(self, mining_results: dict, user_title: str | None = None) -> dict:
         """分類 mining_results 產生查詢字，查詢 arXiv 取得候選論文清單（不寫入向量庫）。"""
-        classification = self.classify_topic(mining_results)
+        classification = self.classify_topic(mining_results, user_title)
         candidates = arxiv_source.search_arxiv(classification["arxiv_query"])
         return {
             "topic": classification["topic"],
@@ -724,7 +747,10 @@ class PaperRAGService:
             prompt,
             generation_config=genai.GenerationConfig(
                 temperature=0,
-                max_output_tokens=4096,
+                # gemini-2.5-flash 的隱藏「thinking」token 也算在 max_output_tokens 裡，
+                # 4096 對評分這種要求多項準則各自附中文理由的輸出會被吃光，JSON 被截斷到
+                # 一半就不是合法 JSON 了。跟 generate_structured_analysis() 一樣抓 8192。
+                max_output_tokens=8192,
                 response_mime_type="application/json",
             ),
         )
