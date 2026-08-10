@@ -8,9 +8,27 @@
   --font-body: "Roboto", sans-serif;
   --font-mono: "Roboto Mono", monospace;
 
-  --radius-sm: 2px;
-  --radius-lg: 8px;
-  --radius-xl: 24px;
+  /* docs/DESIGN_SYSTEM.md §4.2。pill 用 Tailwind 內建的 rounded-full(9999px)，不另外造 token */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* §4.3 */
+  --shadow-card: 0 2px 10px rgba(14, 30, 66, 0.06);
+  --shadow-float: 0 16px 40px rgba(14, 30, 66, 0.16);
+
+  /* §6.1 */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* §8.2。--content-max-width 文件給的範圍是 1280-1440px，先取下限，之後個別頁面覺得太窄再調 */
+  --content-measure: 760px;
+  --content-max-width: 1280px;
+  --content-max-width-wide: 1680px;
 
   --color-background: rgb(var(--v-theme-background));
   --color-surface: rgb(var(--v-theme-surface));
@@ -24,8 +42,23 @@
 
   --color-chat-system: #fbead0;
   --color-chat-user: #12213b;
-  --color-text: #1c2130;
+  --color-text: rgb(var(--v-theme-text));
   --color-inverted: #f1f5f9;
+
+  /* docs/DESIGN_SYSTEM.md §2.2 角色 token。ink 沿用既有 primary 插槽，不新增撞名 key
+     （見 docs/superpowers/specs/2026-08-10-design-token-foundation-design.md） */
+  --color-ink: rgb(var(--v-theme-primary));
+  --color-ink-strong: rgb(var(--v-theme-ink-strong));
+  --color-ink-soft: rgb(var(--v-theme-secondary));
+  --color-surface-alt: rgb(var(--v-theme-surface-alt));
+  --color-page: rgb(var(--v-theme-background));
+  --color-border: rgb(var(--v-theme-border));
+  --color-border-strong: rgb(var(--v-theme-border-strong));
+  --color-success-bg: rgb(var(--v-theme-success-bg));
+  --color-warning-bg: rgb(var(--v-theme-warning-bg));
+  --color-error-bg: rgb(var(--v-theme-error-bg));
+  --color-node-data: rgb(var(--v-theme-node-data));
+  --color-node-ai: rgb(var(--v-theme-node-ai));
 
   --breakpoint-*: initial;
   --breakpoint-xs: 0px;
@@ -41,21 +74,21 @@
 
 @utility rounded-0 { border-radius: 0 }
 @utility rounded-sm { border-radius: var(--radius-sm) }
+@utility rounded-md { border-radius: var(--radius-md) }
 @utility rounded-lg { border-radius: var(--radius-lg) }
-@utility rounded-xl { border-radius: var(--radius-xl) }
 
 @utility rounded-t-sm { border-top-left-radius: var(--radius-sm); border-top-right-radius: var(--radius-sm) }
+@utility rounded-t-md { border-top-left-radius: var(--radius-md); border-top-right-radius: var(--radius-md) }
 @utility rounded-t-lg { border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg) }
-@utility rounded-t-xl { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl) }
 
 @utility rounded-b-sm { border-bottom-left-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm) }
+@utility rounded-b-md { border-bottom-left-radius: var(--radius-md); border-bottom-right-radius: var(--radius-md) }
 @utility rounded-b-lg { border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg) }
-@utility rounded-b-xl { border-bottom-left-radius: var(--radius-xl); border-bottom-right-radius: var(--radius-xl) }
 
 @utility rounded-s-sm { border-start-start-radius: var(--radius-sm); border-end-start-radius: var(--radius-sm) }
+@utility rounded-s-md { border-start-start-radius: var(--radius-md); border-end-start-radius: var(--radius-md) }
 @utility rounded-s-lg { border-start-start-radius: var(--radius-lg); border-end-start-radius: var(--radius-lg) }
-@utility rounded-s-xl { border-start-start-radius: var(--radius-xl); border-end-start-radius: var(--radius-xl) }
 
 @utility rounded-e-sm { border-start-end-radius: var(--radius-sm); border-end-end-radius: var(--radius-sm) }
+@utility rounded-e-md { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md) }
 @utility rounded-e-lg { border-start-end-radius: var(--radius-lg); border-end-end-radius: var(--radius-lg) }
-@utility rounded-e-xl { border-start-end-radius: var(--radius-xl); border-end-end-radius: var(--radius-xl) }

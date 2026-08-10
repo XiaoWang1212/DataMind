@@ -98,7 +98,7 @@
 @reference "../styles/tailwind.css";
 
 .v-card {
-  @apply rounded-xl;
+  @apply rounded-lg;
 }
 
 .hero-card {
