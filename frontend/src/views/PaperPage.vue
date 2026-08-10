@@ -74,7 +74,7 @@
             @citation-click="onCitationClick"
           />
         </article>
-        <article v-else class="paper-sheet">
+        <article v-else class="paper-sheet paper-sheet--editing">
           <PaperEditor
             v-model="report.content"
             :citations="report.citations"
@@ -418,6 +418,7 @@
   .paper-citations {
     width: 280px;
     flex-shrink: 0;
+    margin-left: auto;
     position: sticky;
     top: 0;
     align-self: flex-start;
@@ -453,5 +454,10 @@
     border-radius: 0;
     padding: 0;
     overflow-x: auto;
+  }
+
+  .paper-sheet--editing {
+    flex: none;
+    width: 670px; /* 602px 內容區 + 左右 padding 各 34px，跟 A4 頁面內容區一致 */
   }
 </style>
