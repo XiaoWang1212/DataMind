@@ -1,0 +1,218 @@
+<template>
+  <div class="style-guide">
+    <h1 class="sg-h1">Design tokens 展示頁</h1>
+    <p class="sg-note">
+      僅在 dev 模式掛路由，用來核對 docs/DESIGN_SYSTEM.md 的 token 是否套對，不會出現在 production build。
+    </p>
+
+    <section>
+      <h2 class="sg-h2">色彩</h2>
+      <div class="sg-swatch-grid">
+        <div v-for="swatch in swatches" :key="swatch.name" class="sg-swatch">
+          <div class="sg-swatch-color" :style="{ background: swatch.varRef }" />
+          <div class="sg-swatch-label">{{ swatch.name }}</div>
+          <div class="sg-swatch-var">{{ swatch.varRef }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">圓角</h2>
+      <div class="sg-row">
+        <div class="sg-radius-box" style="border-radius: var(--radius-sm)">sm 8px</div>
+        <div class="sg-radius-box" style="border-radius: var(--radius-md)">md 12px</div>
+        <div class="sg-radius-box" style="border-radius: var(--radius-lg)">lg 16px</div>
+        <div class="sg-radius-box rounded-full">pill</div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">陰影</h2>
+      <div class="sg-row">
+        <div class="sg-shadow-box" style="box-shadow: var(--shadow-card)">shadow-card</div>
+        <div class="sg-shadow-box" style="box-shadow: var(--shadow-float)">shadow-float</div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">按鈕（Vuetify 內建色，尚未套邊緣反光 hover）</h2>
+      <div class="sg-row">
+        <v-btn color="primary">primary</v-btn>
+        <v-btn color="secondary" variant="tonal">secondary</v-btn>
+        <v-btn variant="text">ghost</v-btn>
+        <v-btn color="error" variant="tonal">danger</v-btn>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">狀態徽章</h2>
+      <div class="sg-row">
+        <span class="sg-badge sg-badge--success">已對應</span>
+        <span class="sg-badge sg-badge--warning">待確認</span>
+        <span class="sg-badge sg-badge--danger">未對應</span>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">字級階層</h2>
+      <div class="sg-type-sample" style="font-size: 22px; font-weight: 500;">頁面標題 h1 / 22px / 500</div>
+      <div class="sg-type-sample" style="font-size: 18px; font-weight: 500;">區塊標題 h2 / 18px / 500</div>
+      <div class="sg-type-sample" style="font-size: 15px; font-weight: 500;">小標 h3 / 15px / 500</div>
+      <div class="sg-type-sample" style="font-size: 14px; font-weight: 400;">內文 / 14px / 400</div>
+      <div class="sg-type-sample" style="font-size: 13px; font-weight: 400;">次要/說明 / 13px / 400</div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">內容寬度</h2>
+      <div class="sg-width-demo" style="max-width: var(--content-measure)">content-measure 760px</div>
+      <div class="sg-width-demo" style="max-width: var(--content-max-width)">content-max-width 1280px</div>
+      <div class="sg-width-demo" style="max-width: var(--content-max-width-wide)">content-max-width-wide 1680px</div>
+    </section>
+  </div>
+</template>
+
+<script lang="ts" setup>
+  interface Swatch { name: string, varRef: string }
+
+  const swatches: Swatch[] = [
+    { name: 'ink（品牌藏青）', varRef: 'var(--color-ink)' },
+    { name: 'ink-strong', varRef: 'var(--color-ink-strong)' },
+    { name: 'ink-soft', varRef: 'var(--color-ink-soft)' },
+    { name: 'text', varRef: 'var(--color-text)' },
+    { name: 'surface', varRef: 'var(--color-surface)' },
+    { name: 'surface-alt', varRef: 'var(--color-surface-alt)' },
+    { name: 'page', varRef: 'var(--color-page)' },
+    { name: 'border', varRef: 'var(--color-border)' },
+    { name: 'border-strong', varRef: 'var(--color-border-strong)' },
+    { name: 'success', varRef: 'var(--color-success)' },
+    { name: 'success-bg', varRef: 'var(--color-success-bg)' },
+    { name: 'warning', varRef: 'var(--color-warning)' },
+    { name: 'warning-bg', varRef: 'var(--color-warning-bg)' },
+    { name: 'error（danger）', varRef: 'var(--color-error)' },
+    { name: 'error-bg', varRef: 'var(--color-error-bg)' },
+    { name: 'node-data', varRef: 'var(--color-node-data)' },
+    { name: 'node-ai', varRef: 'var(--color-node-ai)' },
+  ]
+</script>
+
+<style scoped>
+.style-guide {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.sg-h1 {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.sg-note {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  margin-bottom: 24px;
+}
+
+.sg-h2 {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 32px 0 12px;
+}
+
+.sg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.sg-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.sg-swatch-color {
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.sg-swatch-label {
+  font-size: 13px;
+  color: var(--color-text);
+  margin-top: 6px;
+}
+
+.sg-swatch-var {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-soft);
+}
+
+.sg-radius-box {
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.sg-shadow-box {
+  width: 160px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.sg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sg-badge--success {
+  background: var(--color-success-bg);
+  color: #176B39;
+}
+
+.sg-badge--warning {
+  background: var(--color-warning-bg);
+  color: #8F560A;
+}
+
+.sg-badge--danger {
+  background: var(--color-error-bg);
+  color: #B8342A;
+}
+
+.sg-type-sample {
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.sg-width-demo {
+  background: var(--color-surface-alt);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+</style>

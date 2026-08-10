@@ -3,9 +3,20 @@ import { useAuthStore } from "@/store/authStore";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
+const devOnlyRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: "/style-guide",
+        name: "style-guide",
+        component: () => import("@/views/StyleGuideView.vue"),
+      },
+    ]
+  : [];
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    ...devOnlyRoutes,
     {
       path: "/",
       redirect: "/hub/dashboard",
