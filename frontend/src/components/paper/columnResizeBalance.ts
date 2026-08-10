@@ -70,6 +70,98 @@ function seedMissingColumnWidths (view: EditorView): void {
   if (tr) view.dispatch(tr)
 }
 
+const RESCALE_TOLERANCE_PX = 2
+const RESCALE_META_KEY = 'columnResizeBalance$rescale'
+
+// 表格的 .tableWrapper 是一般 block 層級的 <div>，寬度會忠實反映容器實際可用寬度，
+// 不受表格自己目前 table-layout:fixed 的欄寬總和影響（跟量測表格本身寬度不一樣）。
+// prosemirror-tables 的 TableView 建立的 DOM 結構本身就是 <div class="tableWrapper">
+// 包住 <table>，view.nodeDOM(tableDocPos) 對表格節點回傳的就是這個 wrapper div；
+// 這裡多做一層防呆（往內找、往外找）避免版本差異或未來 NodeView 實作改變時直接量到錯的元素。
+function findTableWrapperWidth (view: EditorView, tableDocPos: number): number | null {
+  const dom = view.nodeDOM(tableDocPos)
+  if (!(dom instanceof HTMLElement)) return null
+
+  let wrapper: HTMLElement | null = dom
+  if (!wrapper.classList.contains('tableWrapper')) {
+    wrapper = wrapper.closest('.tableWrapper') ?? wrapper.querySelector('.tableWrapper')
+  }
+
+  return (wrapper ?? dom).getBoundingClientRect().width
+}
+
+// 欄寬是「建立當下」量測凍結的固定像素值，之後容器寬度如果變了（例如編輯區版面改版），
+// 欄寬不會自動跟著調整，會出現表格比容器窄（或寬）一截的狀況。這裡在每次 view 更新時，
+// 比對每張表格「目前欄寬總和」跟「容器實際可用寬度」，對不上（超過 RESCALE_TOLERANCE_PX）
+// 就按原本的相對比例整批重新縮放，讓表格一律填滿容器寬度。
+//
+// 跟拖曳欄界（下面的 appendTransaction）不會互相干擾，分兩個方向：
+//
+// 1. 這裡的觸發條件只看「總寬對不上容器」——拖曳過程中容器寬度沒變、欄寬總和也刻意
+//    維持不變，不會被這裡判定為「對不上」而觸發重新縮放，這個方向沒有問題。
+//
+// 2. 反過來，我們這裡一次送出的 transaction 會同時改動好幾欄的 colwidth（等比例縮放
+//    每一欄），而 appendTransaction 是「只要 docChanged 就看每一欄改了多少，把差值從
+//    緊鄰右欄扣掉」——如果讓它處理我們這個 transaction，會把「好幾欄同時等比例變寬/
+//    變窄」誤判成「使用者依序拖了好幾次欄界」，對每一欄都再疊加一次鄰欄補償，把等比例
+//    縮放的結果弄亂。所以送出前用 setMeta 標記這個 transaction，appendTransaction 看到
+//    這個標記就整個跳過，不做鄰欄補償。
+//
+// 另外，這裡的 view.dispatch 是在 Plugin.view() 的 update 回呼裡呼叫的：dispatch 會
+// 同步地再次觸發所有 plugin 的 update 回呼（包含這個函式自己）。修好上面第 2 點之後，
+// 重入時讀到的會是已經完整套用、總寬已對齊容器的狀態，正常情況下不會再觸發新的
+// dispatch，但仍用一個旗標擋掉重入，避免萬一還有下一輪誤差需要處理時重複做多餘的工。
+let isDispatchingRescale = false
+function rescaleMismatchedColumnWidths (view: EditorView): void {
+  if (isDispatchingRescale) return
+
+  const { state } = view
+  let tr: Transaction | null = null
+
+  state.doc.descendants((node, pos) => {
+    if (node.type.name !== 'table') return true
+    const map = TableMap.get(node)
+
+    const cols: { col: number, width: number }[] = []
+    let totalWidth = 0
+    for (let col = 0; col < map.width; col++) {
+      const cellPos = representativeCellPos(map, col)
+      if (cellPos === -1) return false
+      const cellNode = node.nodeAt(cellPos)
+      const width = cellNode?.attrs.colwidth?.[0]
+      if (width == null) return false // 還沒被 seedMissingColumnWidths 處理過，這輪先跳過
+      cols.push({ col, width })
+      totalWidth += width
+    }
+
+    const availableWidth = findTableWrapperWidth(view, pos)
+    if (availableWidth == null) return false
+    if (Math.abs(availableWidth - totalWidth) <= RESCALE_TOLERANCE_PX) return false
+
+    const scale = availableWidth / totalWidth
+    for (const { col, width } of cols) {
+      const newWidth = Math.round(width * scale)
+      if (newWidth === width) continue
+      if (!tr) {
+        tr = state.tr
+        tr.setMeta(RESCALE_META_KEY, true)
+      }
+      setColumnWidth(tr, pos + 1, map, col, newWidth)
+    }
+
+    return false
+  })
+
+  if (tr) {
+    isDispatchingRescale = true
+    try {
+      view.dispatch(tr)
+    } finally {
+      isDispatchingRescale = false
+    }
+  }
+}
+
 /**
  * Tiptap 的表格縮放（@tiptap/extension-table 的 resizable）預設只會改被拖曳的
  * 那一欄，欄寬直接加總、表格總寬跟著變。這裡補兩件事：
@@ -88,13 +180,16 @@ export const ColumnResizeBalance = Extension.create({
         key: new PluginKey('columnResizeBalance'),
         view (editorView) {
           seedMissingColumnWidths(editorView)
+          rescaleMismatchedColumnWidths(editorView)
           return {
             update (view) {
               seedMissingColumnWidths(view)
+              rescaleMismatchedColumnWidths(view)
             },
           }
         },
         appendTransaction (transactions, oldState, newState) {
+          if (transactions.some(tr => tr.getMeta(RESCALE_META_KEY))) return null
           if (!transactions.some(tr => tr.docChanged)) return null
 
           let resultTr: Transaction | null = null
