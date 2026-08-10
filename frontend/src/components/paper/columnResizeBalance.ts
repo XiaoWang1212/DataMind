@@ -1,12 +1,31 @@
 import { Extension } from '@tiptap/core'
+import { Table } from '@tiptap/extension-table'
 import { Plugin, PluginKey, type Transaction } from '@tiptap/pm/state'
 import { TableMap } from '@tiptap/pm/tables'
 import type { EditorView } from '@tiptap/pm/view'
+import type { Node as PMNode } from '@tiptap/pm/model'
 
 const MIN_COL_WIDTH = 40
 
 type TMap = ReturnType<typeof TableMap.get>
 
+// Table 節點多加一個「使用者是否已經手動調過整張表格寬度」的旗標。跟一般的欄界拖曳
+// （鄰欄互相增減、表格總寬不變）不一樣，這裡指的是「表格總寬本身真的變了」的那種調整
+// （典型情境：拖最後一欄，沒有鄰欄可以補償）。一旦標記過，rescaleMismatchedColumnWidths
+// 就永遠跳過這張表，不會再把使用者剛調好的寬度拉回去貼齊容器——比照 Word/Excel，手動
+// 調過大小的表格維持使用者調的大小，只有從頭到尾沒被動過寬度的表格才會自動貼齊容器。
+export const ResizableTable = Table.extend({
+  addAttributes () {
+    return {
+      ...this.parent?.(),
+      manuallyResized: {
+        default: false,
+        parseHTML: () => false,
+        renderHTML: () => ({}),
+      },
+    }
+  },
+})
 
 function representativeCellPos (map: TMap, col: number): number {
   for (let row = 0; row < map.height; row++) {
@@ -34,6 +53,43 @@ function setColumnWidth (tr: Transaction, tableStart: number, map: TMap, col: nu
     colwidth[0] = width
     tr.setNodeMarkup(cellDocPos, undefined, { ...cellNode.attrs, colwidth })
   }
+}
+
+// 依 row 0 的代表格收集每一欄的 colwidth[0]，跨 rescale 跟 appendTransaction 共用同一份
+// 「這張表目前欄寬總和是多少」的邏輯，確保兩邊看到的是同一套數字。
+//
+// representativeCellPos 只做「垂直去重」（同一格跨列時只算一次），沒有做「水平去重」：
+// colspan=2 的儲存格在它涵蓋的兩個 col 都會回傳同一個 cellPos。若不擋掉，同一格的
+// colwidth[0] 會被重複加進總和，把總寬灌水。相鄰 col 拿到同一個 cellPos 就代表是同一格，跳過。
+//
+// 去重之後這個總和的意義是「row 0 各代表格 colwidth[0] 之和」，不等於瀏覽器實際渲染出來
+// 的寬度總和——colspan 儲存格涵蓋的其他欄（colwidth[1] 以後）從來沒被 setColumnWidth 寫過
+// （它永遠只寫 index 0），渲染時仍讀著舊值。這代表含 colspan 的表格重新縮放後跟容器寬度
+// 會有一次性、固定量的殘差，不會累積或失控。要徹底對齊，須讓 setColumnWidth 支援寫入
+// colspan 儲存格 colwidth 陣列裡的每一個元素，這不在目前的範圍內。
+//
+// width == null 擋「還沒被 seedMissingColumnWidths 處理過」；Number.isFinite 額外擋
+// 「文件裡已經寫進 NaN」——早一版的邏輯在容器寬度量到 0 時會把 NaN 寫進 colwidth，存檔
+// 存下來的舊文件可能還帶著這個髒值。NaN 通過 == null 檢查（NaN 不是 null），若不額外擋，
+// NaN 會被當成合法寬度往下算，永遠卡在「每次 view 更新都再 dispatch 一次 NaN」的迴圈。
+function collectColumnWidths (node: PMNode, map: TMap): { col: number, width: number }[] | null {
+  const cols: { col: number, width: number }[] = []
+  let prevCellPos = -1
+  for (let col = 0; col < map.width; col++) {
+    const cellPos = representativeCellPos(map, col)
+    if (cellPos === -1) return null
+    if (cellPos === prevCellPos) continue
+    prevCellPos = cellPos
+    const cellNode = node.nodeAt(cellPos)
+    const width = cellNode?.attrs.colwidth?.[0]
+    if (width == null || !Number.isFinite(width)) return null
+    cols.push({ col, width })
+  }
+  return cols
+}
+
+function sumWidths (cols: { col: number, width: number }[]): number {
+  return cols.reduce((sum, c) => sum + c.width, 0)
 }
 
 // 表格剛插入時每一欄都還沒有 colwidth，瀏覽器用 table-layout:fixed 自動平分。
@@ -105,7 +161,7 @@ function findTableWrapperWidth (view: EditorView, tableDocPos: number): number |
 //    緊鄰右欄扣掉」——如果讓它處理我們這個 transaction，會把「好幾欄同時等比例變寬/
 //    變窄」誤判成「使用者依序拖了好幾次欄界」，對每一欄都再疊加一次鄰欄補償，把等比例
 //    縮放的結果弄亂。所以送出前用 setMeta 標記這個 transaction，appendTransaction 看到
-//    這個標記就整個跳過，不做鄰欄補償。
+//    這個標記就整個跳過，不做鄰欄補償、也不判定成「使用者手動調整」。
 //
 // 另外，這裡的 view.dispatch 是在 Plugin.view() 的 update 回呼裡呼叫的：dispatch 會
 // 同步地再次觸發所有 plugin 的 update 回呼（包含這個函式自己）。修好上面第 2 點之後，
@@ -120,39 +176,14 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
 
   state.doc.descendants((node, pos) => {
     if (node.type.name !== 'table') return true
-    const map = TableMap.get(node)
+    // 使用者已經手動調過這張表格的整體寬度（見 ResizableTable 的 manuallyResized），
+    // 就不再自動貼齊容器——尊重使用者調過的大小，不要每次編輯都把它拉回去。
+    if (node.attrs.manuallyResized) return false
 
-    // representativeCellPos 只做「垂直去重」（同一格跨列時只算一次），沒有做「水平去重」：
-    // colspan=2 的儲存格在它涵蓋的兩個 col 都會回傳同一個 cellPos。若不擋掉，同一格的
-    // colwidth[0] 會被重複加進 totalWidth，把總寬灌水、算出偏小的 scale，讓有合併儲存格
-    // 的表格每次都被縮得比實際目標還小。相鄰 col 拿到同一個 cellPos 就代表是同一格，跳過。
-    //
-    // 去重之後 totalWidth 的意義變成「row 0 各代表格 colwidth[0] 之和」，不等於瀏覽器
-    // 實際渲染出來的寬度總和——colspan 儲存格涵蓋的其他欄（colwidth[1] 以後）從來沒被
-    // setColumnWidth 寫過（它永遠只寫 index 0），渲染時仍讀著舊值。這代表含 colspan 的
-    // 表格重新縮放後跟容器寬度會有一次性、固定量的殘差（等於那些沒被寫到的舊 colwidth
-    // 值），不會累積或失控（下一輪拿 totalWidth 跟 availableWidth 比對時，兩者都已經
-    // 反映了同一批「代表值」，會落在容差內不再觸發）。要徹底對齊，須讓 setColumnWidth
-    // 支援寫入 colspan 儲存格 colwidth 陣列裡的每一個元素，這不在目前的範圍內。
-    const cols: { col: number, width: number }[] = []
-    let totalWidth = 0
-    let prevCellPos = -1
-    for (let col = 0; col < map.width; col++) {
-      const cellPos = representativeCellPos(map, col)
-      if (cellPos === -1) return false
-      if (cellPos === prevCellPos) continue
-      prevCellPos = cellPos
-      const cellNode = node.nodeAt(cellPos)
-      const width = cellNode?.attrs.colwidth?.[0]
-      // width == null 擋「還沒被 seedMissingColumnWidths 處理過」；Number.isFinite 額外擋
-      // 「文件裡已經寫進 NaN」——早一版的這段邏輯在容器寬度量到 0 時會把 NaN 寫進
-      // colwidth，存檔存下來的舊文件可能還帶著這個髒值。NaN 通過 == null 檢查（NaN 不是
-      // null），若不額外擋，NaN 會被當成合法寬度往下算，永遠卡在「每次 view 更新都再
-      // dispatch 一次 NaN」的迴圈，無法自癒。
-      if (width == null || !Number.isFinite(width)) return false
-      cols.push({ col, width })
-      totalWidth += width
-    }
+    const map = TableMap.get(node)
+    const cols = collectColumnWidths(node, map)
+    if (!cols) return false
+    const totalWidth = sumWidths(cols)
 
     const availableWidth = findTableWrapperWidth(view, pos)
     // 容器暫時沒有被渲染（隱藏分頁、display:none、路由切換中）時量到的是 0，不是 null。
@@ -209,7 +240,7 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
 
 /**
  * Tiptap 的表格縮放（@tiptap/extension-table 的 resizable）預設只會改被拖曳的
- * 那一欄，欄寬直接加總、表格總寬跟著變。這裡補三件事：
+ * 那一欄，欄寬直接加總、表格總寬跟著變。這裡補四件事：
  *
  * 1. seedMissingColumnWidths（view 更新時）：新表格的欄位還沒有明確寬度時，把目前
  *    實際渲染寬度凍結成 colwidth，畫面不變，但讓後續縮放有基準。
@@ -217,6 +248,9 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
  *    （多列、colspan 一起處理），讓表格總寬維持不變，行為跟 Excel/Word 拖曳欄界一致。
  * 3. rescaleMismatchedColumnWidths（view 更新時）：欄寬總和跟容器實際可用寬度對不上時
  *    （例如版面改版讓容器變寬變窄），按原比例整批重新縮放，讓表格一律填滿容器寬度。
+ * 4. appendTransaction 同時偵測「這次編輯讓表格總寬真的變了」（例如拖最後一欄沒有鄰欄
+ *    可補償、或補償撞到 MIN_COL_WIDTH 夾擠），標記 manuallyResized，之後第 3 點就不會
+ *    再把使用者剛調好的寬度拉回去貼齊容器。
  */
 export const ColumnResizeBalance = Extension.create({
   name: 'columnResizeBalance',
@@ -243,12 +277,18 @@ export const ColumnResizeBalance = Extension.create({
 
           newState.doc.descendants((node, pos) => {
             if (node.type.name !== 'table') return true
+            if (node.attrs.manuallyResized) return false // 已經標記過，不用再比較
 
             const map = TableMap.get(node)
             const oldTableNode = oldState.doc.nodeAt(pos)
+            // 只比對列數（childCount）不夠：像 setContent 這種整段換掉文件內容的操作，
+            // 有可能在同一個文件位置留下「列數剛好一樣、但欄數完全不同」的兩張不相干表格
+            // （例如舊表格 3 欄、新表格 2 欄），會被誤判成「同一張表格的某一欄被改寬了」。
+            // 欄數（TableMap.width）也一致，才真的有可能是同一張表格的欄寬被使用者調整過。
             const canCompare = !!oldTableNode
               && oldTableNode.type === node.type
               && oldTableNode.childCount === node.childCount
+              && TableMap.get(oldTableNode).width === map.width
 
             if (!canCompare) return false
 
@@ -277,6 +317,25 @@ export const ColumnResizeBalance = Extension.create({
 
               if (!resultTr) resultTr = newState.tr
               setColumnWidth(resultTr, pos + 1, map, neighborCol, targetNeighborWidth)
+            }
+
+            // 鄰欄補償跑完之後，看這張表的欄寬總和是否真的變了（例如拖的是最後一欄，
+            // 上面的迴圈從來沒把它當「有鄰欄可補償」的來源處理過；或是補償撞到
+            // MIN_COL_WIDTH 夾擠、沒能完全吸收差值）。用 resultTr.doc（若這張表已經有
+            // 補償被排進去）取代 newState.doc 來讀最終欄寬，確保讀到的是補償後的結果。
+            const finalDoc = resultTr ? resultTr.doc : newState.doc
+            const finalTableNode = finalDoc.nodeAt(pos)
+            if (!finalTableNode) return false
+
+            const oldCols = collectColumnWidths(oldTableNode!, TableMap.get(oldTableNode!))
+            const newCols = collectColumnWidths(finalTableNode, TableMap.get(finalTableNode))
+            if (oldCols && newCols) {
+              const oldTotal = sumWidths(oldCols)
+              const newTotal = sumWidths(newCols)
+              if (Math.abs(newTotal - oldTotal) > RESCALE_TOLERANCE_PX) {
+                if (!resultTr) resultTr = newState.tr
+                resultTr.setNodeMarkup(pos, undefined, { ...finalTableNode.attrs, manuallyResized: true })
+              }
             }
 
             return false
