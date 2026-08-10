@@ -116,7 +116,12 @@ function seedMissingColumnWidths (view: EditorView): void {
       const width = dom instanceof HTMLElement ? Math.round(dom.getBoundingClientRect().width) : null
       if (!width) continue
 
-      if (!tr) tr = state.tr
+      if (!tr) {
+        tr = state.tr
+        // 這是自動量測凍結，不是使用者編輯，不該佔用一步 undo（也避免 Ctrl+Z 復原
+        // 這個動作後，下一個 view 更新又立刻把它重新量測寫回去，undo 形同無效）。
+        tr.setMeta('addToHistory', false)
+      }
       setColumnWidth(tr, pos + 1, map, col, width)
     }
 
@@ -221,6 +226,12 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
       if (!tr) {
         tr = state.tr
         tr.setMeta(RESCALE_META_KEY, true)
+        // 同 seedMissingColumnWidths：自動校正不是使用者編輯，不佔用一步 undo，
+        // 否則 Ctrl+Z 復原這個動作後，下一次 view 更新又會立刻偵測到「總寬對不上
+        // 容器」再自動校正回去，undo 等於沒有作用；還會被 appendTransaction 誤判成
+        // 一次使用者編輯（雖然有 RESCALE_META_KEY 擋掉了鄰欄補償/manuallyResized
+        // 判定，但仍會留在 history 堆疊裡佔位）。
+        tr.setMeta('addToHistory', false)
       }
       setColumnWidth(tr, pos + 1, map, col, newWidth)
     }
@@ -292,6 +303,15 @@ export const ColumnResizeBalance = Extension.create({
 
             if (!canCompare) return false
 
+            // 這一輪的內部欄界補償（col 0 到 width-2）有沒有真的抓到一筆 delta——用來
+            // 跟「拖最後一欄」區分開。拖最後一欄的寬度變化這個迴圈永遠看不到（迴圈上限
+            // 就是 width-2），所以 sawInternalDelta 維持 false；但一般拖內部欄界，就算
+            // 補償撞到 MIN_COL_WIDTH 夾擠、沒能完全吸收差值，這裡也會是 true。下面判斷
+            // 總寬是否變動時，只有「完全沒有內部補償來源」才可能是使用者故意的總寬調整，
+            // 避免把「內部拖曳撞到下限」誤判成「使用者手動調整整張表格寬度」（那樣會讓
+            // 一次撞到下限的拖曳永久關掉這張表格的自動貼齊能力）。
+            let sawInternalDelta = false
+
             for (let col = 0; col < map.width - 1; col++) {
               const cellPos = representativeCellPos(map, col)
               if (cellPos === -1) continue
@@ -303,6 +323,8 @@ export const ColumnResizeBalance = Extension.create({
               const newWidth = newCell.attrs.colwidth?.[0]
               const oldWidth = oldCell.attrs.colwidth?.[0]
               if (newWidth == null || oldWidth == null || newWidth === oldWidth) continue
+
+              sawInternalDelta = true
 
               const delta = newWidth - oldWidth
               const neighborCol = col + 1
@@ -319,17 +341,32 @@ export const ColumnResizeBalance = Extension.create({
               setColumnWidth(resultTr, pos + 1, map, neighborCol, targetNeighborWidth)
             }
 
+            if (sawInternalDelta) return false
+
             // 鄰欄補償跑完之後，看這張表的欄寬總和是否真的變了（例如拖的是最後一欄，
-            // 上面的迴圈從來沒把它當「有鄰欄可補償」的來源處理過；或是補償撞到
-            // MIN_COL_WIDTH 夾擠、沒能完全吸收差值）。用 resultTr.doc（若這張表已經有
-            // 補償被排進去）取代 newState.doc 來讀最終欄寬，確保讀到的是補償後的結果。
+            // 上面的迴圈從來沒把它當「有鄰欄可補償」的來源處理過）。用 resultTr.doc
+            // （若這張表已經有補償被排進去）取代 newState.doc 來讀最終欄寬，確保讀到的
+            // 是補償後的結果。
             const finalDoc = resultTr ? resultTr.doc : newState.doc
             const finalTableNode = finalDoc.nodeAt(pos)
             if (!finalTableNode) return false
 
             const oldCols = collectColumnWidths(oldTableNode!, TableMap.get(oldTableNode!))
             const newCols = collectColumnWidths(finalTableNode, TableMap.get(finalTableNode))
-            if (oldCols && newCols) {
+            // 欄數相同（TableMap.width 一致）不代表「同一批儲存格結構沒變」——mergeCells/
+            // splitCell 可能在 width 不變的情況下改變 row 0 的實際儲存格分佈（去重後的
+            // cols 陣列長度就會不同），也可能改變整個節點的 nodeSize。這類結構性變化不是
+            // 使用者拖曳欄寬造成的總寬差異，不該被標記成 manuallyResized（一旦標記就永久
+            // 卡死，例如合併儲存格後這張表格會永遠失去自動貼齊容器的能力）。用 nodeSize
+            // 是否相同（結構完全沒變，只有 colwidth 屬性變了）加上去重後欄位數量、欄位
+            // 索引是否一一對應，把這類情況排除在外，只留下「結構不變、純粹欄寬總和變了」
+            // 的情況——那才是真正的使用者手動調整。
+            const structurallyUnchanged = !!oldTableNode
+              && oldTableNode.nodeSize === finalTableNode.nodeSize
+              && !!oldCols && !!newCols
+              && oldCols.length === newCols.length
+              && oldCols.every((c, i) => newCols[i]?.col === c.col)
+            if (structurallyUnchanged && oldCols && newCols) {
               const oldTotal = sumWidths(oldCols)
               const newTotal = sumWidths(newCols)
               if (Math.abs(newTotal - oldTotal) > RESCALE_TOLERANCE_PX) {
