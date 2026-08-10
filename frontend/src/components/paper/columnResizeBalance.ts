@@ -126,6 +126,14 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
     // colspan=2 的儲存格在它涵蓋的兩個 col 都會回傳同一個 cellPos。若不擋掉，同一格的
     // colwidth[0] 會被重複加進 totalWidth，把總寬灌水、算出偏小的 scale，讓有合併儲存格
     // 的表格每次都被縮得比實際目標還小。相鄰 col 拿到同一個 cellPos 就代表是同一格，跳過。
+    //
+    // 去重之後 totalWidth 的意義變成「row 0 各代表格 colwidth[0] 之和」，不等於瀏覽器
+    // 實際渲染出來的寬度總和——colspan 儲存格涵蓋的其他欄（colwidth[1] 以後）從來沒被
+    // setColumnWidth 寫過（它永遠只寫 index 0），渲染時仍讀著舊值。這代表含 colspan 的
+    // 表格重新縮放後跟容器寬度會有一次性、固定量的殘差（等於那些沒被寫到的舊 colwidth
+    // 值），不會累積或失控（下一輪拿 totalWidth 跟 availableWidth 比對時，兩者都已經
+    // 反映了同一批「代表值」，會落在容差內不再觸發）。要徹底對齊，須讓 setColumnWidth
+    // 支援寫入 colspan 儲存格 colwidth 陣列裡的每一個元素，這不在目前的範圍內。
     const cols: { col: number, width: number }[] = []
     let totalWidth = 0
     let prevCellPos = -1
@@ -136,7 +144,12 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
       prevCellPos = cellPos
       const cellNode = node.nodeAt(cellPos)
       const width = cellNode?.attrs.colwidth?.[0]
-      if (width == null) return false // 還沒被 seedMissingColumnWidths 處理過，這輪先跳過
+      // width == null 擋「還沒被 seedMissingColumnWidths 處理過」；Number.isFinite 額外擋
+      // 「文件裡已經寫進 NaN」——早一版的這段邏輯在容器寬度量到 0 時會把 NaN 寫進
+      // colwidth，存檔存下來的舊文件可能還帶著這個髒值。NaN 通過 == null 檢查（NaN 不是
+      // null），若不額外擋，NaN 會被當成合法寬度往下算，永遠卡在「每次 view 更新都再
+      // dispatch 一次 NaN」的迴圈，無法自癒。
+      if (width == null || !Number.isFinite(width)) return false
       cols.push({ col, width })
       totalWidth += width
     }
@@ -149,26 +162,29 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
     if (totalWidth <= 0) return false
     if (Math.abs(availableWidth - totalWidth) <= RESCALE_TOLERANCE_PX) return false
 
-    // 拖曳欄界時，鄰欄補償會用 Math.max(MIN_COL_WIDTH, ...) 夾住鄰欄寬度；夾住的那一刻
-    // 起，欄寬總和會真的超過容器寬度（因為鄰欄沒能吃下全部的差值）。這時如果照常等比例
-    // 縮小，會連使用者根本沒碰過的欄一起縮，甚至把已經被夾在下限的欄再壓到下限以下——
-    // 正是這裡最該避免的互相干擾。已經有欄貼在下限的表格就當作「壓到底了」，不再縮小。
-    // 只擋縮小方向；容器真的變寬（availableWidth > totalWidth）時放行，變寬不會再往下擠。
-    if (availableWidth < totalWidth && cols.some(c => c.width <= MIN_COL_WIDTH)) return false
-
     // 每一欄各自 Math.round 的話，四捨五入的殘差會累加，欄數一多總和就可能超出
     // RESCALE_TOLERANCE_PX，而這次 dispatch 正好被重入旗標擋住後續遞迴，沒有第二輪
     // 自動修正，表格會一直差幾個 px。所以最後一欄不算 scale，直接吃剩下的餘數，
     // 讓總和精準落在 Math.round(availableWidth)。
+    //
+    // 縮小方向（availableWidth < totalWidth）逐欄夾在 MIN_COL_WIDTH 下限之上，而不是
+    // 「只要有欄已經貼底，整張表就放棄縮小」。後者聽起來安全，實際上會讓任何天生就有
+    // 窄欄的表格（例如 15 欄擠進 600px 容器，出生時每欄本來就在 40px 上下）永久失去
+    // 被縮小的能力——側欄展開、視窗變窄之類的情境只會讓表格溢出容器，不會再自動修正，
+    // 而且沒有任何後續動作能讓它恢復。逐欄夾制之後，被夾住多拿到的寬度就讓最後一欄的
+    // 餘數分配自然吸收；如果全部欄早就在下限、夾完總和依然超過容器，算出來的新寬度會
+    // 跟原寬度一樣，下面的「newWidth === width 就不 dispatch」會讓這一輪等同不做事，
+    // 不會卡死也不會把任何一欄壓破下限。放大方向（availableWidth > totalWidth）不夾，
+    // scale > 1 只會讓欄寬變大，不會製造新的下限違規。
+    const isShrinking = availableWidth < totalWidth
     const scale = availableWidth / totalWidth
     const target = Math.round(availableWidth)
     let assigned = 0
-    for (let i = 0; i < cols.length; i++) {
-      const entry = cols[i]
-      if (!entry) continue
+    for (const [i, entry] of cols.entries()) {
       const { col, width } = entry
       const isLast = i === cols.length - 1
-      const newWidth = isLast ? target - assigned : Math.round(width * scale)
+      let newWidth = isLast ? target - assigned : Math.round(width * scale)
+      if (isShrinking) newWidth = Math.max(MIN_COL_WIDTH, newWidth)
       assigned += newWidth
       if (newWidth === width) continue
       if (!tr) {
