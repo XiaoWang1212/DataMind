@@ -13,11 +13,17 @@ export interface ArxivSearchResult {
   candidates: ArxivCandidate[]
 }
 
-export async function searchArxivCandidates (miningResults: Record<string, unknown>): Promise<ArxivSearchResult> {
+export async function searchArxivCandidates (
+  miningResults: Record<string, unknown>,
+  userTitle?: string,
+): Promise<ArxivSearchResult> {
   const response = await fetch('/api/rag/arxiv/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mining_results: miningResults }),
+    body: JSON.stringify({
+      mining_results: miningResults,
+      ...(userTitle ? { user_title: userTitle } : {}),
+    }),
   })
 
   const result = (await response.json()) as Record<string, unknown>

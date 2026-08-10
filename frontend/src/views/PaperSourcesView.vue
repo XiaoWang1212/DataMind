@@ -26,53 +26,69 @@
       </section>
 
       <template v-else>
-        <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
-
-        <div v-if="loadingSearch" class="sources-status">
-          正在分析資料並查詢 arXiv...
+        <div class="sources-title-input">
+          <label class="sources-title-label" for="user-title-input">論文標題（選填）</label>
+          <input
+            id="user-title-input"
+            v-model="userTitle"
+            class="sources-title-field"
+            placeholder="留空由 AI 自動判斷主題"
+            type="text"
+          >
+          <v-btn class="bg-accent" color="accent" :loading="loadingSearch" size="small" @click="loadCandidates">
+            {{ hasSearched ? '重新查詢' : '查詢文獻' }}
+          </v-btn>
         </div>
 
-        <div v-else-if="searchError" class="sources-status sources-status--error">
-          {{ searchError }}
-          <v-btn size="small" variant="text" @click="loadCandidates">重試</v-btn>
-        </div>
+        <template v-if="hasSearched">
+          <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
 
-        <div v-else-if="candidates.length === 0" class="sources-status">
-          找不到相關文獻,請稍後再試。
-        </div>
-
-        <template v-else>
-          <ul class="candidate-list">
-            <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
-              <label class="candidate-select">
-                <input
-                  v-model="selectedIds"
-                  type="checkbox"
-                  :value="candidate.arxiv_id"
-                >
-                <div class="candidate-body">
-                  <p class="candidate-title">{{ candidate.title }}</p>
-                  <p class="candidate-meta">
-                    {{ candidate.authors }}
-                    <span v-if="candidate.year">({{ candidate.year }})</span>
-                  </p>
-                  <p class="candidate-abstract">{{ candidate.abstract }}</p>
-                </div>
-              </label>
-            </li>
-          </ul>
-
-          <div class="sources-actions">
-            <v-btn
-              class="bg-accent"
-              color="accent"
-              :disabled="selectedIds.length === 0 || generating"
-              @click="handleGenerate"
-            >
-              {{ generating ? '生成中...' : `確認並生成論文 (${selectedIds.length})` }}
-            </v-btn>
-            <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
+          <div v-if="loadingSearch" class="sources-status">
+            正在分析資料並查詢 arXiv...
           </div>
+
+          <div v-else-if="searchError" class="sources-status sources-status--error">
+            {{ searchError }}
+            <v-btn size="small" variant="text" @click="loadCandidates">重試</v-btn>
+          </div>
+
+          <div v-else-if="candidates.length === 0" class="sources-status">
+            找不到相關文獻,請稍後再試。
+          </div>
+
+          <template v-else>
+            <ul class="candidate-list">
+              <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
+                <label class="candidate-select">
+                  <input
+                    v-model="selectedIds"
+                    type="checkbox"
+                    :value="candidate.arxiv_id"
+                  >
+                  <div class="candidate-body">
+                    <p class="candidate-title">{{ candidate.title }}</p>
+                    <p class="candidate-meta">
+                      {{ candidate.authors }}
+                      <span v-if="candidate.year">({{ candidate.year }})</span>
+                    </p>
+                    <p class="candidate-abstract">{{ candidate.abstract }}</p>
+                  </div>
+                </label>
+              </li>
+            </ul>
+
+            <div class="sources-actions">
+              <v-btn
+                class="bg-accent"
+                color="accent"
+                :disabled="selectedIds.length === 0 || generating"
+                @click="handleGenerate"
+              >
+                {{ generating ? '生成中...' : `確認並生成論文 (${selectedIds.length})` }}
+              </v-btn>
+              <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
+            </div>
+          </template>
         </template>
       </template>
     </main>
@@ -97,6 +113,8 @@
   const hasLoaded = ref(false)
 
   const topic = ref('')
+  const userTitle = ref('')
+  const hasSearched = ref(false)
   const candidates = ref<ArxivCandidate[]>([])
   const selectedIds = ref<string[]>([])
 
@@ -108,10 +126,11 @@
 
   async function loadCandidates (): Promise<void> {
     if (!miningResults.value) return
+    hasSearched.value = true
     loadingSearch.value = true
     searchError.value = null
     try {
-      const result = await searchArxivCandidates(miningResults.value)
+      const result = await searchArxivCandidates(miningResults.value, userTitle.value.trim() || undefined)
       topic.value = result.topic
       candidates.value = result.candidates
       selectedIds.value = []
@@ -147,9 +166,6 @@
     const state = loadWorkflowStateFromStorage(projectId.value)
     miningResults.value = state?.workflowResult ?? null
     hasLoaded.value = true
-    if (miningResults.value) {
-      loadCandidates()
-    }
   })
 </script>
 
@@ -198,6 +214,35 @@
     font-size: 14px;
     font-weight: 700;
     color: var(--color-ink);
+  }
+
+  .sources-title-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .sources-title-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .sources-title-field {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-main);
+  }
+
+  .sources-title-field:focus {
+    outline: none;
+    border-color: var(--color-accent);
   }
 
   .sources-topic {
