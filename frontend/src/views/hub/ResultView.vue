@@ -359,7 +359,7 @@
 }
 
 .back-link:hover {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .page-header {
@@ -398,7 +398,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -475,7 +475,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .metric-value {
@@ -483,7 +483,7 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .metric-hint {
@@ -509,7 +509,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .table-wrap {
@@ -533,7 +533,7 @@
 
 .result-table th {
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   background: #fafbff;
 }
 
@@ -543,7 +543,7 @@
 
 .model-name {
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .score-best {
@@ -582,7 +582,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .analysis-loading {
@@ -616,7 +616,7 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .analysis-block p {
@@ -658,7 +658,7 @@
 .chat-bubble--model {
   align-self: flex-start;
   background: var(--color-chat-system);
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .chat-bubble--failed {

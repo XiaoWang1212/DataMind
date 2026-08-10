@@ -91,7 +91,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -160,7 +160,7 @@
 .project-name {
   font-size: 14.5px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 /* ── Badges ── */

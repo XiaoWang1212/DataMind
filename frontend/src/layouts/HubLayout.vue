@@ -26,7 +26,7 @@ import HubSidebar from '@/components/hub/HubSidebar.vue'
   background: var(--color-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .hub-glass-orbs {

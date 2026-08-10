@@ -141,7 +141,7 @@
     width: 36px;
     height: 36px;
     border-radius: 999px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 18px;
     cursor: pointer;
   }
@@ -183,7 +183,7 @@
 
   .upload-dropzone__text {
     font-size: 18px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-weight: 600;
   }
 

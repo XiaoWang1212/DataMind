@@ -170,7 +170,7 @@
     font-size: 13px;
     line-height: 1.2;
     font-weight: 600;
-    color: var(--color-ink);
+    color: var(--color-text);
     white-space: pre-line;
   }
 

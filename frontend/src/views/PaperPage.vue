@@ -200,7 +200,7 @@
     --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: var(--color-ink);
+    --text-main: var(--color-text);
     --text-secondary: var(--color-secondary);
     --brand: var(--color-accent);
     min-height: 100vh;

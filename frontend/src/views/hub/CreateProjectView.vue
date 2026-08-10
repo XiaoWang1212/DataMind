@@ -216,7 +216,7 @@
 }
 
 .back-link:hover {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .page-header {
@@ -226,7 +226,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -305,7 +305,7 @@
 }
 
 .step-title--active {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .step-sub {
@@ -321,7 +321,7 @@
   border-radius: 8px;
   padding: 28px;
   margin-bottom: 0;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .form-field {
@@ -343,7 +343,7 @@
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--color-text);
   background-color: #ffffff;
   outline: none;
   box-sizing: border-box;
@@ -365,7 +365,7 @@
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--color-text);
   background-color: #ffffff;
   outline: none;
   box-sizing: border-box;
@@ -421,7 +421,7 @@
 .fw-select-name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 4px;
 }
 
@@ -490,7 +490,7 @@
 .review-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 16px;
 }
 
@@ -508,7 +508,7 @@
 }
 
 .review-val {
-  color: var(--color-ink);
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -519,7 +519,7 @@
   align-items: center;
   padding: 18px 28px;
   background: #ffffff;
-  color: var(--color-ink);
+  color: var(--color-text);
   border-radius: 0 0 8px 8px;
   border: 1px solid #e8e8e8;
   border-top: 1px solid #f0f0f0;
@@ -542,7 +542,7 @@
 }
 
 .prev-btn:not(:disabled):hover {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .next-btn {

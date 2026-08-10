@@ -87,7 +87,7 @@ const activities = [
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -122,7 +122,7 @@ const activities = [
 .stat-number {
   font-size: 42px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   line-height: 1;
   margin-bottom: 12px;
   letter-spacing: -1px;
@@ -182,7 +182,7 @@ const activities = [
 .action-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 3px;
 }
 
@@ -205,7 +205,7 @@ const activities = [
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .activity-title {
@@ -229,7 +229,7 @@ const activities = [
 .activity-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 4px;
 }
 

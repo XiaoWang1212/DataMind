@@ -150,7 +150,7 @@
 }
 
 .back-link:hover {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .page-header {
@@ -167,7 +167,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -221,7 +221,7 @@
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 20px;
 }
 
@@ -243,7 +243,7 @@
 
 .result-value {
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .result-value.large {
@@ -335,7 +335,7 @@
 
 .info-value {
   font-size: 13.5px;
-  color: var(--color-ink);
+  color: var(--color-text);
   font-weight: 500;
 }
 

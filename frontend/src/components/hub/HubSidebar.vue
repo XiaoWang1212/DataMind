@@ -125,7 +125,7 @@
 .hub-brand-title {
   font-size: 14.5px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   white-space: nowrap;
   line-height: 1.3;
 }
@@ -188,7 +188,7 @@
 
 .hub-nav-item--active {
   background: var(--color-accent);
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .hub-nav-label {
@@ -208,7 +208,7 @@
 
 .hub-user-name {
   font-size: 12.5px;
-  color: var(--color-ink);
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -231,7 +231,7 @@
 
 .hub-logout-btn:hover {
   background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .hub-sidebar-footer {

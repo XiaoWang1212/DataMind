@@ -95,7 +95,7 @@
   border: 1px solid #e8e8e8;
   border-radius: 8px;
   padding: 32px;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .auth-title {
@@ -139,7 +139,7 @@
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--color-text);
   background-color: #ffffff;
   outline: none;
   box-sizing: border-box;

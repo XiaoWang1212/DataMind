@@ -601,7 +601,7 @@
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
     text-align: left;
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .column-name-input {
@@ -611,7 +611,7 @@
     border-radius: 8px;
     background: var(--color-surface);
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .values-cell {
@@ -632,7 +632,7 @@
 
   .btn-reset {
     background: var(--color-surface);
-    color: var(--color-ink);
+    color: var(--color-text);
     border: 1px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
   }
 
@@ -653,7 +653,7 @@
     border-radius: 8px;
     background-color: var(--color-surface);
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;

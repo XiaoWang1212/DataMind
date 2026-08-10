@@ -214,7 +214,7 @@
 }
 
 .back-link:hover {
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .page-header {
@@ -224,7 +224,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -245,7 +245,7 @@
 .panel-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 12px;
 }
 
@@ -384,7 +384,7 @@
 
 .result-field-value {
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--color-text);
   font-weight: 500;
 }
 

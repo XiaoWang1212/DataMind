@@ -239,14 +239,14 @@
 
   .fi-cell {
     padding: 11px 14px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
   }
 
   .fi-cell--feature {
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .fi-cell--num {

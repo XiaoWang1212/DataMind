@@ -122,7 +122,7 @@
     font-weight: 600;
     font-size: 13px;
     line-height: 1.3;
-    color: var(--color-ink);
+    color: var(--color-text);
     min-width: 0;
     word-break: break-word;
   }
@@ -151,7 +151,7 @@
 
   .param-val {
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-weight: 500;
   }
 

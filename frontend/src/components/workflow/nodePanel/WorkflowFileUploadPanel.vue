@@ -150,7 +150,7 @@
   .upload-modal-line1 {
     font-size: 18px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-line2 {
@@ -195,7 +195,7 @@
   .upload-modal-preview-header {
     font-size: 16px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-preview-summary {
@@ -236,7 +236,7 @@
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 8px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-chart-subtitle {
@@ -269,7 +269,7 @@
 
   .upload-modal-chart-bar-label {
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -291,7 +291,7 @@
 
   .upload-modal-chart-bar-value {
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-text);
     text-align: right;
   }
 
@@ -301,7 +301,7 @@
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 14px;
     background: var(--color-surface);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-preview-table table {
@@ -317,12 +317,12 @@
     text-align: left;
     font-size: 13px;
     white-space: nowrap;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-preview-table th {
     background: var(--color-surface);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .workflow-file-upload-panel {

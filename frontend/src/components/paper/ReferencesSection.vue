@@ -35,7 +35,7 @@
     margin: 0 0 12px;
     font-size: 14px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .references-list {
@@ -49,7 +49,7 @@
   .references-list li {
     font-size: 12.5px;
     line-height: 1.7;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .references-list:not(.references-list--numbered) {

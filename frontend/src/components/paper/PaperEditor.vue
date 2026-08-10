@@ -533,7 +533,7 @@
   :deep(.editor-content) {
     font-size: 13.5px;
     line-height: 1.9;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   :deep(.editor-content .ProseMirror) {
@@ -545,7 +545,7 @@
   :deep(.editor-content h3) {
     margin: 0 0 10px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   :deep(.editor-content p) {

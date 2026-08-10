@@ -159,7 +159,7 @@
     --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: var(--color-ink);
+    --text-main: var(--color-text);
     --text-secondary: var(--color-secondary);
     min-height: calc(100vh - 64px);
     display: flex;
@@ -193,14 +193,14 @@
   }
 
   .back-btn {
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .sources-title {
     margin: 0;
     font-size: 14px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .sources-topic {
@@ -251,7 +251,7 @@
     margin: 0 0 4px;
     font-size: 13.5px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .candidate-meta {

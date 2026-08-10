@@ -86,7 +86,7 @@
                     {{ item.label }}
                   </text>
                   <text
-                    fill="var(--color-ink)"
+                    fill="var(--color-text)"
                     font-size="10"
                     text-anchor="middle"
                     :x="

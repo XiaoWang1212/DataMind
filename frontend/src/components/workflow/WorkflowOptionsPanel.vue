@@ -429,7 +429,7 @@
   .panel-header h3 {
     margin: 0 0 2px;
     font-size: 16px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .panel-header p {
@@ -512,7 +512,7 @@
   }
 
   .upload-card__info {
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-dropzone {
@@ -542,7 +542,7 @@
   .upload-modal-line1 {
     font-size: 18px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .upload-modal-line2 {
@@ -578,7 +578,7 @@
   }
 
   .upload-modal-preview-header {
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 16px;
     font-weight: 700;
   }
@@ -633,7 +633,7 @@
 
   .upload-modal-chart-bar-label {
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -654,7 +654,7 @@
 
   .upload-modal-chart-bar-value {
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-text);
     text-align: right;
   }
 
@@ -680,7 +680,7 @@
 
   .upload-modal-preview-table th {
     background: var(--color-surface);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .details__summary {

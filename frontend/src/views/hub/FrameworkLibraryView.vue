@@ -186,7 +186,7 @@
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -225,7 +225,7 @@
   border-radius: 7px;
   background-color: #ffffff;
   font-size: 13.5px;
-  color: var(--color-ink);
+  color: var(--color-text);
   outline: none;
   transition: border-color 0.15s;
   color-scheme: light;
@@ -311,7 +311,7 @@
 .fw-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -405,7 +405,7 @@
 .panel-title {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   line-height: 1.3;
 }
 

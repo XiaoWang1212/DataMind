@@ -822,7 +822,7 @@
     border: 1px solid rgba(148, 163, 184, 0.32);
     border-radius: 16px;
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .workflow-error {

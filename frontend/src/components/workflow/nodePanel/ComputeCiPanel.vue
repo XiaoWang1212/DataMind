@@ -181,7 +181,7 @@
     margin: 0 0 2px;
     font-size: 14px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .ci-panel__sub {
@@ -275,7 +275,7 @@
 
   .ci-table__num--val {
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .ci-table__num--lo,
@@ -300,7 +300,7 @@
     margin: 0 0 2px;
     font-size: 14px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .ci-info__sub {

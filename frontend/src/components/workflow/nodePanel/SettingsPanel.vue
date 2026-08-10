@@ -583,7 +583,7 @@
     font-weight: 600;
     font-size: 13px;
     line-height: 1.3;
-    color: var(--color-ink);
+    color: var(--color-text);
     min-width: 0;
     word-break: break-word;
   }
@@ -625,7 +625,7 @@
     text-align: center;
     outline: none;
     background: rgba(255, 255, 255, 0.9);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .del-btn {
@@ -683,7 +683,7 @@
   .ci-card__title {
     font-size: 13px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .ci-card__sub {

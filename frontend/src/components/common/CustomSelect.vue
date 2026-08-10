@@ -312,7 +312,7 @@
     border: 1px solid #e8e8e8;
     border-radius: 8px;
     background: #fff;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 13px;
     cursor: pointer;
     text-align: left;
@@ -382,7 +382,7 @@
     padding: 7px 10px;
     border-radius: 6px;
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
     cursor: pointer;
   }
 

@@ -892,7 +892,7 @@
   .page-title {
     font-size: 19px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .load-error {
@@ -981,7 +981,7 @@
 
   .var-name {
     font-weight: 600;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .var-type {
@@ -1273,7 +1273,7 @@
     border-bottom: 1px solid #e8e8e8;
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .chat-offline {
@@ -1312,7 +1312,7 @@
   .chat-bubble--assistant {
     align-self: flex-start;
     background: var(--color-chat-system);
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .chat-bubble--pending {

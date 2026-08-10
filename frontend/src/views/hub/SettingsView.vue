@@ -101,7 +101,7 @@ function saveSettings() {
 .page-title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin: 0 0 5px;
 }
 
@@ -118,13 +118,13 @@ function saveSettings() {
   border-radius: 8px;
   padding: 22px 24px;
   margin-bottom: 16px;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-text);
   margin-bottom: 20px;
 }
 
@@ -167,7 +167,7 @@ function saveSettings() {
   border-radius: 7px;
   background-color: #ffffff;
   font-size: 13.5px;
-  color: var(--color-ink);
+  color: var(--color-text);
   outline: none;
   cursor: pointer;
   appearance: auto;
@@ -236,7 +236,7 @@ function saveSettings() {
   border: 1px solid #e8e8e8;
   border-radius: 7px;
   font-size: 13.5px;
-  color: var(--color-ink);
+  color: var(--color-text);
   background-color: #f9fafb;
   outline: none;
   box-sizing: border-box;

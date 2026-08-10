@@ -103,7 +103,7 @@
     margin: 0;
     font-size: 16px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .summary-table {
@@ -145,7 +145,7 @@
 
   .table-cell {
     padding: 11px 14px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
@@ -177,7 +177,7 @@
 
   .model-name {
     font-weight: 600;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 13px;
   }
 
