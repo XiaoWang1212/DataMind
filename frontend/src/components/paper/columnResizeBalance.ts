@@ -122,11 +122,18 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
     if (node.type.name !== 'table') return true
     const map = TableMap.get(node)
 
+    // representativeCellPos 只做「垂直去重」（同一格跨列時只算一次），沒有做「水平去重」：
+    // colspan=2 的儲存格在它涵蓋的兩個 col 都會回傳同一個 cellPos。若不擋掉，同一格的
+    // colwidth[0] 會被重複加進 totalWidth，把總寬灌水、算出偏小的 scale，讓有合併儲存格
+    // 的表格每次都被縮得比實際目標還小。相鄰 col 拿到同一個 cellPos 就代表是同一格，跳過。
     const cols: { col: number, width: number }[] = []
     let totalWidth = 0
+    let prevCellPos = -1
     for (let col = 0; col < map.width; col++) {
       const cellPos = representativeCellPos(map, col)
       if (cellPos === -1) return false
+      if (cellPos === prevCellPos) continue
+      prevCellPos = cellPos
       const cellNode = node.nodeAt(cellPos)
       const width = cellNode?.attrs.colwidth?.[0]
       if (width == null) return false // 還沒被 seedMissingColumnWidths 處理過，這輪先跳過
@@ -135,12 +142,34 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
     }
 
     const availableWidth = findTableWrapperWidth(view, pos)
-    if (availableWidth == null) return false
+    // 容器暫時沒有被渲染（隱藏分頁、display:none、路由切換中）時量到的是 0，不是 null。
+    // 不擋的話 scale 會變 0，整排欄寬被寫成 0；下一輪 totalWidth 也變 0，scale 變成
+    // 0/0 = NaN，而 NaN === width 永遠是 false，等於每次 view 更新都往文件寫一次 NaN。
+    if (availableWidth == null || availableWidth <= 0) return false
+    if (totalWidth <= 0) return false
     if (Math.abs(availableWidth - totalWidth) <= RESCALE_TOLERANCE_PX) return false
 
+    // 拖曳欄界時，鄰欄補償會用 Math.max(MIN_COL_WIDTH, ...) 夾住鄰欄寬度；夾住的那一刻
+    // 起，欄寬總和會真的超過容器寬度（因為鄰欄沒能吃下全部的差值）。這時如果照常等比例
+    // 縮小，會連使用者根本沒碰過的欄一起縮，甚至把已經被夾在下限的欄再壓到下限以下——
+    // 正是這裡最該避免的互相干擾。已經有欄貼在下限的表格就當作「壓到底了」，不再縮小。
+    // 只擋縮小方向；容器真的變寬（availableWidth > totalWidth）時放行，變寬不會再往下擠。
+    if (availableWidth < totalWidth && cols.some(c => c.width <= MIN_COL_WIDTH)) return false
+
+    // 每一欄各自 Math.round 的話，四捨五入的殘差會累加，欄數一多總和就可能超出
+    // RESCALE_TOLERANCE_PX，而這次 dispatch 正好被重入旗標擋住後續遞迴，沒有第二輪
+    // 自動修正，表格會一直差幾個 px。所以最後一欄不算 scale，直接吃剩下的餘數，
+    // 讓總和精準落在 Math.round(availableWidth)。
     const scale = availableWidth / totalWidth
-    for (const { col, width } of cols) {
-      const newWidth = Math.round(width * scale)
+    const target = Math.round(availableWidth)
+    let assigned = 0
+    for (let i = 0; i < cols.length; i++) {
+      const entry = cols[i]
+      if (!entry) continue
+      const { col, width } = entry
+      const isLast = i === cols.length - 1
+      const newWidth = isLast ? target - assigned : Math.round(width * scale)
+      assigned += newWidth
       if (newWidth === width) continue
       if (!tr) {
         tr = state.tr
@@ -164,12 +193,14 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
 
 /**
  * Tiptap 的表格縮放（@tiptap/extension-table 的 resizable）預設只會改被拖曳的
- * 那一欄，欄寬直接加總、表格總寬跟著變。這裡補兩件事：
+ * 那一欄，欄寬直接加總、表格總寬跟著變。這裡補三件事：
  *
  * 1. seedMissingColumnWidths（view 更新時）：新表格的欄位還沒有明確寬度時，把目前
  *    實際渲染寬度凍結成 colwidth，畫面不變，但讓後續縮放有基準。
  * 2. appendTransaction：偵測到某一欄的 colwidth 改變時，把差值從緊鄰右邊那一欄扣掉
  *    （多列、colspan 一起處理），讓表格總寬維持不變，行為跟 Excel/Word 拖曳欄界一致。
+ * 3. rescaleMismatchedColumnWidths（view 更新時）：欄寬總和跟容器實際可用寬度對不上時
+ *    （例如版面改版讓容器變寬變窄），按原比例整批重新縮放，讓表格一律填滿容器寬度。
  */
 export const ColumnResizeBalance = Extension.create({
   name: 'columnResizeBalance',
