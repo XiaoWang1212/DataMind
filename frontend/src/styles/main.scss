@@ -2,4 +2,27 @@
   code, pre, .v-code {
     font-family: var(--font-mono);
   }
+
+  // docs/DESIGN_SYSTEM.md §5.4：頁面底鋪柔和漸層，讓玻璃效果（之後階段套用）有東西可以透出來。
+  // 蓋在 .v-application 而不是 body，因為 VApp 元件本身有不透明的 background
+  // （node_modules/vuetify/lib/components/VApp/VApp.css），蓋在 body 上的話漸層完全看不到。
+  .v-application {
+    background:
+      radial-gradient(720px circle at 8% 30%, rgba(90, 130, 190, 0.45), transparent 55%),
+      radial-gradient(560px circle at 88% 18%, rgba(110, 143, 178, 0.20), transparent 55%),
+      radial-gradient(520px circle at 25% 92%, rgba(196, 150, 130, 0.10), transparent 55%),
+      linear-gradient(175deg, #EEF2F5 0%, #DCE3E9 100%);
+    background-attachment: fixed;
+  }
+}
+
+// docs/DESIGN_SYSTEM.md §6.3：動畫可及性。刻意不放進任何 @layer，
+// CSS 規則沒有 layer 時優先權天生高於所有 layer 內的規則，確保這個 reset 一定生效。
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
