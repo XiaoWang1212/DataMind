@@ -434,7 +434,32 @@
     top: 24px;
   }
 
-  @media (max-width: 1100px) {
+  .paper-sheet--paginated {
+    max-width: none;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  /* 固定寬度、不可壓縮（flex:none），跟檢視模式 A4 頁面的內容區同寬：
+     794px 頁寬 − 1px×2 border − 96px×2 padding = 670px − 1px×2 border − 34px×2 padding
+     = 兩邊都是 600px 內容區，兩種模式排版一致（WYSIWYG）。
+     這條規則要放在下面 @media 區塊「之前」：往後若要在該 media query 裡疊加這個
+     class 的響應式覆寫，同權重下 CSS 一律看原始碼順序決定勝負，寫在後面的規則即使
+     沒被媒體查詢條件挑中也會贏過寫在前面、條件外的規則——把它放前面，媒體查詢裡的
+     覆寫才會如預期生效。 */
+  .paper-sheet--editing {
+    flex: none;
+    width: 670px;
+  }
+
+  /* .paper-sheet--editing 固定 670px、不可壓縮，跟 280px 評分面板、24px gap 並排
+     最少要 974px；再加上左側 210px 側欄跟 .paper-main 左右 40px padding，視窗寬度
+     低於 1224px 就會塞不下、觸發 .paper-body 的橫向捲軸。斷點抓 1240px 留一點餘裕，
+     讓 row 布局撐不下時能提早切成 column，避免橫向捲軸。 */
+  @media (max-width: 1240px) {
     .paper-body {
       flex-direction: column;
     }
@@ -445,19 +470,5 @@
       max-height: none;
       overflow-y: visible;
     }
-  }
-
-  .paper-sheet--paginated {
-    max-width: none;
-    background: none;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    overflow-x: auto;
-  }
-
-  .paper-sheet--editing {
-    flex: none;
-    width: 670px; /* 602px 內容區 + 左右 padding 各 34px，跟 A4 頁面內容區一致 */
   }
 </style>

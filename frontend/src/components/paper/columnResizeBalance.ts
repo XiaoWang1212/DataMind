@@ -12,8 +12,11 @@ type TMap = ReturnType<typeof TableMap.get>
 // Table 節點多加一個「使用者是否已經手動調過整張表格寬度」的旗標。跟一般的欄界拖曳
 // （鄰欄互相增減、表格總寬不變）不一樣，這裡指的是「表格總寬本身真的變了」的那種調整
 // （典型情境：拖最後一欄，沒有鄰欄可以補償）。一旦標記過，rescaleMismatchedColumnWidths
-// 就永遠跳過這張表，不會再把使用者剛調好的寬度拉回去貼齊容器——比照 Word/Excel，手動
-// 調過大小的表格維持使用者調的大小，只有從頭到尾沒被動過寬度的表格才會自動貼齊容器。
+// 就不會再把使用者調的寬度拉回去貼齊容器（比照 Word/Excel，手動調過大小的表格維持
+// 使用者調的大小，只有從頭到尾沒被動過寬度的表格才會自動貼齊容器）——但只在使用者調的
+// 寬度沒超過容器可印刷範圍時完全不動；一旦超過，仍會被夾回容器寬度上限，避免使用者
+// 拖出一張比 A4 頁面還寬的表格，檢視/列印時被裁掉卻無法恢復（這個上限行為只在超出時
+// 才觸發，且只會往下夾，不會把調窄的表格拉回去填滿容器，見 rescaleMismatchedColumnWidths）。
 export const ResizableTable = Table.extend({
   addAttributes () {
     return {
@@ -81,6 +84,16 @@ function collectColumnWidths (node: PMNode, map: TMap): { col: number, width: nu
     if (cellPos === prevCellPos) continue
     prevCellPos = cellPos
     const cellNode = node.nodeAt(cellPos)
+    // colspan 儲存格只用 colwidth[0] 代表整格寬度（見上面的函式註解），但
+    // @tiptap/extension-table 的 createColGroup／TableView 渲染 <colgroup> 時是把
+    // colspan 儲存格 colwidth 陣列「每一個元素」都當一欄的實際寬度加總，兩邊算出來的
+    // 總寬不是同一個數。如果讓 rescale 用這裡算出的（比實際渲染總寬小很多的）總和去
+    // 判斷「跟容器對不上」再重新分配，會把表格主動撐到遠超過容器的實際渲染寬度，
+    // 而且下一輪比對用的還是同一套（渲染值看不到的）dedup 總和，判定「已對齊」後就
+    // 不會再修正——表格會卡在比容器寬很多的破損狀態，比完全不處理更糟。含 colspan 的
+    // row 0 直接放棄計算（回傳 null），讓這張表格保持合併當下的寬度，不參與自動校正；
+    // 這類表格在合併儲存格的當下本來就是對齊容器的，維持原狀不會有問題。
+    if ((cellNode?.attrs.colspan ?? 1) > 1) return null
     const width = cellNode?.attrs.colwidth?.[0]
     if (width == null || !Number.isFinite(width)) return null
     cols.push({ col, width })
@@ -181,9 +194,6 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
 
   state.doc.descendants((node, pos) => {
     if (node.type.name !== 'table') return true
-    // 使用者已經手動調過這張表格的整體寬度（見 ResizableTable 的 manuallyResized），
-    // 就不再自動貼齊容器——尊重使用者調過的大小，不要每次編輯都把它拉回去。
-    if (node.attrs.manuallyResized) return false
 
     const map = TableMap.get(node)
     const cols = collectColumnWidths(node, map)
@@ -196,6 +206,16 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
     // 0/0 = NaN，而 NaN === width 永遠是 false，等於每次 view 更新都往文件寫一次 NaN。
     if (availableWidth == null || availableWidth <= 0) return false
     if (totalWidth <= 0) return false
+
+    // 使用者已經手動調過這張表格的整體寬度（見 ResizableTable 的 manuallyResized）時，
+    // 只要沒超出容器就完全不動——尊重使用者調過的大小（包括調得比容器窄），不要每次
+    // 編輯都把它拉回去貼齊容器。但如果使用者拖出的寬度已經超過容器（A4 頁面可印刷
+    // 範圍），仍要落到下面的縮小邏輯把它夾回容器寬度上限：不然使用者可以拖出一張比
+    // 頁面還寬的表格，檢視/列印時被裁掉，而且因為已經標記過 manuallyResized，之後
+    // 也沒有任何自動機制能救回來。這裡只在「超出容器」這個方向介入，不會把使用者
+    // 調窄的表格拉回去填滿容器，跟一般（未手動調整過）表格的行為明確不同。
+    if (node.attrs.manuallyResized && totalWidth <= availableWidth) return false
+
     if (Math.abs(availableWidth - totalWidth) <= RESCALE_TOLERANCE_PX) return false
 
     // 每一欄各自 Math.round 的話，四捨五入的殘差會累加，欄數一多總和就可能超出
@@ -261,7 +281,8 @@ function rescaleMismatchedColumnWidths (view: EditorView): void {
  *    （例如版面改版讓容器變寬變窄），按原比例整批重新縮放，讓表格一律填滿容器寬度。
  * 4. appendTransaction 同時偵測「這次編輯讓表格總寬真的變了」（例如拖最後一欄沒有鄰欄
  *    可補償、或補償撞到 MIN_COL_WIDTH 夾擠），標記 manuallyResized，之後第 3 點就不會
- *    再把使用者剛調好的寬度拉回去貼齊容器。
+ *    再把使用者剛調好的寬度拉回去貼齊容器——但如果調出來的寬度超過容器（A4 頁面可印刷
+ *    範圍），第 3 點仍會把它夾回容器寬度上限，避免列印被裁掉且無法恢復。
  */
 export const ColumnResizeBalance = Extension.create({
   name: 'columnResizeBalance',
