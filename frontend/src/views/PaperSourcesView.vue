@@ -34,6 +34,7 @@
             class="sources-title-field"
             placeholder="留空由 AI 自動判斷主題"
             type="text"
+            @keyup.enter="loadCandidates"
           >
           <v-btn class="bg-accent" color="accent" :loading="loadingSearch" size="small" @click="loadCandidates">
             {{ hasSearched ? '重新查詢' : '查詢文獻' }}

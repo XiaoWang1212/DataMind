@@ -309,7 +309,7 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    max-width: 1064px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 0 2px 10px;
     border-bottom: 1px solid var(--line-soft);
@@ -399,7 +399,7 @@
     min-height: 0;
     display: flex;
     width: 100%;
-    max-width: 1064px;
+    max-width: 1100px;
     gap: 24px;
     margin: 14px auto 0;
     overflow: auto;
@@ -428,6 +428,11 @@
     gap: 16px;
   }
 
+  .paper-body:has(.paper-sheet--paginated) .paper-citations {
+    /* 對齊第一張 A4 頁面的頂端：.paginated-paper 有 24px 的上留白 */
+    top: 24px;
+  }
+
   @media (max-width: 1100px) {
     .paper-body {
       flex-direction: column;
@@ -447,5 +452,6 @@
     border: none;
     border-radius: 0;
     padding: 0;
+    overflow-x: auto;
   }
 </style>

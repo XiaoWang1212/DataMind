@@ -177,17 +177,12 @@ function handleDatasetDrop(e: DragEvent): void {
   if (file) form.value.datasetFile = file
 }
 
-function executeProject(): void {
-  const today = new Date().toISOString().slice(0, 10)
-  const project = projectStore.addProject({
+async function executeProject (): Promise<void> {
+  const project = await projectStore.addProject({
     name: form.value.name || '未命名專案',
     description: form.value.description,
     frameworkId: form.value.frameworkId,
-    frameworkName: selectedFramework.value?.title ?? '',
     datasetName: form.value.datasetFile?.name ?? '',
-    status: 'draft',
-    date: today,
-    progress: 0,
     variables: selectedFramework.value?.variables ?? 0,
   })
 
@@ -197,15 +192,15 @@ function executeProject(): void {
     frameworkId: form.value.frameworkId,
   })
 
-    // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
-    // 使用者在對齊頁按重新整理就會遺失。
-    // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
-    if (form.value.datasetFile) {
-      await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
-    }
-
-    router.push(`/hub/projects/${project.id}/mapping`)
+  // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
+  // 使用者在對齊頁按重新整理就會遺失。
+  // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
+  if (form.value.datasetFile) {
+    await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
   }
+
+  router.push(`/hub/projects/${project.id}/mapping`)
+}
 </script>
 
 <style scoped>

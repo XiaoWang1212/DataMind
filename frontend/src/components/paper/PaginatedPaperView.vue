@@ -123,7 +123,7 @@
 .paginated-paper {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
   padding: 24px 0;
 }

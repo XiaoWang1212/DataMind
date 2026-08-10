@@ -367,7 +367,7 @@ def arxiv_search():
     if not data or data.get("mining_results") is None:
         return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
 
-    user_title = data.get("user_title") or None
+    user_title = str(data.get("user_title") or "").strip() or None
     service = get_paper_rag_service()
 
     try:

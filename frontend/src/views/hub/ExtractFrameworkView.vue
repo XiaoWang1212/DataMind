@@ -182,12 +182,10 @@ async function startExtract(): Promise<void> {
 function saveFramework(): void {
   if (!extractedData.value) return
   const d = extractedData.value
-  const today = new Date().toISOString().slice(0, 10)
   store.addFramework({
     title: d.name,
     subtitle: d.models.join('、') || '未命名方法',
     tag: d.models[0] ?? 'AI 提取',
-    date: today,
     variables: d.preprocessing.length + d.featureEngineering.length,
     paperTitle: d.name,
     description: `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
