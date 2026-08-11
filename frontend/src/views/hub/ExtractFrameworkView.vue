@@ -369,7 +369,7 @@
   margin-top: 14px;
   border-radius: 12px;
   padding: 16px 18px;
-  background: #fafaff;
+  background: color-mix(in oklab, var(--color-accent) 4%, var(--color-surface));
   overflow: hidden;
   min-height: 3.4em;
 }
@@ -380,7 +380,12 @@
   inset: 0;
   padding: 1.5px;
   border-radius: 12px;
-  background: linear-gradient(120deg, #6366f1, #a855f7, #6366f1, #a855f7);
+  background: linear-gradient(
+    120deg,
+    var(--color-accent),
+    color-mix(in oklab, var(--color-accent) 55%, var(--color-ink)),
+    var(--color-accent)
+  );
   background-size: 300% 300%;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -400,7 +405,7 @@
   gap: 8px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #6366f1;
+  color: var(--color-accent);
   margin-bottom: 8px;
 }
 
@@ -408,7 +413,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--color-accent);
   animation: thinking-pulse 1.2s ease-in-out infinite;
 }
 
@@ -421,13 +426,13 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.7;
-  color: #4b5563;
+  color: var(--color-secondary);
   white-space: pre-wrap;
 }
 
 .thinking-line--prev {
   font-size: 12.5px;
-  color: #b8bccb;
+  color: color-mix(in oklab, var(--color-secondary) 55%, var(--color-surface));
   margin-bottom: 4px;
 }
 
