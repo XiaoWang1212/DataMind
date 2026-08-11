@@ -61,6 +61,22 @@
                   role="img"
                 >★</span>
                 <span class="var-name">{{ item.paper_variable }}</span>
+                <v-tooltip
+                  v-if="item.definition"
+                  content-class="status-tooltip"
+                  location="bottom"
+                  max-width="240"
+                  :text="item.definition"
+                >
+                  <template #activator="{ props }">
+                    <v-icon
+                      v-bind="props"
+                      class="var-info-icon"
+                      icon="mdi-information-outline"
+                      size="14"
+                    />
+                  </template>
+                </v-tooltip>
                 <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
               </td>
               <td class="col-col">
@@ -986,6 +1002,13 @@
   .var-name {
     font-weight: 600;
     color: var(--color-ink);
+  }
+
+  .var-info-icon {
+    margin-left: 4px;
+    color: #94a3b8;
+    cursor: help;
+    vertical-align: middle;
   }
 
   .var-type {
