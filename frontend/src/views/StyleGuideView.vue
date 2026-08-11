@@ -52,11 +52,18 @@
     </section>
 
     <section>
-      <h2 class="sg-h2">狀態徽章</h2>
+      <h2 class="sg-h2">狀態顯示（§7.5）</h2>
       <div class="sg-row">
-        <span class="sg-badge sg-badge--success">已對應</span>
-        <span class="sg-badge sg-badge--warning">待確認</span>
-        <span class="sg-badge sg-badge--danger">未對應</span>
+        <StatusBadge status="success">已對應</StatusBadge>
+        <StatusBadge status="warning">待確認</StatusBadge>
+        <StatusBadge status="danger">未對應</StatusBadge>
+        <StatusBadge status="neutral">已略過</StatusBadge>
+      </div>
+      <div class="sg-row" style="margin-top: 16px">
+        <StatusBadge status="success" variant="dot">已對應</StatusBadge>
+        <StatusBadge status="warning" variant="dot">待確認</StatusBadge>
+        <StatusBadge status="danger" variant="dot">未對應</StatusBadge>
+        <StatusBadge status="neutral" variant="dot">已略過</StatusBadge>
       </div>
     </section>
 
@@ -181,30 +188,6 @@
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-ink-soft);
-}
-
-.sg-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.sg-badge--success {
-  background: var(--color-success-bg);
-  color: #176B39;
-}
-
-.sg-badge--warning {
-  background: var(--color-warning-bg);
-  color: #8F560A;
-}
-
-.sg-badge--danger {
-  background: var(--color-error-bg);
-  color: #B8342A;
 }
 
 .sg-type-sample {
