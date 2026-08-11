@@ -3,7 +3,7 @@
 
 @config "../../tailwind.config.ts";
 
-@theme {
+@theme static {
   --font-heading: "Roboto", sans-serif;
   --font-body: "Roboto", sans-serif;
   --font-mono: "Roboto Mono", monospace;
@@ -92,3 +92,14 @@
 @utility rounded-e-sm { border-start-end-radius: var(--radius-sm); border-end-end-radius: var(--radius-sm) }
 @utility rounded-e-md { border-start-end-radius: var(--radius-md); border-end-end-radius: var(--radius-md) }
 @utility rounded-e-lg { border-start-end-radius: var(--radius-lg); border-end-end-radius: var(--radius-lg) }
+
+/* vuetify.ts 設了 utilities:false，Vuetify 不會自動產生它自己那套帶前景色的 .bg-*。
+   Tailwind 因為 --color-* 有定義，仍會自動產生只有 background-color 的 .bg-*，
+   導致 <v-btn color="accent"> 這類 prop 只吃到深色底、文字色掉回元件預設（接近黑），對比不足。
+   這裡用 Vuetify 已經算好的 on-* 前景色覆蓋掉 Tailwind 自動產生的版本。 */
+@utility bg-primary { background-color: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-on-primary)) }
+@utility bg-secondary { background-color: rgb(var(--v-theme-secondary)); color: rgb(var(--v-theme-on-secondary)) }
+@utility bg-accent { background-color: rgb(var(--v-theme-accent)); color: rgb(var(--v-theme-on-accent)) }
+@utility bg-success { background-color: rgb(var(--v-theme-success)); color: rgb(var(--v-theme-on-success)) }
+@utility bg-warning { background-color: rgb(var(--v-theme-warning)); color: rgb(var(--v-theme-on-warning)) }
+@utility bg-error { background-color: rgb(var(--v-theme-error)); color: rgb(var(--v-theme-on-error)) }
