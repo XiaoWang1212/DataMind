@@ -87,13 +87,14 @@
     PaperVariable,
     UserColumn,
   } from '@/types/fieldMapping'
-  import { computed, onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
   import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
   import MappingChatPanel from '@/components/hub/fieldMapping/MappingChatPanel.vue'
   import MappingTable from '@/components/hub/fieldMapping/MappingTable.vue'
   import { useMappingDraft } from '@/composables/fieldMapping/useMappingDraft'
+  import { useMappingHistory } from '@/composables/fieldMapping/useMappingHistory'
   import {
     loadChatHistoryFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -133,18 +134,22 @@
   const chatPending = ref(false)
   const confirming = ref(false)
 
-  // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
-  const MAX_UNDO = 50
-  interface Snapshot { items: MappingItem[], locked: string[] }
-  const undoStack = ref<Snapshot[]>([])
-  const redoStack = ref<Snapshot[]>([])
-
   const { saveDraft, loadDraft, clearDraft } = useMappingDraft({
     projectId,
     items,
     locked,
     aiAvailable,
     userColumns,
+  })
+
+  const { pushHistory } = useMappingHistory({
+    items,
+    locked,
+    // 還原後沿用原本 restore 的收尾：清掉舊錯誤、把還原結果存回草稿
+    onRestore: () => {
+      saveError.value = ''
+      saveDraft()
+    },
   })
 
   // 綠色的兩種：演算法有把握的，和使用者親自點過確認的
@@ -169,63 +174,6 @@
     locked.value.add(item.paper_variable)
     saveError.value = ''
     saveDraft()
-  }
-
-  /**
-   * 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。
-   *
-   * locked 一定要跟著存：只還原 items 的話，復原後那一列看起來回到未對應，
-   * 但它還留在 locked 裡，之後所有 AI 建議都會被靜默忽略，而聊天仍回「已更新」。
-   */
-  function snapshot (): Snapshot {
-    return { items: structuredClone(toRaw(items.value)), locked: [...locked.value] }
-  }
-
-  function restore (snap: Snapshot): void {
-    items.value = snap.items
-    locked.value = new Set(snap.locked)
-    saveError.value = ''
-    saveDraft()
-  }
-
-  function pushHistory (): void {
-    undoStack.value.push(snapshot())
-    if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
-    // 做了新動作，原本能重做的那條分支就失效了
-    redoStack.value = []
-  }
-
-  function undo (): void {
-    const previous = undoStack.value.pop()
-    if (!previous) return
-    redoStack.value.push(snapshot())
-    restore(previous)
-  }
-
-  function redo (): void {
-    const next = redoStack.value.pop()
-    if (!next) return
-    undoStack.value.push(snapshot())
-    restore(next)
-  }
-
-  /** 焦點在輸入框時不攔截：那時使用者要復原的是自己打的字。 */
-  function onKeydown (event: KeyboardEvent): void {
-    if (!(event.metaKey || event.ctrlKey)) return
-
-    // 重做的按法各家不同：Mac 是 ⌘⇧Z，Windows 上 Ctrl+Y 與 Ctrl+Shift+Z 都常見，三種都收
-    const key = event.key.toLowerCase()
-    const isRedo = (key === 'z' && event.shiftKey) || key === 'y'
-    const isUndo = key === 'z' && !event.shiftKey
-    if (!isRedo && !isUndo) return
-
-    const target = event.target as HTMLElement | null
-    const tag = target?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
-
-    event.preventDefault()
-    if (isRedo) redo()
-    else undo()
   }
 
   /** 按錯了要能反悔，不然使用者只敢把整頁重跑一次。 */
@@ -485,9 +433,6 @@
       confirming.value = false
     }
   }
-
-  onMounted(() => window.addEventListener('keydown', onKeydown))
-  onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
   onMounted(async () => {
     try {
