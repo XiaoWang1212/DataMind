@@ -52,3 +52,9 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
+
+/**
+ * 下拉選單「資料表中沒有此變數」的哨兵值。
+ * 選到它代表使用者明確表示略過，狀態會變成 SKIPPED。
+ */
+export const SKIP_VALUE = '__skip__'
