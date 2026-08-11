@@ -43,6 +43,10 @@ export default createVuetify({
           'success-bg': '#DCEDE3',
           'warning-bg': '#F5E9D8',
           'error-bg': '#F5DEDC',
+          // 徽章文字疊在對應的 -bg 淺底上時，圓點色的對比不足 4.5:1，文字另用深一階的值
+          'success-text': '#176B39',
+          'warning-text': '#8F560A',
+          'error-text': '#B8342A',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。人工確認/完成複用 warning/success，不重複定義
           'node-data': '#5B7A9D',
           'node-ai': '#6B5B95',

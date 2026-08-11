@@ -57,6 +57,9 @@
   --color-success-bg: rgb(var(--v-theme-success-bg));
   --color-warning-bg: rgb(var(--v-theme-warning-bg));
   --color-error-bg: rgb(var(--v-theme-error-bg));
+  --color-success-text: rgb(var(--v-theme-success-text));
+  --color-warning-text: rgb(var(--v-theme-warning-text));
+  --color-error-text: rgb(var(--v-theme-error-text));
   --color-node-data: rgb(var(--v-theme-node-data));
   --color-node-ai: rgb(var(--v-theme-node-ai));
 
