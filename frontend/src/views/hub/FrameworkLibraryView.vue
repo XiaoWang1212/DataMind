@@ -1,10 +1,6 @@
 <template>
-  <div>
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">框架庫</h1>
-      <p class="page-sub">管理您的研究框架集合</p>
-    </div>
+  <div class="library">
+    <PageHeader subtitle="管理您的研究框架集合" title="框架庫" />
 
     <!-- Toolbar -->
     <div class="toolbar">
@@ -17,7 +13,7 @@
         >
       </div>
       <RouterLink class="upload-btn" to="/hub/library/extract">
-        <v-icon icon="mdi-upload" size="16" />
+        <v-icon icon="mdi-upload-outline" size="16" />
         上傳論文
       </RouterLink>
     </div>
@@ -33,7 +29,7 @@
       >
         <div class="fw-card-top">
           <div class="fw-icon-wrap">
-            <v-icon color="#4f46e5" icon="mdi-book-open-outline" size="19" />
+            <v-icon icon="mdi-book-open-outline" size="19" />
           </div>
           <div class="fw-info">
             <div class="fw-title" :title="fw.title">{{ fw.title }}</div>
@@ -68,9 +64,9 @@
           <div class="panel-title">{{ selectedFramework.title }}</div>
           <div class="panel-tag">{{ selectedFramework.tag }}</div>
         </div>
-        <button class="panel-close" @click="selectedId = null">
+        <AppButton class="panel-close" icon-only variant="ghost" @click="selectedId = null">
           <v-icon icon="mdi-close" size="18" />
-        </button>
+        </AppButton>
       </div>
 
       <!-- Panel body (scrollable) -->
@@ -157,410 +153,392 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { useFrameworkStore } from '@/store/frameworkStore'
+  import { computed, ref } from 'vue'
+  import { RouterLink } from 'vue-router'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import { useFrameworkStore } from '@/store/frameworkStore'
 
-const store = useFrameworkStore()
-const searchQuery = ref('')
-const selectedId = ref<number | null>(null)
+  const store = useFrameworkStore()
+  const searchQuery = ref('')
+  const selectedId = ref<number | null>(null)
 
-const filteredFrameworks = computed(() => {
-  if (!searchQuery.value) return store.frameworks
-  const q = searchQuery.value.toLowerCase()
-  return store.frameworks.filter(
-    f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
+  const filteredFrameworks = computed(() => {
+    if (!searchQuery.value) return store.frameworks
+    const q = searchQuery.value.toLowerCase()
+    return store.frameworks.filter(
+      f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
+    )
+  })
+
+  const selectedFramework = computed(() =>
+    selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
   )
-})
-
-const selectedFramework = computed(() =>
-  selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
-)
 </script>
 
 <style scoped>
-.page-header {
-  margin-bottom: 22px;
-}
+  .library {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 5px;
-}
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
 
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
-}
+  .search-wrap {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: center;
+  }
 
-/* ── Toolbar ── */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--color-ink-soft);
+  }
 
-.search-wrap {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
+  .search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 16px 0 38px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    background-color: var(--color-surface);
+    font-size: 14px;
+    color: var(--color-text);
+    outline: none;
+    color-scheme: light;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
 
-.search-icon {
-  position: absolute;
-  left: 11px;
-  color: var(--color-secondary);
-}
+  .search-input::placeholder {
+    color: var(--color-ink-soft);
+  }
 
-.search-input {
-  width: 100%;
-  height: 38px;
-  padding: 0 14px 0 36px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
-  background-color: #ffffff;
-  font-size: 13.5px;
-  color: var(--color-text);
-  outline: none;
-  transition: border-color 0.15s;
-  color-scheme: light;
-}
+  .search-input:focus {
+    border-color: var(--color-ink);
+  }
 
-.search-input::placeholder {
-  color: var(--color-secondary);
-}
+  /* 導向提取頁的連結，外觀比照 AppButton primary */
+  .upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-surface);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
 
-.search-input:focus {
-  border-color: var(--color-accent);
-}
+  .upload-btn:hover {
+    background: var(--color-ink-strong);
+  }
 
-.upload-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 18px;
-  height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border-radius: 7px;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
+  /* ── Cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
 
-.upload-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
+  .fw-card {
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
 
-/* ── Cards ── */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
+  .fw-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    box-shadow: var(--shadow-card);
+  }
 
-.fw-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
+  .fw-card--selected {
+    border: 1.5px solid var(--color-ink);
+  }
 
-.fw-card:hover {
-  border-color: #a5b4fc;
-}
+  .fw-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
 
-.fw-card--selected {
-  border: 1.5px solid var(--color-accent);
-}
+  /* 從品牌色推導底色，不另外引入游離色碼 */
+  .fw-icon-wrap {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    color: var(--color-ink);
+  }
 
-.fw-card-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 16px;
-}
+  .fw-info {
+    flex: 1;
+    min-width: 0;
+  }
 
-.fw-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 7px;
-  background: #e0e7ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+  .fw-title {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--color-text);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 
-.fw-info {
-  flex: 1;
-  min-width: 0;
-}
+  .fw-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-ink-soft);
+  }
 
-.fw-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-}
+  .fw-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+  }
 
-.fw-subtitle {
-  font-size: 12px;
-  color: var(--color-secondary);
-  margin-top: 4px;
-  line-height: 1.4;
-}
+  .fw-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.fw-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  border-top: 1px solid #f0f0f0;
-  padding-top: 14px;
-  margin-bottom: 12px;
-}
+  .meta-icon {
+    flex-shrink: 0;
+    color: var(--color-ink-soft);
+  }
 
-.fw-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--color-secondary);
-}
+  .fw-vars {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.meta-icon {
-  color: var(--color-secondary);
-  flex-shrink: 0;
-}
+  /* ── Empty ── */
+  .empty-state {
+    padding: 48px;
+    font-size: 14px;
+    color: var(--color-ink-soft);
+    text-align: center;
+  }
 
-.fw-vars {
-  font-size: 12px;
-  color: var(--color-secondary);
-}
+  /* ── Detail panel ── */
+  .detail-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    width: 380px;
+    border-left: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-float);
+  }
 
-/* ── Empty ── */
-.empty-state {
-  text-align: center;
-  padding: 48px;
-  color: var(--color-secondary);
-  font-size: 14px;
-}
+  /* Slide transition */
+  .panel-enter-active,
+  .panel-leave-active {
+    transition: transform var(--dur-base) var(--ease-in-out);
+  }
 
-/* ── Detail panel ── */
-.detail-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 380px;
-  background: #ffffff;
-  border-left: 1px solid #e8e8e8;
-  display: flex;
-  flex-direction: column;
-  z-index: 200;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.06);
-}
+  .panel-enter-from,
+  .panel-leave-to {
+    transform: translateX(100%);
+  }
 
-/* Slide transition */
-.panel-enter-active,
-.panel-leave-active {
-  transition: transform 0.22s ease;
-}
+  /* ── Panel header ── */
+  .panel-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
 
-.panel-enter-from,
-.panel-leave-to {
-  transform: translateX(100%);
-}
+  .panel-header-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 12px;
+  }
 
-/* ── Panel header ── */
-.panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 22px 20px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
+  .panel-title {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--color-text);
+  }
 
-.panel-header-info {
-  flex: 1;
-  min-width: 0;
-  padding-right: 12px;
-}
+  .panel-tag {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.panel-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.3;
-}
+  .panel-close {
+    flex-shrink: 0;
+  }
 
-.panel-tag {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  margin-top: 3px;
-}
+  /* ── Panel body ── */
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px;
+  }
 
-.panel-close {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--color-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  transition: background 0.12s;
-  flex-shrink: 0;
-}
+  .panel-section {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
 
-.panel-close:hover {
-  background: #f5f5f5;
-  color: var(--color-secondary);
-}
+  .panel-section:last-child {
+    border-bottom: none;
+  }
 
-/* ── Panel body ── */
-.panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 20px;
-}
+  .panel-section-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
 
-.panel-section {
-  padding: 18px 0;
-  border-bottom: 1px solid #f3f3f3;
-}
+  .section-icon {
+    color: var(--color-ink-soft);
+  }
 
-.panel-section:last-child {
-  border-bottom: none;
-}
+  .panel-section-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-.panel-section-head {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 10px;
-}
+  .panel-section-label-plain {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-.section-icon {
-  color: var(--color-secondary);
-}
+  .panel-text-muted {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-ink-soft);
+  }
 
-.panel-section-label {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--color-secondary);
-}
+  /* ── Variables ── */
+  .var-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
-.panel-section-label-plain {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--color-secondary);
-  margin-bottom: 10px;
-}
+  .var-item {
+    padding: 9px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.panel-text-muted {
-  font-size: 13px;
-  color: var(--color-secondary);
-  line-height: 1.55;
-}
+  /* ── Hypotheses ── */
+  .hypothesis-item {
+    padding: 8px 12px;
+    border-left: 2.5px solid color-mix(in oklab, var(--color-ink) 24%, white);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
 
-/* ── Variables ── */
-.var-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  .hypothesis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-.var-item {
-  padding: 9px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
-  font-size: 12.5px;
-  font-family: 'Courier New', 'Roboto Mono', Consolas, monospace;
-  color: var(--color-secondary);
-  background: #ffffff;
-}
+  /* ── Footer meta ── */
+  .panel-footer-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 14px 0;
+    border-top: 1px solid var(--color-border);
+  }
 
-/* ── Hypotheses ── */
-.hypothesis-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .panel-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
 
-.hypothesis-item {
-  padding: 8px 12px;
-  border-left: 2.5px solid #93c5fd;
-  font-size: 13px;
-  color: var(--color-secondary);
-  line-height: 1.5;
-}
+  .panel-meta-key {
+    color: var(--color-ink-soft);
+  }
 
-/* ── Footer meta ── */
-.panel-footer-meta {
-  padding: 14px 0;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
+  .panel-meta-val {
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-.panel-meta-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12.5px;
-}
+  /* ── Action button ── */
+  .panel-action {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border);
+  }
 
-.panel-meta-key {
-  color: var(--color-secondary);
-}
+  /* 導向建立專案頁的連結，外觀比照 AppButton primary */
+  .use-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 46px;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-surface);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
 
-.panel-meta-val {
-  color: var(--color-secondary);
-  font-weight: 500;
-}
-
-/* ── Action button ── */
-.panel-action {
-  padding: 16px 20px;
-  flex-shrink: 0;
-  border-top: 1px solid #f0f0f0;
-}
-
-.use-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 46px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 600;
-  transition: background 0.15s;
-}
-
-.use-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
+  .use-btn:hover {
+    background: var(--color-ink-strong);
+  }
 </style>
