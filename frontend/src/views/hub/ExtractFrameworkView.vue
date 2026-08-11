@@ -50,14 +50,15 @@
         >
           開始提取
         </button>
-        <div v-if="extracting" class="extracting-indicator">
-          <div class="extracting-header">
-            <v-progress-circular color="var(--color-accent)" indeterminate size="20" width="2" />
-            <span>正在提取框架...</span>
+        <div v-if="extracting" class="thinking-card">
+          <div class="thinking-header">
+            <span class="thinking-dot" />
+            AI 正在思考
           </div>
-          <div ref="thoughtLogEl" class="thought-log">
-            <p class="thought-log-line">{{ displayedThought }}</p>
-          </div>
+          <p v-if="previousLine" class="thinking-line thinking-line--prev">{{ previousLine }}</p>
+          <Transition mode="out-in" name="thinking-swap">
+            <p :key="currentLine" class="thinking-line thinking-line--current">{{ currentLine }}</p>
+          </Transition>
         </div>
       </div>
 
@@ -111,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, ref } from 'vue'
+  import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
   import { useFrameworkStore } from '@/store/frameworkStore'
@@ -134,15 +135,11 @@
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
-  const thoughtLog = ref('')
-  const thoughtLogEl = ref<HTMLElement | null>(null)
-  const displayedThought = computed(() => thoughtLog.value.replace(/\*\*?/g, ''))
+  const currentLine = ref('')
+  const previousLine = ref('')
 
-  async function scrollThoughtLogToBottom (): Promise<void> {
-    await nextTick()
-    if (thoughtLogEl.value) {
-      thoughtLogEl.value.scrollTop = thoughtLogEl.value.scrollHeight
-    }
+  function stripMarkdownAsterisks (text: string): string {
+    return text.replace(/\*\*?/g, '')
   }
 
   function handleFileChange (e: Event): void {
@@ -161,7 +158,8 @@
     extracting.value = true
     extractedData.value = null
     extractError.value = null
-    thoughtLog.value = ''
+    currentLine.value = ''
+    previousLine.value = ''
 
     const file = selectedFile.value
     const baseName = file.name.replace(/\.[^.]+$/, '')
@@ -171,8 +169,8 @@
         { file, title: baseName },
         {
           onThought: text => {
-            thoughtLog.value += text
-            void scrollThoughtLogToBottom()
+            previousLine.value = currentLine.value
+            currentLine.value = stripMarkdownAsterisks(text)
           },
           onResult: result => {
             const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
@@ -366,38 +364,80 @@
   background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
-.extracting-indicator {
+.thinking-card {
+  position: relative;
   margin-top: 14px;
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: #fafaff;
+  overflow: hidden;
+  min-height: 3.4em;
 }
 
-.extracting-header {
+.thinking-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #6366f1, #a855f7, #6366f1, #a855f7);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: thinking-gradient-move 3s ease infinite;
+}
+
+@keyframes thinking-gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.thinking-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--color-secondary);
-}
-
-.thought-log {
-  margin-top: 10px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
+  gap: 8px;
   font-size: 12.5px;
-  color: var(--color-secondary);
-  line-height: 1.6;
+  font-weight: 600;
+  color: #6366f1;
+  margin-bottom: 8px;
 }
 
-.thought-log-line {
-  margin: 0 0 6px;
+.thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6366f1;
+  animation: thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: .3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.thinking-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4b5563;
   white-space: pre-wrap;
 }
 
-.thought-log-line:last-child {
-  margin-bottom: 0;
+.thinking-line--prev {
+  font-size: 12.5px;
+  color: #b8bccb;
+  margin-bottom: 4px;
+}
+
+.thinking-swap-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.thinking-swap-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 /* ── Result zone ── */
