@@ -733,8 +733,20 @@
     if (chatScroll.value) chatScroll.value.scrollTop = chatScroll.value.scrollHeight
   }
 
-  /** 開發用斷點：不改表頭、不存 column_mapping，直接跳去 workflow。 */
+  /**
+   * 開發用斷點：不改表頭、不存 column_mapping，直接跳去 workflow。
+   *
+   * 還是要設 activeContext，否則 WorkflowWorkspace 找不到框架設定，
+   * models/preprocessing 節點就不會被載入（跟 confirmAndRun 一樣的機制，
+   * 只是這裡帶原始未改名的 datasetFile）。
+   */
   function skipToWorkflow (): void {
+    const project = projectStore.projects.find(p => p.id === projectId.value)
+    projectStore.setActiveContext({
+      projectId: projectId.value,
+      datasetFile: datasetFile.value,
+      frameworkId: project?.frameworkId ?? null,
+    })
     router.push(`/workflow?project=${projectId.value}`)
   }
 
