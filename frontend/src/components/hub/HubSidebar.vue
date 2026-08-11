@@ -1,5 +1,11 @@
 <template>
-  <aside :class="['hub-sidebar', { 'hub-sidebar--collapsed': collapsed }]">
+  <aside
+    :class="[
+      'hub-sidebar',
+      `hub-sidebar--glass-${glassVariant}`,
+      { 'hub-sidebar--collapsed': collapsed },
+    ]"
+  >
     <div aria-hidden="true" class="hub-sidebar-orbs">
       <div class="orb orb-1" />
       <div class="orb orb-2" />
@@ -7,7 +13,7 @@
     </div>
 
     <div class="hub-sidebar-header">
-      <div v-if="!collapsed" class="hub-brand">
+      <div class="hub-brand">
         <div class="hub-brand-title">研究中心</div>
         <div class="hub-brand-sub">框架分析系統</div>
       </div>
@@ -25,10 +31,12 @@
         :to="item.to"
       >
         <v-icon :icon="item.icon" size="19" />
-        <span v-if="!collapsed" class="hub-nav-label">{{ item.label }}</span>
+        <span class="hub-nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
 
+    <!-- 底部兩區塊在水平收合時不會被寬度切到，直接移除比淡出乾淨，
+         也不會留下看不見卻仍可 Tab 到的登出鈕 -->
     <div v-if="!collapsed && authStore.user" class="hub-sidebar-user">
       <div class="hub-user-name">{{ authStore.user.displayName || authStore.user.email }}</div>
       <button class="hub-logout-btn" title="登出" @click="handleLogout">
@@ -40,6 +48,10 @@
       <div>版本 1.0.0</div>
       <div>© 2026 研究中心</div>
     </div>
+
+    <button v-if="isDev && !collapsed" class="hub-glass-toggle" @click="toggleGlassVariant">
+      玻璃：{{ glassVariant === 'light' ? '淺' : '深' }}
+    </button>
   </aside>
 </template>
 
@@ -52,6 +64,19 @@
   const router = useRouter()
   const authStore = useAuthStore()
   const collapsed = ref(false)
+
+  const GLASS_STORAGE_KEY = 'datamind:sidebar-glass'
+
+  // 深/淺兩版玻璃並存只是為了在瀏覽器互相對照，定案後刪掉落選的那版與這個切換
+  const glassVariant = ref<'light' | 'dark'>(
+    (localStorage.getItem(GLASS_STORAGE_KEY) as 'light' | 'dark' | null) ?? 'light',
+  )
+  const isDev = import.meta.env.DEV
+
+  function toggleGlassVariant (): void {
+    glassVariant.value = glassVariant.value === 'light' ? 'dark' : 'light'
+    localStorage.setItem(GLASS_STORAGE_KEY, glassVariant.value)
+  }
 
   async function handleLogout (): Promise<void> {
     try {
@@ -72,26 +97,25 @@
 
 <style scoped>
 .hub-sidebar {
-  width: 210px;
-  min-width: 210px;
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
-  border-left: none;
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
-    4px 0 24px rgba(28, 33, 48, 0.1);
-  display: flex;
-  flex-direction: column;
-  transition: width 0.2s ease, min-width 0.2s ease;
-  overflow: hidden;
   position: sticky;
   top: 0;
-  height: 100vh;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  min-width: 220px;
+  height: 100vh;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-left: none;
+  transition: width var(--dur-base) var(--ease-in-out),
+    min-width var(--dur-base) var(--ease-in-out);
+}
+
+.hub-sidebar--collapsed {
+  width: 72px;
+  min-width: 72px;
 }
 
 .hub-sidebar::before {
@@ -99,24 +123,24 @@
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
   width: 70%;
   height: 220%;
   background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.7) 50%, transparent 65%);
   transform: translate(-160%, -20%) rotate(12deg);
   animation: hub-sidebar-shine 4.5s ease-in-out infinite;
   pointer-events: none;
-  z-index: 1;
 }
 
 .hub-sidebar-orbs {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
 }
 
 .orb {
@@ -126,96 +150,98 @@
 }
 
 .orb-1 {
-  width: 160px;
-  height: 160px;
   top: -40px;
   left: -30px;
-  background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, var(--color-ink) 0%, transparent 70%);
   opacity: 0.55;
 }
 
 .orb-2 {
-  width: 130px;
-  height: 130px;
   top: 260px;
   left: 40px;
-  background: radial-gradient(circle, color-mix(in oklab, var(--color-accent) 60%, white) 0%, transparent 70%);
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, white) 0%, transparent 70%);
   opacity: 0.5;
 }
 
 .orb-3 {
-  width: 110px;
-  height: 110px;
   top: 480px;
   left: -20px;
-  background: radial-gradient(circle, color-mix(in oklab, var(--color-accent) 85%, black) 0%, transparent 70%);
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 85%, black) 0%, transparent 70%);
   opacity: 0.35;
 }
 
-.hub-sidebar--collapsed {
-  width: 56px;
-  min-width: 56px;
-}
-
 .hub-sidebar-header {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 18px 14px 14px;
   gap: 8px;
-  position: relative;
-  z-index: 2;
+  padding: 18px 14px 14px;
+}
+
+/* 收合時文字先淡出、寬度再收，避免文字被寬度轉場硬切 */
+.hub-brand,
+.hub-nav-label {
+  overflow: hidden;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 .hub-brand {
-  overflow: hidden;
   flex: 1;
+}
+
+.hub-sidebar--collapsed .hub-brand,
+.hub-sidebar--collapsed .hub-nav-label {
+  opacity: 0;
 }
 
 .hub-brand-title {
   font-size: 14.5px;
-  font-weight: 700;
+  font-weight: 500;
+  line-height: 1.3;
   color: var(--color-text);
   white-space: nowrap;
-  line-height: 1.3;
 }
 
 .hub-brand-sub {
-  font-size: 11px;
-  color: #9ca3af;
   margin-top: 3px;
-  white-space: nowrap;
+  font-size: 11px;
   line-height: 1.4;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
 }
 
 .hub-toggle-btn {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #ffffff;
-  cursor: pointer;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: #9ca3af;
-  transition: background 0.15s;
+  width: 22px;
+  height: 22px;
   margin-top: 2px;
-}
-
-.hub-toggle-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .hub-nav {
-  flex: 1;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
   position: relative;
   z-index: 2;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
 }
 
 .hub-nav-item {
@@ -223,75 +249,158 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 7px;
-  text-decoration: none;
-  color: var(--color-secondary);
+  border-radius: var(--radius-sm);
   font-size: 13.5px;
-  font-weight: 500;
-  transition: background 0.12s;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+  text-decoration: none;
   white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    padding var(--dur-base) var(--ease-in-out);
 }
 
-.hub-nav-item:hover {
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+/* 收合後把圖示推到 72px 寬度的中間 */
+.hub-sidebar--collapsed .hub-nav-item {
+  padding-inline: 16px;
 }
 
 .hub-nav-item--active {
-  background: var(--color-accent);
-  color: var(--color-text);
-}
-
-.hub-nav-label {
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-ink);
+  font-weight: 500;
 }
 
 .hub-sidebar-user {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 10px 14px;
-  border-top: 1px solid #f0f0f0;
-  position: relative;
-  z-index: 2;
+  border-top: 1px solid var(--color-border);
 }
 
 .hub-user-name {
+  overflow: hidden;
   font-size: 12.5px;
   color: var(--color-text);
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .hub-logout-btn {
-  width: 26px;
-  height: 26px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #ffffff;
-  cursor: pointer;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: var(--color-secondary);
-  transition: background 0.15s, color 0.15s;
-}
-
-.hub-logout-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
-  color: var(--color-text);
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 
 .hub-sidebar-footer {
-  padding: 12px 14px;
-  font-size: 10.5px;
-  color: #9ca3af;
-  line-height: 1.7;
-  border-top: 1px solid #f0f0f0;
   position: relative;
   z-index: 2;
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-border);
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: var(--color-ink-soft);
+}
+
+.hub-glass-toggle {
+  position: relative;
+  z-index: 2;
+  margin: 0 14px 12px;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 11px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hub-toggle-btn:hover,
+  .hub-nav-item:hover {
+    background: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+  }
+
+  .hub-logout-btn:hover {
+    background: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+    color: var(--color-text);
+  }
+}
+
+/* ── 淺色玻璃（現行版本） ── */
+.hub-sidebar--glass-light {
+  background: rgba(255, 255, 255, 0.42);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-left: none;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
+    4px 0 24px rgba(28, 33, 48, 0.1);
+}
+
+/* ── 深色玻璃（§7.2 規範版本） ── */
+.hub-sidebar--glass-dark {
+  background: rgba(16, 32, 66, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-left: none;
+  box-shadow: 4px 0 24px rgba(14, 30, 66, 0.28);
+}
+
+.hub-sidebar--glass-dark .hub-brand-title,
+.hub-sidebar--glass-dark .hub-user-name {
+  color: #fff;
+}
+
+.hub-sidebar--glass-dark .hub-brand-sub,
+.hub-sidebar--glass-dark .hub-nav-item,
+.hub-sidebar--glass-dark .hub-sidebar-footer,
+.hub-sidebar--glass-dark .hub-glass-toggle {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hub-sidebar--glass-dark .hub-nav-item--active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.hub-sidebar--glass-dark .hub-toggle-btn,
+.hub-sidebar--glass-dark .hub-logout-btn {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.hub-sidebar--glass-dark .hub-sidebar-user,
+.hub-sidebar--glass-dark .hub-sidebar-footer {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.hub-sidebar--glass-dark .hub-glass-toggle {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hub-sidebar--glass-dark .hub-toggle-btn:hover,
+  .hub-sidebar--glass-dark .hub-nav-item:hover,
+  .hub-sidebar--glass-dark .hub-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
 }
 
 @keyframes hub-sidebar-shine {
