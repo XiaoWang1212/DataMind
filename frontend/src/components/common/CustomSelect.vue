@@ -19,41 +19,41 @@
       <span class="cs-label" :class="{ 'is-placeholder': !selectedLabel }">
         {{ selectedLabel ?? placeholder ?? '' }}
       </span>
-      <span class="cs-chevron" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M7 10l5 5 5-5z" /></svg>
+      <span aria-hidden="true" class="cs-chevron">
+        <svg height="16" viewBox="0 0 24 24" width="16"><path d="M7 10l5 5 5-5z" fill="currentColor" /></svg>
       </span>
     </button>
 
     <Teleport to="body">
       <Transition :css="false" @enter="onPopupEnter" @leave="onPopupLeave">
-      <ul
-        v-if="open"
-        ref="popupRef"
-        class="cs-popup"
-        role="listbox"
-        :style="popupStyle"
-        @keydown="onPopupKeydown"
-      >
-        <li
-          v-for="(opt, i) in options"
-          :id="`${uid}-opt-${i}`"
-          :key="opt.value"
-          class="cs-option"
-          :class="{
-            'is-active': i === activeIndex,
-            'is-selected': opt.value === modelValue,
-            'is-disabled': opt.disabled,
-          }"
-          role="option"
-          :aria-selected="opt.value === modelValue"
-          :aria-disabled="opt.disabled || undefined"
-          @mouseenter="activeIndex = i"
-          @click="selectOption(opt)"
+        <ul
+          v-if="open"
+          ref="popupRef"
+          class="cs-popup glass-menu"
+          role="listbox"
+          :style="popupStyle"
+          @keydown="onPopupKeydown"
         >
-          <span class="cs-option-label">{{ opt.label }}</span>
-          <span v-if="opt.hint" class="cs-option-hint">{{ opt.hint }}</span>
-        </li>
-      </ul>
+          <li
+            v-for="(opt, i) in options"
+            :id="`${uid}-opt-${i}`"
+            :key="opt.value"
+            :aria-disabled="opt.disabled || undefined"
+            :aria-selected="opt.value === modelValue"
+            class="cs-option"
+            :class="{
+              'is-active': i === activeIndex,
+              'is-selected': opt.value === modelValue,
+              'is-disabled': opt.disabled,
+            }"
+            role="option"
+            @click="selectOption(opt)"
+            @mouseenter="activeIndex = i"
+          >
+            <span class="cs-option-label">{{ opt.label }}</span>
+            <span v-if="opt.hint" class="cs-option-hint">{{ opt.hint }}</span>
+          </li>
+        </ul>
       </Transition>
     </Teleport>
   </div>
@@ -120,7 +120,7 @@
     if (props.disabled || open.value) return
     open.value = true
     const sel = props.options.findIndex(o => o.value === props.modelValue)
-    activeIndex.value = sel >= 0 ? sel : firstEnabledIndex()
+    activeIndex.value = sel === -1 ? firstEnabledIndex() : sel
     nextTick(updatePosition)
   }
 
@@ -170,7 +170,7 @@
     const idx = props.options.findIndex(
       o => !o.disabled && o.label.toLowerCase().startsWith(typeBuffer),
     )
-    if (idx >= 0) activeIndex.value = idx
+    if (idx !== -1) activeIndex.value = idx
   }
 
   function onPopupKeydown (e: KeyboardEvent): void {
@@ -238,7 +238,7 @@
       done()
       return
     }
-    ul.getAnimations().forEach(a => a.cancel())
+    for (const a of ul.getAnimations()) a.cancel()
     const target = Math.min(ul.scrollHeight, 240)
     ul.style.overflow = 'hidden'
     const anim = ul.animate(
@@ -257,7 +257,7 @@
       done()
       return
     }
-    ul.getAnimations().forEach(a => a.cancel())
+    for (const a of ul.getAnimations()) a.cancel()
     const start = Math.min(ul.scrollHeight, 240)
     ul.style.overflow = 'hidden'
     const anim = ul.animate(
@@ -309,9 +309,9 @@
     justify-content: space-between;
     gap: 6px;
     padding: 0 8px;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
     color: var(--color-text);
     font-size: 13px;
     cursor: pointer;
@@ -324,18 +324,18 @@
   }
 
   .is-highlight .cs-trigger {
-    border-color: #94a3b8;
+    border-color: var(--color-ink-soft);
   }
 
   /* 展開跟聚焦排在 highlight 後面，才蓋得掉未對應的灰框 */
   .cs-trigger:focus-visible,
   .is-open .cs-trigger {
-    border-color: var(--color-accent);
+    border-color: var(--color-ink);
     outline: none;
   }
 
   .cs-trigger:focus-visible {
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 20%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ink) 20%, transparent);
   }
 
   .cs-label {
@@ -347,31 +347,30 @@
   }
 
   .cs-label.is-placeholder {
-    color: #94a3b8;
+    color: var(--color-ink-soft);
   }
 
   .cs-chevron {
     display: flex;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     flex-shrink: 0;
-    transition: transform 0.15s, color 0.15s;
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
   }
 
   .is-open .cs-chevron {
     transform: rotate(180deg);
-    color: var(--color-accent);
+    color: var(--color-ink);
   }
 
+  /* 底色、邊框、圓角、陰影交給 .glass-menu。scoped 樣式沒進 layer，在這裡重寫會蓋掉玻璃 */
   .cs-popup {
     margin: 0;
     padding: 4px;
     list-style: none;
     max-height: 240px;
     overflow-y: auto;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
     z-index: 3000;
   }
 
@@ -380,7 +379,7 @@
     flex-direction: column;
     gap: 1px;
     padding: 7px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 13px;
     color: var(--color-text);
     cursor: pointer;
@@ -394,24 +393,23 @@
 
   .cs-option-hint {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .cs-option.is-active {
-    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    background: color-mix(in oklab, var(--color-ink) 12%, transparent);
   }
 
-  /* accent 本人在白底只有 2.2:1，當文字讀不清楚，改用同色系的深琥珀 */
   .cs-option.is-selected {
-    color: #b45309;
-    font-weight: 600;
+    color: var(--color-ink);
+    font-weight: 500;
   }
 
   .cs-option.is-disabled {
-    color: #cbd5e1;
+    color: var(--color-border-strong);
     cursor: not-allowed;
   }
 </style>
