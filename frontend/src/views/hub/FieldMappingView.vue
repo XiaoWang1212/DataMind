@@ -584,7 +584,10 @@
     const project = projectStore.projects.find(p => p.id === projectId.value)
     const framework = frameworkStore.frameworks.find(f => f.id === project?.frameworkId)
     const workflowJson = framework?.workflowJson as
-      | { features?: { name: string, type?: string }[], target_col?: string }
+      | {
+        features?: { name: string, type?: string, description_zh?: string, descriptionZh?: string }[]
+        target_col?: string
+      }
       | undefined
 
     const features = workflowJson?.features ?? []
@@ -595,6 +598,7 @@
       name: feature.name,
       type: feature.type ?? '',
       is_target: feature.name === targetCol,
+      definition: feature.description_zh ?? feature.descriptionZh,
     }))
 
     // target 不在 features 裡時自己補一筆，否則使用者無從指定預測目標
