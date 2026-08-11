@@ -2,16 +2,12 @@ import type { Ref } from 'vue'
 import type { MappingItem } from '@/types/fieldMapping'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
-// Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
+// 設上限，避免快照無限累積佔記憶體
 const MAX_UNDO = 50
 
 interface Snapshot { items: MappingItem[], locked: string[] }
 
-/**
- * 對映表的復原/重做。鍵盤監聽也包在裡面，所以頁面只需要在改動前呼叫 pushHistory()。
- *
- * @param deps.onRestore 還原之後要做的事（例如清掉錯誤訊息、存草稿）
- */
+// 對映表的復原/重做，鍵盤監聽包在裡面，頁面只需在改動前呼叫 pushHistory()
 export function useMappingHistory (deps: {
   items: Ref<MappingItem[]>
   locked: Ref<Set<string>>
@@ -20,12 +16,7 @@ export function useMappingHistory (deps: {
   const undoStack = ref<Snapshot[]>([])
   const redoStack = ref<Snapshot[]>([])
 
-  /**
-   * 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。
-   *
-   * locked 一定要跟著存：只還原 items 的話，復原後那一列看起來回到未對應，
-   * 但它還留在 locked 裡，之後所有 AI 建議都會被靜默忽略，而聊天仍回「已更新」。
-   */
+  // locked 要跟著存，只還原 items 的話該列仍留在 locked 裡，之後的 AI 建議會被忽略
   function snapshot (): Snapshot {
     return { items: structuredClone(toRaw(deps.items.value)), locked: [...deps.locked.value] }
   }
@@ -41,7 +32,7 @@ export function useMappingHistory (deps: {
     if (undoStack.value.length > MAX_UNDO) {
       undoStack.value.shift()
     }
-    // 做了新動作，原本能重做的那條分支就失效了
+    // 做了新動作，原本的重做分支失效
     redoStack.value = []
   }
 
@@ -63,13 +54,13 @@ export function useMappingHistory (deps: {
     restore(next)
   }
 
-  /** 焦點在輸入框時不攔截：那時使用者要復原的是自己打的字。 */
+  // 焦點在輸入框時不攔截，那時要復原的是使用者打的字
   function onKeydown (event: KeyboardEvent): void {
     if (!(event.metaKey || event.ctrlKey)) {
       return
     }
 
-    // 重做的按法各家不同：Mac 是 ⌘⇧Z，Windows 上 Ctrl+Y 與 Ctrl+Shift+Z 都常見，三種都收
+    // 重做的按法各平台不同，⌘⇧Z、Ctrl+Shift+Z、Ctrl+Y 三種都接受
     const key = event.key.toLowerCase()
     const isRedo = (key === 'z' && event.shiftKey) || key === 'y'
     const isUndo = key === 'z' && !event.shiftKey

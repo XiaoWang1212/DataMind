@@ -68,7 +68,7 @@
     send: [message: string]
   }>()
 
-  // 開場白：不進 history，不存草稿
+  // 開場白不進 history，不存草稿
   const CHAT_OPENER = '我可以協助調整左側的欄位對應，請直接以文字說明您的需求，'
     + '例如「年齡對應到 pt_age」或「BMI 這一欄資料表中沒有」。'
 
@@ -84,7 +84,7 @@
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, CHAT_FIELD_MAX_HEIGHT)}px`
-    // 沒滿高度就不留 scrollbar，一行字的時候才不會看起來怪怪的
+    // 未達上限就不留 scrollbar
     el.style.overflowY = el.scrollHeight > CHAT_FIELD_MAX_HEIGHT ? 'auto' : 'hidden'
   }
 
@@ -105,10 +105,7 @@
     emit('send', message)
   }
 
-  // 訊息數或「思考中」狀態一變就捲到最新一則。
-  // 原本由頁面在送出前後各呼叫一次，改由面板監看自己的 props。
-  // 附帶一個刻意保留的差異：頁面載入時從 localStorage 還原舊對話也會讓 length 由 0 變 N，
-  // 因此重整後會直接停在最新一則（重構前是停在最上面）。這比較符合聊天介面的預期，故保留。
+  // 還原舊對話也會讓 length 由 0 變 N，所以重整後直接停在最新一則
   watch(
     [() => props.history.length, () => props.pending],
     async () => {
@@ -122,7 +119,7 @@
   .mapping-chat {
     display: flex;
     flex-direction: column;
-    /* 跟著視窗高度走：筆電上不會被擠到要捲，大螢幕也不會留一大片空白 */
+    /* 跟著視窗高度走，小螢幕不會被擠到要捲，大螢幕不會留一大片空白 */
     height: clamp(420px, calc(100vh - 190px), 720px);
     border: 1px solid #e8e8e8;
     border-radius: 12px;
@@ -130,7 +127,7 @@
     overflow: hidden;
   }
 
-  /* 圖示樣式比照 ResultView 的 .analysis-icon-wrap，兩邊的 AI 區塊看起來才是一組的 */
+  /* 比照 ResultView 的 .analysis-icon-wrap，讓兩邊的 AI 區塊維持一致 */
   .chat-head-icon {
     display: flex;
     align-items: center;

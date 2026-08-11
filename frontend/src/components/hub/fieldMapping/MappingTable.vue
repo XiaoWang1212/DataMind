@@ -36,7 +36,7 @@
             <div v-if="item.sample_values.length > 0" class="col-samples">
               {{ item.sample_values.slice(0, 3).join('、') }}
             </div>
-            <!-- 配不出來時給幾個最接近的讓使用者一鍵選，不必自己在幾十個欄位裡翻 -->
+            <!-- 配不出來時提供最接近的幾個欄位，讓使用者一鍵選取 -->
             <div v-if="item.status === 'UNMATCHED' && item.candidate_columns.length > 0" class="col-candidates">
               <span class="candidates-label">可能是</span>
               <button
@@ -53,8 +53,7 @@
           </td>
           <td class="col-status">
             <div class="status-cell">
-              <!-- 用 v-tooltip 而非 CSS 絕對定位：外層 .mapping-scroll 有 overflow，
-                   自製的提示會被裁掉，v-tooltip 會 teleport 出去 -->
+              <!-- 用 v-tooltip 而非 CSS 定位，外層 .mapping-scroll 有 overflow 會裁掉自製的提示 -->
               <v-tooltip
                 content-class="status-tooltip"
                 location="bottom end"
@@ -127,7 +126,7 @@
     SKIPPED: '不使用',
   }
 
-  // 滑過標籤時顯示。用一般說法，避免「信心度」這類系統內部用語
+  // 滑過標籤時顯示，用一般說法避免「信心度」這類系統內部用語
   const STATUS_HINT: Record<string, string> = {
     CONFIRMED: '您已確認此對應正確。如需修改，請點選右側的復原按鈕。',
     AUTO_MATCHED: '欄位名稱與資料內容皆相符，可直接使用。',
@@ -140,7 +139,7 @@
     return item.paper_variable === props.targetName
   }
 
-  // target 永遠排最前面：它配錯的話整個實驗都白做，不能混在幾十列裡被滑過去
+  // 預測目標排最前面，避免混在其他變數中被忽略
   const sortedItems = computed(() => {
     const list = [...props.items]
     list.sort((a, b) => Number(isTarget(b)) - Number(isTarget(a)))
@@ -163,7 +162,7 @@
       label: column.name,
       hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
     }))
-    // target 一定要有對應欄位，不提供「沒有這個變數」的選項
+    // 預測目標一定要有對應欄位，不提供「沒有這個變數」的選項
     if (!isTarget(item)) {
       options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined })
     }
@@ -172,7 +171,7 @@
 </script>
 
 <style scoped>
-  /* 下拉欄固定寬度，視窗窄的時候讓表格自己捲，不要把整頁撐開 */
+  /* 下拉欄固定寬度，視窗窄時由表格自己捲，避免撐開整頁 */
   .mapping-scroll {
     overflow-x: auto;
   }
@@ -198,7 +197,7 @@
     vertical-align: top;
   }
 
-  /* 要放得下「待確認」標籤 + 勾勾按鈕，不然標籤會被擠到換行 */
+  /* 要放得下「待確認」標籤和勾選按鈕，避免標籤換行 */
   .col-status {
     width: 124px;
   }
@@ -270,7 +269,7 @@
     border-radius: 99px;
     font-size: 11px;
     font-weight: 600;
-    /* 不換行：三個字被擠成兩行的話，圓角會把它變成一顆球 */
+    /* 不換行，避免文字折行後圓角變成一顆球 */
     white-space: nowrap;
   }
 
@@ -314,7 +313,7 @@
     gap: 6px;
   }
 
-  /* 標籤先講清楚是什麼狀態，使用者才知道旁邊的勾勾是要確認什麼 */
+  /* 標籤放在按鈕前面，讓使用者先知道狀態再決定是否確認 */
   .check-btn {
     position: relative;
     display: inline-flex;
@@ -331,7 +330,7 @@
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
-  /* 不用綠色：那是「已確認」的語意色，跟旁邊黃色的「待確認」會打架 */
+  /* 不用綠色，那是「已確認」的語意色，會跟旁邊的「待確認」混淆 */
   .check-btn:hover {
     background: #f0f1f3;
     border-color: #94a3b8;
@@ -345,7 +344,7 @@
     outline-offset: 2px;
   }
 
-  /* 視覺上 26px，但用 ::after 把可點範圍撐到 40px，手指才按得到 */
+  /* 視覺上 26px，用 ::after 把可點範圍撐到 40px 以符合觸控尺寸 */
   .check-btn::after,
   .undo-btn::after {
     content: '';
@@ -373,7 +372,7 @@
     color: var(--color-secondary);
   }
 
-  /* AI 或搶欄位造成的變動閃一下，讓使用者看見改到哪一列 */
+  /* 讓被改動的列閃一下，提示改到哪些欄位 */
   .row-flash {
     animation: row-flash 2s ease-out;
   }
@@ -383,7 +382,7 @@
     100% { background: transparent; }
   }
 
-  /* 有人對動態效果敏感（會頭暈）；改成靜態底色淡出，資訊不減 */
+  /* 改用靜態底色取代動畫，避免動態效果造成不適又不損失提示 */
   @media (prefers-reduced-motion: reduce) {
     .row-flash {
       animation: none;
@@ -396,7 +395,7 @@
   }
 </style>
 
-<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，所以另開一個全域區塊 -->
+<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，因此另開全域區塊 -->
 <style>
   .status-tooltip {
     padding: 7px 10px !important;

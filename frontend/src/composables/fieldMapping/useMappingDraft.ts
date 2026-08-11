@@ -2,10 +2,8 @@ import type { Ref } from 'vue'
 import type { MappingItem, UserColumn } from '@/types/fieldMapping'
 import { computed } from 'vue'
 
-/**
- * 存編輯中的草稿。沒有它的話重新整理會把改過的全部沖掉，還會再打一次 Gemini。
- * 真正的結果是按下「確認並執行」才寫進資料庫。
- */
+// 暫存編輯中的對映，避免重新整理後改動遺失並重打一次 Gemini。
+// 正式結果要按下「確認並執行」才寫進資料庫
 export function useMappingDraft (deps: {
   projectId: Ref<number>
   items: Ref<MappingItem[]>
@@ -51,7 +49,7 @@ export function useMappingDraft (deps: {
         locked?: string[]
         aiAvailable?: boolean
       }
-      // 換了資料集就不能沿用舊草稿，裡面的欄位名已經對不上了
+      // 換了資料集就不沿用舊草稿，裡面的欄位名已經對不上
       if (saved.columns !== columnSignature()) {
         clearDraft()
         return false
@@ -61,8 +59,7 @@ export function useMappingDraft (deps: {
       }
       deps.items.value = saved.items
       deps.locked.value = new Set<string>(saved.locked)
-      // 沿用當初的可用狀態：寫死 true 的話，Gemini 掛掉時重整會讓離線提示消失、
-      // 輸入框又變成可打，送出才發現還是不通
+      // 沿用存檔時的可用狀態，避免 Gemini 不通時重整後離線提示消失
       deps.aiAvailable.value = saved.aiAvailable ?? true
       return true
     } catch {

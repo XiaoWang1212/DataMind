@@ -111,7 +111,7 @@
   const projectStore = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
-  // Project.id 在資料庫裡是 int；useWorkflowStorage 的參數是字串，呼叫時要轉
+  // Project.id 在資料庫是 int，useWorkflowStorage 收字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
 
   const loading = ref(true)
@@ -123,11 +123,11 @@
   const targetName = ref('')
   const datasetFile = ref<File | null>(null)
   const flashed = ref(new Set<string>())
-  // 使用者手動選過的變數：後續 AI 建議不覆蓋
+  // 使用者手動選過的變數，後續 AI 建議不覆蓋
   const locked = ref(new Set<string>())
 
   const aiAvailable = ref(false)
-  // 確認並執行失敗時顯示給使用者；下次改選項就清掉，避免舊錯誤一直卡著
+  // 確認並執行失敗時顯示，下次改動就清掉，避免舊錯誤一直留著
   const saveError = ref('')
 
   const chatHistory = ref<ChatMessage[]>([])
@@ -145,14 +145,13 @@
   const { pushHistory } = useMappingHistory({
     items,
     locked,
-    // 還原後沿用原本 restore 的收尾：清掉舊錯誤、把還原結果存回草稿
     onRestore: () => {
       saveError.value = ''
       saveDraft()
     },
   })
 
-  // 綠色的兩種：演算法有把握的，和使用者親自點過確認的
+  // 顯示為綠色的兩種狀態，自動配對成功的與使用者確認過的
   const confirmedCount = computed(
     () => items.value.filter(
       i => i.status === 'AUTO_MATCHED' || i.status === 'CONFIRMED',
@@ -166,7 +165,7 @@
   )
   const canConfirm = computed(() => !loading.value && unmatchedCount.value === 0)
 
-  /** 順手鎖住：親自確認過的列，後續 AI 建議不該再改動它。 */
+  // 確認過的列一併鎖住，後續 AI 建議不再改動
   function confirmRow (item: MappingItem): void {
     if (item.status !== 'NEEDS_REVIEW') return
     pushHistory()
@@ -176,7 +175,7 @@
     saveDraft()
   }
 
-  /** 按錯了要能反悔，不然使用者只敢把整頁重跑一次。 */
+  // 讓使用者能取消確認，避免只能整頁重跑
   function unconfirmRow (item: MappingItem): void {
     if (item.status !== 'CONFIRMED') return
     pushHistory()
@@ -185,7 +184,7 @@
     saveDraft()
   }
 
-  /** 整批當成一步：不然使用者要按 N 次 Ctrl+Z 才回得去 */
+  // 使用者整批修改當作一步，避免使用者需要多按 Ctrl+Z
   function confirmAll (): void {
     if (reviewCount.value === 0) return
     pushHistory()
@@ -200,8 +199,7 @@
   }
 
   function applySelection (item: MappingItem, value: string): void {
-    // 選到跟現在一樣的東西就什麼都不做。少了這道，使用者只是打開下拉看一眼、
-    // 又點回原本那個，「已對應」就會莫名其妙降成「待確認」
+    // 選到跟目前相同的值就不處理，避免重新點選同一欄位時狀態被降級
     const unchanged = value === SKIP_VALUE
       ? item.status === 'SKIPPED'
       : value === item.matched_user_column
@@ -221,7 +219,7 @@
       return
     }
 
-    // 同一個欄位不能同時服務兩個變數：搶過來，原持有者退回未對應
+    // 一個欄位只能對應一個變數，原本對應到的變數退回未對應
     for (const other of items.value) {
       if (other.paper_variable !== item.paper_variable && other.matched_user_column === value) {
         other.matched_user_column = null
@@ -237,12 +235,12 @@
     item.sample_values = column?.sample_values ?? []
     item.candidate_columns = []
     item.confidence_score = 1
-    // 自己從下拉挑的就是已確認：標成「待確認」等於要他確認自己剛做的動作
+    // 使用者自己選的直接視為已確認，不需要再確認一次自己的操作
     item.status = 'CONFIRMED'
     saveDraft()
   }
 
-  /** 被改動的列閃一下：沒有這個提示，使用者不知道剛才那一步改到了哪裡。 */
+  // 讓被改動的列閃一下，提示改到哪些欄位
   function flash (variable: string): void {
     flashed.value.add(variable)
     setTimeout(() => {
@@ -252,10 +250,7 @@
     flashed.value = new Set(flashed.value)
   }
 
-  /**
-   * main.ts 那兩個 load 沒有 await，重新整理時 onMounted 可能先跑完，
-   * 拿到空陣列就會誤判成「框架沒有變數清單」。
-   */
+  // main.ts 的兩個 load 沒有 await，重整時 onMounted 可能先跑完而拿到空陣列
   async function ensureStoresLoaded (): Promise<void> {
     const waiting: Promise<void>[] = []
     if (projectStore.projects.length === 0) waiting.push(projectStore.loadProjects())
@@ -280,7 +275,7 @@
       is_target: feature.name === targetCol,
     }))
 
-    // target 不在 features 裡時自己補一筆，否則使用者無從指定預測目標
+    // 預測目標不在 features 裡時補一筆，否則使用者無從指定
     if (targetCol && !features.some(f => f.name === targetCol)) {
       variables.unshift({ name: targetCol, type: 'categorical', is_target: true })
     }
@@ -293,7 +288,7 @@
     return await loadWorkflowDataFileFromStorage(String(projectId.value))
   }
 
-  /** 把 AI 回傳的 diff 套用到本地狀態；使用者手動選過的列不覆蓋。 */
+  // 把 AI 回傳的異動套用到本地狀態，使用者手動選過的列不覆蓋
   function applyActions (actions: MappingAction[]): string[] {
     const changed: string[] = []
     for (const action of actions) {
@@ -301,8 +296,7 @@
       if (!item || locked.value.has(item.paper_variable)) continue
 
       if (action.matched_user_column) {
-        // 欄位被手動鎖定的列占用時，整個動作放棄。
-        // 只做一半（新的設了、舊的沒清）比什麼都不做更糟。
+        // 欄位被鎖定的列占用時整個動作放棄，避免只完成一半
         const lockedHolder = items.value.find(
           other => other.paper_variable !== item.paper_variable
             && other.matched_user_column === action.matched_user_column
@@ -310,7 +304,7 @@
         )
         if (lockedHolder) continue
 
-        // 搶欄位：原持有者退回未對應，同樣要閃給使用者看
+        // 原本對應到的變數退回未對應，同樣閃一下提示使用者
         for (const other of items.value) {
           if (
             other.paper_variable !== item.paper_variable
@@ -333,7 +327,7 @@
       }
 
       item.confidence_score = action.confidence_score
-      // 後端已擋一層，這裡再擋一層：AI 提的對應一律要人確認，不能自己變綠
+      // AI 提的對應一律要人確認，不直接標為已對應（後端也有擋一層）
       item.status = action.status === 'AUTO_MATCHED' ? 'NEEDS_REVIEW' : action.status
       changed.push(item.paper_variable)
     }
@@ -367,8 +361,8 @@
       })
     } finally {
       chatPending.value = false
-      // 前綴 mapping- 才不會和 ResultView 的聊天撞 key。
-      // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存所以轉型即可。
+      // 前綴 mapping- 避免和 ResultView 的聊天撞 key。
+      // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存故直接轉型
       saveChatHistoryToStorage(
         `mapping-${projectId.value}`,
         chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
@@ -376,12 +370,8 @@
     }
   }
 
-  /**
-   * 依對映改寫表頭後交給 workflow。
-   *
-   * 只改名、不刪欄位：使用者沒對應到的欄位在 workflow 那邊還是可以選用，
-   * 在這裡刪掉只會讓他失去選擇。
-   */
+  // 依對映改寫表頭後交給 workflow。
+  // 只改名不刪欄位，未對應的欄位在 workflow 仍可選用
   async function confirmAndRun (): Promise<void> {
     if (!datasetFile.value) return
     confirming.value = true
@@ -402,12 +392,11 @@
         renameByColumn.set(column, variable)
       }
 
-      // 先改寫檔案再寫資料庫：反過來的話，檔案沒寫成功但對映已存檔，
-      // 下次點專案就會帶著沒改過表頭的資料集直接進 workflow，錯得無聲無息
+      // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
       const renamed = await rewriteDatasetHeader(datasetFile.value, renameByColumn)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
-      // IndexedDB 寫入失敗只會在 console 留紀錄、不會拋例外，只好回讀確認
+      // IndexedDB 寫入失敗不會拋例外，只在 console 留紀錄，因此回讀確認
       const stored = await loadWorkflowDataFileFromStorage(String(projectId.value))
       if (!stored || stored.size !== renamed.size) {
         throw new Error('資料檔案沒有存進瀏覽器儲存空間')
@@ -425,8 +414,7 @@
       clearDraft()
       router.push(`/workflow?project=${projectId.value}`)
     } catch (error) {
-      // 失敗時本地狀態都已復原，但畫面上必須告訴使用者，
-      // 不然按鈕悄悄恢復可按，使用者只會覺得「怎麼沒反應」再按一次
+      // 本地狀態雖已復原，仍要顯示錯誤，避免按鈕恢復可按卻沒有任何說明
       const detail = error instanceof Error ? error.message : ''
       saveError.value = detail ? `儲存失敗，請再試一次（${detail}）` : '儲存失敗，請再試一次'
     } finally {
@@ -462,7 +450,7 @@
 
       const seen = new Set<string>()
       userColumns.value = preview.columns
-        // 先綁住原始欄位位置：dedup 會改變陣列索引，之後再用索引取值就會取到別欄的資料
+        // 先記住原始欄位位置，去重會改變索引，之後用索引取值會取到別欄的資料
         .map((name, index) => ({ name, index }))
         .filter(({ name }) => {
           if (seen.has(name)) return false  // 重複欄位名只留第一個
@@ -481,7 +469,7 @@
         return
       }
 
-      // 有草稿就直接還原，不重跑配對：重跑會蓋掉使用者改過的東西，也會白花一次 Gemini
+      // 有草稿就直接還原不重跑配對，避免蓋掉使用者的改動並多打一次 Gemini
       if (loadDraft()) return
 
       const { state, aiAvailable: available } = await initFieldMapping({
@@ -506,7 +494,7 @@
     gap: 12px;
   }
 
-  /* 標題、進度、全部確認擠在同一列，把垂直空間留給對映表 */
+  /* 標題、進度、全部確認排在同一列，把垂直空間留給對映表 */
   .page-header {
     display: flex;
     align-items: center;
@@ -604,7 +592,6 @@
     font-size: 14px;
   }
 
-  /* 有人對動態效果敏感（會頭暈）；關掉非必要的過場動畫 */
   @media (prefers-reduced-motion: reduce) {
     .confirm-all-btn {
       transition: none;
@@ -630,7 +617,7 @@
     font-weight: 600;
   }
 
-  /* 尺寸比照 ProjectsView 的 .new-btn。border: none 不能省，<button> 預設帶外框 */
+  /* 尺寸比照 ProjectsView 的 .new-btn，border: none 不能省，button 預設帶外框 */
   .confirm-btn {
     display: inline-flex;
     align-items: center;
