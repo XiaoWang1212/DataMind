@@ -87,6 +87,23 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">玻璃（§5）</h2>
+      <div class="sg-glass-stage">
+        <div class="glass-panel sg-glass-demo">glass-panel：浮動面板、彈窗</div>
+        <div class="glass-menu sg-glass-demo">glass-menu：下拉選單</div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">載入骨架（§6.2）</h2>
+      <div class="sg-skeleton-demo">
+        <div class="skeleton-line" style="width: 40%" />
+        <div class="skeleton-line" style="width: 70%" />
+        <div class="skeleton-line" style="width: 55%" />
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">資料表格（§7.4）</h2>
       <TableShell>
         <table class="ds-table">
@@ -221,6 +238,31 @@
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-ink-soft);
+}
+
+/* 玻璃要有東西透出來才看得出效果，示範區塊底下先鋪一塊彩色漸層 */
+.sg-glass-stage {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(220px circle at 20% 30%, rgba(90, 130, 190, 0.55), transparent 60%),
+    radial-gradient(200px circle at 80% 70%, rgba(196, 150, 130, 0.35), transparent 60%),
+    linear-gradient(175deg, #eef2f5 0%, #dce3e9 100%);
+}
+
+.sg-glass-demo {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.sg-skeleton-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
 }
 
 .sg-type-sample {

@@ -1,0 +1,33 @@
+/* docs/DESIGN_SYSTEM.md §5 玻璃效果。只用在浮動/導覽性元件，一般卡片與表格維持實色。
+   模糊值取 §5.2 區間（10-16px）的中間；tint 0.62 是為了讓文字對比夠 */
+@layer vuetify-final {
+  .glass-panel,
+  .glass-menu {
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    /* 上緣較亮模擬受光邊 */
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-panel {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-float);
+  }
+
+  .glass-menu {
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-float);
+  }
+
+  /* 不支援時退回接近不透明的純色底，不要留下一個看不清楚的半透明方塊 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-panel,
+    .glass-menu {
+      background: rgba(255, 255, 255, 0.96);
+    }
+  }
+}
