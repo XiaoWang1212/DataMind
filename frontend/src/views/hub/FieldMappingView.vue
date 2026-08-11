@@ -138,21 +138,11 @@
         </table>
         </div>
 
-        <div v-if="!loading && previewColumns.length" class="preview-block">
-          <div class="preview-title">資料預覽（前 {{ previewRows.length }} 筆）</div>
-          <div class="preview-scroll">
-            <table class="preview-table">
-              <thead>
-                <tr><th v-for="col in previewColumns" :key="col">{{ col }}</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, i) in previewRows" :key="i">
-                  <td v-for="(cell, j) in row" :key="j">{{ cell }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DatasetPreview
+          v-if="!loading && previewColumns.length"
+          :columns="previewColumns"
+          :rows="previewRows"
+        />
 
         <div class="mapping-footer">
           <span v-if="saveError" class="footer-error">{{ saveError }}</span>
@@ -235,6 +225,7 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
   import {
     loadChatHistoryFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -1161,39 +1152,6 @@
     .check-btn {
       transition: none;
     }
-  }
-
-  .preview-block {
-    padding-top: 4px;
-  }
-
-  .preview-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-secondary);
-    margin-bottom: 8px;
-  }
-
-  .preview-scroll {
-    overflow-x: auto;
-  }
-
-  .preview-table {
-    border-collapse: collapse;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .preview-table th,
-  .preview-table td {
-    padding: 6px 10px;
-    border: 1px solid #f0f1f3;
-    color: var(--color-secondary);
-  }
-
-  .preview-table th {
-    background: var(--color-background);
-    font-weight: 600;
   }
 
   .mapping-footer {
