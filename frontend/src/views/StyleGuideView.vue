@@ -87,6 +87,29 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">資料表格（§7.4）</h2>
+      <TableShell>
+        <table class="ds-table">
+          <thead>
+            <tr><th>欄位</th><th>型別</th><th>狀態</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ds-identifier">age</td>
+              <td class="ds-identifier">int64</td>
+              <td><StatusBadge status="success">已對應</StatusBadge></td>
+            </tr>
+            <tr>
+              <td class="ds-identifier">bmi_score</td>
+              <td class="ds-identifier">float64</td>
+              <td><StatusBadge status="warning">待確認</StatusBadge></td>
+            </tr>
+          </tbody>
+        </table>
+      </TableShell>
+    </section>
+
+    <section>
       <h2 class="sg-h2">內容寬度</h2>
       <div class="sg-width-demo" style="max-width: var(--content-measure)">content-measure 760px</div>
       <div class="sg-width-demo" style="max-width: var(--content-max-width)">content-max-width 1280px</div>

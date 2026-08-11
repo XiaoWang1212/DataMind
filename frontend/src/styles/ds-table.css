@@ -1,0 +1,40 @@
+/* docs/DESIGN_SYSTEM.md §7.4 資料表格。
+   放在 vuetify-final（layers.css 宣告的最後一層），套在 Vuetify 元件內的表格時才不會被蓋掉 */
+@layer vuetify-final {
+  .ds-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    color: var(--color-text);
+  }
+
+  .ds-table thead th {
+    padding: 10px 14px;
+    background: var(--color-surface-alt);
+    color: var(--color-ink-soft);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .ds-table tbody td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .ds-table tbody tr {
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ds-table tbody tr:hover {
+      background: var(--color-surface-alt);
+    }
+  }
+
+  /* 欄位名、type、class 等 identifier 用等寬字（§3） */
+  .ds-table .ds-identifier {
+    font-family: var(--font-mono);
+  }
+}

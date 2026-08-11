@@ -22,6 +22,7 @@ import App from './App.vue'
 import 'unfonts.css'
 import './styles/tailwind.css'
 import './styles/main.scss'
+import './styles/ds-table.css'
 
 const app = createApp(App)
 
