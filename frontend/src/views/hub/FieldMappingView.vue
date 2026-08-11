@@ -175,6 +175,9 @@
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
+          <button class="skip-btn" type="button" @click="skipToWorkflow">
+            略過（開發用）
+          </button>
           <button class="confirm-btn" :disabled="!canConfirm || confirming" @click="confirmAndRun">
             {{ confirming ? '處理中…' : '確認並執行' }}
             <v-icon v-if="!confirming" icon="mdi-arrow-right" size="17" />
@@ -730,6 +733,11 @@
     if (chatScroll.value) chatScroll.value.scrollTop = chatScroll.value.scrollHeight
   }
 
+  /** 開發用斷點：不改表頭、不存 column_mapping，直接跳去 workflow。 */
+  function skipToWorkflow (): void {
+    router.push(`/workflow?project=${projectId.value}`)
+  }
+
   /**
    * 依對映改寫表頭後交給 workflow。
    *
@@ -1242,6 +1250,22 @@
     font-size: 12px;
     color: #b91c1c;
     font-weight: 600;
+  }
+
+  .skip-btn {
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    background: none;
+    color: var(--color-secondary);
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .skip-btn:hover {
+    background: #f3f4f6;
   }
 
   /* 尺寸比照 ProjectsView 的 .new-btn。border: none 不能省，<button> 預設帶外框 */
