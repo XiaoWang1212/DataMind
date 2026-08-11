@@ -604,7 +604,7 @@
     font-size: 14px;
   }
 
-  /* 有人對動態效果敏感（會頭暈）；改成靜態底色淡出，資訊不減 */
+  /* 有人對動態效果敏感（會頭暈）；關掉非必要的過場動畫 */
   @media (prefers-reduced-motion: reduce) {
     .confirm-all-btn {
       transition: none;
