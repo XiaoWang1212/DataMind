@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
   import { RouterLink } from 'vue-router'
+  import PageHeader from '@/components/ui/PageHeader.vue'
 
   const stats = [
     { label: '框架總數', value: '24', trend: '本週新增 3 個' },

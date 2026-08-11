@@ -136,6 +136,11 @@
 </template>
 
 <script lang="ts" setup>
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import StatusBadge from '@/components/ui/StatusBadge.vue'
+  import TableShell from '@/components/ui/TableShell.vue'
+
   interface Swatch { name: string, varRef: string }
 
   const swatches: Swatch[] = [
