@@ -9,15 +9,15 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import HubSidebar from '@/components/hub/HubSidebar.vue'
+  import { RouterView } from 'vue-router'
+  import HubSidebar from '@/components/hub/HubSidebar.vue'
 </script>
 
 <style scoped>
+/* 不設背景，讓 .v-application 的頁面漸層透出來 */
 .hub-wrap {
   display: flex;
   min-height: 100vh;
-  background: var(--color-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
   color: var(--color-text);
