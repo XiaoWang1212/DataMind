@@ -68,6 +68,16 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">頁首（§3 字級階層）</h2>
+      <PageHeader subtitle="副標說明文字，13px" title="頁面標題">
+        <template #actions>
+          <AppButton variant="secondary">次要動作</AppButton>
+          <AppButton variant="primary">主要動作</AppButton>
+        </template>
+      </PageHeader>
+    </section>
+
+    <section>
       <h2 class="sg-h2">字級階層</h2>
       <div class="sg-type-sample" style="font-size: 22px; font-weight: 500;">頁面標題 h1 / 22px / 500</div>
       <div class="sg-type-sample" style="font-size: 18px; font-weight: 500;">區塊標題 h2 / 18px / 500</div>
