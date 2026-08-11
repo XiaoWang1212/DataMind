@@ -33,7 +33,7 @@ export interface MappingItem {
   status: MappingStatus
   sample_values: string[]
   candidate_columns: string[]
-  definition?: string
+  definition?: string | null
 }
 
 export interface MappingState {

@@ -118,6 +118,9 @@ def _format_pending(items: list[dict]) -> str:
     for item in items:
         required_type = item.get("required_type") or "未指定"
         definition = item.get("definition")
+        if definition:
+            # 壓平換行、截斷長度，避免多行/過長定義撐爆 prompt 的「一變數一行」格式
+            definition = " ".join(str(definition).split())[:100]
         suffix = f"；定義：{definition}" if definition else ""
         lines.append(f"- {item['paper_variable']}（需要型態：{required_type}{suffix}）")
     return "\n".join(lines)

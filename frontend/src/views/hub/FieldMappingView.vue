@@ -602,7 +602,7 @@
     const workflowJson = framework?.workflowJson as
       | {
         features?: { name: string, type?: string, description_zh?: string, descriptionZh?: string }[]
-        target_col?: string
+      target_col?: string
       }
       | undefined
 
@@ -614,6 +614,8 @@
       name: feature.name,
       type: feature.type ?? '',
       is_target: feature.name === targetCol,
+      // workflow_json 內層欄位不是 camelCase，descriptionZh 只是防禦性 fallback，
+      // 跟現有的 target_col ?? targetCol 是同一套慣例
       definition: feature.description_zh ?? feature.descriptionZh,
     }))
 
