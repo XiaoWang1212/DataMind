@@ -39,7 +39,7 @@
         <div v-if="selectedFile" class="file-info">
           <v-icon color="#ef4444" icon="mdi-file-pdf-box" size="18" />
           <span class="file-name">{{ selectedFile.name }}</span>
-          <button class="file-remove" @click="selectedFile = null">
+          <button class="file-remove" @click="removeFile">
             <v-icon icon="mdi-close" size="15" />
           </button>
         </div>
@@ -139,6 +139,7 @@
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
   const currentLine = ref('')
   const previousLine = ref('')
+  let abortController: AbortController | null = null
 
   function stripMarkdownAsterisks (text: string): string {
     return text.replace(/\*\*?/g, '')
@@ -155,6 +156,11 @@
     if (file && file.type === 'application/pdf') selectedFile.value = file
   }
 
+  function removeFile (): void {
+    if (extracting.value) abortController?.abort()
+    selectedFile.value = null
+  }
+
   async function startExtract (): Promise<void> {
     if (!selectedFile.value) return
     extracting.value = true
@@ -162,13 +168,14 @@
     extractError.value = null
     currentLine.value = ''
     previousLine.value = ''
+    abortController = new AbortController()
 
     const file = selectedFile.value
     const baseName = file.name.replace(/\.[^.]+$/, '')
 
     try {
       await streamAnalyzeWorkflowFromPdf(
-        { file, title: baseName },
+        { file, title: baseName, signal: abortController.signal },
         {
           onThought: text => {
             previousLine.value = currentLine.value
@@ -201,9 +208,14 @@
         },
       )
     } catch (error) {
-      extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // User cancelled by removing the file — not a failure, no message to show.
+      } else {
+        extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+      }
     } finally {
       extracting.value = false
+      abortController = null
     }
   }
 

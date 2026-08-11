@@ -34,14 +34,14 @@ export async function analyzeWorkflowFromPdf (params: {
 }
 
 export async function streamAnalyzeWorkflowFromPdf (
-  params: { file: File, title?: string },
+  params: { file: File, title?: string, signal?: AbortSignal },
   callbacks: {
     onThought: (text: string) => void
     onResult: (workflowJson: Record<string, unknown>) => void
     onError: (message: string) => void
   },
 ): Promise<void> {
-  const { file, title } = params
+  const { file, title, signal } = params
   const { onThought, onResult, onError } = callbacks
 
   const formData = new FormData()
@@ -51,6 +51,7 @@ export async function streamAnalyzeWorkflowFromPdf (
   const response = await fetch('/api/gemini/ai-analyze/stream', {
     method: 'POST',
     body: formData,
+    signal,
   })
 
   if (!response.ok || !response.body) {
