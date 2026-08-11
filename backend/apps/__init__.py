@@ -1,3 +1,4 @@
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -10,6 +11,9 @@ from extensions import db, login_manager
 
 def create_app() -> Flask:
     load_dotenv()
+
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO)
 
     app = Flask(__name__)
     max_content_length_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "100"))

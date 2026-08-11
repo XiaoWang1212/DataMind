@@ -9,7 +9,9 @@ function parseParagraphToContent (paragraphText: string): JSONContent[] {
   for (const token of tokens) {
     if (/^(?:\[\d+\])+$/.test(token)) {
       const firstDigits = token.match(/\d+/)?.[0]
-      if (!firstDigits) continue
+      if (!firstDigits) {
+        continue
+      }
       const citationId = `cite-${firstDigits}`
       const prev = nodes.at(-1)
 
@@ -85,4 +87,27 @@ export function transformArxivResultToPaperReport (result: ArxivGenerateResult, 
     citations: buildCitations(result),
     citationStyle: 'apa',
   }
+}
+
+function renderTextContent (node: JSONContent, citationIndex: Record<string, number>): string {
+  if (node.type === 'text') {
+    const citationId = node.marks?.find(mark => mark.type === 'citation')?.attrs?.citationId as string | undefined
+    const citationSuffix = citationId ? `[${citationIndex[citationId] ?? citationId}]` : ''
+    return (node.text ?? '') + citationSuffix
+  }
+  return (node.content ?? []).map(child => renderTextContent(child, citationIndex)).join('')
+}
+
+export function buildPaperText (report: PaperReport, citationIndex: Record<string, number>): string {
+  const lines: string[] = [`# ${report.title}`]
+
+  for (const node of report.content.content ?? []) {
+    if (node.type === 'heading') {
+      lines.push(`## ${renderTextContent(node, citationIndex)}`)
+    } else if (node.type === 'paragraph') {
+      lines.push(renderTextContent(node, citationIndex))
+    }
+  }
+
+  return lines.join('\n\n')
 }

@@ -137,70 +137,70 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
-  const router = useRouter()
-  const frameworkStore = useFrameworkStore()
-  const projectStore = useProjectStore()
-  const datasetInput = ref<HTMLInputElement | null>(null)
-  const currentStep = ref(0)
+const router = useRouter()
+const frameworkStore = useFrameworkStore()
+const projectStore = useProjectStore()
+const datasetInput = ref<HTMLInputElement | null>(null)
+const currentStep = ref(0)
 
-  const steps = [
-    { title: '專案設定', sub: '基本資訊' },
-    { title: '選擇框架', sub: '選擇研究框架' },
-    { title: '上傳資料集', sub: '對應您的資料' },
-    { title: '審閱並執行', sub: '確認並執行' },
-  ]
+const steps = [
+  { title: '專案設定', sub: '基本資訊' },
+  { title: '選擇框架', sub: '選擇研究框架' },
+  { title: '上傳資料集', sub: '對應您的資料' },
+  { title: '審閱並執行', sub: '確認並執行' },
+]
 
-  const form = ref({
-    name: '',
-    description: '',
-    frameworkId: null as number | null,
-    datasetFile: null as File | null,
+const form = ref({
+  name: '',
+  description: '',
+  frameworkId: null as number | null,
+  datasetFile: null as File | null,
+})
+
+const selectedFramework = computed(() =>
+  frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
+)
+
+function stepCircleClass(i: number): string {
+  if (i < currentStep.value) return 'step-circle--done'
+  if (i === currentStep.value) return 'step-circle--active'
+  return 'step-circle--inactive'
+}
+
+function handleDatasetChange(e: Event): void {
+  const input = e.target as HTMLInputElement
+  if (input.files?.[0]) form.value.datasetFile = input.files[0]
+}
+
+function handleDatasetDrop(e: DragEvent): void {
+  const file = e.dataTransfer?.files[0]
+  if (file) form.value.datasetFile = file
+}
+
+async function executeProject (): Promise<void> {
+  const project = await projectStore.addProject({
+    name: form.value.name || '未命名專案',
+    description: form.value.description,
+    frameworkId: form.value.frameworkId,
+    datasetName: form.value.datasetFile?.name ?? '',
+    variables: selectedFramework.value?.variables ?? 0,
   })
 
-  const selectedFramework = computed(() =>
-    frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
-  )
+  projectStore.setActiveContext({
+    projectId: project.id,
+    datasetFile: form.value.datasetFile,
+    frameworkId: form.value.frameworkId,
+  })
 
-  function stepCircleClass (i: number): string {
-    if (i < currentStep.value) return 'step-circle--done'
-    if (i === currentStep.value) return 'step-circle--active'
-    return 'step-circle--inactive'
+  // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
+  // 使用者在對齊頁按重新整理就會遺失。
+  // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
+  if (form.value.datasetFile) {
+    await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
   }
 
-  function handleDatasetChange (e: Event): void {
-    const input = e.target as HTMLInputElement
-    if (input.files?.[0]) form.value.datasetFile = input.files[0]
-  }
-
-  function handleDatasetDrop (e: DragEvent): void {
-    const file = e.dataTransfer?.files[0]
-    if (file) form.value.datasetFile = file
-  }
-
-  async function executeProject (): Promise<void> {
-    const project = await projectStore.addProject({
-      name: form.value.name || '未命名專案',
-      description: form.value.description,
-      frameworkId: form.value.frameworkId,
-      datasetName: form.value.datasetFile?.name ?? '',
-      variables: selectedFramework.value?.variables ?? 0,
-    })
-
-    projectStore.setActiveContext({
-      projectId: project.id,
-      datasetFile: form.value.datasetFile,
-      frameworkId: form.value.frameworkId,
-    })
-
-    // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
-    // 使用者在對齊頁按重新整理就會遺失。
-    // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
-    if (form.value.datasetFile) {
-      await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
-    }
-
-    router.push(`/hub/projects/${project.id}/mapping`)
-  }
+  router.push(`/hub/projects/${project.id}/mapping`)
+}
 </script>
 
 <style scoped>

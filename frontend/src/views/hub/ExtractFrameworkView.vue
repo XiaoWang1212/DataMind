@@ -39,7 +39,7 @@
         <div v-if="selectedFile" class="file-info">
           <v-icon color="#ef4444" icon="mdi-file-pdf-box" size="18" />
           <span class="file-name">{{ selectedFile.name }}</span>
-          <button class="file-remove" @click="selectedFile = null">
+          <button class="file-remove" @click="removeFile">
             <v-icon icon="mdi-close" size="15" />
           </button>
         </div>
@@ -50,10 +50,6 @@
         >
           開始提取
         </button>
-        <div v-if="extracting" class="extracting-indicator">
-          <v-progress-circular color="var(--color-accent)" indeterminate size="20" width="2" />
-          <span>正在提取框架...</span>
-        </div>
       </div>
 
       <!-- Result panel -->
@@ -101,6 +97,18 @@
           </template>
         </div>
       </div>
+
+      <!-- Thinking card (extraction in progress) — spans both columns -->
+      <div v-if="extracting" class="thinking-card">
+        <div class="thinking-header">
+          <span class="thinking-dot" />
+          AI 正在思考
+        </div>
+        <p v-if="previousLine" class="thinking-line thinking-line--prev">{{ previousLine }}</p>
+        <Transition mode="out-in" name="thinking-swap">
+          <p :key="currentLine" class="thinking-line thinking-line--current">{{ currentLine }}</p>
+        </Transition>
+      </div>
     </div>
   </div>
 </template>
@@ -108,7 +116,7 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
-  import { analyzeWorkflowFromPdf } from '@/api/gemini'
+  import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
   import { useFrameworkStore } from '@/store/frameworkStore'
 
   interface ExtractedFramework {
@@ -129,6 +137,13 @@
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
+  const currentLine = ref('')
+  const previousLine = ref('')
+  let abortController: AbortController | null = null
+
+  function stripMarkdownAsterisks (text: string): string {
+    return text.replace(/\*\*?/g, '')
+  }
 
   function handleFileChange (e: Event): void {
     const input = e.target as HTMLInputElement
@@ -141,41 +156,66 @@
     if (file && file.type === 'application/pdf') selectedFile.value = file
   }
 
+  function removeFile (): void {
+    if (extracting.value) abortController?.abort()
+    selectedFile.value = null
+  }
+
   async function startExtract (): Promise<void> {
     if (!selectedFile.value) return
     extracting.value = true
     extractedData.value = null
     extractError.value = null
+    currentLine.value = ''
+    previousLine.value = ''
+    abortController = new AbortController()
+
+    const file = selectedFile.value
+    const baseName = file.name.replace(/\.[^.]+$/, '')
 
     try {
-      const result = await analyzeWorkflowFromPdf({
-        file: selectedFile.value,
-        title: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-      })
+      await streamAnalyzeWorkflowFromPdf(
+        { file, title: baseName, signal: abortController.signal },
+        {
+          onThought: text => {
+            previousLine.value = currentLine.value
+            currentLine.value = stripMarkdownAsterisks(text)
+          },
+          onResult: result => {
+            const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
+              typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+            )
+            const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
+              (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+            )
+            const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
+              (s: unknown) => String((s as Record<string, unknown>).type ?? s),
+            )
 
-      const models = (Array.isArray(result.models) ? result.models : []).map((m: unknown) =>
-        typeof m === 'string' ? m : String((m as Record<string, unknown>).name ?? ''),
+            rawWorkflowJson.value = result
+            extractedData.value = {
+              name: baseName,
+              models,
+              preprocessing,
+              featureEngineering,
+              targetCol: String(result.target_col ?? result.targetCol ?? ''),
+              metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
+            }
+          },
+          onError: message => {
+            extractError.value = message
+          },
+        },
       )
-      const preprocessing = (Array.isArray(result.preprocessing) ? result.preprocessing : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-      const featureEngineering = (Array.isArray(result.featureEngineering) ? result.featureEngineering : []).map(
-        (s: unknown) => String((s as Record<string, unknown>).type ?? s),
-      )
-
-      rawWorkflowJson.value = result
-      extractedData.value = {
-        name: selectedFile.value.name.replace(/\.[^.]+$/, ''),
-        models,
-        preprocessing,
-        featureEngineering,
-        targetCol: String(result.target_col ?? result.targetCol ?? ''),
-        metrics: Array.isArray(result.metrics) ? result.metrics.map(String) : [],
-      }
     } catch (error) {
-      extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // User cancelled by removing the file — not a failure, no message to show.
+      } else {
+        extractError.value = error instanceof Error ? error.message : 'AI 分析失敗，請確認 PDF 是否正確'
+      }
     } finally {
       extracting.value = false
+      abortController = null
     }
   }
 
@@ -338,13 +378,86 @@
   background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
-.extracting-indicator {
+.thinking-card {
+  position: relative;
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: color-mix(in oklab, var(--color-accent) 4%, var(--color-surface));
+  overflow: hidden;
+  min-height: 3.4em;
+}
+
+.thinking-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: 12px;
+  background: linear-gradient(
+    120deg,
+    var(--color-accent),
+    color-mix(in oklab, var(--color-accent) 55%, var(--color-text)),
+    var(--color-accent)
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: thinking-gradient-move 3s ease infinite;
+}
+
+@keyframes thinking-gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.thinking-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: 8px;
+}
+
+.thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: .3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.thinking-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--color-secondary);
+  white-space: pre-wrap;
+}
+
+.thinking-line--prev {
+  font-size: 12.5px;
+  color: color-mix(in oklab, var(--color-secondary) 55%, var(--color-surface));
+  margin-bottom: 4px;
+}
+
+.thinking-swap-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.thinking-swap-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 /* ── Result zone ── */

@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request, stream_with_context
 from werkzeug.utils import secure_filename
 
 from services.gemini_service import AnalysisInput, GeminiService, truncate_content
@@ -158,3 +158,50 @@ def ai_analyze_paper():
         })
 
     return jsonify({"success": True, "result": result})
+
+
+@gemini_bp.post("/ai-analyze/stream")
+def ai_analyze_paper_stream():
+    """論文 PDF → 即時思考串流 + 最終 Workflow JSON（SSE）
+
+    僅支援 multipart/form-data PDF 上傳：
+    - `file`：PDF 檔案（必填）
+    - `title`：論文標題（選填）
+
+    回傳 text/event-stream，事件：
+    - event: thought  data: {"text": "..."}
+    - event: result   data: {"data": {...}}
+    - event: error    data: {"message": "..."}
+    """
+    try:
+        service = GeminiService()
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "PDF file is required"}), 400
+
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "No file selected"}), 400
+
+    ext = Path(file.filename).suffix.lower().lstrip(".")
+    if ext != "pdf":
+        return jsonify({"success": False, "error": "Only PDF is supported for streaming"}), 400
+
+    title = request.form.get("title", file.filename)
+    pdf_bytes = file.read()
+
+    if len(pdf_bytes) > MAX_PDF_BYTES:
+        return jsonify({
+            "success": False,
+            "error": f"PDF exceeds {MAX_PDF_BYTES // 1024 // 1024} MB limit for inline processing.",
+        }), 413
+
+    def _sse_events():
+        for event in service.analyze_pdf_stream(pdf_bytes, title=title):
+            event_type = event["type"]
+            payload = {k: v for k, v in event.items() if k != "type"}
+            yield f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
+
+    return Response(stream_with_context(_sse_events()), mimetype="text/event-stream")

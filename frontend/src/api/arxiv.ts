@@ -13,11 +13,17 @@ export interface ArxivSearchResult {
   candidates: ArxivCandidate[]
 }
 
-export async function searchArxivCandidates (miningResults: Record<string, unknown>): Promise<ArxivSearchResult> {
+export async function searchArxivCandidates (
+  miningResults: Record<string, unknown>,
+  userTitle?: string,
+): Promise<ArxivSearchResult> {
   const response = await fetch('/api/rag/arxiv/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mining_results: miningResults }),
+    body: JSON.stringify({
+      mining_results: miningResults,
+      ...(userTitle ? { user_title: userTitle } : {}),
+    }),
   })
 
   const result = (await response.json()) as Record<string, unknown>
@@ -90,4 +96,61 @@ export async function generateFromArxiv (params: {
   }
 
   return result.result as ArxivGenerateResult
+}
+
+export interface CriterionScore {
+  name: string
+  score: number
+  comment: string
+}
+
+export interface JournalScore {
+  journal: string
+  journalFullName: string
+  overallScore: number
+  overallComment: string
+  criteria: CriterionScore[]
+  suggestions: string[]
+}
+
+export interface ScorePaperResult {
+  journalScores: JournalScore[]
+  failedJournals: string[]
+}
+
+export async function scorePaper (paperText: string): Promise<ScorePaperResult> {
+  const response = await fetch('/api/rag/score-paper', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paper_text: paperText }),
+  })
+
+  const result = (await response.json()) as Record<string, unknown>
+  if (!response.ok || !result.success) {
+    throw new Error(result.error ? String(result.error) : `HTTP ${response.status}`)
+  }
+
+  const rawScores = Array.isArray(result.journal_scores)
+    ? result.journal_scores as Record<string, unknown>[]
+    : []
+
+  return {
+    journalScores: rawScores.map(js => ({
+      journal: String(js.journal ?? ''),
+      journalFullName: String(js.journal_full_name ?? ''),
+      overallScore: Number(js.overall_score ?? 0),
+      overallComment: String(js.overall_comment ?? ''),
+      criteria: Array.isArray(js.criteria)
+        ? (js.criteria as Record<string, unknown>[]).map(c => ({
+            name: String(c.name ?? ''),
+            score: Number(c.score ?? 0),
+            comment: String(c.comment ?? ''),
+          }))
+        : [],
+      suggestions: Array.isArray(js.suggestions) ? (js.suggestions as unknown[]).map(String) : [],
+    })),
+    failedJournals: Array.isArray(result.failed_journals)
+      ? (result.failed_journals as unknown[]).map(String)
+      : [],
+  }
 }

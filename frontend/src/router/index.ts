@@ -1,7 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/store/authStore";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+// Reachable even with an active session — e.g. a reset-password email link opened
+// in a browser tab where the user is still logged in from before.
+const ALWAYS_ACCESSIBLE_PATHS = ["/reset-password"];
 
 const devOnlyRoutes = import.meta.env.DEV
   ? [
@@ -32,6 +35,16 @@ const router = createRouter({
       component: () => import("@/views/RegisterView.vue"),
     },
     {
+      path: "/forgot-password",
+      name: "forgot-password",
+      component: () => import("@/views/ForgotPasswordView.vue"),
+    },
+    {
+      path: "/reset-password",
+      name: "reset-password",
+      component: () => import("@/views/ResetPasswordView.vue"),
+    },
+    {
       path: "/tutorial",
       name: "tutorial",
       component: () => import("@/views/TutorialPage.vue"),
@@ -56,6 +69,7 @@ const router = createRouter({
       name: "paper-sources",
       component: () => import("@/views/PaperSourcesView.vue"),
     },
+    // ── Research Hub ──
     {
       path: "/hub",
       component: () => import("@/layouts/HubLayout.vue"),
@@ -124,7 +138,7 @@ router.beforeEach(async to => {
     return "/login";
   }
 
-  if (isPublicPath && authStore.isAuthenticated) {
+  if (isPublicPath && authStore.isAuthenticated && !ALWAYS_ACCESSIBLE_PATHS.includes(to.path)) {
     return "/hub/dashboard";
   }
 });

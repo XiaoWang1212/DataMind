@@ -1,5 +1,16 @@
 <template>
   <div class="paper-editor">
+    <svg aria-hidden="true" class="glass-distort-filter-defs">
+      <defs>
+        <filter id="paper-editor-glass-distort" color-interpolation-filters="sRGB" height="100%" width="100%" x="0%" y="0%">
+          <feTurbulence baseFrequency="0.01 0.05" numOctaves="1" result="turbulence" seed="2" type="fractalNoise" />
+          <feGaussianBlur in="turbulence" result="blurredNoise" stdDeviation="2" />
+          <feDisplacementMap in="SourceGraphic" in2="blurredNoise" result="displaced" scale="12" xChannelSelector="R" yChannelSelector="B" />
+          <feGaussianBlur in="displaced" stdDeviation="0.5" />
+        </filter>
+      </defs>
+    </svg>
+
     <template v-if="editable">
       <div v-if="editor?.isActive('image')" class="editor-toolbar">
         <div class="toolbar-btn-wrap" data-tooltip="靠左對齊">
@@ -92,11 +103,13 @@
         </div>
         <div class="toolbar-btn-wrap" data-tooltip="刪除線">
           <v-btn
-            icon="mdi-format-strikethrough"
+            icon
             size="small"
             :variant="editor?.isActive('strike') ? 'tonal' : 'text'"
             @click="editor?.chain().focus().toggleStrike().run()"
-          />
+          >
+            <StrikethroughIcon />
+          </v-btn>
         </div>
         <v-menu :close-on-content-click="false" location="bottom">
           <template #activator="{ props: menuProps }">
@@ -232,40 +245,18 @@
             @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
           />
         </div>
-        <template v-if="editor?.isActive('table')">
-          <div class="toolbar-btn-wrap" data-tooltip="新增列">
-            <v-btn
-              icon="mdi-table-row-plus-after"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addRowAfter().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="刪除列">
-            <v-btn
-              icon="mdi-table-row-remove"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().deleteRow().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="新增欄">
-            <v-btn
-              icon="mdi-table-column-plus-after"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().addColumnAfter().run()"
-            />
-          </div>
-          <div class="toolbar-btn-wrap" data-tooltip="刪除欄">
-            <v-btn
-              icon="mdi-table-column-remove"
-              size="small"
-              variant="text"
-              @click="editor?.chain().focus().deleteColumn().run()"
-            />
-          </div>
-        </template>
+        <div
+          class="toolbar-btn-wrap"
+          :data-tooltip="hasVariableMapping ? '插入變數表格' : (mappingLoadError ? '無法載入欄位對應資料' : '尚未完成欄位對應')"
+        >
+          <v-btn
+            :disabled="!hasVariableMapping"
+            icon="mdi-table-account"
+            size="small"
+            variant="text"
+            @click="insertVariableTable"
+          />
+        </div>
         <div class="toolbar-btn-wrap" data-tooltip="插入圖片">
           <v-btn icon="mdi-image-plus" size="small" variant="text" @click="imageFileInputRef?.click()" />
         </div>
@@ -284,6 +275,100 @@
         <div class="toolbar-btn-wrap" data-tooltip="重做">
           <v-btn icon="mdi-redo" size="small" variant="text" @click="editor?.chain().focus().redo().run()" />
         </div>
+      </div>
+
+      <div v-if="editor?.isActive('table')" class="editor-table-toolbar">
+        <div class="toolbar-btn-wrap" data-tooltip="新增列（前）">
+          <v-btn
+            icon="mdi-table-row-plus-before"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addRowBefore().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增列（後）">
+          <v-btn
+            icon="mdi-table-row-plus-after"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addRowAfter().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除列">
+          <v-btn
+            icon="mdi-table-row-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteRow().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增欄（前）">
+          <v-btn
+            icon="mdi-table-column-plus-before"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addColumnBefore().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="新增欄（後）">
+          <v-btn
+            icon="mdi-table-column-plus-after"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().addColumnAfter().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除欄">
+          <v-btn
+            icon="mdi-table-column-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteColumn().run()"
+          />
+        </div>
+        <span class="toolbar-divider" />
+        <div v-if="editor?.can().mergeCells()" class="toolbar-btn-wrap" data-tooltip="合併儲存格">
+          <v-btn
+            icon="mdi-table-merge-cells"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().mergeCells().run()"
+          />
+        </div>
+        <div v-if="editor?.can().splitCell()" class="toolbar-btn-wrap" data-tooltip="拆分儲存格">
+          <v-btn
+            icon="mdi-table-split-cell"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().splitCell().run()"
+          />
+        </div>
+        <div class="toolbar-btn-wrap" data-tooltip="刪除表格">
+          <v-btn
+            icon="mdi-table-remove"
+            size="small"
+            variant="text"
+            @click="editor?.chain().focus().deleteTable().run()"
+          />
+        </div>
+        <v-menu location="bottom">
+          <template #activator="{ props: menuProps }">
+            <div class="toolbar-btn-wrap" data-tooltip="儲存格底色">
+              <v-btn icon="mdi-format-color-fill" size="small" variant="text" v-bind="menuProps" />
+            </div>
+          </template>
+          <v-card class="cell-color-menu-card">
+            <button
+              v-for="swatch in CELL_BACKGROUND_COLORS"
+              :key="swatch.label"
+              class="cell-color-swatch"
+              :style="{ backgroundColor: swatch.value ?? '#ffffff' }"
+              :title="swatch.label"
+              type="button"
+              @click="setCellBackgroundColor(swatch.value)"
+            />
+          </v-card>
+        </v-menu>
       </div>
     </template>
 
@@ -313,20 +398,14 @@
   import type { JSONContent } from '@tiptap/core'
   import type { Citation } from '@/constants/reportData'
   import { CharacterCount } from '@tiptap/extension-character-count'
-  import { Link } from '@tiptap/extension-link'
-  import { Subscript } from '@tiptap/extension-subscript'
-  import { Superscript } from '@tiptap/extension-superscript'
-  import { Table } from '@tiptap/extension-table'
-  import { TableCell } from '@tiptap/extension-table-cell'
-  import { TableHeader } from '@tiptap/extension-table-header'
-  import { TableRow } from '@tiptap/extension-table-row'
-  import { TextAlign } from '@tiptap/extension-text-align'
-  import { StarterKit } from '@tiptap/starter-kit'
   import { EditorContent, useEditor } from '@tiptap/vue-3'
-  import { ref, watch } from 'vue'
-  import { AlignableImage } from '@/components/paper/alignableImage'
-  import { CitationMark } from '@/components/paper/citationMark'
+  import { computed, onMounted, ref, watch } from 'vue'
+  import { getProject, type VariableMapping } from '@/api/project'
+  import { ColumnResizeBalance } from '@/components/paper/columnResizeBalance'
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
+  import { buildPaperContentExtensions } from '@/components/paper/paperExtensions'
+  import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
+  import '@/components/paper/paperContentTypography.css'
 
   const props = defineProps<{
     modelValue: JSONContent
@@ -338,6 +417,61 @@
   const chartDialogOpen = ref(false)
   const imageFileInputRef = ref<HTMLInputElement | null>(null)
   const linkUrlDraft = ref('')
+  const projectColumnMapping = ref<Record<string, VariableMapping>>({})
+  const mappingLoadError = ref(false)
+
+  function normalizeColumnMapping (raw: Record<string, VariableMapping | string> | null | undefined): Record<string, VariableMapping> {
+    const normalized: Record<string, VariableMapping> = {}
+    if (!raw) return normalized
+    for (const [key, value] of Object.entries(raw)) {
+      normalized[key] = typeof value === 'string'
+        ? { column: value, type: '' }
+        : { column: value?.column ?? '', type: value?.type ?? '' }
+    }
+    return normalized
+  }
+
+  onMounted(async () => {
+    if (!props.projectId) return
+    try {
+      const project = await getProject(Number(props.projectId))
+      projectColumnMapping.value = normalizeColumnMapping(project.columnMapping)
+    } catch {
+      projectColumnMapping.value = {}
+      mappingLoadError.value = true
+    }
+  })
+
+  const hasVariableMapping = computed(
+    () => Object.keys(projectColumnMapping.value).length > 0,
+  )
+
+  function escapeHtml (value: string): string {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+  }
+
+  function insertVariableTable () {
+    const rows = Object.entries(projectColumnMapping.value)
+      .map(([name, info]) => `<tr><td>${escapeHtml(name)}</td><td></td><td>${escapeHtml(info.type || '型態未指定')}</td></tr>`)
+      .join('')
+    const html = `<table><tbody><tr><th>變數名稱</th><th>定義</th><th>型別</th></tr>${rows}</tbody></table>`
+    editor.value?.chain().focus().insertContent(html).run()
+  }
+
+  const CELL_BACKGROUND_COLORS: { label: string, value: string | null }[] = [
+    { label: '橘', value: '#fdecd2' },
+    { label: '灰藍', value: '#e2e8f0' },
+    { label: '淡黃', value: '#fdf6b2' },
+    { label: '淡綠', value: '#dcf5e3' },
+    { label: '無', value: null },
+  ]
+
+  function setCellBackgroundColor (color: string | null) {
+    editor.value?.chain().focus().setCellAttribute('backgroundColor', color).run()
+  }
 
   function openLinkMenu () {
     linkUrlDraft.value = editor.value?.getAttributes('link').href ?? ''
@@ -382,20 +516,14 @@
 
   const editor = useEditor({
     content: props.modelValue,
-    editable: props.editable,
+    // 一律用 editable:true 建立編輯器：Table 擴充套件的欄位縮放功能（resizable）
+    // 只在建立當下判斷 editor.isEditable 決定要不要註冊，之後用 setEditable()
+    // 切換可編輯狀態不會補註冊。真正的可編輯狀態交給下面的 watch（immediate）同步。
+    editable: true,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      ...buildPaperContentExtensions(citationIndex),
       CharacterCount.configure({}),
-      Link.configure({ openOnClick: false, autolink: true }),
-      Superscript,
-      Subscript,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      AlignableImage.configure({ inline: false }),
-      CitationMark.configure({ citationIndex }),
+      ColumnResizeBalance,
     ],
     editorProps: {
       handleClick: (_view, _pos, event) => {
@@ -416,7 +544,7 @@
 
   watch(() => props.editable, value => {
     editor.value?.setEditable(value)
-  })
+  }, { immediate: true })
 
   watch(() => props.modelValue, value => {
     if (!editor.value) return
@@ -434,6 +562,14 @@
     gap: 10px;
   }
 
+  /* SVG 濾鏡定義本身不用顯示，但不能用 display:none（會讓部分瀏覽器連濾鏡本身都失效）。 */
+  .glass-distort-filter-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
   .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -441,13 +577,33 @@
     gap: 2px;
     padding: 8px 10px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 6px 20px rgba(28, 33, 48, 0.12);
+      inset 0 1px 1px rgba(255, 255, 255, 0.8),
+      inset 0 -3px 6px -2px rgba(28, 33, 48, 0.09),
+      0 2px 6px rgba(28, 33, 48, 0.06),
+      0 10px 28px rgba(28, 33, 48, 0.14);
+  }
+
+  .editor-table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--color-accent) 12%, rgba(255, 255, 255, 0.55));
+    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.8),
+      inset 0 -3px 6px -2px rgba(28, 33, 48, 0.09),
+      0 2px 6px rgba(28, 33, 48, 0.06),
+      0 10px 28px rgba(28, 33, 48, 0.14);
   }
 
   .toolbar-divider {
@@ -505,6 +661,24 @@
     gap: 6px;
   }
 
+  .cell-color-menu-card {
+    padding: 10px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .cell-color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(28, 33, 48, 0.15);
+    cursor: pointer;
+  }
+
+  .cell-color-swatch:hover {
+    border-color: rgba(28, 33, 48, 0.4);
+  }
+
   .editor-status-bar {
     font-size: 11px;
     color: var(--color-secondary);
@@ -512,69 +686,31 @@
     padding: 0 4px;
   }
 
-  :deep(.editor-content img) {
-    display: block;
-    max-width: 100%;
-    height: auto;
-  }
-
-  :deep(.editor-content img[data-align='left']) {
-    margin: 0 auto 0 0;
-  }
-
-  :deep(.editor-content img[data-align='center']) {
-    margin: 0 auto;
-  }
-
-  :deep(.editor-content img[data-align='right']) {
-    margin: 0 0 0 auto;
-  }
-
-  :deep(.editor-content) {
-    font-size: 13.5px;
-    line-height: 1.9;
-    color: var(--color-text);
-  }
-
   :deep(.editor-content .ProseMirror) {
     outline: none;
   }
 
-  :deep(.editor-content h1),
-  :deep(.editor-content h2),
-  :deep(.editor-content h3) {
-    margin: 0 0 10px;
-    font-weight: 700;
-    color: var(--color-text);
+  :deep(.editor-content .column-resize-handle) {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: -2px;
+    width: 4px;
+    background-color: var(--color-accent);
+    pointer-events: none;
   }
 
-  :deep(.editor-content p) {
-    margin: 0 0 12px;
-    text-align: justify;
-    text-indent: 2em;
+  :deep(.editor-content .ProseMirror.resize-cursor) {
+    cursor: col-resize;
   }
 
-  :deep(.editor-content table) {
-    border-collapse: collapse;
-    margin: 12px 0;
-  }
-
-  :deep(.editor-content th),
-  :deep(.editor-content td) {
-    border: 1px solid #d8dbe3;
-    padding: 6px 10px;
-  }
-
-  :deep(.citation-mark) {
-    background: #fdf0a8;
-    padding: 1px 2px;
-    border-radius: 3px;
-  }
-
-  :deep(.citation-mark::after) {
-    content: '[' attr(data-citation-number) ']';
-    font-size: 0.85em;
-    margin-left: 1px;
+  :deep(.editor-content th.selectedCell)::after,
+  :deep(.editor-content td.selectedCell)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+    pointer-events: none;
   }
 
   .editor-content--readonly :deep(.citation-mark) {

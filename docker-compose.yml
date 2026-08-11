@@ -7,7 +7,9 @@ services:
     env_file:
       - ./backend/.env
     ports:
-      - "5001:5001"
+      - "5002:5001"
+    depends_on:
+      - postgres
     environment:
       FLASK_HOST: 0.0.0.0
       FLASK_PORT: 5001
@@ -17,6 +19,7 @@ services:
       WHISPER_MODEL: base
       UPLOAD_DIR: uploads
       MAX_CONTENT_LENGTH_MB: 100
+      DATABASE_URL: postgresql://datamind:datamind@postgres:5432/datamind
     volumes:
       - ./backend:/app
       - backend_venv:/app/.venv
@@ -60,19 +63,23 @@ services:
       POSTGRES_PASSWORD: datamind
       POSTGRES_DB: datamind
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  adminer:
-    image: adminer:latest
-    container_name: datamind-adminer
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: datamind-pgadmin
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "5050:80"
     environment:
-      ADMINER_DEFAULT_SERVER: postgres
+      PGADMIN_DEFAULT_EMAIL: admin
+      PGADMIN_DEFAULT_PASSWORD: 123456
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
 
@@ -82,3 +89,4 @@ volumes:
   frontend_node_modules:
   backend_venv:
   postgres_data:
+  pgadmin_data:

@@ -44,6 +44,11 @@
         </button>
       </form>
 
+      <template v-if="hasGoogleClientId">
+        <div class="auth-divider"><span>或</span></div>
+        <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
+      </template>
+
       <p class="auth-switch">
         已經有帳號？<RouterLink to="/login">登入</RouterLink>
       </p>
@@ -54,7 +59,10 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
+  import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
   import { useAuthStore } from '@/store/authStore'
+
+  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -70,6 +78,19 @@
     isSubmitting.value = true
     try {
       await authStore.register(email.value, password.value, displayName.value)
+      router.push('/hub/dashboard')
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : '無法連線到伺服器，請稍後再試'
+    } finally {
+      isSubmitting.value = false
+    }
+  }
+
+  async function handleGoogleCredential (idToken: string): Promise<void> {
+    errorMessage.value = ''
+    isSubmitting.value = true
+    try {
+      await authStore.loginWithGoogle(idToken)
       router.push('/hub/dashboard')
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : '無法連線到伺服器，請稍後再試'
@@ -193,5 +214,27 @@
 
 .auth-switch a:hover {
   text-decoration: underline;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+
+.google-btn {
+  display: flex;
+  justify-content: center;
 }
 </style>

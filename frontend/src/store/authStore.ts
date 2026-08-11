@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   login as apiLogin,
+  loginWithGoogle as apiLoginWithGoogle,
   logout as apiLogout,
   register as apiRegister,
   type AuthUser,
@@ -34,10 +35,15 @@ export const useAuthStore = defineStore('auth', () => {
     await checkSession()
   }
 
+  async function loginWithGoogle (idToken: string): Promise<void> {
+    await apiLoginWithGoogle(idToken)
+    await checkSession()
+  }
+
   async function logout (): Promise<void> {
     await apiLogout()
     user.value = null
   }
 
-  return { user, isReady, isAuthenticated, checkSession, login, register, logout }
+  return { user, isReady, isAuthenticated, checkSession, login, register, loginWithGoogle, logout }
 })

@@ -157,25 +157,25 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { RouterLink } from 'vue-router'
-  import { useFrameworkStore } from '@/store/frameworkStore'
+import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useFrameworkStore } from '@/store/frameworkStore'
 
-  const store = useFrameworkStore()
-  const searchQuery = ref('')
-  const selectedId = ref<number | null>(null)
+const store = useFrameworkStore()
+const searchQuery = ref('')
+const selectedId = ref<number | null>(null)
 
-  const filteredFrameworks = computed(() => {
-    if (!searchQuery.value) return store.frameworks
-    const q = searchQuery.value.toLowerCase()
-    return store.frameworks.filter(
-      f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
-    )
-  })
-
-  const selectedFramework = computed(() =>
-    selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
+const filteredFrameworks = computed(() => {
+  if (!searchQuery.value) return store.frameworks
+  const q = searchQuery.value.toLowerCase()
+  return store.frameworks.filter(
+    f => f.title.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q),
   )
+})
+
+const selectedFramework = computed(() =>
+  selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
+)
 </script>
 
 <style scoped>

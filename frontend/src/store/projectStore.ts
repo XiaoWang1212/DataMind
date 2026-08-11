@@ -6,6 +6,11 @@ import { clearActiveJobIdFromStorage, loadWorkflowStateFromStorage } from '@/com
 
 const JOB_POLL_INTERVAL_MS = 2000
 
+export interface VariableMapping {
+  column: string
+  type: string
+}
+
 export interface Project {
   id: number
   name: string
@@ -18,8 +23,8 @@ export interface Project {
   accuracy?: string
   keyFinding?: string
   variables: number
-  /** 對映關係：{ 論文變數名: 使用者欄位名 }。供資料表面板顯示對照來源用。 */
-  columnMapping?: Record<string, string> | null
+  /** 對映關係：{ 論文變數名: { column: 使用者欄位名, type: 變數型別 } }。 */
+  columnMapping?: Record<string, VariableMapping> | null
 }
 
 export interface ActiveProjectContext {
@@ -144,7 +149,7 @@ export const useProjectStore = defineStore('project', () => {
    */
   async function saveColumnMapping (
     projectId: number,
-    mapping: Record<string, string>,
+    mapping: Record<string, VariableMapping>,
   ): Promise<void> {
     const variables = Object.keys(mapping).length
     const target = projects.value.find(p => p.id === projectId)

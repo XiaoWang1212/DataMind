@@ -25,7 +25,7 @@
             @update:model-value="onCitationStyleChange"
           />
           <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
-          <div class="edit-actions" :class="{ 'edit-actions--hidden': mode !== 'edit' }">
+          <div v-if="mode === 'edit'" class="edit-actions">
             <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
             <v-btn
               class="bg-accent"
@@ -38,9 +38,26 @@
               儲存
             </v-btn>
           </div>
+          <v-btn
+            class="score-btn"
+            :class="{ 'score-btn--loading': scoring }"
+            :disabled="scoring"
+            size="small"
+            variant="flat"
+            @click="handleScorePaper"
+          >
+            <template #prepend>
+              <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
+            </template>
+            {{ scoreButtonLabel }}
+          </v-btn>
         </div>
       </header>
 
+      <p v-if="scoreError" class="score-error">
+        {{ scoreError }}
+        <v-btn size="small" variant="text" @click="handleScorePaper">重試</v-btn>
+      </p>
       <p v-if="mode === 'edit' && !projectId" class="save-hint">
         此論文尚未關聯專案,無法儲存
       </p>
@@ -49,16 +66,32 @@
       <p v-if="loading" class="loading-hint">載入中...</p>
 
       <div v-else class="paper-body">
-        <article class="paper-sheet">
+        <article v-if="mode === 'view'" class="paper-sheet paper-sheet--paginated">
+          <PaginatedPaperView
+            :citation-style="report.citationStyle"
+            :citations="report.citations"
+            :content="report.content"
+            @citation-click="onCitationClick"
+          />
+        </article>
+        <article v-else class="paper-sheet paper-sheet--editing">
           <PaperEditor
             v-model="report.content"
             :citations="report.citations"
-            :editable="mode === 'edit'"
+            :editable="true"
             :project-id="projectId"
             @citation-click="onCitationClick"
           />
           <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" />
         </article>
+
+        <div class="paper-citations">
+          <JournalScorePanel
+            :journal-scores="journalScores"
+            :scoring="scoring"
+            @open-report="scoreDialogVisible = true"
+          />
+        </div>
       </div>
 
       <CitationPopover
@@ -68,6 +101,13 @@
         @close="activeCitationId = null"
       />
     </main>
+
+    <JournalScoreDialog
+      :failed-journals="failedJournals"
+      :journal-scores="journalScores"
+      :visible="scoreDialogVisible"
+      @close="scoreDialogVisible = false"
+    />
   </section>
 </template>
 
@@ -75,15 +115,20 @@
   import type { PaperReport } from '@/constants/reportData'
   import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { type JournalScore, scorePaper } from '@/api/arxiv'
   import { getReport, saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPopover from '@/components/paper/CitationPopover.vue'
+  import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
+  import JournalScorePanel from '@/components/paper/JournalScorePanel.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
+  import PaginatedPaperView from '@/components/paper/PaginatedPaperView.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
   import ReferencesSection from '@/components/paper/ReferencesSection.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
   import { citationStyleLabels } from '@/utils/paper/formatCitation'
+  import { buildPaperText } from '@/utils/paperTransform'
 
   const route = useRoute()
   const router = useRouter()
@@ -107,6 +152,25 @@
   )
 
   let savedSnapshot: PaperReport = mockPaperReport
+
+  const scoring = ref(false)
+  const scoreError = ref<string | null>(null)
+  const scoreDialogVisible = ref(false)
+  const journalScores = ref<JournalScore[]>([])
+  const failedJournals = ref<string[]>([])
+
+  const scoreButtonLabel = computed(() => {
+    if (scoring.value) return '評分中...'
+    return journalScores.value.length > 0 ? '再次評分' : '期刊評分'
+  })
+
+  const citationIndex = computed(() => {
+    const index: Record<string, number> = {}
+    for (const [i, citation] of report.value.citations.entries()) {
+      index[citation.id] = i + 1
+    }
+    return index
+  })
 
   onMounted(async () => {
     document.title = 'DataMind'
@@ -192,6 +256,22 @@
       saving.value = false
     }
   }
+
+  async function handleScorePaper (): Promise<void> {
+    scoring.value = true
+    scoreError.value = null
+    try {
+      const paperText = buildPaperText(report.value, citationIndex.value)
+      const result = await scorePaper(paperText)
+      journalScores.value = result.journalScores
+      failedJournals.value = result.failedJournals
+      scoreDialogVisible.value = true
+    } catch (error) {
+      scoreError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      scoring.value = false
+    }
+  }
 </script>
 
 <style scoped>
@@ -228,6 +308,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
     padding: 0 2px 10px;
     border-bottom: 1px solid var(--line-soft);
   }
@@ -250,6 +333,35 @@
     margin-left: auto;
   }
 
+  .score-btn {
+    background: #6f5613 !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  .score-btn :deep(.v-icon) {
+    color: #ffffff;
+  }
+
+  .score-btn.score-btn--loading {
+    background: #fffbe8 !important;
+    color: #8a6d1a !important;
+    border: 1px solid #c9ad2a;
+  }
+
+  .score-btn.score-btn--loading :deep(.v-icon) {
+    color: #8a6d1a;
+  }
+
+  .score-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 2px 0;
+    font-size: 12px;
+    color: #b91c1c;
+  }
+
   .citation-style-select {
     width: 92px;
   }
@@ -262,11 +374,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-  }
-
-  .edit-actions--hidden {
-    visibility: hidden;
-    pointer-events: none;
   }
 
   .save-hint {
@@ -291,19 +398,77 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    margin-top: 14px;
+    width: 100%;
+    max-width: 1100px;
+    gap: 24px;
+    margin: 14px auto 0;
     overflow: auto;
   }
 
   .paper-sheet {
     flex: 1;
     min-width: 0;
-    max-width: 760px;
-    margin: 0 auto;
     background: var(--card-bg);
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 28px 34px;
     height: fit-content;
+  }
+
+  .paper-citations {
+    width: 280px;
+    flex-shrink: 0;
+    margin-left: auto;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .paper-body:has(.paper-sheet--paginated) .paper-citations {
+    /* 對齊第一張 A4 頁面的頂端：.paginated-paper 有 24px 的上留白 */
+    top: 24px;
+  }
+
+  .paper-sheet--paginated {
+    max-width: none;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  /* 固定寬度、不可壓縮（flex:none），跟檢視模式 A4 頁面的內容區同寬：
+     794px 頁寬 − 1px×2 border − 96px×2 padding = 670px − 1px×2 border − 34px×2 padding
+     = 兩邊都是 600px 內容區，兩種模式排版一致（WYSIWYG）。
+     這條規則要放在下面 @media 區塊「之前」：往後若要在該 media query 裡疊加這個
+     class 的響應式覆寫，同權重下 CSS 一律看原始碼順序決定勝負，寫在後面的規則即使
+     沒被媒體查詢條件挑中也會贏過寫在前面、條件外的規則——把它放前面，媒體查詢裡的
+     覆寫才會如預期生效。 */
+  .paper-sheet--editing {
+    flex: none;
+    width: 670px;
+  }
+
+  /* .paper-sheet--editing 固定 670px、不可壓縮，跟 280px 評分面板、24px gap 並排
+     最少要 974px；再加上左側 210px 側欄跟 .paper-main 左右 40px padding，視窗寬度
+     低於 1224px 就會塞不下、觸發 .paper-body 的橫向捲軸。斷點抓 1240px 留一點餘裕，
+     讓 row 布局撐不下時能提早切成 column，避免橫向捲軸。 */
+  @media (max-width: 1240px) {
+    .paper-body {
+      flex-direction: column;
+    }
+
+    .paper-citations {
+      width: 100%;
+      position: static;
+      max-height: none;
+      overflow-y: visible;
+    }
   }
 </style>

@@ -58,3 +58,33 @@ export async function fetchCurrentUser (): Promise<AuthUser | null> {
   const result = await parseAuthResponse(response)
   return toAuthUser(result.result as Record<string, unknown>)
 }
+
+export async function loginWithGoogle (idToken: string): Promise<void> {
+  const response = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ idToken }),
+  })
+  await parseAuthResponse(response)
+}
+
+export async function forgotPassword (email: string): Promise<void> {
+  const response = await fetch('/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  })
+  await parseAuthResponse(response)
+}
+
+export async function resetPassword (token: string, password: string): Promise<void> {
+  const response = await fetch('/api/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ token, password }),
+  })
+  await parseAuthResponse(response)
+}

@@ -61,6 +61,16 @@ def create_project():
     return jsonify({"success": True, "result": _serialize_project(project)})
 
 
+@project_bp.route("/<int:project_id>", methods=["GET"])
+@login_required
+def get_project(project_id):
+    project = Project.query.get(project_id)
+    if not project or project.user_id != current_user.id:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
+    return jsonify({"success": True, "result": _serialize_project(project)})
+
+
 @project_bp.route("/<int:project_id>", methods=["PATCH"])
 @login_required
 def update_project(project_id):
