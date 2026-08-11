@@ -50,16 +50,6 @@
         >
           開始提取
         </button>
-        <div v-if="extracting" class="thinking-card">
-          <div class="thinking-header">
-            <span class="thinking-dot" />
-            AI 正在思考
-          </div>
-          <p v-if="previousLine" class="thinking-line thinking-line--prev">{{ previousLine }}</p>
-          <Transition mode="out-in" name="thinking-swap">
-            <p :key="currentLine" class="thinking-line thinking-line--current">{{ currentLine }}</p>
-          </Transition>
-        </div>
       </div>
 
       <!-- Result panel -->
@@ -106,6 +96,18 @@
             <button class="save-btn" @click="saveFramework">儲存框架</button>
           </template>
         </div>
+      </div>
+
+      <!-- Thinking card (extraction in progress) — spans both columns -->
+      <div v-if="extracting" class="thinking-card">
+        <div class="thinking-header">
+          <span class="thinking-dot" />
+          AI 正在思考
+        </div>
+        <p v-if="previousLine" class="thinking-line thinking-line--prev">{{ previousLine }}</p>
+        <Transition mode="out-in" name="thinking-swap">
+          <p :key="currentLine" class="thinking-line thinking-line--current">{{ currentLine }}</p>
+        </Transition>
       </div>
     </div>
   </div>
@@ -366,7 +368,8 @@
 
 .thinking-card {
   position: relative;
-  margin-top: 14px;
+  grid-column: 1 / -1;
+  margin-top: 6px;
   border-radius: 12px;
   padding: 16px 18px;
   background: color-mix(in oklab, var(--color-accent) 4%, var(--color-surface));
