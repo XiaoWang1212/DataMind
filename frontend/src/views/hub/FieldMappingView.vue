@@ -93,6 +93,7 @@
   import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
   import MappingChatPanel from '@/components/hub/fieldMapping/MappingChatPanel.vue'
   import MappingTable from '@/components/hub/fieldMapping/MappingTable.vue'
+  import { useMappingDraft } from '@/composables/fieldMapping/useMappingDraft'
   import {
     loadChatHistoryFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -111,7 +112,6 @@
 
   // Project.id 在資料庫裡是 int；useWorkflowStorage 的參數是字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
-  const draftKey = computed(() => `datamind_field_mapping_draft_${projectId.value}`)
 
   const loading = ref(true)
   const loadError = ref('')
@@ -138,6 +138,14 @@
   interface Snapshot { items: MappingItem[], locked: string[] }
   const undoStack = ref<Snapshot[]>([])
   const redoStack = ref<Snapshot[]>([])
+
+  const { saveDraft, loadDraft, clearDraft } = useMappingDraft({
+    projectId,
+    items,
+    locked,
+    aiAvailable,
+    userColumns,
+  })
 
   // 綠色的兩種：演算法有把握的，和使用者親自點過確認的
   const confirmedCount = computed(
@@ -284,60 +292,6 @@
     // 自己從下拉挑的就是已確認：標成「待確認」等於要他確認自己剛做的動作
     item.status = 'CONFIRMED'
     saveDraft()
-  }
-
-  /**
-   * 存編輯中的草稿。沒有它的話重新整理會把改過的全部沖掉，還會再打一次 Gemini。
-   * 真正的結果是按下「確認並執行」才寫進資料庫。
-   */
-  function saveDraft (): void {
-    if (!projectId.value) return
-    try {
-      localStorage.setItem(draftKey.value, JSON.stringify({
-        columns: columnSignature(),
-        items: items.value,
-        locked: [...locked.value],
-        aiAvailable: aiAvailable.value,
-      }))
-    } catch (error) {
-      console.warn('無法保存欄位對映草稿', error)
-    }
-  }
-
-  function loadDraft (): boolean {
-    try {
-      const raw = localStorage.getItem(draftKey.value)
-      if (!raw) return false
-      const saved = JSON.parse(raw) as {
-        columns?: string
-        items?: MappingItem[]
-        locked?: string[]
-        aiAvailable?: boolean
-      }
-      // 換了資料集就不能沿用舊草稿，裡面的欄位名已經對不上了
-      if (saved.columns !== columnSignature()) {
-        clearDraft()
-        return false
-      }
-      if (!Array.isArray(saved.items) || saved.items.length === 0) return false
-      items.value = saved.items
-      locked.value = new Set<string>(saved.locked)
-      // 沿用當初的可用狀態：寫死 true 的話，Gemini 掛掉時重整會讓離線提示消失、
-      // 輸入框又變成可打，送出才發現還是不通
-      aiAvailable.value = saved.aiAvailable ?? true
-      return true
-    } catch {
-      localStorage.removeItem(draftKey.value)
-      return false
-    }
-  }
-
-  function columnSignature (): string {
-    return userColumns.value.map(c => c.name).join('|')
-  }
-
-  function clearDraft (): void {
-    localStorage.removeItem(draftKey.value)
   }
 
   /** 被改動的列閃一下：沒有這個提示，使用者不知道剛才那一步改到了哪裡。 */
