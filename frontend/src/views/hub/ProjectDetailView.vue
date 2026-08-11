@@ -1,112 +1,127 @@
 <template>
-  <div>
-    <!-- Back link -->
-    <RouterLink class="back-link" to="/hub/projects">
-      <v-icon icon="mdi-arrow-left" size="15" />
-      返回專案
-    </RouterLink>
-
-    <!-- Page header -->
-    <div v-if="project" class="page-header">
-      <div class="title-row">
-        <h1 class="page-title">{{ project.name }}</h1>
-        <span class="badge" :class="`badge--${project.status}`">
-          {{ statusLabel[project.status] }}
-        </span>
-      </div>
-      <div class="framework-link">框架：{{ frameworkTitle }}</div>
-    </div>
-
-    <!-- Detail panels -->
-    <div v-if="project" class="detail-panels">
-      <!-- Analysis results -->
-      <div class="results-card">
-        <div class="card-title">分析結果</div>
-
-        <!-- Completed -->
-        <template v-if="project.status === 'completed'">
-          <div class="result-row">
-            <div class="result-label">模型準確率</div>
-            <div class="result-value large">{{ project.accuracy }}</div>
-          </div>
-          <div class="result-divider" />
-          <div class="result-row">
-            <div class="result-label">關鍵發現</div>
-            <div class="result-value">{{ project.keyFinding }}</div>
-          </div>
-          <div class="result-divider" />
-          <RouterLink class="view-result-btn" :to="`/hub/projects/${project.id}/result`">
-            查看完整結果
-            <v-icon icon="mdi-arrow-right" size="14" />
+  <div class="project-detail">
+    <template v-if="project">
+      <PageHeader :subtitle="`框架：${frameworkTitle}`" :title="project.name">
+        <template #back>
+          <RouterLink class="back-link" to="/hub/projects">
+            <v-icon icon="mdi-arrow-left" size="15" />
+            返回專案
           </RouterLink>
         </template>
+        <template #actions>
+          <StatusBadge :status="statusTone[project.status]">
+            {{ statusLabel[project.status] }}
+          </StatusBadge>
+        </template>
+      </PageHeader>
 
-        <!-- Running -->
-        <template v-else-if="project.status === 'running'">
-          <div class="running-state">
-            <v-progress-circular
-              color="#d97706"
-              indeterminate
-              size="52"
-              width="4"
-            />
-            <div class="running-text">分析進行中... {{ project.progress }}% 完成</div>
+      <!-- Detail panels -->
+      <div class="detail-panels">
+        <!-- Analysis results -->
+        <div class="results-card">
+          <div class="card-title">分析結果</div>
+
+          <!-- Completed -->
+          <template v-if="project.status === 'completed'">
+            <div class="result-row">
+              <div class="result-label">模型準確率</div>
+              <div class="result-value large">{{ project.accuracy }}</div>
+            </div>
+            <div class="result-divider" />
+            <div class="result-row">
+              <div class="result-label">關鍵發現</div>
+              <div class="result-value">{{ project.keyFinding }}</div>
+            </div>
+            <div class="result-divider" />
+            <RouterLink class="view-result-btn" :to="`/hub/projects/${project.id}/result`">
+              查看完整結果
+              <v-icon icon="mdi-arrow-right" size="14" />
+            </RouterLink>
+          </template>
+
+          <!-- Running -->
+          <template v-else-if="project.status === 'running'">
+            <div class="running-state">
+              <!-- 骨架屏佔住結果將來出現的位置，跑完換上真值時版面高度不跳 -->
+              <div class="detail-skeleton">
+                <div class="skeleton-line" style="width: 40%" />
+                <div class="skeleton-line" style="width: 70%" />
+                <div class="skeleton-line" style="width: 55%" />
+              </div>
+              <div class="running-text">分析進行中... {{ project.progress }}% 完成</div>
+            </div>
+          </template>
+
+          <!-- Draft -->
+          <template v-else>
+            <div class="draft-state">尚未執行此專案</div>
+          </template>
+
+          <!-- Open in Workflow button -->
+          <div class="open-workflow-wrap">
+            <AppButton variant="primary" @click="openInWorkflow">
+              <v-icon :icon="needsMapping ? 'mdi-table-arrow-right' : 'mdi-sitemap-outline'" size="16" />
+              {{ needsMapping ? '繼續欄位對齊' : '在 Workflow 中開啟' }}
+            </AppButton>
           </div>
-        </template>
+        </div>
 
-        <!-- Draft -->
-        <template v-else>
-          <div class="draft-state">尚未執行此專案</div>
-        </template>
-
-        <!-- Open in Workflow button -->
-        <div class="open-workflow-wrap">
-          <button class="open-workflow-btn" @click="openInWorkflow">
-            <v-icon :icon="needsMapping ? 'mdi-table-arrow-right' : 'mdi-sitemap-outline'" size="16" />
-            {{ needsMapping ? '繼續欄位對齊' : '在 Workflow 中開啟' }}
-          </button>
+        <!-- Project info -->
+        <div class="info-card">
+          <div class="card-title">專案資訊</div>
+          <div class="info-row">
+            <div class="info-label">建立時間</div>
+            <div class="info-value">{{ project.date }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">資料集</div>
+            <div class="info-value">{{ project.datasetName || '（未上傳）' }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">變數</div>
+            <div class="info-value">{{ project.variables }} 個已對應</div>
+          </div>
         </div>
       </div>
-
-      <!-- Project info -->
-      <div class="info-card">
-        <div class="card-title">專案資訊</div>
-        <div class="info-row">
-          <div class="info-label">建立時間</div>
-          <div class="info-value">{{ project.date }}</div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">資料集</div>
-          <div class="info-value">{{ project.datasetName || '（未上傳）' }}</div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">變數</div>
-          <div class="info-value">{{ project.variables }} 個已對應</div>
-        </div>
-      </div>
-    </div>
+    </template>
 
     <!-- Not found -->
-    <div v-else class="not-found">找不到該專案</div>
+    <template v-else>
+      <RouterLink class="back-link back-link--standalone" to="/hub/projects">
+        <v-icon icon="mdi-arrow-left" size="15" />
+        返回專案
+      </RouterLink>
+      <div class="not-found">找不到該專案</div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import StatusBadge from '@/components/ui/StatusBadge.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
-  import { useProjectStore } from '@/store/projectStore'
+  import { type Project, useProjectStore } from '@/store/projectStore'
 
   const route = useRoute()
   const router = useRouter()
   const store = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
-const statusLabel: Record<string, string> = {
-  completed: '已完成',
-  running: '進行中',
-  draft: '草稿',
-}
+  const statusLabel: Record<Project['status'], string> = {
+    completed: '已完成',
+    running: '進行中',
+    draft: '草稿',
+  }
+
+  // 與專案列表用同一組對應，同一個狀態在兩處長得一樣
+  const statusTone: Record<Project['status'], 'success' | 'warning' | 'neutral'> = {
+    completed: 'success',
+    running: 'warning',
+    draft: 'neutral',
+  }
 
   const project = computed(() =>
     store.projects.find(p => p.id === Number(route.params.id)),
@@ -138,208 +153,164 @@ const statusLabel: Record<string, string> = {
 </script>
 
 <style scoped>
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--color-secondary);
-  text-decoration: none;
-  margin-bottom: 20px;
-  transition: color 0.12s;
-}
+  .project-detail {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.back-link:hover {
-  color: var(--color-text);
-}
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    /* 對齊 22px 標題的第一行中線 */
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
 
-.page-header {
-  margin-bottom: 24px;
-}
+  .back-link:hover {
+    color: var(--color-ink);
+  }
 
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
+  .back-link--standalone {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-}
+  /* ── Panels ── */
+  .detail-panels {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+  }
 
-.badge {
-  font-size: 12.5px;
-  font-weight: 500;
-  padding: 3px 10px;
-  border-radius: 99px;
-}
+  .results-card,
+  .info-card {
+    padding: 22px 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
 
-.badge--completed {
-  background: #dbeafe;
-  color: #2347c5;
-}
+  .card-title {
+    margin-bottom: 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.badge--running {
-  background: #fef3c7;
-  color: #d97706;
-}
+  /* ── Results ── */
+  .result-row {
+    padding: 14px 0;
+  }
 
-.badge--draft {
-  background: #f3f4f6;
-  color: var(--color-secondary);
-}
+  .result-divider {
+    height: 1px;
+    background: var(--color-border);
+  }
 
-.framework-link {
-  font-size: 13px;
-  color: var(--color-accent);
-}
+  .result-label {
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-/* ── Panels ── */
-.detail-panels {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 20px;
-  align-items: start;
-}
+  .result-value {
+    font-size: 14px;
+    color: var(--color-text);
+  }
 
-.results-card,
-.info-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 22px 24px;
-}
+  /* 準確率是這頁唯一的展示型數字，用藏青當視覺錨點 */
+  .result-value.large {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--color-ink);
+  }
 
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 20px;
-}
+  .view-result-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
 
-/* ── Results ── */
-.result-row {
-  padding: 14px 0;
-}
+  .view-result-btn:hover {
+    color: var(--color-ink-strong);
+  }
 
-.result-divider {
-  height: 1px;
-  background: #f0f1f3;
-}
+  /* ── Running state ── */
+  .running-state {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+  }
 
-.result-label {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  margin-bottom: 6px;
-}
+  .detail-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.result-value {
-  font-size: 14px;
-  color: var(--color-text);
-}
+  .running-text {
+    font-size: 14px;
+    color: var(--color-ink-soft);
+  }
 
-.result-value.large {
-  font-size: 30px;
-  font-weight: 700;
-}
+  /* ── Draft state ── */
+  .draft-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    font-size: 14px;
+    color: var(--color-ink-soft);
+  }
 
-.view-result-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-top: 14px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--color-accent);
-  text-decoration: none;
-}
+  /* ── Open workflow button ── */
+  .open-workflow-wrap {
+    margin-top: 4px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+  }
 
-.view-result-btn:hover {
-  color: color-mix(in oklab, var(--color-accent) 85%, black);
-}
+  /* ── Project info ── */
+  .info-row {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
 
-/* ── Running state ── */
-.running-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 32px 0;
-}
+  .info-row:last-child {
+    border-bottom: none;
+  }
 
-.running-text {
-  font-size: 14px;
-  color: var(--color-secondary);
-}
+  .info-label {
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-/* ── Draft state ── */
-.draft-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-  font-size: 14px;
-  color: var(--color-secondary);
-}
+  .info-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-/* ── Open workflow button ── */
-.open-workflow-wrap {
-  padding-top: 20px;
-  margin-top: 4px;
-  border-top: 1px solid #f0f1f3;
-}
-
-.open-workflow-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 18px;
-  height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.open-workflow-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
-
-/* ── Project info ── */
-.info-row {
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f1f3;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-label {
-  font-size: 12px;
-  color: var(--color-secondary);
-  margin-bottom: 4px;
-}
-
-.info-value {
-  font-size: 13.5px;
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-/* ── Not found ── */
-.not-found {
-  text-align: center;
-  padding: 48px;
-  color: var(--color-secondary);
-  font-size: 14px;
-}
+  /* ── Not found ── */
+  .not-found {
+    padding: 48px;
+    font-size: 14px;
+    text-align: center;
+    color: var(--color-ink-soft);
+  }
 </style>
