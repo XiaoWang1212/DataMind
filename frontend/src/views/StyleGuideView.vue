@@ -35,12 +35,12 @@
     </section>
 
     <section>
-      <h2 class="sg-h2">按鈕（Vuetify 內建色，尚未套邊緣反光 hover）</h2>
+      <h2 class="sg-h2">按鈕（§7.1：四種變體、pill 形狀，尚未套邊緣反光 hover）</h2>
       <div class="sg-row">
-        <v-btn color="primary">primary</v-btn>
-        <v-btn color="secondary" variant="tonal">secondary</v-btn>
-        <v-btn variant="text">ghost</v-btn>
-        <v-btn color="error" variant="tonal">danger</v-btn>
+        <button class="sg-btn sg-btn--primary" type="button">primary</button>
+        <button class="sg-btn sg-btn--secondary" type="button">secondary</button>
+        <button class="sg-btn sg-btn--ghost" type="button">ghost</button>
+        <button class="sg-btn sg-btn--danger" type="button">danger</button>
       </div>
     </section>
 
@@ -174,6 +174,43 @@
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-ink-soft);
+}
+
+/* §7.1：pill 形狀、四種變體只差底色/文字色、:active 統一 scale(0.96) */
+.sg-btn {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.sg-btn:active {
+  transform: scale(0.96);
+}
+
+.sg-btn--primary {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.sg-btn--secondary {
+  /* 白底放在白/淺底頁面上邊界不清，加一條非彩色 hairline 界定範圍 */
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+}
+
+.sg-btn--ghost {
+  background: transparent;
+  color: var(--color-ink-soft);
+}
+
+.sg-btn--danger {
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .sg-badge {
