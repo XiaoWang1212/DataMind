@@ -117,7 +117,9 @@ def _format_pending(items: list[dict]) -> str:
     lines = []
     for item in items:
         required_type = item.get("required_type") or "未指定"
-        lines.append(f"- {item['paper_variable']}（需要型態：{required_type}）")
+        definition = item.get("definition")
+        suffix = f"；定義：{definition}" if definition else ""
+        lines.append(f"- {item['paper_variable']}（需要型態：{required_type}{suffix}）")
     return "\n".join(lines)
 
 

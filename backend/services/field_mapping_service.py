@@ -215,6 +215,7 @@ def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> d
             "is_target": is_target,
             # target 一律視為必要，不管呼叫端傳什麼
             "required": True if is_target else bool(raw.get("required", True)),
+            "definition": str(raw.get("definition") or "").strip() or None,
             "candidates": _score_candidates(name, required_type, columns),
         })
 
@@ -265,6 +266,7 @@ def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> d
                 if status == UNMATCHED
                 else []
             ),
+            "definition": variable["definition"],
         })
 
     return {
