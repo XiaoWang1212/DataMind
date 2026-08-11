@@ -68,14 +68,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  adminer:
-    image: adminer:latest
-    container_name: datamind-adminer
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: datamind-pgadmin
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "5050:80"
     environment:
-      ADMINER_DEFAULT_SERVER: postgres
+      PGADMIN_DEFAULT_EMAIL: admin
+      PGADMIN_DEFAULT_PASSWORD: 123456
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
 
@@ -85,3 +89,4 @@ volumes:
   frontend_node_modules:
   backend_venv:
   postgres_data:
+  pgadmin_data:
