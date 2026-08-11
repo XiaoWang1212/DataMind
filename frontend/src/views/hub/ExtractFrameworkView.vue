@@ -1,16 +1,13 @@
 <template>
   <div>
-    <!-- Back link -->
-    <RouterLink class="back-link" to="/hub/library">
-      <v-icon icon="mdi-arrow-left" size="15" />
-      返回框架庫
-    </RouterLink>
-
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">從論文提取框架</h1>
-      <p class="page-sub">上傳研究論文以自動提取方法論</p>
-    </div>
+    <PageHeader subtitle="上傳研究論文以自動提取方法論" title="從論文提取框架">
+      <template #back>
+        <RouterLink class="back-link" to="/hub/library">
+          <v-icon icon="mdi-arrow-left" size="15" />
+          返回框架庫
+        </RouterLink>
+      </template>
+    </PageHeader>
 
     <!-- Content panels -->
     <div class="panels">
@@ -37,19 +34,25 @@
           >
         </div>
         <div v-if="selectedFile" class="file-info">
-          <v-icon color="#ef4444" icon="mdi-file-pdf-box" size="18" />
+          <v-icon class="file-icon" icon="mdi-file-pdf-box" size="18" />
           <span class="file-name">{{ selectedFile.name }}</span>
-          <button class="file-remove" @click="removeFile">
+          <AppButton
+            aria-label="移除檔案"
+            class="file-remove"
+            icon-only
+            variant="ghost"
+            @click="removeFile"
+          >
             <v-icon icon="mdi-close" size="15" />
-          </button>
+          </AppButton>
         </div>
-        <button
+        <AppButton
           v-if="selectedFile && !extracting"
           class="extract-btn"
           @click="startExtract"
         >
           開始提取
-        </button>
+        </AppButton>
       </div>
 
       <!-- Result panel -->
@@ -93,7 +96,7 @@
                 <span v-for="m in extractedData.metrics" :key="m" class="result-tag result-tag--indigo">{{ m }}</span>
               </div>
             </div>
-            <button class="save-btn" @click="saveFramework">儲存框架</button>
+            <AppButton class="save-btn" variant="secondary" @click="saveFramework">儲存框架</AppButton>
           </template>
         </div>
       </div>
@@ -117,6 +120,8 @@
   import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
 
   interface ExtractedFramework {
@@ -242,36 +247,21 @@
 </script>
 
 <style scoped>
+/* 標題左側的返回鈕。PageHeader 的 lead 是 flex-start 對齊，補 margin 讓它與 22px 標題視覺齊平 */
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  margin-top: 4px;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   text-decoration: none;
-  margin-bottom: 20px;
-  transition: color 0.12s;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .back-link:hover {
   color: var(--color-text);
-}
-
-.page-header {
-  margin-bottom: 28px;
-}
-
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 5px;
-}
-
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
 }
 
 /* ── Panels ── */
@@ -284,107 +274,99 @@
 
 .panel-label {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
   margin-bottom: 12px;
 }
 
 /* ── Drop zone ── */
 .drop-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 10px;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
   padding: 48px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  background: #ffffff;
-  transition: border-color 0.15s, background 0.15s;
+  background: var(--color-surface);
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 .drop-zone:hover,
 .drop-zone--over {
-  border-color: var(--color-accent);
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+  border-color: var(--color-ink);
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
 }
 
 .drop-icon {
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   margin-bottom: 4px;
 }
 
 .drop-text {
   font-size: 14px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   font-weight: 500;
 }
 
 .drop-hint {
-  font-size: 12.5px;
-  color: var(--color-secondary);
+  font-size: 12px;
+  color: var(--color-ink-soft);
 }
 
 /* ── File info ── */
+/* 右側留窄 padding 讓 28px 的移除鈕塞得進去，整列高度維持原樣 */
 .file-info {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 12px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
+  padding: 6px 8px 6px 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.file-icon {
+  color: var(--color-error);
 }
 
 .file-name {
   flex: 1;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.file-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-secondary);
-  display: flex;
-  align-items: center;
+/* 縮小 AppButton 的 icon-only 尺寸，選一組壓得過元件內部規則的選擇器 */
+.file-info .file-remove {
+  width: 28px;
+  height: 28px;
   padding: 0;
+  flex-shrink: 0;
 }
 
-.file-remove:hover {
-  color: #ef4444;
+.file-info .file-remove:hover:not(:disabled) {
+  color: var(--color-error);
 }
 
 .extract-btn {
   margin-top: 14px;
   width: 100%;
   height: 40px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.extract-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
 }
 
 .thinking-card {
   position: relative;
   grid-column: 1 / -1;
   margin-top: 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 16px 18px;
-  background: color-mix(in oklab, var(--color-accent) 4%, var(--color-surface));
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-surface));
   overflow: hidden;
   min-height: 3.4em;
 }
@@ -394,15 +376,15 @@
   position: absolute;
   inset: 0;
   padding: 1.5px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: linear-gradient(
     120deg,
-    var(--color-accent),
-    color-mix(in oklab, var(--color-accent) 55%, var(--color-text)),
-    var(--color-accent)
+    var(--color-ink),
+    color-mix(in oklab, var(--color-ink) 55%, var(--color-text)),
+    var(--color-ink)
   );
   background-size: 300% 300%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: thinking-gradient-move 3s ease infinite;
@@ -418,9 +400,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink);
   margin-bottom: 8px;
 }
 
@@ -428,7 +410,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--color-ink);
   animation: thinking-pulse 1.2s ease-in-out infinite;
 }
 
@@ -441,13 +423,13 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.7;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   white-space: pre-wrap;
 }
 
 .thinking-line--prev {
-  font-size: 12.5px;
-  color: color-mix(in oklab, var(--color-secondary) 55%, var(--color-surface));
+  font-size: 12px;
+  color: color-mix(in oklab, var(--color-ink-soft) 55%, var(--color-surface));
   margin-bottom: 4px;
 }
 
@@ -462,9 +444,9 @@
 
 /* ── Result zone ── */
 .result-zone {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   min-height: 200px;
   padding: 24px;
   display: flex;
@@ -473,25 +455,26 @@
 }
 
 .result-placeholder {
-  color: var(--color-secondary);
-  font-size: 13.5px;
+  color: var(--color-ink-soft);
+  font-size: 13px;
   margin: auto;
   text-align: center;
 }
 
+/* 邊框從 error 調出來而不是直接用 -bg，否則會跟自己的底色同色而看不見 */
 .result-error {
-  color: #ef4444;
+  color: var(--color-error-text);
   font-size: 13px;
   font-weight: 500;
   padding: 10px 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 7px;
+  background: var(--color-error-bg);
+  border: 1px solid color-mix(in oklab, var(--color-error) 25%, transparent);
+  border-radius: var(--radius-sm);
 }
 
 .result-field-label {
   font-size: 12px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   margin-bottom: 6px;
 }
 
@@ -508,39 +491,28 @@
   gap: 6px;
 }
 
+/* 三種標籤原本是三個色系，改成同一支藏青的三個深淺 — 這些分類沒有狀態語意，不該各佔一個顏色 */
 .result-tag {
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: color-mix(in oklab, var(--color-ink) 10%, white);
+  color: var(--color-ink-strong);
 }
 
 .result-tag--gray {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-surface-alt);
+  color: var(--color-text);
 }
 
 .result-tag--indigo {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: color-mix(in oklab, var(--color-ink) 16%, white);
+  color: var(--color-ink-strong);
 }
 
 .save-btn {
   margin-top: 4px;
-  height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.save-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
+  height: 40px;
 }
 </style>
