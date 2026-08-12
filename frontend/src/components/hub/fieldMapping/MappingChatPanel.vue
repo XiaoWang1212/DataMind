@@ -1,5 +1,5 @@
 <template>
-  <aside class="mapping-chat">
+  <aside class="mapping-chat glass-panel">
     <div class="chat-head">
       <div class="chat-head-icon">
         <v-icon icon="mdi-chat-processing-outline" size="18" />
@@ -18,15 +18,16 @@
       <div v-if="!loading && available" class="chat-bubble chat-bubble--assistant chat-bubble--opener">
         {{ CHAT_OPENER }}
       </div>
+      <!-- enter-rise 掛在氣泡本身：每則訊息是一個新元素，動畫只會跑一次 -->
       <div
         v-for="(message, i) in history"
         :key="i"
-        class="chat-bubble"
+        class="chat-bubble enter-rise"
         :class="`chat-bubble--${message.role}`"
       >
         {{ message.content }}
       </div>
-      <div v-if="pending" class="chat-bubble chat-bubble--assistant chat-bubble--pending">
+      <div v-if="pending" class="chat-bubble chat-bubble--assistant chat-bubble--pending enter-rise">
         思考中…
       </div>
     </div>
@@ -42,13 +43,13 @@
         @input="autoGrow"
         @keydown="onFieldKeydown"
       />
-      <button
+      <AppButton
         class="chat-send"
         :disabled="!available || pending || !draft.trim()"
         type="submit"
       >
         送出
-      </button>
+      </AppButton>
     </form>
   </aside>
 </template>
@@ -56,6 +57,7 @@
 <script setup lang="ts">
   import type { ChatMessage } from '@/types/fieldMapping'
   import { nextTick, ref, watch } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
 
   const props = defineProps<{
     history: ChatMessage[]
@@ -116,14 +118,13 @@
 </script>
 
 <style scoped>
+  /* 底色、邊框、圓角、陰影由 .glass-panel 提供。scoped 樣式不在 CSS layer 內、
+     優先權高於 glass.css，在這裡重寫任何一項都會蓋掉玻璃 */
   .mapping-chat {
     display: flex;
     flex-direction: column;
     /* 跟著視窗高度走，小螢幕不會被擠到要捲，大螢幕不會留一大片空白 */
     height: clamp(420px, calc(100vh - 190px), 720px);
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    background: #fff;
     overflow: hidden;
   }
 
@@ -134,9 +135,9 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border-radius: 8px;
-    background: #eef1ff;
-    color: var(--color-accent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--color-ink) 8%, white);
+    color: var(--color-ink);
   }
 
   .chat-head {
@@ -144,18 +145,18 @@
     align-items: center;
     gap: 8px;
     padding: 14px 16px;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid var(--color-border);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-text);
   }
 
   .chat-offline {
     padding: 10px 16px;
-    background: #fffbeb;
-    border-bottom: 1px solid #fde68a;
+    background: var(--color-warning-bg);
+    border-bottom: 1px solid var(--color-warning-bg);
     font-size: 12px;
-    color: #b45309;
+    color: var(--color-warning-text);
   }
 
   .chat-body {
@@ -171,7 +172,7 @@
   .chat-bubble {
     max-width: 88%;
     padding: 10px 14px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     font-size: 13px;
     line-height: 1.55;
     white-space: pre-wrap;
@@ -190,13 +191,13 @@
   }
 
   .chat-bubble--pending {
-    color: #94a3b8;
+    color: var(--color-ink-soft);
   }
 
   .chat-bubble--opener {
     align-self: flex-start;
-    background: var(--color-background);
-    color: var(--color-secondary);
+    background: var(--color-surface-alt);
+    color: var(--color-ink-soft);
   }
 
   .chat-input {
@@ -204,7 +205,7 @@
     align-items: flex-end;
     gap: 8px;
     padding: 12px 14px;
-    border-top: 1px solid #e8e8e8;
+    border-top: 1px solid var(--color-border);
   }
 
   .chat-field {
@@ -212,8 +213,9 @@
     min-width: 0;
     max-height: 118px;
     padding: 8px 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
     font-size: 13px;
     font-family: inherit;
     line-height: 1.5;
@@ -222,29 +224,11 @@
   }
 
   .chat-field:disabled {
-    background: var(--color-background);
+    background: var(--color-surface-alt);
   }
 
   .chat-send {
     flex-shrink: 0;
-    padding: 0 16px;
     height: 36px;
-    border: none;
-    border-radius: 7px;
-    background: var(--color-accent);
-    color: #ffffff;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .chat-send:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--color-accent) 85%, black);
-  }
-
-  .chat-send:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
   }
 </style>
