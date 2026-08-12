@@ -70,24 +70,17 @@
     padding: 8px;
   }
 
-  /* 反光只顯示在 1px 邊框上：外層漸層減掉 content-box，剩下 padding 那圈。
-     用 conic-gradient 而不是游標位置的光斑 —— 這是「光從某個角度照過來」，
-     所以朝光與背光的兩條邊會同時反光，像真的鏡面。角度由 JS 每幀寫入 --sb-angle */
+  /* 反光只顯示在 1px 邊框上：外層漸層減掉 content-box，剩下 padding 那圈 */
   .app-btn::after {
     content: '';
     position: absolute;
     inset: 0;
     padding: 1px;
     border-radius: inherit;
-    background: conic-gradient(
-      from calc(var(--sb-angle, 0deg) - 90deg),
-      var(--specular-color) 0deg,
-      transparent 26deg,
-      transparent 154deg,
-      var(--specular-color) 180deg,
-      transparent 206deg,
-      transparent 334deg,
-      var(--specular-color) 360deg
+    background: radial-gradient(
+      110px circle at var(--mx, 50%) var(--my, 50%),
+      var(--specular-color),
+      transparent 60%
     );
     opacity: var(--glow, 0);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -95,8 +88,8 @@
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     pointer-events: none;
-    /* 刻意不加 transition：角度與亮度每幀都在變，再疊轉場會讓反光拖在游標後面。
-       平滑已經在 composable 裡用指數插值做掉了 */
+    /* 刻意不加 transition：--glow 每幀都在變，再疊轉場會讓反光拖在滑鼠後面。
+       proximity 本身就是平滑漸變 */
   }
 
   /* 深底用白光、淺底用藏青光，否則反光在自己的底色上看不見 */
