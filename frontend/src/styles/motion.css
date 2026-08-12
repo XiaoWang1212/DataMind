@@ -21,18 +21,17 @@
     to { opacity: 1; transform: none; }
   }
 
-  /* 載入用骨架屏而非空白轉圈，維持版面穩定 */
+  /* 底色壓深、亮帶用純白，兩者要有足夠明度差，掃光才看得出來 */
   .skeleton-line {
     height: 1em;
     border-radius: var(--radius-sm);
     background: linear-gradient(
       90deg,
-      var(--color-surface-alt) 0%,
-      color-mix(in oklab, var(--color-surface-alt) 60%, white) 50%,
-      var(--color-surface-alt) 100%
+      color-mix(in oklab, var(--color-ink) 10%, white) 0%,
+      #fff 50%,
+      color-mix(in oklab, var(--color-ink) 10%, white) 100%
     );
     background-size: 200% 100%;
-    /* 等速掃光用 linear：ease 會在兩端頓一下。掃快一點也讓載入感覺比較短 */
     animation: skeleton-sweep 1.2s linear infinite;
   }
 

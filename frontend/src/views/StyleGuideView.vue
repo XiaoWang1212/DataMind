@@ -114,6 +114,30 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">下拉選單（§5.3）</h2>
+      <div class="sg-on-card">
+        <CustomSelect
+          v-model="selectValue"
+          aria-label="範例下拉選單"
+          :options="selectOptions"
+          placeholder="選擇對應欄位"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">對話氣泡（§2.2）</h2>
+      <div class="glass-panel sg-chat">
+        <div class="sg-bubble sg-bubble--assistant">
+          我可以協助調整左側的欄位對應，請直接以文字說明您的需求。
+        </div>
+        <div class="sg-bubble sg-bubble--user">年齡對應到 pt_age</div>
+        <div class="sg-bubble sg-bubble--assistant">好的，已將「年齡」對應到 pt_age。</div>
+        <div class="sg-bubble sg-bubble--assistant sg-bubble--muted">思考中…</div>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">載入骨架（§6.2）</h2>
       <div class="sg-skeleton-demo">
         <div class="skeleton-line" style="width: 40%" />
@@ -155,10 +179,20 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+
+  const selectValue = ref('')
+  const selectOptions = [
+    { value: 'pt_age', label: 'pt_age', hint: '整數 · 18–92' },
+    { value: 'braden_total', label: 'braden_total', hint: '整數 · 6–23' },
+    { value: 'bmi_score', label: 'bmi_score', hint: '浮點數' },
+    { value: 'gender', label: 'gender', hint: '類別', disabled: true },
+  ]
 
   interface Swatch { name: string, varRef: string }
 
@@ -310,6 +344,49 @@
   padding: 16px 20px;
   font-size: 14px;
   color: var(--color-text);
+}
+
+/* 下拉選單實際都開在白卡上，要在同樣的背景下看才準 */
+.sg-on-card {
+  max-width: 320px;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.sg-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  padding: 16px;
+}
+
+.sg-bubble {
+  max-width: 88%;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.sg-bubble--user {
+  align-self: flex-end;
+  background: var(--color-chat-user);
+  color: var(--color-inverted);
+}
+
+.sg-bubble--assistant {
+  align-self: flex-start;
+  background: var(--color-chat-system);
+  border-color: color-mix(in srgb, var(--color-ink) 22%, var(--color-chat-system));
+  color: var(--color-text);
+}
+
+.sg-bubble--muted {
+  color: color-mix(in srgb, var(--color-ink-soft) 70%, var(--color-ink-strong));
 }
 
 .sg-skeleton-demo {

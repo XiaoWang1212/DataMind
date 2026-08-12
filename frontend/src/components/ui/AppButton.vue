@@ -5,8 +5,6 @@
     :class="[`app-btn--${variant}`, { 'app-btn--icon-only': iconOnly }]"
     :disabled="disabled || loading"
     :type="type"
-    @pointerleave="resetPointer"
-    @pointermove="trackPointer"
   >
     <span v-if="loading" aria-hidden="true" class="app-btn-spinner" />
     <span class="app-btn-body" :class="{ 'app-btn-body--loading': loading }">
@@ -29,20 +27,6 @@
     loading: false,
     iconOnly: false,
   })
-
-  // 只在游標實際落在按鈕上時才更新，不需要全域 listener
-  function trackPointer (event: PointerEvent): void {
-    const el = event.currentTarget as HTMLElement
-    const rect = el.getBoundingClientRect()
-    el.style.setProperty('--x', `${((event.clientX - rect.left) / rect.width) * 100}%`)
-    el.style.setProperty('--y', `${((event.clientY - rect.top) / rect.height) * 100}%`)
-  }
-
-  function resetPointer (event: PointerEvent): void {
-    const el = event.currentTarget as HTMLElement
-    el.style.setProperty('--x', '50%')
-    el.style.setProperty('--y', '50%')
-  }
 </script>
 
 <style scoped>
@@ -83,17 +67,12 @@
     padding: 8px;
   }
 
-  /* 跟著游標的柔光，鋪在按鈕「表面」而不是邊框上 —— 邊框只有 1px，
-     不論光斑或角度掃描都細到看不見（試過，已放棄） */
+  /* 光源固定在上緣，對齊 §4.3 由上往下的打光方向 */
   .app-btn::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-      circle at var(--x, 50%) var(--y, 50%),
-      var(--glow-color),
-      transparent 60%
-    );
+    background: radial-gradient(120% 90% at 50% -20%, var(--glow-color), transparent 70%);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--dur-base) var(--ease-out);
