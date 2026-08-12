@@ -18,16 +18,36 @@
     box-shadow: var(--shadow-float);
   }
 
+  /* 選單幾乎都開在實色白卡（--color-surface: #FFFFFF）上，§5.1 第一條的「背後要有東西透出來」
+     在這個情境不成立：模糊一片純白還是純白，只靠 backdrop-filter 會跟卡片同色。
+     所以自帶一道偏冷的漸層當材質，全白背景下也還有一層可辨識的浮起感；
+     backdrop-filter 仍保留，選單超出卡片邊緣、蓋到頁面漸層時才透得出顏色 */
   .glass-menu {
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-float);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.55),
+      rgba(223, 231, 240, 0.62)
+    );
+    /* §5.2 的白色邊框壓在白卡上等於沒有邊，這裡改用冷灰讓輪廓看得出來；上緣仍維持受光的亮邊 */
+    border-right-color: rgba(126, 148, 176, 0.3);
+    border-bottom-color: rgba(126, 148, 176, 0.3);
+    border-left-color: rgba(126, 148, 176, 0.3);
   }
 
   /* 不支援時退回接近不透明的純色底，不要留下一個看不清楚的半透明方塊 */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-panel,
-    .glass-menu {
+    .glass-panel {
       background: rgba(255, 255, 255, 0.96);
+    }
+
+    .glass-menu {
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.97),
+        rgba(233, 239, 245, 0.97)
+      );
     }
   }
 }
