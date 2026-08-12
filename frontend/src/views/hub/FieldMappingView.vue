@@ -990,6 +990,7 @@
   .mapping-table {
     width: 100%;
     min-width: 520px;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 13px;
   }
@@ -1008,13 +1009,16 @@
     vertical-align: top;
   }
 
-  /* 要放得下「待確認」標籤 + 勾勾按鈕，不然標籤會被擠到換行 */
+  /* 要放得下「待確認」標籤 + 勾勾按鈕，不然標籤會被擠到換行；
+     比例寬讓視窗變寬時能跟著縮放，min-width 是原本的固定值，縮太窄時觸發 .mapping-scroll 的水平捲動 */
   .col-status {
-    width: 124px;
+    width: 18%;
+    min-width: 124px;
   }
 
   .col-col {
-    width: 260px;
+    width: 38%;
+    min-width: 260px;
   }
 
   .target-badge {
