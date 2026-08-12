@@ -78,9 +78,9 @@
     padding: 1px;
     border-radius: inherit;
     background: radial-gradient(
-      110px circle at var(--mx, 50%) var(--my, 50%),
+      190px circle at var(--mx, 50%) var(--my, 50%),
       var(--specular-color),
-      transparent 60%
+      transparent 78%
     );
     opacity: var(--glow, 0);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
