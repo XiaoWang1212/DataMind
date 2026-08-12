@@ -1,11 +1,12 @@
 <template>
   <header class="page-header">
     <div class="page-header-lead">
-      <slot name="back" />
-      <div class="page-header-text">
-        <h1 class="page-header-title">{{ title }}</h1>
-        <p v-if="subtitle" class="page-header-sub">{{ subtitle }}</p>
+      <!-- 返回連結放標題上方一行，沿用專案原本的頁首排法 -->
+      <div v-if="$slots.back" class="page-header-back">
+        <slot name="back" />
       </div>
+      <h1 class="page-header-title">{{ title }}</h1>
+      <p v-if="subtitle" class="page-header-sub">{{ subtitle }}</p>
     </div>
     <div v-if="$slots.actions" class="page-header-actions">
       <slot name="actions" />
@@ -30,14 +31,12 @@
   }
 
   .page-header-lead {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
     min-width: 0;
   }
 
-  .page-header-text {
-    min-width: 0;
+  .page-header-back {
+    margin-bottom: 10px;
+    font-size: 13px;
   }
 
   .page-header-title {
