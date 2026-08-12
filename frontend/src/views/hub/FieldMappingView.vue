@@ -54,29 +54,31 @@
               :class="{ 'row-flash': flashed.has(item.paper_variable) }"
             >
               <td class="col-var">
-                <span
-                  v-if="isTarget(item)"
-                  aria-label="預測目標"
-                  class="target-badge"
-                  role="img"
-                >★</span>
-                <span class="var-name">{{ item.paper_variable }}</span>
-                <v-tooltip
-                  v-if="item.definition"
-                  content-class="status-tooltip"
-                  location="bottom"
-                  max-width="240"
-                  :text="item.definition"
-                >
-                  <template #activator="{ props }">
-                    <v-icon
-                      v-bind="props"
-                      class="var-info-icon"
-                      icon="mdi-information-outline"
-                      size="14"
-                    />
-                  </template>
-                </v-tooltip>
+                <div class="var-name-row">
+                  <span
+                    v-if="isTarget(item)"
+                    aria-label="預測目標"
+                    class="target-badge"
+                    role="img"
+                  >★</span>
+                  <span class="var-name" :title="item.paper_variable">{{ item.paper_variable }}</span>
+                  <v-tooltip
+                    v-if="item.definition"
+                    content-class="status-tooltip"
+                    location="bottom"
+                    max-width="240"
+                    :text="item.definition"
+                  >
+                    <template #activator="{ props }">
+                      <v-icon
+                        v-bind="props"
+                        class="var-info-icon"
+                        icon="mdi-information-outline"
+                        size="14"
+                      />
+                    </template>
+                  </v-tooltip>
+                </div>
                 <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
               </td>
               <td class="col-col">
@@ -1021,18 +1023,29 @@
     min-width: 260px;
   }
 
+  .var-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
   .target-badge {
     color: #d97706;
-    margin-right: 4px;
   }
 
   .var-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: 600;
     color: var(--color-ink);
   }
 
   .var-info-icon {
-    margin-left: 4px;
+    flex-shrink: 0;
     color: #94a3b8;
     cursor: help;
     vertical-align: middle;
