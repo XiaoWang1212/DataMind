@@ -5,6 +5,8 @@
     :class="[`app-btn--${variant}`, { 'app-btn--icon-only': iconOnly }]"
     :disabled="disabled || loading"
     :type="type"
+    @pointerleave="resetPointer"
+    @pointermove="trackPointer"
   >
     <span v-if="loading" aria-hidden="true" class="app-btn-spinner" />
     <span class="app-btn-body" :class="{ 'app-btn-body--loading': loading }">
@@ -27,6 +29,20 @@
     loading: false,
     iconOnly: false,
   })
+
+  // 只在游標實際落在按鈕上時才更新，不需要全域 listener
+  function trackPointer (event: PointerEvent): void {
+    const el = event.currentTarget as HTMLElement
+    const rect = el.getBoundingClientRect()
+    el.style.setProperty('--x', `${((event.clientX - rect.left) / rect.width) * 100}%`)
+    el.style.setProperty('--y', `${((event.clientY - rect.top) / rect.height) * 100}%`)
+  }
+
+  function resetPointer (event: PointerEvent): void {
+    const el = event.currentTarget as HTMLElement
+    el.style.setProperty('--x', '50%')
+    el.style.setProperty('--y', '50%')
+  }
 </script>
 
 <style scoped>
@@ -44,6 +60,8 @@
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
+    /* 光暈是 ::after 鋪滿整個表面，要裁進 pill 形狀 */
+    overflow: hidden;
     transition: background-color var(--dur-fast) var(--ease-out),
       box-shadow var(--dur-fast) var(--ease-out),
       color var(--dur-fast) var(--ease-out),
@@ -65,37 +83,67 @@
     padding: 8px;
   }
 
+  /* 跟著游標的柔光，鋪在按鈕「表面」而不是邊框上 —— 邊框只有 1px，
+     不論光斑或角度掃描都細到看不見（試過，已放棄） */
+  .app-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at var(--x, 50%) var(--y, 50%),
+      var(--glow-color),
+      transparent 60%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .app-btn-body,
+  .app-btn-spinner {
+    position: relative;
+    z-index: 1;
+  }
+
   .app-btn--primary {
     background: var(--color-ink);
     color: #fff;
+    --glow-color: rgba(255, 255, 255, 0.26);
   }
 
   .app-btn--secondary {
     background: var(--color-surface);
     color: var(--color-ink);
     box-shadow: inset 0 0 0 1px var(--color-border);
+    --glow-color: color-mix(in oklab, var(--color-ink) 16%, transparent);
   }
 
   .app-btn--ghost {
     background: transparent;
     color: var(--color-ink-soft);
+    --glow-color: color-mix(in oklab, var(--color-ink) 16%, transparent);
   }
 
   .app-btn--danger {
     background: var(--color-error-bg);
     color: var(--color-error-text);
+    --glow-color: color-mix(in oklab, var(--color-error) 18%, transparent);
   }
 
   /* 四個變體共用同一套 hover：底色明顯位移一階 + 抬起 2px。
      觸控裝置點一下就會觸發 hover 並卡在 hover 態，所以整組 gate 起來 */
   @media (hover: hover) and (pointer: fine) {
     .app-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .app-btn:hover:not(:disabled)::after {
+      opacity: 1;
     }
 
     /* :active 要贏過 hover 的抬升，否則按下去沒有壓下感 */
     .app-btn:active:not(:disabled) {
-      transform: scale(0.96);
+      transform: translateY(-1px) scale(0.97);
     }
 
     /* 深底按鈕往「亮」的方向走：藏青已經很暗，再加深看不出變化。
