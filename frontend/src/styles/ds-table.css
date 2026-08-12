@@ -27,10 +27,25 @@
     transition: background-color var(--dur-fast) var(--ease-out);
   }
 
+  /* hover 用藏青的極淡 wash 而不是灰底，讓它讀起來像「品牌色亮起來」而非蒙一層灰 */
   @media (hover: hover) and (pointer: fine) {
     .ds-table tbody tr:hover {
-      background: var(--color-surface-alt);
+      background: color-mix(in oklab, var(--color-ink) 5%, white);
     }
+  }
+
+  /* 欄多、需要一眼掃完的表格用這個密度。§7.4 的 14px 是給一般表格的，
+     套在對映表這種欄位密集的畫面上會把列高撐開、欄位擠不下 */
+  .ds-table--dense {
+    font-size: 13px;
+  }
+
+  .ds-table--dense thead th {
+    padding: 8px 10px;
+  }
+
+  .ds-table--dense tbody td {
+    padding: 8px 10px;
   }
 
   /* 欄位名、type、class 等 identifier 用等寬字（§3） */

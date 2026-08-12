@@ -1,6 +1,6 @@
 <template>
-  <TableShell>
-    <table class="ds-table mapping-table">
+  <TableShell flush>
+    <table class="ds-table ds-table--dense mapping-table">
       <thead>
         <tr>
           <th class="col-var">論文變數</th>

@@ -1,8 +1,8 @@
 <template>
   <div class="preview-block">
     <div class="preview-title">資料預覽（前 {{ rows.length }} 筆）</div>
-    <TableShell>
-      <table class="ds-table">
+    <TableShell flush>
+      <table class="ds-table ds-table--dense">
         <thead>
           <tr><th v-for="col in columns" :key="col" class="ds-identifier">{{ col }}</th></tr>
         </thead>
