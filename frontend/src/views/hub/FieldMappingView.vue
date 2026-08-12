@@ -593,6 +593,18 @@
     margin-inline: -18px;
   }
 
+  /* 表頭底色與 row hover 滿版到卡片邊，但首尾欄的內容補回卡片內距，
+     不要讓文字貼著外框 */
+  .mapping-main :deep(.ds-table th:first-child),
+  .mapping-main :deep(.ds-table td:first-child) {
+    padding-left: 32px;
+  }
+
+  .mapping-main :deep(.ds-table th:last-child),
+  .mapping-main :deep(.ds-table td:last-child) {
+    padding-right: 18px;
+  }
+
   .mapping-skeleton {
     display: flex;
     flex-direction: column;
