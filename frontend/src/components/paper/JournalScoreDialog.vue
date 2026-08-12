@@ -10,7 +10,9 @@
           <p class="journal-score-eyebrow" :style="{ color: activeAccent.text }">期刊評分報告</p>
           <h3 class="journal-score-title">Journal Peer Review Simulation</h3>
         </div>
-        <button class="journal-score-esc" type="button" @click="emit('close')">ESC</button>
+        <AppButton icon-only title="按 Esc 關閉" variant="ghost" @click="emit('close')">
+          <v-icon icon="mdi-close" size="16" />
+        </AppButton>
       </header>
 
       <p v-if="failedJournals.length > 0" class="journal-score-warning">
@@ -110,6 +112,7 @@
   import type { JournalScore } from '@/api/arxiv'
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { getJournalAccent } from '@/utils/journalTheme'
   import { getScoreColor } from '@/utils/scoreColor'
 
@@ -153,7 +156,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(20, 22, 30, 0.45);
+    background: rgba(18, 30, 58, 0.45);
     z-index: 1000;
   }
 
@@ -180,31 +183,14 @@
     margin: 0 0 4px;
     font-size: 11.5px;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
   }
 
   .journal-score-title {
     margin: 0;
-    font-family: 'Noto Serif TC', Georgia, 'Times New Roman', serif;
+    font-family: var(--font-heading);
     font-size: 22px;
     font-weight: 500;
-    color: var(--color-text);
-  }
-
-  .journal-score-esc {
-    flex-shrink: 0;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    background: none;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--color-ink-soft);
-    cursor: pointer;
-  }
-
-  .journal-score-esc:hover {
-    border-color: var(--color-border-strong);
     color: var(--color-text);
   }
 
@@ -238,6 +224,8 @@
     font-weight: 500;
     color: var(--color-ink-soft);
     cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out),
+      border-bottom-color var(--dur-fast) var(--ease-out);
   }
 
   .journal-score-tab--active {
@@ -263,10 +251,8 @@
 
   .journal-score-overview__name {
     margin: 0 0 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--color-ink-soft);
   }
 
@@ -299,7 +285,6 @@
     margin: 0 0 14px;
     font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.02em;
   }
 
   .journal-score-criteria {
