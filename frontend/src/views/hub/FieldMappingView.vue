@@ -383,10 +383,11 @@
       value: column.name,
       label: column.name,
       hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
+      muted: taken.has(column.name),
     }))
     // target 一定要有對應欄位，不提供「沒有這個變數」的選項
     if (!isTarget(item)) {
-      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined })
+      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined, muted: false })
     }
     return options
   }
