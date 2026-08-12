@@ -36,9 +36,9 @@
       script.src = GIS_SCRIPT_SRC
       script.async = true
       script.defer = true
-      script.onload = () => resolve()
-      script.onerror = () => reject(new Error('無法載入 Google 登入元件'))
-      document.head.appendChild(script)
+      script.addEventListener('load', () => resolve())
+      script.addEventListener('error', () => reject(new Error('無法載入 Google 登入元件')))
+      document.head.append(script)
     })
   }
 
@@ -60,6 +60,8 @@
       type: 'standard',
       theme: 'outline',
       size: 'large',
+      // 配色與字體照 Google 品牌規範走，只把外框改成膠囊，跟旁邊的送出鈕一致
+      shape: 'pill',
       width: 320,
     })
   })
