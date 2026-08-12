@@ -34,8 +34,9 @@ export default createVuetify({
           'ink-strong': '#12244A',
           // 內文深色文字。原本借用 primary 的位置（--color-ink），Task 1 已把舊引用改名讓出這裡
           text: '#1C2130',
-          // 次級底：表頭、hover 背景、工具列
-          'surface-alt': '#F6F5F2',
+          // 次級底：表頭、hover 背景、工具列。偏冷的淺灰藍，跟頁面漸層與藏青同一個色溫
+          // （舊值 #F6F5F2 是暖米白，金色主題的遺留，疊在冷色背景上會顯髒）
+          'surface-alt': '#F1F4F8',
           // 一般分隔線
           border: '#E4E6E8',
           // 強調分隔、輸入框邊界
@@ -47,9 +48,13 @@ export default createVuetify({
           'success-text': '#176B39',
           'warning-text': '#8F560A',
           'error-text': '#B8342A',
-          // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。人工確認/完成複用 warning/success，不重複定義
-          'node-data': '#5B7A9D',
-          'node-ai': '#6B5B95',
+          // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
+          // 全部避開綠/琥珀/紅 —— 那三色留給節點外圈的執行狀態，混用會讓「已完成」讀不出來
+          'node-source': '#4F8C8C',
+          'node-inspect': '#5B7A9D',
+          'node-transform': '#5C6BA8',
+          'node-model': '#6B5B95',
+          'node-evaluate': '#84598C',
         },
       },
     },

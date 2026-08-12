@@ -329,14 +329,16 @@
   cursor: pointer;
 }
 
+/* hover 用白色半透明而不是不透明的灰混色：這是玻璃面板，蓋一層實色會讓它變濁。
+   濃度取選中態（0.72）的一半左右，兩者才是同一套語彙 */
 @media (hover: hover) and (pointer: fine) {
   .hub-toggle-btn:hover,
   .hub-nav-item:hover {
-    background: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+    background: rgba(255, 255, 255, 0.38);
   }
 
   .hub-logout-btn:hover {
-    background: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+    background: rgba(255, 255, 255, 0.38);
     color: var(--color-text);
   }
 }
