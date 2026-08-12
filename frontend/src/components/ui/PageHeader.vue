@@ -5,7 +5,10 @@
       <div v-if="$slots.back" class="page-header-back">
         <slot name="back" />
       </div>
-      <h1 class="page-header-title">{{ title }}</h1>
+      <div class="page-header-titlerow">
+        <h1 class="page-header-title">{{ title }}</h1>
+        <slot name="meta" />
+      </div>
       <p v-if="subtitle" class="page-header-sub">{{ subtitle }}</p>
     </div>
     <div v-if="$slots.actions" class="page-header-actions">
@@ -39,11 +42,25 @@
     font-size: 13px;
   }
 
+  .page-header-titlerow {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-bottom: 4px;
+  }
+
+  /* 標題用藏青而非內文黑，在漸層背景上才跟內文拉開層級。
+     白色 offset/blur 把字周圍打亮，讓標題從漸層裡浮出來 */
   .page-header-title {
-    margin: 0 0 4px;
+    margin: 0;
     font-size: 22px;
     font-weight: 500;
-    color: var(--color-text);
+    letter-spacing: -0.01em;
+    color: var(--color-ink-strong);
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9),
+      0 2px 8px rgba(255, 255, 255, 0.65);
   }
 
   .page-header-sub {

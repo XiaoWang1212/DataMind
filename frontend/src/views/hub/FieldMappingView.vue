@@ -7,7 +7,7 @@
           返回專案列表
         </RouterLink>
       </template>
-      <template #actions>
+      <template #meta>
         <span v-if="!loading && !loadError" class="page-progress">
           已確認 {{ confirmedCount }} / {{ items.length }}
           <template v-if="reviewCount > 0">
@@ -589,8 +589,17 @@
 
   /* 表格切齊卡片邊緣，不要在外框內再留一圈白邊看起來像卡中卡。
      負邊距寫在這裡而不是子元件裡：padding 是這張卡的，子元件不該去猜它的值 */
+  /* 表格切齊卡片邊緣。overflow 讓表格的方角被卡片圓角裁掉 */
+  .mapping-main {
+    overflow: hidden;
+  }
+
   .mapping-main :deep(.table-shell) {
     margin-inline: -18px;
+  }
+
+  .mapping-main > :deep(.table-shell:first-child) {
+    margin-top: -18px;
   }
 
   /* 表頭底色與 row hover 滿版到卡片邊，但首尾欄的內容補回卡片內距，
