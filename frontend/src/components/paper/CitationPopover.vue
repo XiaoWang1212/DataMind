@@ -1,6 +1,11 @@
 <template>
   <Teleport to="body">
-    <article v-if="citation" ref="cardRef" class="citation-popover-card" :style="cardStyle">
+    <article
+      v-if="citation"
+      ref="cardRef"
+      class="citation-popover-card glass-menu enter-rise"
+      :style="cardStyle"
+    >
       <p class="citation-label">
         <v-icon icon="mdi-book-open-variant-outline" size="13" />
         來源文獻 [{{ index }}]
@@ -107,15 +112,13 @@
 </script>
 
 <style scoped>
+  /* 底色、邊框、圓角、陰影由 .glass-menu 提供。scoped 樣式不在 CSS layer 內、
+     優先權高於 glass.css，在這裡重寫任何一項都會蓋掉玻璃 */
   .citation-popover-card {
     max-height: min(400px, calc(100vh - 16px));
     overflow-y: auto;
     z-index: 2400;
-    background: #fffbe8;
-    border: 1px solid #eadf9e;
-    border-radius: 12px;
     padding: 12px 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
   }
 
   .citation-label {
@@ -124,8 +127,8 @@
     align-items: center;
     gap: 5px;
     font-size: 12px;
-    font-weight: 700;
-    color: #8a6d1a;
+    font-weight: 500;
+    color: var(--color-ink-soft);
   }
 
   .snippet-label {
@@ -136,12 +139,13 @@
     margin: 0 0 3px;
     font-size: 12px;
     line-height: 1.55;
-    color: #4a4433;
+    color: var(--color-text);
   }
 
   .citation-field span {
-    font-weight: 700;
-    color: #6d5c22;
+    margin-right: 4px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
   }
 
   .citation-snippet {
@@ -149,6 +153,6 @@
     font-size: 12px;
     line-height: 1.6;
     font-style: italic;
-    color: #5c5340;
+    color: var(--color-ink-soft);
   }
 </style>

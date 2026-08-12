@@ -28,13 +28,13 @@
   .references-section {
     margin-top: 28px;
     padding-top: 18px;
-    border-top: 1px solid #d8dbe3;
+    border-top: 1px solid var(--color-border);
   }
 
   .references-title {
     margin: 0 0 12px;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -47,9 +47,14 @@
   }
 
   .references-list li {
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.7;
     color: var(--color-text);
+  }
+
+  /* 序號屬於 §7.8 的次要資訊，跟作者拉開一階 */
+  .references-list--numbered li::marker {
+    color: var(--color-ink-soft);
   }
 
   .references-list:not(.references-list--numbered) {
