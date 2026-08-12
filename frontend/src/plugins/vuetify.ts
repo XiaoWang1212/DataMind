@@ -26,10 +26,12 @@ export default createVuetify({
           // page：頁面底色。實際畫面會被 main.scss 的漸層蓋掉，這裡是漸層底下的純色 fallback
           'background': '#E4E9ED',
           'surface': '#FFFFFF',
-          'success': '#1F7A44',
-          'warning': '#C9822E',
+          // 三個狀態色的色相往冷調偏（綠→青綠、紅→玫瑰紅），飽和度降約一成，讓它們跟藏青主題
+          // 與冷色頁面漸層同一個色溫；琥珀維持足夠飽和度，避免退成灰而讀不出警示語意
+          'success': '#2A7A63',
+          'warning': '#BC8836',
           // docs/DESIGN_SYSTEM.md 稱這個角色為 danger，這裡沿用 Vuetify 內建的 error 插槽名稱
-          'error': '#C7392E',
+          'error': '#BC3B50',
           // 品牌藏青深一階：hover/按下、標題強調
           'ink-strong': '#12244A',
           // 內文深色文字。原本借用 primary 的位置（--color-ink），Task 1 已把舊引用改名讓出這裡
@@ -41,13 +43,14 @@ export default createVuetify({
           'border': '#E4E6E8',
           // 強調分隔、輸入框邊界
           'border-strong': '#D3D8DC',
-          'success-bg': '#DCEDE3',
-          'warning-bg': '#F5E9D8',
-          'error-bg': '#F5DEDC',
+          'success-bg': '#DCEAE5',
+          'warning-bg': '#EFE7D7',
+          'error-bg': '#F2DEE2',
           // 徽章文字疊在對應的 -bg 淺底上時，圓點色的對比不足 4.5:1，文字另用深一階的值
-          'success-text': '#176B39',
-          'warning-text': '#8F560A',
-          'error-text': '#B8342A',
+          // 量到的對比：5.88 / 5.61 / 5.40:1，皆過 §2.4 的 WCAG AA 4.5:1
+          'success-text': '#1D6151',
+          'warning-text': '#78530F',
+          'error-text': '#A22F43',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
           // 全部避開綠/琥珀/紅 —— 那三色留給節點外圈的執行狀態，混用會讓「已完成」讀不出來
           'node-source': '#2F7E8C',

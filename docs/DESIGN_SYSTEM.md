@@ -56,16 +56,20 @@
 | `--color-page` | `#E4E9ED` | 頁面底(玻璃漸層的基底,見 §5) |
 | `--color-border` | `#E4E6E8` | 一般分隔線(hairline) |
 | `--color-border-strong` | `#D3D8DC` | 強調分隔、輸入框邊界 |
-| `--color-success` | `#1F7A44` | 已對應/成功(圓點);文字用 `#176B39` |
-| `--color-success-bg` | `#DCEDE3` | 成功徽章底 |
-| `--color-warning` | `#C9822E` | 待確認/警示(圓點);文字用 `#8F560A` |
-| `--color-warning-bg` | `#F5E9D8` | 警示徽章底 |
-| `--color-danger` | `#C7392E` | 未對應/錯誤(圓點);文字用 `#B8342A` |
-| `--color-danger-bg` | `#F5DEDC` | 錯誤徽章底 |
+| `--color-success` | `#2A7A63` | 已對應/成功(圓點);文字用 `#1D6151` |
+| `--color-success-bg` | `#DCEAE5` | 成功徽章底 |
+| `--color-warning` | `#BC8836` | 待確認/警示(圓點);文字用 `#78530F` |
+| `--color-warning-bg` | `#EFE7D7` | 警示徽章底 |
+| `--color-danger` | `#BC3B50` | 未對應/錯誤(圓點);文字用 `#A22F43` |
+| `--color-danger-bg` | `#F2DEE2` | 錯誤徽章底 |
 
 > **重要:金色已淘汰。** 早期版本曾用亮金色當強調色,已確認不採用。琥珀(`--color-warning`)只作狀態色,不當品牌強調。
 >
 > **圓點色跟文字色刻意不同一個值。** 圓點是實色小面積,直接用 `--color-success`/`--color-warning`/`--color-danger` 沒問題;但文字疊在對應的 `-bg` 淺色徽章底上時,同一個值對比不夠(量過只有 4:1 上下),所以文字一律用表中標的更深值,確保跟徽章底過 §2.4 的 WCAG AA 4.5:1。之後要調任何狀態色,記得兩個值一起檢查對比,不要只改圓點色。
+>
+> **三組狀態色已往冷調、低飽和重新調配**(2026-08),原本偏暖高飽和的一組(綠 `#1F7A44`、琥珀 `#C9822E`、紅 `#C7392E`)疊在冷色藏青主題與頁面漸層上顯得突兀。調整方向:綠的色相由 144° 推到 163° 轉成青綠、紅由 4° 推到 350° 轉成玫瑰紅,兩者都往冷側靠;三色飽和度一律降約一成(59→49、63→55、62→52)。琥珀刻意只降飽和不轉色相(33°→37°),飽和度守在 55%,再低就會讀成灰色而失去警示語意。徽章底同步抽掉暖黃、補一點冷灰。
+>
+> 量到的文字/徽章底對比:成功 `#1D6151` on `#DCEAE5` = **5.88:1**、警示 `#78530F` on `#EFE7D7` = **5.61:1**、錯誤 `#A22F43` on `#F2DEE2` = **5.40:1**,皆過 §2.4 的 WCAG AA 4.5:1。
 
 ### 2.3 Workflow 節點配色(分類色,非深淺)
 
@@ -203,7 +207,8 @@ body {
   background:
     radial-gradient(720px circle at 8% 30%,  rgba(90,130,190,0.45), transparent 55%),
     radial-gradient(560px circle at 88% 18%, rgba(110,143,178,0.20), transparent 55%),
-    /* 純裝飾暖色點,刻意不用 --color-warning(#C9822E)— 狀態色不進背景,避免語意混淆 */
+    /* 純裝飾暖色點,刻意不借用 --color-warning 的值 — 狀態色不進背景,避免語意混淆,
+       也避免之後調整狀態色時背景跟著意外變色 */
     radial-gradient(520px circle at 25% 92%, rgba(196,150,130,0.10), transparent 55%),
     linear-gradient(175deg, #EEF2F5 0%, #DCE3E9 100%);
   background-attachment: fixed;
