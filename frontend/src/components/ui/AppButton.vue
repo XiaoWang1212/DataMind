@@ -86,11 +86,11 @@
     color: var(--color-error-text);
   }
 
-  /* 四個變體共用同一套 hover：底色加深一階 + 抬起 1px。
+  /* 四個變體共用同一套 hover：底色明顯位移一階 + 抬起 2px。
      觸控裝置點一下就會觸發 hover 並卡在 hover 態，所以整組 gate 起來 */
   @media (hover: hover) and (pointer: fine) {
     .app-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
     /* :active 要贏過 hover 的抬升，否則按下去沒有壓下感 */
@@ -98,23 +98,24 @@
       transform: scale(0.96);
     }
 
+    /* 深底按鈕往「亮」的方向走：藏青已經很暗，再加深看不出變化 */
     .app-btn--primary:hover:not(:disabled) {
-      background: var(--color-ink-strong);
-      box-shadow: 0 3px 10px color-mix(in oklab, var(--color-ink) 30%, transparent);
+      background: color-mix(in oklab, var(--color-ink) 82%, white);
+      box-shadow: 0 4px 12px color-mix(in oklab, var(--color-ink) 32%, transparent);
     }
 
     .app-btn--secondary:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 6%, white);
+      background: color-mix(in oklab, var(--color-ink) 14%, white);
       box-shadow: inset 0 0 0 1px var(--color-border-strong);
     }
 
     .app-btn--ghost:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 6%, white);
+      background: color-mix(in oklab, var(--color-ink) 14%, white);
       color: var(--color-ink);
     }
 
     .app-btn--danger:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-error) 18%, white);
+      background: color-mix(in oklab, var(--color-error) 32%, white);
     }
   }
 
