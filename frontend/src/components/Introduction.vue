@@ -9,7 +9,7 @@
       />
 
       <div class="mb-8 text-center">
-        <div class="font-light">Welcome to</div>
+        <div class="font-normal">Welcome to</div>
         <h1 class="text-7xl font-heading my-0 font-medium">Vuetify</h1>
       </div>
 
@@ -75,7 +75,7 @@
     },
     {
       href: 'https://vuetifyjs.com/introduction/why-vuetify/#feature-guides',
-      icon: 'mdi-star',
+      icon: 'mdi-star-outline',
       subtitle: 'Explore available framework Features.',
       title: 'Features',
     },
