@@ -3,16 +3,14 @@
     <HubSidebar />
 
     <main class="sources-main">
-      <header class="sources-toolbar">
-        <v-btn
-          class="back-btn"
-          icon="mdi-arrow-left"
-          size="small"
-          variant="text"
-          @click="router.push(`/hub/projects/${projectId}/result`)"
-        />
-        <h2 class="sources-title">選擇參考文獻</h2>
-      </header>
+      <PageHeader title="選擇參考文獻">
+        <template #back>
+          <RouterLink class="back-link" :to="`/hub/projects/${projectId}/result`">
+            <v-icon icon="mdi-arrow-left" size="15" />
+            返回結果頁
+          </RouterLink>
+        </template>
+      </PageHeader>
 
       <section v-if="!hasLoaded" class="sources-status">
         載入中...
@@ -20,9 +18,9 @@
 
       <section v-else-if="!miningResults" class="sources-status">
         <p>找不到這個專案的探勘結果,請先從結果頁進入。</p>
-        <v-btn class="bg-accent" color="accent" size="small" @click="router.push(`/hub/projects/${projectId}/result`)">
+        <AppButton variant="secondary" @click="router.push(`/hub/projects/${projectId}/result`)">
           回到結果頁
-        </v-btn>
+        </AppButton>
       </section>
 
       <template v-else>
@@ -36,15 +34,9 @@
             type="text"
             @keyup.enter="loadCandidates"
           >
-          <v-btn
-            class="bg-accent"
-            color="accent"
-            :loading="loadingSearch"
-            size="small"
-            @click="loadCandidates"
-          >
+          <AppButton :loading="loadingSearch" variant="primary" @click="loadCandidates">
             {{ hasSearched ? '重新查詢' : '查詢文獻' }}
-          </v-btn>
+          </AppButton>
         </div>
 
         <template v-if="hasSearched">
@@ -56,7 +48,7 @@
 
           <div v-else-if="searchError" class="sources-status sources-status--error">
             {{ searchError }}
-            <v-btn size="small" variant="text" @click="loadCandidates">重試</v-btn>
+            <AppButton variant="ghost" @click="loadCandidates">重試</AppButton>
           </div>
 
           <div v-else-if="candidates.length === 0" class="sources-status">
@@ -85,14 +77,14 @@
             </ul>
 
             <div class="sources-actions">
-              <v-btn
-                class="bg-accent"
-                color="accent"
-                :disabled="selectedIds.length === 0 || generating"
+              <AppButton
+                :disabled="selectedIds.length === 0"
+                :loading="generating"
+                variant="primary"
                 @click="handleGenerate"
               >
-                {{ generating ? '生成中...' : `確認並生成論文 (${selectedIds.length})` }}
-              </v-btn>
+                確認並生成論文 ({{ selectedIds.length }})
+              </AppButton>
               <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
             </div>
           </template>
@@ -104,9 +96,11 @@
 
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { usePaperStore } from '@/store/paperStore'
   import { transformArxivResultToPaperReport } from '@/utils/paperTransform'
@@ -177,8 +171,8 @@
 </script>
 
 <style scoped>
+  /* 不設背景，讓 .v-application 的頁面漸層透出來，跟 HubLayout 同一套 */
   .sources-page {
-    --page-bg: var(--color-primary);
     --card-bg: var(--color-surface);
     --line: var(--color-border-strong);
     --line-soft: var(--color-border);
@@ -187,7 +181,6 @@
     min-height: 100vh;
     display: flex;
     padding: 0;
-    background: var(--page-bg);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
   }
@@ -195,32 +188,26 @@
   .sources-main {
     flex: 1;
     min-width: 0;
+    max-width: var(--content-max-width);
     display: flex;
     flex-direction: column;
-    background:
-      radial-gradient(circle, color-mix(in oklab, var(--color-ink-soft) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
-      var(--page-bg);
-    padding: 12px 20px 24px;
+    padding: 32px 36px;
     overflow: auto;
   }
 
-  .sources-toolbar {
-    display: flex;
+  .back-link {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 0 2px 10px;
-    border-bottom: 1px solid var(--line-soft);
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .back-btn {
-    color: var(--color-text);
-  }
-
-  .sources-title {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text);
+  .back-link:hover {
+    color: var(--color-ink);
   }
 
   .sources-title-input {
@@ -242,7 +229,7 @@
     padding: 8px 12px;
     font-size: 13px;
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--card-bg);
     color: var(--text-main);
   }
@@ -279,8 +266,9 @@
 
   .candidate-card {
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--card-bg);
+    box-shadow: var(--shadow-card);
   }
 
   .candidate-select {
