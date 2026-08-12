@@ -54,7 +54,7 @@
     </section>
 
     <section>
-      <h2 class="sg-h2">按鈕（§7.1 四變體 + §6.2 邊緣反光 hover）</h2>
+      <h2 class="sg-h2">按鈕（§7.1 四變體 + §6.2 共用 hover）</h2>
       <div class="sg-row">
         <AppButton variant="primary">primary</AppButton>
         <AppButton variant="secondary">secondary</AppButton>

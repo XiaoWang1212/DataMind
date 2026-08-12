@@ -14,9 +14,6 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { useSpecularHover } from '@/composables/useSpecularHover'
-
   withDefaults(defineProps<{
     variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
     type?: 'button' | 'submit' | 'reset'
@@ -30,9 +27,6 @@
     loading: false,
     iconOnly: false,
   })
-
-  const root = ref<HTMLElement | null>(null)
-  useSpecularHover(root)
 </script>
 
 <style scoped>
@@ -51,6 +45,7 @@
     line-height: 1.2;
     cursor: pointer;
     transition: background-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out),
       color var(--dur-fast) var(--ease-out),
       transform var(--dur-fast) var(--ease-out);
   }
@@ -70,62 +65,56 @@
     padding: 8px;
   }
 
-  /* 反光只顯示在 1px 邊框上：外層漸層減掉 content-box，剩下 padding 那圈 */
-  .app-btn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: radial-gradient(
-      190px circle at var(--mx, 50%) var(--my, 50%),
-      var(--specular-color),
-      transparent 78%
-    );
-    opacity: var(--glow, 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    pointer-events: none;
-    /* 刻意不加 transition：--glow 每幀都在變，再疊轉場會讓反光拖在滑鼠後面。
-       proximity 本身就是平滑漸變 */
-  }
-
-  /* 深底用白光、淺底用藏青光，否則反光在自己的底色上看不見 */
   .app-btn--primary {
     background: var(--color-ink);
     color: #fff;
-    --specular-color: rgba(255, 255, 255, 0.9);
   }
 
   .app-btn--secondary {
     background: var(--color-surface);
     color: var(--color-ink);
     box-shadow: inset 0 0 0 1px var(--color-border);
-    --specular-color: color-mix(in oklab, var(--color-ink) 70%, transparent);
   }
 
   .app-btn--ghost {
     background: transparent;
     color: var(--color-ink-soft);
-    --specular-color: color-mix(in oklab, var(--color-ink) 55%, transparent);
   }
 
   .app-btn--danger {
     background: var(--color-error-bg);
     color: var(--color-error-text);
-    --specular-color: color-mix(in oklab, var(--color-error) 70%, transparent);
   }
 
-  /* 觸控裝置點一下會觸發 hover 並卡在 hover 底色，所以 hover 態一律 gate 起來 */
+  /* 四個變體共用同一套 hover：底色加深一階 + 抬起 1px。
+     觸控裝置點一下就會觸發 hover 並卡在 hover 態，所以整組 gate 起來 */
   @media (hover: hover) and (pointer: fine) {
+    .app-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    /* :active 要贏過 hover 的抬升，否則按下去沒有壓下感 */
+    .app-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
     .app-btn--primary:hover:not(:disabled) {
       background: var(--color-ink-strong);
+      box-shadow: 0 3px 10px color-mix(in oklab, var(--color-ink) 30%, transparent);
+    }
+
+    .app-btn--secondary:hover:not(:disabled) {
+      background: color-mix(in oklab, var(--color-ink) 6%, white);
+      box-shadow: inset 0 0 0 1px var(--color-border-strong);
     }
 
     .app-btn--ghost:hover:not(:disabled) {
+      background: color-mix(in oklab, var(--color-ink) 6%, white);
       color: var(--color-ink);
+    }
+
+    .app-btn--danger:hover:not(:disabled) {
+      background: color-mix(in oklab, var(--color-error) 18%, white);
     }
   }
 

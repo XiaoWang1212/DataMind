@@ -1624,7 +1624,7 @@ cd frontend/src && grep -rnE 'font-weight: *(600|700|800|bold)' --include='*.vue
 
 - §7.5 補上 `neutral` 第四態，說明它用於「使用者主動略過」這類非狀態語意，色值用 `--color-ink-soft` / `--color-surface-alt`。
 - §3.5.2 更新遷移現況：Hub、認證、介紹頁已完成，剩 Paper 與 Workflow。
-- §6.2 補上 specular 的定案參數：proximity 90px、反光半徑 110px、深底用白光淺底用藏青光。
+- §6.2 已改寫：specular 邊緣反光實測後放棄（1px 邊框上的效果太細微，看不出來），改成底色加深一階 + 抬起 1px，四變體共用。`useSpecularHover.ts` 一併刪除。
 - §7.2 暫不改寫 — 等 user 在瀏覽器選定深／淺版本後，Task 22 再處理。
 
 - [ ] **Step 5: 寫 Batch 1 變更清單**
