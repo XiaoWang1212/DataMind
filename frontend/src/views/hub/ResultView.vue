@@ -1,25 +1,26 @@
 <template>
-  <div>
-    <RouterLink class="back-link" :to="`/hub/projects/${projectId}`">
+  <div class="result-view">
+    <PageHeader
+      v-if="project"
+      :subtitle="`結果總覽 · 框架：${frameworkTitle}`"
+      :title="project.name"
+    >
+      <template #back>
+        <RouterLink class="back-link" :to="`/hub/projects/${projectId}`">
+          <v-icon icon="mdi-arrow-left" size="15" />
+          返回專案
+        </RouterLink>
+      </template>
+      <template v-if="summary.length > 0" #actions>
+        <RouterLink class="generate-paper-btn" :to="`/paper/sources?project=${projectId}`">
+          生成論文
+        </RouterLink>
+      </template>
+    </PageHeader>
+    <RouterLink v-else class="back-link back-link--standalone" :to="`/hub/projects/${projectId}`">
       <v-icon icon="mdi-arrow-left" size="15" />
       返回專案
     </RouterLink>
-
-    <div v-if="project" class="page-header">
-      <div class="page-header-top">
-        <div>
-          <h1 class="page-title">{{ project.name }}</h1>
-          <p class="page-sub">結果總覽 · 框架：{{ frameworkTitle }}</p>
-        </div>
-        <RouterLink
-          v-if="summary.length > 0"
-          class="generate-paper-btn"
-          :to="`/paper/sources?project=${projectId}`"
-        >
-          生成論文
-        </RouterLink>
-      </div>
-    </div>
 
     <div v-if="!project" class="not-found">找不到該專案</div>
 
@@ -47,22 +48,23 @@
         </article>
       </section>
 
-      <section class="comparison-card">
+      <TableShell class="comparison-card">
         <div class="comparison-head">
           <h3>模型效能比較</h3>
         </div>
 
+        <!-- 捲動交給內層，表頭列不會跟著表格橫向移出視野 -->
         <div class="table-wrap">
-          <table class="result-table">
+          <table class="ds-table result-table">
             <thead>
               <tr>
                 <th>模型</th>
-                <th v-for="metric in metricNames" :key="metric">{{ metric }}</th>
+                <th v-for="metric in metricNames" :key="metric" class="ds-identifier">{{ metric }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="row in summary" :key="row.model_name">
-                <td class="model-name">{{ row.model_name }}</td>
+                <td class="model-name ds-identifier">{{ row.model_name }}</td>
                 <td
                   v-for="metric in metricNames"
                   :key="metric"
@@ -72,9 +74,9 @@
             </tbody>
           </table>
         </div>
-      </section>
+      </TableShell>
 
-      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card">
+      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card glass-panel">
         <div class="analysis-header">
           <div class="analysis-icon-wrap">
             <v-icon icon="mdi-shimmer" size="18" />
@@ -85,7 +87,7 @@
         <p v-if="analysisLoading" class="analysis-loading">正在生成分析...</p>
         <template v-else-if="analysisError">
           <p class="analysis-error">分析生成失敗：{{ analysisError }}</p>
-          <button class="analysis-retry-btn" type="button" @click="loadAnalysis">重試</button>
+          <AppButton variant="ghost" @click="loadAnalysis">重試</AppButton>
         </template>
         <div v-else-if="analysis" class="analysis-grid">
           <article class="analysis-block">
@@ -107,7 +109,7 @@
         </div>
       </section>
 
-      <section class="chat-card">
+      <section class="chat-card glass-panel">
         <div class="analysis-header">
           <div class="analysis-icon-wrap">
             <v-icon icon="mdi-chat-processing-outline" size="18" />
@@ -151,9 +153,9 @@
             placeholder="針對這份結果提問..."
             type="text"
           >
-          <button class="chat-send-btn" :disabled="chatLoading || !chatInput.trim()" type="submit">
+          <AppButton :disabled="!chatInput.trim()" :loading="chatLoading" type="submit" variant="primary">
             送出
-          </button>
+          </AppButton>
         </form>
       </section>
     </template>
@@ -165,6 +167,9 @@
   import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
   import { type ChatMessage, fetchStructuredAnalysis, sendChatMessage, type StructuredAnalysis } from '@/api/resultAnalysis'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import TableShell from '@/components/ui/TableShell.vue'
   import {
     loadChatHistoryFromStorage,
     loadStructuredAnalysisFromStorage,
@@ -332,7 +337,7 @@
       saveChatHistoryToStorage(projectId.value, chatMessages.value)
     } catch (error) {
       chatError.value = error instanceof Error ? error.message : String(error)
-      const lastMessage = chatMessages.value[chatMessages.value.length - 1]
+      const lastMessage = chatMessages.value.at(-1)
       if (lastMessage) lastMessage.failed = true
     } finally {
       chatLoading.value = false
@@ -347,72 +352,60 @@
 </script>
 
 <style scoped>
+/* 結果頁是資料密集頁，容器用較寬的上限（§8.2） */
+.result-view {
+  max-width: var(--content-max-width-wide);
+  margin-inline: auto;
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* 對齊 22px 標題的第一行中線 */
+  margin-top: 4px;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   text-decoration: none;
-  margin-bottom: 20px;
-  transition: color 0.12s;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .back-link:hover {
-  color: var(--color-text);
+  color: var(--color-ink);
 }
 
-.page-header {
-  margin-bottom: 24px;
+.back-link--standalone {
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
-.page-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.generate-paper-btn {
+.generate-paper-btn,
+.open-workflow-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 18px;
+  gap: 7px;
   height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
-  font-size: 13.5px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
-.generate-paper-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
-
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 5px;
-}
-
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
+.generate-paper-btn:hover,
+.open-workflow-btn:hover {
+  background: var(--color-ink-strong);
 }
 
 .not-found {
-  text-align: center;
   padding: 48px;
-  color: var(--color-secondary);
   font-size: 14px;
+  text-align: center;
+  color: var(--color-ink-soft);
 }
 
 .empty-state {
@@ -422,36 +415,15 @@
   justify-content: center;
   gap: 16px;
   padding: 64px 24px;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .empty-text {
   margin: 0;
   font-size: 14px;
-  color: var(--color-secondary);
-}
-
-.open-workflow-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 18px;
-  height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s;
-}
-
-.open-workflow-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
+  color: var(--color-ink-soft);
 }
 
 .metric-grid {
@@ -461,27 +433,28 @@
 }
 
 .metric-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 14px;
   padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .metric-card--accent .metric-value {
-  color: #16a34a;
+  color: var(--color-success-text);
 }
 
 .metric-title {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text);
+  font-weight: 500;
+  color: var(--color-ink-soft);
 }
 
 .metric-value {
   margin: 8px 0 2px;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.15;
   color: var(--color-text);
 }
@@ -489,26 +462,23 @@
 .metric-hint {
   margin: 0;
   font-size: 12px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
+/* 底色、圓角、陰影由 TableShell 提供，這裡不能重寫 */
 .comparison-card {
   margin-top: 16px;
-  border: 1px solid #e8e8e8;
-  border-radius: 14px;
-  background: #ffffff;
-  overflow: hidden;
 }
 
 .comparison-head {
   padding: 14px 18px;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .comparison-head h3 {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
 }
 
@@ -517,46 +487,29 @@
 }
 
 .result-table {
-  width: 100%;
   min-width: 480px;
-  border-collapse: collapse;
 }
 
 .result-table th,
 .result-table td {
   padding: 11px 18px;
-  text-align: left;
-  border-bottom: 1px solid #f0f1f3;
-  font-size: 12px;
   white-space: nowrap;
 }
 
-.result-table th {
-  font-weight: 700;
-  color: var(--color-text);
-  background: #fafbff;
-}
-
-.result-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
 .model-name {
-  font-weight: 700;
   color: var(--color-text);
 }
 
 .score-best {
-  color: #16a34a;
-  font-weight: 700;
+  color: var(--color-success-text);
+  font-weight: 500;
 }
 
+/* 底色、邊框、圓角、陰影由 .glass-panel 提供。scoped 樣式不在 CSS layer 內、
+   優先權高於 glass.css，在這裡重寫任何一項都會蓋掉玻璃 */
 .analysis-card,
 .chat-card {
   margin-top: 16px;
-  border: 1px solid #e8e8e8;
-  border-radius: 14px;
-  background: #ffffff;
   padding: 18px;
 }
 
@@ -573,37 +526,28 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
-  background: #eef1ff;
-  color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-ink) 8%, white);
+  color: var(--color-ink);
 }
 
 .analysis-title {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
 }
 
 .analysis-loading {
   margin: 0;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .analysis-error {
   margin: 0 0 8px;
   font-size: 13px;
-  color: #ef4444;
-}
-
-.analysis-retry-btn {
-  border: none;
-  background: none;
-  color: var(--color-accent);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
+  color: var(--color-error-text);
 }
 
 .analysis-grid {
@@ -615,7 +559,7 @@
 .analysis-block h3 {
   margin: 0 0 6px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-text);
 }
 
@@ -623,7 +567,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .chat-messages {
@@ -638,13 +582,13 @@
 .chat-empty {
   margin: 0;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .chat-bubble {
   max-width: 80%;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 13.5px;
   line-height: 1.6;
 }
@@ -663,13 +607,13 @@
 
 .chat-bubble--failed {
   opacity: 0.65;
-  outline: 1px solid #ef4444;
+  outline: 1px solid var(--color-error);
 }
 
 .chat-bubble-failed-hint {
   margin: 4px 0 0;
   font-size: 11.5px;
-  color: #ffd7d7;
+  color: var(--color-error-bg);
 }
 
 .chat-bubble-text {
@@ -687,34 +631,34 @@
 .chat-paper-card {
   display: block;
   padding: 8px 10px;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   text-decoration: none;
-  border: 1px solid #e2e4ea;
 }
 
 .chat-paper-title {
   margin: 0;
   font-size: 12.5px;
-  font-weight: 600;
-  color: var(--color-accent);
+  font-weight: 500;
+  color: var(--color-ink);
 }
 
 .chat-paper-meta {
   margin: 3px 0 0;
   font-size: 11.5px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .chat-loading,
 .chat-error {
   margin: 0;
   font-size: 12.5px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .chat-error {
-  color: #ef4444;
+  color: var(--color-error-text);
 }
 
 .chat-input-row {
@@ -725,31 +669,15 @@
 .chat-input {
   flex: 1;
   height: 38px;
-  padding: 0 12px;
-  border: 1px solid #e2e4ea;
-  border-radius: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
   font-size: 13px;
 }
 
 .chat-input:disabled {
-  background: #f7f7f9;
-}
-
-.chat-send-btn {
-  height: 38px;
-  padding: 0 18px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.chat-send-btn:disabled {
-  background: #b7c2e6;
-  cursor: not-allowed;
+  background: var(--color-surface-alt);
 }
 
 @media (max-width: 1260px) {
