@@ -1035,7 +1035,7 @@
   }
 
   .var-name {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1062,6 +1062,7 @@
     margin-top: 4px;
     font-size: 11px;
     color: #94a3b8;
+    overflow-wrap: anywhere;
   }
 
   .col-candidates {
