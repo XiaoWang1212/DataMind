@@ -172,6 +172,8 @@
   .chat-bubble {
     max-width: 88%;
     padding: 10px 14px;
+    /* 只有 assistant 有描邊，這裡佔住邊框寬度讓兩側氣泡尺寸一致 */
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
     font-size: 13px;
     line-height: 1.55;
@@ -184,20 +186,18 @@
     color: var(--color-inverted);
   }
 
+  /* tint 與半透明玻璃的明度差只有 1.2:1，加一道藏青描邊讓氣泡邊界讀得出來 */
   .chat-bubble--assistant {
     align-self: flex-start;
     background: var(--color-chat-system);
+    border: 1px solid color-mix(in srgb, var(--color-ink) 22%, var(--color-chat-system));
     color: var(--color-text);
   }
 
-  .chat-bubble--pending {
-    color: var(--color-ink-soft);
-  }
-
+  /* 佔位訊息要比正文弱一階，但 ink-soft 疊在 tint 上只有 4.4:1，往 ink-strong 調深 */
+  .chat-bubble--pending,
   .chat-bubble--opener {
-    align-self: flex-start;
-    background: var(--color-surface-alt);
-    color: var(--color-ink-soft);
+    color: color-mix(in srgb, var(--color-ink-soft) 70%, var(--color-ink-strong));
   }
 
   .chat-input {
