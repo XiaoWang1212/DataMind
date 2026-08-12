@@ -1,41 +1,38 @@
 <template>
   <div class="mapping-page">
-    <RouterLink class="back-link" to="/hub/projects">
-      <v-icon icon="mdi-arrow-left" size="15" />
-      返回專案列表
-    </RouterLink>
-
-    <div class="page-header">
-      <h1 class="page-title">欄位對齊</h1>
-      <span v-if="!loading && !loadError" class="page-progress">
-        已確認 {{ confirmedCount }} / {{ items.length }}
-        <template v-if="reviewCount > 0">
-          <span class="page-progress-sep">·</span>
-          <span class="page-progress-review">{{ reviewCount }} 個待確認</span>
-        </template>
-      </span>
-      <button
-        v-if="reviewCount > 0"
-        class="confirm-all-btn"
-        type="button"
-        @click="confirmAll"
-      >
-        全部確認
-      </button>
-    </div>
+    <PageHeader title="欄位對齊">
+      <template #back>
+        <RouterLink class="back-link" to="/hub/projects">
+          <v-icon icon="mdi-arrow-left" size="15" />
+          返回專案列表
+        </RouterLink>
+      </template>
+      <template #actions>
+        <span v-if="!loading && !loadError" class="page-progress">
+          已確認 {{ confirmedCount }} / {{ items.length }}
+          <template v-if="reviewCount > 0">
+            <span class="page-progress-sep">·</span>
+            <span class="page-progress-review">{{ reviewCount }} 個待確認</span>
+          </template>
+        </span>
+        <AppButton v-if="reviewCount > 0" variant="secondary" @click="confirmAll">
+          全部確認
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <div v-if="loadError" class="load-error">
       <v-icon icon="mdi-alert-circle-outline" size="20" />
       <span>{{ loadError }}</span>
-      <RouterLink to="/hub/projects/new" class="load-error-link">重新上傳資料集</RouterLink>
+      <RouterLink class="load-error-link" to="/hub/projects/new">重新上傳資料集</RouterLink>
     </div>
 
     <div v-else class="mapping-layout">
       <!-- 左：對映表 + 資料預覽 -->
       <section class="mapping-main">
-        <div v-if="loading" class="mapping-loading">
-          <v-progress-circular indeterminate size="28" color="accent" />
-          <span>正在自動配對…</span>
+        <!-- 骨架屏用五行模擬對映表的列，載入前後的版面高度才接近 -->
+        <div v-if="loading" class="mapping-skeleton">
+          <div v-for="n in 5" :key="n" class="skeleton-line" />
         </div>
 
         <MappingTable
@@ -50,7 +47,7 @@
         />
 
         <DatasetPreview
-          v-if="!loading && previewColumns.length"
+          v-if="!loading && previewColumns.length > 0"
           :columns="previewColumns"
           :rows="previewRows"
         />
@@ -60,13 +57,13 @@
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
-          <button class="skip-btn" type="button" @click="skipToWorkflow">
+          <AppButton variant="ghost" @click="skipToWorkflow">
             略過（開發用）
-          </button>
-          <button class="confirm-btn" :disabled="!canConfirm || confirming" @click="confirmAndRun">
+          </AppButton>
+          <AppButton :disabled="!canConfirm || confirming" variant="primary" @click="confirmAndRun">
             {{ confirming ? '處理中…' : '確認並執行' }}
             <v-icon v-if="!confirming" icon="mdi-arrow-right" size="17" />
-          </button>
+          </AppButton>
         </div>
       </section>
 
@@ -83,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { ChatMessage as StoredChatMessage } from '@/api/resultAnalysis'
   import type {
     ChatMessage,
     MappingAction,
@@ -96,6 +94,8 @@
   import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
   import MappingChatPanel from '@/components/hub/fieldMapping/MappingChatPanel.vue'
   import MappingTable from '@/components/hub/fieldMapping/MappingTable.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
   import { useMappingDraft } from '@/composables/fieldMapping/useMappingDraft'
   import { useMappingHistory } from '@/composables/fieldMapping/useMappingHistory'
   import {
@@ -374,7 +374,7 @@
       // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存故直接轉型
       saveChatHistoryToStorage(
         `mapping-${projectId.value}`,
-        chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
+        chatHistory.value as unknown as StoredChatMessage[],
       )
     }
   }
@@ -479,7 +479,7 @@
         // 先記住原始欄位位置，去重會改變索引，之後用索引取值會取到別欄的資料
         .map((name, index) => ({ name, index }))
         .filter(({ name }) => {
-          if (seen.has(name)) return false  // 重複欄位名只留第一個
+          if (seen.has(name)) return false // 重複欄位名只留第一個
           seen.add(name)
           return true
         })
@@ -518,60 +518,38 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  /* 標題、進度、全部確認排在同一列，把垂直空間留給對映表 */
-  .page-header {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    max-width: var(--content-max-width-wide);
+    margin-inline: auto;
   }
 
   .page-progress {
     font-size: 13px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .page-progress-sep {
     margin: 0 6px;
-    color: #cbd5e1;
+    color: var(--color-border-strong);
   }
 
   .page-progress-review {
-    color: #b45309;
-  }
-
-  .confirm-all-btn {
-    padding: 5px 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    background: #fff;
-    color: var(--color-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-  }
-
-  .confirm-all-btn:hover {
-    background: #f0f1f3;
-    border-color: #94a3b8;
+    color: var(--color-warning-text);
   }
 
   .back-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-secondary);
+    /* 對齊 22px 標題的第一行中線 */
+    margin-top: 4px;
+    color: var(--color-ink-soft);
     font-size: 13px;
     text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .page-title {
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--color-text);
+  .back-link:hover {
+    color: var(--color-ink);
   }
 
   .load-error {
@@ -579,16 +557,17 @@
     align-items: center;
     gap: 10px;
     padding: 16px;
-    border: 1px solid #fecaca;
-    border-radius: 12px;
-    background: #fef2f2;
-    color: #b91c1c;
+    /* 邊框取比底色深一階的混色，否則與底色同值會看不出區塊邊界 */
+    border: 1px solid color-mix(in oklab, var(--color-error) 20%, var(--color-error-bg));
+    border-radius: var(--radius-md);
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
     font-size: 14px;
   }
 
   .load-error-link {
-    color: #b91c1c;
-    font-weight: 600;
+    color: var(--color-error-text);
+    font-weight: 500;
   }
 
   .mapping-layout {
@@ -603,25 +582,20 @@
     flex-direction: column;
     gap: 14px;
     padding: 18px;
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
   }
 
-  .mapping-loading {
+  .mapping-skeleton {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 40px 0;
-    justify-content: center;
-    color: var(--color-secondary);
-    font-size: 14px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .confirm-all-btn {
-      transition: none;
-    }
+  .mapping-skeleton .skeleton-line {
+    height: 20px;
   }
 
   .mapping-footer {
@@ -634,54 +608,12 @@
 
   .footer-hint {
     font-size: 12px;
-    color: #b91c1c;
+    color: var(--color-error-text);
   }
 
   .footer-error {
     font-size: 12px;
-    color: #b91c1c;
-    font-weight: 600;
-  }
-
-  .skip-btn {
-    height: 38px;
-    padding: 0 14px;
-    border: 1px solid #e5e7eb;
-    border-radius: 7px;
-    background: none;
-    color: var(--color-secondary);
-    font-size: 12.5px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .skip-btn:hover {
-    background: #f3f4f6;
-  }
-
-  /* 尺寸比照 ProjectsView 的 .new-btn，border: none 不能省，button 預設帶外框 */
-  .confirm-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    height: 38px;
-    padding: 0 18px;
-    border: none;
-    border-radius: 7px;
-    background: var(--color-accent);
-    color: #ffffff;
-    font-size: 13.5px;
+    color: var(--color-error-text);
     font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .confirm-btn:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--color-accent) 85%, black);
-  }
-
-  .confirm-btn:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
   }
 </style>
