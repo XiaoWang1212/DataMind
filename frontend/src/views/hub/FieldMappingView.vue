@@ -60,6 +60,9 @@
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
+          <button class="skip-btn" type="button" @click="skipToWorkflow">
+            略過（開發用）
+          </button>
           <button class="confirm-btn" :disabled="!canConfirm || confirming" @click="confirmAndRun">
             {{ confirming ? '處理中…' : '確認並執行' }}
             <v-icon v-if="!confirming" icon="mdi-arrow-right" size="17" />
@@ -262,7 +265,10 @@
     const project = projectStore.projects.find(p => p.id === projectId.value)
     const framework = frameworkStore.frameworks.find(f => f.id === project?.frameworkId)
     const workflowJson = framework?.workflowJson as
-      | { features?: { name: string, type?: string }[], target_col?: string }
+      | {
+        features?: { name: string, type?: string, description_zh?: string, descriptionZh?: string }[]
+      target_col?: string
+      }
       | undefined
 
     const features = workflowJson?.features ?? []
@@ -273,6 +279,9 @@
       name: feature.name,
       type: feature.type ?? '',
       is_target: feature.name === targetCol,
+      // workflow_json 內層欄位不是 camelCase，descriptionZh 只是防禦性 fallback，
+      // 跟現有的 target_col ?? targetCol 是同一套慣例
+      definition: feature.description_zh ?? feature.descriptionZh,
     }))
 
     // 預測目標不在 features 裡時補一筆，否則使用者無從指定
@@ -368,6 +377,23 @@
         chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
       )
     }
+  }
+
+  /**
+   * 開發用斷點：不改表頭、不存 column_mapping，直接跳去 workflow。
+   *
+   * 還是要設 activeContext，否則 WorkflowWorkspace 找不到框架設定，
+   * models/preprocessing 節點就不會被載入（跟 confirmAndRun 一樣的機制，
+   * 只是這裡帶原始未改名的 datasetFile）。
+   */
+  function skipToWorkflow (): void {
+    const project = projectStore.projects.find(p => p.id === projectId.value)
+    projectStore.setActiveContext({
+      projectId: projectId.value,
+      datasetFile: datasetFile.value,
+      frameworkId: project?.frameworkId ?? null,
+    })
+    router.push(`/workflow?project=${projectId.value}`)
   }
 
   // 依對映改寫表頭後交給 workflow。
@@ -615,6 +641,22 @@
     font-size: 12px;
     color: #b91c1c;
     font-weight: 600;
+  }
+
+  .skip-btn {
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    background: none;
+    color: var(--color-secondary);
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .skip-btn:hover {
+    background: #f3f4f6;
   }
 
   /* 尺寸比照 ProjectsView 的 .new-btn，border: none 不能省，button 預設帶外框 */

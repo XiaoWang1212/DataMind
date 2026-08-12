@@ -209,12 +209,18 @@ def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> d
             continue
         is_target = bool(raw.get("is_target", False))
         required_type = str(raw.get("type", "") or "")
+        raw_definition = raw.get("definition")
+        definition = raw_definition.strip() if isinstance(raw_definition, str) else None
+        definition = definition or None
         variables.append({
             "name": name,
             "type": required_type,
             "is_target": is_target,
             # target 一律視為必要，不管呼叫端傳什麼
             "required": True if is_target else bool(raw.get("required", True)),
+            # definition 純粹是透傳欄位，刻意不參與 _score_candidates 的比對邏輯，
+            # 只在後續的 Gemini prompt 與前端 tooltip 顯示時使用
+            "definition": definition,
             "candidates": _score_candidates(name, required_type, columns),
         })
 
@@ -265,6 +271,7 @@ def run_auto_mapping(paper_variables: list[dict], user_columns: list[dict]) -> d
                 if status == UNMATCHED
                 else []
             ),
+            "definition": variable["definition"],
         })
 
     return {

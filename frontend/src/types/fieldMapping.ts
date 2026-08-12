@@ -16,6 +16,7 @@ export interface PaperVariable {
   type: string
   required?: boolean
   is_target?: boolean
+  definition?: string
 }
 
 /** 使用者資料表的欄位，樣本值取前 5 筆。 */
@@ -32,6 +33,7 @@ export interface MappingItem {
   status: MappingStatus
   sample_values: string[]
   candidate_columns: string[]
+  definition?: string | null
 }
 
 export interface MappingState {

@@ -102,7 +102,7 @@ target_col, models, preprocessing, featureEngineering, validation, metrics, resa
 - resampling：論文有提類別不平衡處理 → 填對應 method；否則填 none
 - tuning：論文有提超參數搜尋 → 填 grid 或 random；否則填 none
 - compute_ci：論文有報告信賴區間或 bootstrap → true；否則 false
-- features：論文提到的輸入特徵，每個一筆"""
+- features：優先列出論文中「完整的候選變數清單」（例如變數定義表、資料欄位表），逐一列出每一個變數；即使論文另外用特徵選擇/重要性分析標示出一個「重要子集」，也不要只列子集——完整清單才是這裡要的，子集留給後續 featureEngineering 的 select_relevant_features 處理。論文完全沒有完整清單時，才依文中零星提到的變數盡量列出。"""
 
 
 @dataclass

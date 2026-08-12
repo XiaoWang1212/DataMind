@@ -66,6 +66,7 @@ def load_paper_variables(workflow_path: Path) -> tuple[list[dict], str]:
             "name": feature["name"],
             "type": feature.get("type", ""),
             "is_target": feature["name"] == target_col,
+            "definition": feature.get("description_zh") or feature.get("descriptionZh"),
         }
         for feature in workflow.get("features", [])
     ]
