@@ -366,7 +366,6 @@
 .sg-bubble {
   max-width: 88%;
   padding: 10px 14px;
-  border: 1px solid transparent;
   border-radius: var(--radius-md);
   font-size: 13px;
   line-height: 1.55;
@@ -381,7 +380,9 @@
 .sg-bubble--assistant {
   align-self: flex-start;
   background: var(--color-chat-system);
-  border-color: color-mix(in srgb, var(--color-ink) 22%, var(--color-chat-system));
+  box-shadow:
+    0 1px 2px rgba(14, 30, 66, 0.1),
+    0 6px 16px rgba(14, 30, 66, 0.07);
   color: var(--color-text);
 }
 
