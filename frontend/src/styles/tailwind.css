@@ -40,9 +40,9 @@
   --color-secondary: rgb(var(--v-theme-secondary));
   --color-accent: rgb(var(--v-theme-accent));
 
-  /* 對話氣泡。兩色都由品牌藏青推導：assistant 用極淡 tint、user 用實色，
-     讓「誰在說話」靠明度差一眼分得出來（舊值 #fbead0 是金色主題的暖米色，跟冷色調不合） */
-  --color-chat-system: #dce6f5;
+  /* AI 氣泡用純白 + 投影浮在玻璃面板上，兩者都是淺色，靠高度而不是明度差區分；
+     使用者氣泡用品牌藏青實色 */
+  --color-chat-system: #ffffff;
   --color-chat-user: #1a3159;
   --color-text: rgb(var(--v-theme-text));
   --color-inverted: #f1f5f9;

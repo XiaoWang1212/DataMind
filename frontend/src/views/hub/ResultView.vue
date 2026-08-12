@@ -589,8 +589,6 @@
 .chat-bubble {
   max-width: 80%;
   padding: 10px 14px;
-  /* 只有 model 有描邊，這裡佔住邊框寬度讓兩側氣泡尺寸一致 */
-  border: 1px solid transparent;
   border-radius: var(--radius-md);
   font-size: 13.5px;
   line-height: 1.6;
@@ -606,7 +604,9 @@
 .chat-bubble--model {
   align-self: flex-start;
   background: var(--color-chat-system);
-  border-color: color-mix(in srgb, var(--color-ink) 22%, var(--color-chat-system));
+  box-shadow:
+    0 1px 2px rgba(14, 30, 66, 0.1),
+    0 6px 16px rgba(14, 30, 66, 0.07);
   color: var(--color-text);
 }
 
