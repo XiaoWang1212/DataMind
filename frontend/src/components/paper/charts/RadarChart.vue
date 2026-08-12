@@ -1,10 +1,10 @@
 <template>
   <div>
     <svg
+      class="chart-svg"
       :height="size"
       :viewBox="`0 0 ${size} ${size}`"
       :width="size"
-      class="chart-svg"
       xmlns="http://www.w3.org/2000/svg"
     >
       <polygon
@@ -12,15 +12,15 @@
         :key="ring.scale"
         class="chart-gridline"
         fill="none"
-        stroke="#e8ebf1"
-        stroke-width="1"
         :points="ring.points"
+        stroke="var(--color-border)"
+        stroke-width="1"
       />
       <line
         v-for="axis in axes"
         :key="`axis-${axis.metric}`"
         class="chart-axis-line"
-        stroke="#d8dbe3"
+        stroke="var(--color-border-strong)"
         stroke-width="1"
         :x1="center"
         :x2="axis.labelX"
@@ -31,7 +31,7 @@
         v-for="axis in axes"
         :key="`label-${axis.metric}`"
         class="chart-axis-label"
-        fill="#6f7480"
+        fill="var(--color-ink-soft)"
         font-size="10"
         :text-anchor="axis.anchor"
         :x="axis.textX"
@@ -104,7 +104,7 @@
     const label = pointForValue(axisIndex, 1.18)
     const angle = angleForAxis(axisIndex)
     const cos = Math.cos(angle)
-    const anchor = cos > 0.2 ? 'start' : cos < -0.2 ? 'end' : 'middle'
+    const anchor = cos > 0.2 ? 'start' : (cos < -0.2 ? 'end' : 'middle')
     return {
       metric,
       labelX: onAxis.x,
@@ -145,18 +145,18 @@
   }
 
   .chart-gridline {
-    stroke: #e8ebf1;
+    stroke: var(--color-border);
     stroke-width: 1;
   }
 
   .chart-axis-line {
-    stroke: #d8dbe3;
+    stroke: var(--color-border-strong);
     stroke-width: 1;
   }
 
   .chart-axis-label {
     font-size: 10px;
-    fill: #6f7480;
+    fill: var(--color-ink-soft);
   }
 
   .chart-radar-shape {
@@ -177,7 +177,7 @@
     align-items: center;
     gap: 5px;
     font-size: 11px;
-    color: #4a4f5c;
+    color: var(--color-text);
   }
 
   .chart-legend-swatch {

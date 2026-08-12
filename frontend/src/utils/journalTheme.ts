@@ -5,13 +5,14 @@ export interface JournalAccent {
   text: string
 }
 
+// 三個期刊是分類色不是狀態色，借用 §2.3 的節點分類 token，避開綠/琥珀/紅
 const JOURNAL_ACCENTS: Record<string, JournalAccent> = {
-  JAMIA: { main: '#1058d6', soft: '#eaf1fd', text: '#1058d6' },
-  'npj Digital Medicine': { main: '#8a6d1a', soft: '#fffbe8', text: '#8a6d1a' },
-  'BMC Medical Informatics and Decision Making': { main: '#0d5d73', soft: '#e6f3f6', text: '#0d5d73' },
+  'JAMIA': { main: 'var(--color-node-inspect)', soft: 'var(--color-surface-alt)', text: 'var(--color-node-inspect)' },
+  'npj Digital Medicine': { main: 'var(--color-node-model)', soft: 'var(--color-surface-alt)', text: 'var(--color-node-model)' },
+  'BMC Medical Informatics and Decision Making': { main: 'var(--color-node-source)', soft: 'var(--color-surface-alt)', text: 'var(--color-node-source)' },
 }
 
-const DEFAULT_ACCENT: JournalAccent = { main: '#4a4f5c', soft: '#eef0f4', text: '#4a4f5c' }
+const DEFAULT_ACCENT: JournalAccent = { main: 'var(--color-ink-soft)', soft: 'var(--color-surface-alt)', text: 'var(--color-ink-soft)' }
 
 export function getJournalAccent (journal: string): JournalAccent {
   return JOURNAL_ACCENTS[journal] ?? DEFAULT_ACCENT
