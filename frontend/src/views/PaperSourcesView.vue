@@ -36,7 +36,13 @@
             type="text"
             @keyup.enter="loadCandidates"
           >
-          <v-btn class="bg-accent" color="accent" :loading="loadingSearch" size="small" @click="loadCandidates">
+          <v-btn
+            class="bg-accent"
+            color="accent"
+            :loading="loadingSearch"
+            size="small"
+            @click="loadCandidates"
+          >
             {{ hasSearched ? '重新查詢' : '查詢文獻' }}
           </v-btn>
         </div>
@@ -174,10 +180,10 @@
   .sources-page {
     --page-bg: var(--color-primary);
     --card-bg: var(--color-surface);
-    --line: #d8dbe3;
-    --line-soft: #e8ebf1;
+    --line: var(--color-border-strong);
+    --line-soft: var(--color-border);
     --text-main: var(--color-text);
-    --text-secondary: var(--color-secondary);
+    --text-secondary: var(--color-ink-soft);
     min-height: 100vh;
     display: flex;
     padding: 0;
@@ -192,7 +198,7 @@
     display: flex;
     flex-direction: column;
     background:
-      radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
+      radial-gradient(circle, color-mix(in oklab, var(--color-ink-soft) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
       var(--page-bg);
     padding: 12px 20px 24px;
     overflow: auto;
@@ -213,7 +219,7 @@
   .sources-title {
     margin: 0;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -243,7 +249,7 @@
 
   .sources-title-field:focus {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: var(--color-ink);
   }
 
   .sources-topic {
@@ -259,7 +265,7 @@
   }
 
   .sources-status--error {
-    color: #ef4444;
+    color: var(--color-error);
   }
 
   .candidate-list {
@@ -293,7 +299,7 @@
   .candidate-title {
     margin: 0 0 4px;
     font-size: 13.5px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -307,7 +313,7 @@
     margin: 0;
     font-size: 12.5px;
     line-height: 1.6;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .sources-actions {
