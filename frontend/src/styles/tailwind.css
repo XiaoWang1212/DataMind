@@ -60,8 +60,11 @@
   --color-success-text: rgb(var(--v-theme-success-text));
   --color-warning-text: rgb(var(--v-theme-warning-text));
   --color-error-text: rgb(var(--v-theme-error-text));
-  --color-node-data: rgb(var(--v-theme-node-data));
-  --color-node-ai: rgb(var(--v-theme-node-ai));
+  --color-node-source: rgb(var(--v-theme-node-source));
+  --color-node-inspect: rgb(var(--v-theme-node-inspect));
+  --color-node-transform: rgb(var(--v-theme-node-transform));
+  --color-node-model: rgb(var(--v-theme-node-model));
+  --color-node-evaluate: rgb(var(--v-theme-node-evaluate));
 
   --breakpoint-*: initial;
   --breakpoint-xs: 0px;

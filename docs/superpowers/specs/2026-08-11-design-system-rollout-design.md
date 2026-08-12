@@ -113,7 +113,9 @@
 
 改成兩個獨立欄位：
 
-- `nodeType`：`data` / `ai` / `manual` / `done`，對應 §2.3 四色，決定節點底色。色值一律引用既有 token（`--color-node-data`、`--color-node-ai`、`--color-warning`、`--color-success`），不在元件裡硬寫 hex。
+- `nodeType`：`source` / `inspect` / `transform` / `model` / `evaluate`，對應 §2.3 的五類分類色，決定節點底色。色值一律引用 token（`--color-node-source` 等五個），不在元件裡硬寫 hex。
+
+  > 這裡原本寫的是 `data` / `ai` / `manual` / `done` 四類。2026-08-12 確認**這個專案沒有 AI 節點**（`mdi-brain` 是 Models），而「人工確認」「完成」是執行狀態不是節點類型。實際十一種節點已依 pipeline 角色重新歸為五類，見 §2.3。
 - `status`：`pending` / `running` / `finished`，走節點外圈 — pending 無外圈、running 沿用現有 spinner 改成轉動進度環、finished 加綠色勾勾角標。
 
 節點形狀維持現狀（圓形 58px + 白色 icon + 下方 label），本來就符合 §7.6。

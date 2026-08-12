@@ -17,6 +17,25 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">Workflow 節點分類色（§2.3）</h2>
+      <p class="sg-note">
+        依 pipeline 角色分五類。全部避開綠／琥珀／紅 —— 那三色留給節點外圈的執行狀態，
+        混用會讓「已完成」讀不出來。節點是圓形 + 白色 icon。
+      </p>
+      <div class="sg-node-grid">
+        <div v-for="cat in nodeCategories" :key="cat.name" class="sg-node">
+          <div class="sg-node-dot" :style="{ background: cat.varRef }">
+            <v-icon icon="mdi-circle-outline" size="24" />
+          </div>
+          <div>
+            <div class="sg-swatch-label">{{ cat.name }}</div>
+            <div class="sg-swatch-var">{{ cat.nodes }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">圓角</h2>
       <div class="sg-row">
         <div class="sg-radius-box" style="border-radius: var(--radius-sm)">sm 8px</div>
@@ -159,8 +178,15 @@
     { name: 'warning-bg', varRef: 'var(--color-warning-bg)' },
     { name: 'error（danger）', varRef: 'var(--color-error)' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)' },
-    { name: 'node-data', varRef: 'var(--color-node-data)' },
-    { name: 'node-ai', varRef: 'var(--color-node-ai)' },
+  ]
+
+  // §2.3：依 pipeline 角色分五類，全部避開綠/琥珀/紅（那三色留給節點外圈的執行狀態）
+  const nodeCategories = [
+    { name: 'source 資料來源', varRef: 'var(--color-node-source)', nodes: 'File' },
+    { name: 'inspect 檢視', varRef: 'var(--color-node-inspect)', nodes: 'Data Table、Distribution' },
+    { name: 'transform 轉換', varRef: 'var(--color-node-transform)', nodes: 'Preprocessor、Feature Engineering' },
+    { name: 'model 建模', varRef: 'var(--color-node-model)', nodes: 'Settings、Models' },
+    { name: 'evaluate 評估', varRef: 'var(--color-node-evaluate)', nodes: 'Test & Score、Feature Importance、Confusion Matrix、Compute CI' },
   ]
 </script>
 
@@ -219,6 +245,29 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-ink-soft);
+}
+
+.sg-node-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.sg-node {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sg-node-dot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  color: #fff;
 }
 
 .sg-radius-box {
