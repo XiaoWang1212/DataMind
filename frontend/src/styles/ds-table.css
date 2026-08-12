@@ -27,10 +27,10 @@
     transition: background-color var(--dur-fast) var(--ease-out);
   }
 
-  /* hover 用藏青的極淡 wash 而不是灰底，讓它讀起來像「品牌色亮起來」而非蒙一層灰 */
+  /* hover 要比表頭淡，列才會往前浮而不是沉下去 */
   @media (hover: hover) and (pointer: fine) {
     .ds-table tbody tr:hover {
-      background: color-mix(in oklab, var(--color-ink) 5%, white);
+      background: color-mix(in oklab, var(--color-ink) 3%, white);
     }
   }
 
