@@ -43,6 +43,7 @@
             'is-active': i === activeIndex,
             'is-selected': opt.value === modelValue,
             'is-disabled': opt.disabled,
+            'is-muted': opt.muted,
           }"
           role="option"
           :aria-selected="opt.value === modelValue"
@@ -62,7 +63,7 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-  interface Option { value: string, label: string, hint?: string, disabled?: boolean }
+  interface Option { value: string, label: string, hint?: string, disabled?: boolean, muted?: boolean }
 
   const props = defineProps<{
     modelValue: string
@@ -413,5 +414,10 @@
   .cs-option.is-disabled {
     color: #cbd5e1;
     cursor: not-allowed;
+  }
+
+  /* 已被別的欄位占用，但仍可點擊選取（會把它搶過來）；跟 is-disabled 共用色號，語氣是「弱化」不是「不能用」 */
+  .cs-option.is-muted .cs-option-label {
+    color: #94a3b8;
   }
 </style>
