@@ -1,6 +1,6 @@
 <template>
   <v-progress-circular
-    bg-color="#e8ebf1"
+    bg-color="var(--color-border)"
     class="score-ring"
     :color="ringColor"
     :model-value="score"
@@ -31,7 +31,7 @@
 
 <style scoped>
   .score-ring__value {
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 </style>

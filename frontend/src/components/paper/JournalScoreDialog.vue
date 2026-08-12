@@ -4,7 +4,7 @@
     class="journal-score-backdrop"
     @click.self="emit('close')"
   >
-    <div class="journal-score-card">
+    <div class="journal-score-card glass-panel">
       <header class="journal-score-header">
         <div class="journal-score-header__text">
           <p class="journal-score-eyebrow" :style="{ color: activeAccent.text }">期刊評分報告</p>
@@ -157,15 +157,13 @@
     z-index: 1000;
   }
 
+  /* 底色、邊框、圓角、陰影由 .glass-panel 提供，在這裡重寫會蓋掉玻璃 */
   .journal-score-card {
     width: 680px;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 64px);
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
     overflow: hidden;
   }
 
@@ -181,7 +179,7 @@
   .journal-score-eyebrow {
     margin: 0 0 4px;
     font-size: 11.5px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.04em;
   }
 
@@ -189,25 +187,25 @@
     margin: 0;
     font-family: 'Noto Serif TC', Georgia, 'Times New Roman', serif;
     font-size: 22px;
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-esc {
     flex-shrink: 0;
-    border: 1px solid #d8dbe3;
-    border-radius: 8px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
     background: none;
     padding: 6px 12px;
     font-size: 11px;
-    font-weight: 600;
-    color: #8a8f9c;
+    font-weight: 500;
+    color: var(--color-ink-soft);
     cursor: pointer;
   }
 
   .journal-score-esc:hover {
-    border-color: #b7bcc7;
-    color: #4a4f5c;
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
   }
 
   .journal-score-warning {
@@ -216,9 +214,9 @@
     gap: 6px;
     margin: 14px 24px 0;
     padding: 8px 12px;
-    border-radius: 8px;
-    background: #fff4e5;
-    color: #9a5b00;
+    border-radius: var(--radius-sm);
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
     font-size: 12px;
     flex-shrink: 0;
   }
@@ -227,7 +225,7 @@
     display: flex;
     gap: 20px;
     padding: 18px 24px 0;
-    border-bottom: 1px solid #e8ebf1;
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
   }
 
@@ -237,14 +235,14 @@
     background: none;
     padding: 0 0 10px;
     font-size: 13px;
-    font-weight: 600;
-    color: #8a8f9c;
+    font-weight: 500;
+    color: var(--color-ink-soft);
     cursor: pointer;
   }
 
   .journal-score-tab--active {
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-body {
@@ -266,18 +264,18 @@
   .journal-score-overview__name {
     margin: 0 0 6px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #8a8f9c;
+    color: var(--color-ink-soft);
   }
 
   .journal-score-overview__comment {
     margin: 0 0 12px;
     font-size: 14.5px;
     line-height: 1.6;
-    font-weight: 600;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-overview__minis {
@@ -288,19 +286,19 @@
 
   .journal-score-overview__more {
     font-size: 12px;
-    color: #8a8f9c;
+    color: var(--color-ink-soft);
   }
 
   .journal-score-divider {
     margin: 20px 0;
     border: none;
-    border-top: 1px solid #e8ebf1;
+    border-top: 1px solid var(--color-border);
   }
 
   .journal-score-section-title {
     margin: 0 0 14px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.02em;
   }
 
@@ -322,14 +320,14 @@
 
   .journal-score-criterion__index {
     font-size: 11px;
-    font-weight: 700;
-    color: #b7bcc7;
+    font-weight: 500;
+    color: var(--color-border-strong);
   }
 
   .journal-score-criterion__name {
     font-size: 13.5px;
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-criterion__bar-row {
@@ -343,7 +341,7 @@
     flex: 1;
     height: 6px;
     border-radius: 3px;
-    background: #e8ebf1;
+    background: var(--color-border);
     overflow: hidden;
   }
 
@@ -355,7 +353,7 @@
   .journal-score-criterion__score {
     flex-shrink: 0;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     min-width: 24px;
     text-align: right;
   }
@@ -364,7 +362,7 @@
     margin: 0;
     font-size: 12.5px;
     line-height: 1.65;
-    color: #4a4f5c;
+    color: var(--color-text);
   }
 
   .journal-score-suggestions {
@@ -379,20 +377,20 @@
   .journal-score-suggestion {
     display: flex;
     gap: 10px;
-    border: 1px solid #e8ebf1;
-    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     padding: 12px 14px;
   }
 
   .journal-score-suggestion__index {
     flex-shrink: 0;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .journal-score-suggestion__text {
     font-size: 12.5px;
     line-height: 1.65;
-    color: #3a3f4a;
+    color: var(--color-text);
   }
 </style>
