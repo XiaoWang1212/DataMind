@@ -98,24 +98,29 @@
       transform: scale(0.96);
     }
 
-    /* 深底按鈕往「亮」的方向走：藏青已經很暗，再加深看不出變化 */
+    /* 深底按鈕往「亮」的方向走：藏青已經很暗，再加深看不出變化。
+       止於 88% —— 再亮下去白字對比會掉太多 */
     .app-btn--primary:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 82%, white);
-      box-shadow: 0 4px 12px color-mix(in oklab, var(--color-ink) 32%, transparent);
+      background: color-mix(in oklab, var(--color-ink) 88%, white);
+      box-shadow: 0 5px 14px color-mix(in oklab, var(--color-ink) 34%, transparent);
     }
 
+    /* 淺底三個變體的底色位移都被文字對比卡住（ghost 過場中仍是 ink-soft 字、
+       danger 是 error-text），所以「看得見」主要靠抬升與陰影，底色只做輔助 */
     .app-btn--secondary:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 14%, white);
-      box-shadow: inset 0 0 0 1px var(--color-border-strong);
+      background: color-mix(in oklab, var(--color-ink) 8%, white);
+      box-shadow: inset 0 0 0 1px var(--color-border-strong), var(--shadow-card);
     }
 
     .app-btn--ghost:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 14%, white);
+      background: color-mix(in oklab, var(--color-ink) 8%, white);
       color: var(--color-ink);
+      box-shadow: var(--shadow-card);
     }
 
     .app-btn--danger:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-error) 32%, white);
+      background: color-mix(in oklab, var(--color-error) 14%, white);
+      box-shadow: var(--shadow-card);
     }
   }
 
