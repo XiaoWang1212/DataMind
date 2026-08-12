@@ -1,6 +1,6 @@
 <template>
-  <div class="mapping-scroll">
-    <table class="mapping-table">
+  <TableShell>
+    <table class="ds-table mapping-table">
       <thead>
         <tr>
           <th class="col-var">論文變數</th>
@@ -21,7 +21,7 @@
               class="target-badge"
               role="img"
             >★</span>
-            <span class="var-name">{{ item.paper_variable }}</span>
+            <span class="ds-identifier var-name">{{ item.paper_variable }}</span>
             <v-tooltip
               v-if="item.definition"
               content-class="status-tooltip"
@@ -55,21 +55,21 @@
             <!-- 配不出來時提供最接近的幾個欄位，讓使用者一鍵選取 -->
             <div v-if="item.status === 'UNMATCHED' && item.candidate_columns.length > 0" class="col-candidates">
               <span class="candidates-label">可能是</span>
-              <button
+              <AppButton
                 v-for="name in item.candidate_columns"
                 :key="name"
                 class="candidate-chip"
                 :title="`選擇 ${name}`"
-                type="button"
+                variant="secondary"
                 @click="emit('update:selection', item, name)"
               >
                 {{ name }}
-              </button>
+              </AppButton>
             </div>
           </td>
           <td class="col-status">
             <div class="status-cell">
-              <!-- 用 v-tooltip 而非 CSS 定位，外層 .mapping-scroll 有 overflow 會裁掉自製的提示 -->
+              <!-- 用 v-tooltip 而非 CSS 定位，外層 TableShell 有 overflow 會裁掉自製的提示 -->
               <v-tooltip
                 content-class="status-tooltip"
                 location="bottom end"
@@ -79,46 +79,53 @@
                 <template #activator="{ props: tooltipProps }">
                   <span
                     v-bind="tooltipProps"
-                    class="status-chip"
-                    :class="`status-chip--${item.status.toLowerCase()}`"
+                    class="status-trigger"
                     tabindex="0"
                   >
-                    {{ STATUS_LABEL[item.status] }}
+                    <!-- 綁 key 讓狀態一改就重新掛載，淡入強調才會重跑 -->
+                    <StatusBadge :key="item.status" :status="STATUS_TONE[item.status]">
+                      {{ STATUS_LABEL[item.status] }}
+                    </StatusBadge>
                   </span>
                 </template>
               </v-tooltip>
-              <button
+              <AppButton
                 v-if="item.status === 'NEEDS_REVIEW'"
                 :aria-label="`${item.paper_variable}：對應正確，標記為已確認`"
-                class="check-btn"
+                class="status-action"
+                icon-only
                 title="對應正確，標記為已確認"
-                type="button"
+                variant="secondary"
                 @click="emit('confirm', item)"
               >
                 <v-icon icon="mdi-check" size="16" />
-              </button>
-              <button
+              </AppButton>
+              <AppButton
                 v-else-if="item.status === 'CONFIRMED'"
                 :aria-label="`${item.paper_variable}：取消確認`"
-                class="undo-btn"
+                class="status-action"
+                icon-only
                 title="取消確認"
-                type="button"
+                variant="danger"
                 @click="emit('unconfirm', item)"
               >
                 <v-icon icon="mdi-undo-variant" size="14" />
-              </button>
+              </AppButton>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
-  </div>
+  </TableShell>
 </template>
 
 <script setup lang="ts">
-  import type { MappingItem, UserColumn } from '@/types/fieldMapping'
+  import type { MappingItem, MappingStatus, UserColumn } from '@/types/fieldMapping'
   import { computed } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import StatusBadge from '@/components/ui/StatusBadge.vue'
+  import TableShell from '@/components/ui/TableShell.vue'
   import { SKIP_VALUE } from '@/types/fieldMapping'
 
   const props = defineProps<{
@@ -140,6 +147,15 @@
     NEEDS_REVIEW: '待確認',
     UNMATCHED: '未對應',
     SKIPPED: '不使用',
+  }
+
+  // 已略過是使用者的決定而非問題，用中性色與其他四種狀態區隔
+  const STATUS_TONE: Record<MappingStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
+    CONFIRMED: 'success',
+    AUTO_MATCHED: 'success',
+    NEEDS_REVIEW: 'warning',
+    UNMATCHED: 'danger',
+    SKIPPED: 'neutral',
   }
 
   // 滑過標籤時顯示，用一般說法避免「信心度」這類系統內部用語
@@ -187,31 +203,15 @@
 </script>
 
 <style scoped>
-  /* 下拉欄固定寬度，視窗窄時由表格自己捲，避免撐開整頁 */
-  .mapping-scroll {
-    overflow-x: auto;
-  }
-
+  /* 下拉欄固定寬度，視窗窄時由 TableShell 自己捲，避免撐開整頁 */
   .mapping-table {
-    width: 100%;
     min-width: 520px;
-    border-collapse: collapse;
     /* fixed 避免超長欄位名稱撐寬整欄，交給 .cs-label 做 ellipsis */
     table-layout: fixed;
-    font-size: 13px;
   }
 
-  .mapping-table th {
-    padding: 8px 10px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--color-secondary);
-    border-bottom: 1px solid #e8e8e8;
-  }
-
+  /* 儲存格高度由樣本值、候選欄位撐開，靠上對齊各欄才會對齊 */
   .mapping-table td {
-    padding: 10px;
-    border-bottom: 1px solid #f0f1f3;
     vertical-align: top;
   }
 
@@ -225,18 +225,18 @@
   }
 
   .target-badge {
-    color: #d97706;
+    color: var(--color-warning);
     margin-right: 4px;
   }
 
   .var-name {
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-text);
   }
 
   .var-info-icon {
     margin-left: 4px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     cursor: help;
     vertical-align: middle;
   }
@@ -245,13 +245,13 @@
     display: block;
     margin-top: 2px;
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
   }
 
   .col-samples {
     margin-top: 4px;
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
   }
 
   .col-candidates {
@@ -264,70 +264,22 @@
 
   .candidates-label {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
   }
 
-  .candidate-chip {
-    padding: 2px 8px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    background: #fff;
+  /* 一列可能列出好幾個候選，縮到比一般按鈕小才塞得進儲存格 */
+  .candidate-chip.app-btn {
+    padding: 2px 10px;
     font-size: 11px;
-    color: var(--color-secondary);
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
   }
 
-  .candidate-chip:hover {
-    background: var(--color-background);
-    border-color: var(--color-accent);
-  }
-
-  .candidate-chip:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .status-chip {
-    display: inline-block;
-    padding: 3px 9px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 600;
-    /* 不換行，避免文字折行後圓角變成一顆球 */
-    white-space: nowrap;
-  }
-
-  .status-chip--auto_matched {
-    background: #dcfce7;
-    color: #15803d;
-  }
-
-  .status-chip--needs_review {
-    background: #fef3c7;
-    color: #b45309;
-  }
-
-  .status-chip--unmatched {
-    background: #fee2e2;
-    color: #b91c1c;
-  }
-
-  .status-chip--skipped {
-    background: #f0f1f3;
-    color: var(--color-secondary);
-  }
-
-  .status-chip--confirmed {
-    background: #dcfce7;
-    color: #15803d;
-  }
-
-  .status-chip[tabindex] {
+  .status-trigger {
+    display: inline-flex;
+    border-radius: 999px;
     cursor: help;
   }
 
-  .status-chip[tabindex]:focus-visible {
+  .status-trigger:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
@@ -338,63 +290,30 @@
     gap: 6px;
   }
 
-  /* 標籤放在按鈕前面，讓使用者先知道狀態再決定是否確認 */
-  .check-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  /* 狀態換了才會重新掛載徽章，藉此帶出一次性的淡入強調 */
+  .status-cell :deep(.status-badge) {
+    animation: status-pop var(--dur-base) var(--ease-out);
+  }
+
+  @keyframes status-pop {
+    from { opacity: 0.4; transform: scale(0.94); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* 縮到 26px，跟徽章併排時才不會比徽章還搶眼 */
+  .status-action.app-btn {
     flex-shrink: 0;
     width: 26px;
     height: 26px;
-    border: 1px solid #cbd5e1;
-    border-radius: 50%;
-    background: #fff;
-    color: #94a3b8;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    padding: 0;
   }
 
-  /* 不用綠色，那是「已確認」的語意色，會跟旁邊的「待確認」混淆 */
-  .check-btn:hover {
-    background: #f0f1f3;
-    border-color: #94a3b8;
-    /* 從色票推導，不另外引入游離色碼 */
-    color: color-mix(in oklab, var(--color-secondary) 60%, white);
-  }
-
-  .check-btn:focus-visible,
-  .undo-btn:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  /* 視覺上 26px，用 ::after 把可點範圍撐到 40px 以符合觸控尺寸 */
-  .check-btn::after,
-  .undo-btn::after {
+  /* 視覺上 26px，用 ::before 把可點範圍撐到 40px 以符合觸控尺寸
+     （::after 已被 AppButton 的邊緣反光佔用） */
+  .status-action.app-btn::before {
     content: '';
     position: absolute;
     inset: -7px;
-  }
-
-  .undo-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 7px;
-    background: none;
-    color: #cbd5e1;
-    cursor: pointer;
-    transition: color 0.15s, background-color 0.15s;
-  }
-
-  .undo-btn:hover {
-    background: #f0f1f3;
-    color: var(--color-secondary);
   }
 
   /* 讓被改動的列閃一下，提示改到哪些欄位 */
@@ -403,7 +322,7 @@
   }
 
   @keyframes row-flash {
-    0%, 40% { background: #fef9c3; }
+    0%, 40% { background: var(--color-warning-bg); }
     100% { background: transparent; }
   }
 
@@ -411,11 +330,11 @@
   @media (prefers-reduced-motion: reduce) {
     .row-flash {
       animation: none;
-      background: #fef9c3;
+      background: var(--color-warning-bg);
     }
 
-    .check-btn {
-      transition: none;
+    .status-cell :deep(.status-badge) {
+      animation: none;
     }
   }
 </style>
