@@ -196,6 +196,8 @@
     width: 100%;
     min-width: 520px;
     border-collapse: collapse;
+    /* fixed 避免超長欄位名稱撐寬整欄，交給 .cs-label 做 ellipsis */
+    table-layout: fixed;
     font-size: 13px;
   }
 
