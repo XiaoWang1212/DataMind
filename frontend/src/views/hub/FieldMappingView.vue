@@ -587,6 +587,12 @@
     background: var(--color-surface);
   }
 
+  /* 表格切齊卡片邊緣，不要在外框內再留一圈白邊看起來像卡中卡。
+     負邊距寫在這裡而不是子元件裡：padding 是這張卡的，子元件不該去猜它的值 */
+  .mapping-main :deep(.table-shell) {
+    margin-inline: -18px;
+  }
+
   .mapping-skeleton {
     display: flex;
     flex-direction: column;

@@ -17,28 +17,28 @@ export default createVuetify({
       light: {
         colors: {
           // 品牌藏青（docs/DESIGN_SYSTEM.md §2.2 ink）：主要按鈕、選中、重點
-          primary: '#1A3159',
+          'primary': '#1A3159',
           // ink-soft：次要文字、說明、icon
-          secondary: '#626B7E',
+          'secondary': '#626B7E',
           // accent 名稱保留給尚未遷移的既有頁面用（167 處引用），數值已從金色改成品牌藏青，
           // 之後個別頁面遷移時應改直接引用 primary，屆時再考慮拿掉這個 key
-          accent: '#1A3159',
+          'accent': '#1A3159',
           // page：頁面底色。實際畫面會被 main.scss 的漸層蓋掉，這裡是漸層底下的純色 fallback
-          background: '#E4E9ED',
-          surface: '#FFFFFF',
-          success: '#1F7A44',
-          warning: '#C9822E',
+          'background': '#E4E9ED',
+          'surface': '#FFFFFF',
+          'success': '#1F7A44',
+          'warning': '#C9822E',
           // docs/DESIGN_SYSTEM.md 稱這個角色為 danger，這裡沿用 Vuetify 內建的 error 插槽名稱
-          error: '#C7392E',
+          'error': '#C7392E',
           // 品牌藏青深一階：hover/按下、標題強調
           'ink-strong': '#12244A',
           // 內文深色文字。原本借用 primary 的位置（--color-ink），Task 1 已把舊引用改名讓出這裡
-          text: '#1C2130',
+          'text': '#1C2130',
           // 次級底：表頭、hover 背景、工具列。偏冷的淺灰藍，跟頁面漸層與藏青同一個色溫
           // （舊值 #F6F5F2 是暖米白，金色主題的遺留，疊在冷色背景上會顯髒）
           'surface-alt': '#F1F4F8',
           // 一般分隔線
-          border: '#E4E6E8',
+          'border': '#E4E6E8',
           // 強調分隔、輸入框邊界
           'border-strong': '#D3D8DC',
           'success-bg': '#DCEDE3',
@@ -50,11 +50,11 @@ export default createVuetify({
           'error-text': '#B8342A',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
           // 全部避開綠/琥珀/紅 —— 那三色留給節點外圈的執行狀態，混用會讓「已完成」讀不出來
-          'node-source': '#4F8C8C',
-          'node-inspect': '#5B7A9D',
-          'node-transform': '#5C6BA8',
-          'node-model': '#6B5B95',
-          'node-evaluate': '#84598C',
+          'node-source': '#2F7E8C',
+          'node-inspect': '#3A6BB8',
+          'node-transform': '#6252BE',
+          'node-model': '#93459F',
+          'node-evaluate': '#B44476',
         },
       },
     },

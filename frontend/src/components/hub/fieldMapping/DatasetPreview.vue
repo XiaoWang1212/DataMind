@@ -4,7 +4,7 @@
     <TableShell flush>
       <table class="ds-table ds-table--dense">
         <thead>
-          <tr><th v-for="col in columns" :key="col" class="ds-identifier">{{ col }}</th></tr>
+          <tr><th v-for="col in columns" :key="col">{{ col }}</th></tr>
         </thead>
         <tbody>
           <tr v-for="(row, i) in rows" :key="i">

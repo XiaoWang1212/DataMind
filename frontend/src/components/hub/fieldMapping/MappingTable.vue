@@ -21,7 +21,7 @@
               class="target-badge"
               role="img"
             >★</span>
-            <span class="ds-identifier var-name">{{ item.paper_variable }}</span>
+            <span class="var-name">{{ item.paper_variable }}</span>
             <v-tooltip
               v-if="item.definition"
               content-class="status-tooltip"
@@ -106,7 +106,7 @@
                 class="status-action"
                 icon-only
                 title="取消確認"
-                variant="danger"
+                variant="ghost"
                 @click="emit('unconfirm', item)"
               >
                 <v-icon icon="mdi-undo-variant" size="14" />

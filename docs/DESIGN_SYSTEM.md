@@ -75,15 +75,17 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 
 | 分類 token | 色值 | 涵蓋節點 |
 |---|---|---|
-| `--color-node-source` | `#4F8C8C` 青 | File |
-| `--color-node-inspect` | `#5B7A9D` 石板藍 | Data Table、Distribution |
-| `--color-node-transform` | `#5C6BA8` 靛 | Preprocessor、Feature Engineering |
-| `--color-node-model` | `#6B5B95` 紫 | Settings、Models |
-| `--color-node-evaluate` | `#84598C` 紫紅 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
+| `--color-node-source` | `#2F7E8C` 藍綠 | File |
+| `--color-node-inspect` | `#3A6BB8` 藍 | Data Table、Distribution |
+| `--color-node-transform` | `#6252BE` 靛紫 | Preprocessor、Feature Engineering |
+| `--color-node-model` | `#93459F` 紫 | Settings、Models |
+| `--color-node-evaluate` | `#B44476` 洋紅 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
 
 > **五個分類色一律避開綠、琥珀、紅。** 節點的底色表達「這是哪一類」,執行狀態(未執行/進行中/已完成)走節點**外圈**,用的正是那三個狀態色。分類色若混入狀態色系,使用者會分不出「這個節點跑完了」和「這個節點是評估類」。
 >
-> 白色 icon 疊在五個底色上的對比依序為 3.84 / 4.45 / 5.09 / 5.91 / 5.54:1,皆過圖形元素的 3:1 門檻。之後調整任何一個色值都要重新量。
+> 白色 icon 疊在五個底色上的對比依序為 4.68 / 5.28 / 6.05 / 5.85 / 5.21:1,皆過圖形元素的 3:1 門檻。之後調整任何一個色值都要重新量。
+>
+> **五色刻意拉開飽和度與色相跨度**(飽和 0.57–0.68、色相 189°→333°)。第一版取低飽和(0.36–0.45、跨度 111°)想維持安靜,結果五個節點在畫布上幾乎分不出來,失去分類色的意義。分類色需要能被一眼區分,這比「安靜」優先。
 
 節點是圓形 + 白色 icon,節點間用連接線串起(見 §7.6)。新增節點時歸到既有五類之一,不要為單一節點另開顏色;真的需要新分類再回來更新此表,不要各畫面各自上色。
 
