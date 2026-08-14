@@ -32,7 +32,7 @@
       >
         <v-icon :icon="item.icon" size="22" />
         <span class="hub-nav-label">{{ item.label }}</span>
-        <span v-if="collapsed" class="hub-nav-tooltip">{{ item.label }}</span>
+        <span v-if="collapsed" aria-hidden="true" class="hub-nav-tooltip glass-menu">{{ item.label }}</span>
       </RouterLink>
     </nav>
 
@@ -106,11 +106,10 @@
   width: 220px;
   min-width: 220px;
   height: calc(100vh - 32px);
-  margin: 16px 0 16px 16px;
+  margin: 16px;
   border-radius: var(--radius-lg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-left: none;
   transition: width var(--dur-base) var(--ease-in-out),
     min-width var(--dur-base) var(--ease-in-out);
 }
@@ -198,9 +197,6 @@
   z-index: 3;
   margin-left: 10px;
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
-  box-shadow: var(--shadow-float);
   color: var(--color-text);
   font-size: 12.5px;
   font-weight: 400;
@@ -363,7 +359,6 @@
 .hub-sidebar--glass-light {
   background: rgba(255, 255, 255, 0.42);
   border: 1.5px solid rgba(255, 255, 255, 0.9);
-  border-left: none;
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35),
@@ -375,7 +370,6 @@
 .hub-sidebar--glass-dark {
   background: rgba(16, 32, 66, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-left: none;
   box-shadow: var(--shadow-float);
 }
 
@@ -405,7 +399,6 @@
 
 .hub-sidebar--glass-dark .hub-nav-tooltip {
   background: rgba(16, 32, 66, 0.92);
-  box-shadow: var(--shadow-float);
   color: #fff;
 }
 
