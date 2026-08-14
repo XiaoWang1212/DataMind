@@ -32,6 +32,7 @@
       >
         <v-icon :icon="item.icon" size="22" />
         <span class="hub-nav-label">{{ item.label }}</span>
+        <span v-if="collapsed" class="hub-nav-tooltip">{{ item.label }}</span>
       </RouterLink>
     </nav>
 
@@ -190,6 +191,27 @@
   opacity: 0;
 }
 
+.hub-nav-tooltip {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  z-index: 3;
+  margin-left: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+  box-shadow: var(--shadow-float);
+  color: var(--color-text);
+  font-size: 12.5px;
+  font-weight: 400;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-50%) translateX(-4px) scale(0.97);
+  transition: opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
 .hub-brand-title {
   font-size: 14.5px;
   font-weight: 500;
@@ -330,6 +352,11 @@
     background: rgba(255, 255, 255, 0.38);
     color: var(--color-text);
   }
+
+  .hub-nav-item:hover .hub-nav-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
 }
 
 /* ── 淺色玻璃（現行版本） ── */
@@ -374,6 +401,12 @@
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.85);
+}
+
+.hub-sidebar--glass-dark .hub-nav-tooltip {
+  background: rgba(16, 32, 66, 0.92);
+  box-shadow: var(--shadow-float);
+  color: #fff;
 }
 
 .hub-sidebar--glass-dark .hub-sidebar-user,
