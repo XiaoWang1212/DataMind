@@ -107,7 +107,6 @@
   min-width: 220px;
   height: calc(100vh - 32px);
   margin: 16px 0 16px 16px;
-  overflow: hidden;
   border-radius: var(--radius-lg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -129,6 +128,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  border-radius: inherit;
   pointer-events: none;
 }
 
