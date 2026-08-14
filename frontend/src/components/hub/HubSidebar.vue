@@ -30,7 +30,7 @@
         :class="{ 'hub-nav-item--active': route.path.startsWith(item.to) }"
         :to="item.to"
       >
-        <v-icon :icon="item.icon" size="19" />
+        <v-icon :icon="item.icon" size="22" />
         <span class="hub-nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -247,10 +247,11 @@
 }
 
 .hub-nav-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
+  gap: 14px;
+  padding: 11px 12px;
   border-radius: var(--radius-sm);
   font-size: 13.5px;
   font-weight: 400;
@@ -264,7 +265,7 @@
 
 /* 收合後把圖示推到 72px 寬度的中間 */
 .hub-sidebar--collapsed .hub-nav-item {
-  padding-inline: 16px;
+  padding-inline: 15px;
 }
 
 .hub-nav-item--active {
