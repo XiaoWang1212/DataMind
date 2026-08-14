@@ -98,14 +98,16 @@
 <style scoped>
 .hub-sidebar {
   position: sticky;
-  top: 0;
+  top: 16px;
   z-index: 2;
   display: flex;
   flex-direction: column;
   width: 220px;
   min-width: 220px;
-  height: 100vh;
+  height: calc(100vh - 32px);
+  margin: 16px 0 16px 16px;
   overflow: hidden;
+  border-radius: var(--radius-lg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-left: none;
@@ -352,7 +354,7 @@
     inset 1px 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35),
     inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
-    4px 0 24px rgba(28, 33, 48, 0.1);
+    var(--shadow-float);
 }
 
 /* ── 深色玻璃（§7.2 規範版本） ── */
@@ -360,7 +362,7 @@
   background: rgba(16, 32, 66, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-left: none;
-  box-shadow: 4px 0 24px rgba(14, 30, 66, 0.28);
+  box-shadow: var(--shadow-float);
 }
 
 .hub-sidebar--glass-dark .hub-brand-title,
