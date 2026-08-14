@@ -120,20 +120,6 @@
   min-width: 72px;
 }
 
-.hub-sidebar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  width: 70%;
-  height: 220%;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.7) 50%, transparent 65%);
-  transform: translate(-160%, -20%) rotate(12deg);
-  animation: hub-sidebar-shine 4.5s ease-in-out infinite;
-  pointer-events: none;
-}
-
 .hub-sidebar-orbs {
   position: absolute;
   top: 0;
@@ -405,15 +391,6 @@
   .hub-sidebar--glass-dark .hub-logout-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
-  }
-}
-
-@keyframes hub-sidebar-shine {
-  0%, 25% {
-    transform: translate(-160%, -20%) rotate(12deg);
-  }
-  65%, 100% {
-    transform: translate(160%, -20%) rotate(12deg);
   }
 }
 </style>
