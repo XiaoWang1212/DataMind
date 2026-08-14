@@ -14,11 +14,11 @@
 
     <div class="hub-sidebar-header">
       <div class="hub-brand">
-        <div class="hub-brand-title">研究中心</div>
+        <div class="hub-brand-title">DataMind</div>
         <div class="hub-brand-sub">框架分析系統</div>
       </div>
       <button class="hub-toggle-btn" @click="collapsed = !collapsed">
-        <v-icon :icon="collapsed ? 'mdi-chevron-right' : 'mdi-chevron-left'" size="15" />
+        <v-icon :icon="collapsed ? 'mdi-dock-right' : 'mdi-dock-left'" size="15" />
       </button>
     </div>
 
@@ -185,7 +185,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 18px 14px 14px;
+  padding: 18px 10px 14px;
 }
 
 /* 收合時文字先淡出、寬度再收，避免文字被寬度轉場硬切 */
