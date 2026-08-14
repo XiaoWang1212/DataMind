@@ -991,7 +991,7 @@
 
   .mapping-table {
     width: 100%;
-    min-width: 520px;
+    min-width: 700px;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 13px;
@@ -1086,6 +1086,7 @@
     font-size: 11px;
     color: var(--color-secondary);
     cursor: pointer;
+    overflow-wrap: anywhere;
     transition: background-color 0.15s, border-color 0.15s;
   }
 
