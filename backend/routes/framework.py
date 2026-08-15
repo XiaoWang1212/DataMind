@@ -47,6 +47,8 @@ def create_framework():
     title = data.get("title")
     if not title:
         return jsonify({"success": False, "error": "title 為必填欄位"}), 400
+    if len(title) > 255:
+        return jsonify({"success": False, "error": "title 長度不可超過 255 字元"}), 400
 
     framework = Framework(
         user_id=current_user.id,
@@ -91,6 +93,8 @@ def update_framework(framework_id):
         title = (data["title"] or "").strip()
         if not title:
             return jsonify({"success": False, "error": "title 不可為空"}), 400
+        if len(title) > 255:
+            return jsonify({"success": False, "error": "title 長度不可超過 255 字元"}), 400
         framework.title = title
 
     db.session.commit()

@@ -6,8 +6,9 @@
 涵蓋：
   1. 已登入使用者建立框架後，PATCH title 可以成功改名，GET 讀回同一個值
   2. PATCH title 為空字串/純空白 → 回 400，資料庫裡的 title 不變
-  3. 用另一個使用者的 client 對別人的框架 GET/PATCH → 回 404
-  4. PATCH 不存在的 framework id → 回 404
+  3. PATCH title 超過 255 字元 → 回 400（而非未攔截導致的 500），資料庫裡的 title 不變
+  4. 用另一個使用者的 client 對別人的框架 GET/PATCH → 回 404
+  5. PATCH 不存在的 framework id → 回 404
 
 執行後會清除腳本建立的測試帳號與框架，不會在資料庫留下垃圾資料。
 """
@@ -87,6 +88,18 @@ def test_patch_rejects_empty_title(owner_client, framework_id):
     print("[PASS] PATCH 空白 title 回 400，資料庫裡的值不變")
 
 
+def test_patch_rejects_too_long_title(owner_client, framework_id):
+    too_long_title = "長" * 256
+    response = owner_client.patch(f"/api/frameworks/{framework_id}", json={"title": too_long_title})
+    assert response.status_code == 400, f"expected 400, got {response.status_code}: {response.get_json()}"
+    assert response.get_json()["success"] is False
+
+    get_response = owner_client.get(f"/api/frameworks/{framework_id}")
+    assert get_response.get_json()["result"]["title"] == "新標題", "過長 title 不該真的寫進資料庫"
+
+    print("[PASS] PATCH 超過 255 字元的 title 回 400（而非 500），資料庫裡的值不變")
+
+
 def test_patch_and_get_reject_other_users_framework(owner_client, other_client, framework_id):
     patch_response = other_client.patch(f"/api/frameworks/{framework_id}", json={"title": "搶別人的框架"})
     assert patch_response.status_code == 404
@@ -116,6 +129,7 @@ def main():
 
         framework_id = test_patch_updates_title(owner_client)
         test_patch_rejects_empty_title(owner_client, framework_id)
+        test_patch_rejects_too_long_title(owner_client, framework_id)
         test_patch_and_get_reject_other_users_framework(owner_client, other_client, framework_id)
         test_patch_nonexistent_framework_returns_404(owner_client)
         print("\n全部通過")

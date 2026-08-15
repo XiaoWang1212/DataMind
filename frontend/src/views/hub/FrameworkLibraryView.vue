@@ -76,6 +76,7 @@
               ref="titleInputRef"
               v-model="titleDraft"
               class="panel-title-input"
+              maxlength="255"
               @blur="commitTitleEdit"
               @keydown="handleTitleKeydown"
             >
@@ -193,12 +194,14 @@ const selectedFramework = computed(() =>
 )
 
 const isEditingTitle = ref(false)
+const isSavingTitle = ref(false)
 const titleDraft = ref('')
 const titleError = ref<string | null>(null)
 const titleInputRef = ref<HTMLInputElement | null>(null)
 
 watch(selectedId, () => {
   isEditingTitle.value = false
+  isSavingTitle.value = false
   titleError.value = null
 })
 
@@ -214,11 +217,19 @@ function startEditingTitle () {
 }
 
 function cancelEditingTitle () {
+  // Ignore cancel while a save is in flight so the pending request's
+  // success/failure handling (including any error message) still has an
+  // edit state to land on instead of being silently discarded.
+  if (isSavingTitle.value) return
   isEditingTitle.value = false
   titleError.value = null
 }
 
 async function commitTitleEdit () {
+  // Guard against concurrent invocations (e.g. Enter followed immediately
+  // by blur) — while a save is already in flight, do nothing and let the
+  // in-flight call own the edit state and any resulting error.
+  if (isSavingTitle.value) return
   if (!isEditingTitle.value || !selectedFramework.value) return
 
   const trimmed = titleDraft.value.trim()
@@ -233,6 +244,7 @@ async function commitTitleEdit () {
   }
 
   const frameworkId = selectedFramework.value.id
+  isSavingTitle.value = true
   try {
     await store.renameFramework(frameworkId, trimmed)
     isEditingTitle.value = false
@@ -240,6 +252,8 @@ async function commitTitleEdit () {
   } catch (error) {
     console.error('更新框架名稱失敗', error)
     titleError.value = '儲存失敗，請重試'
+  } finally {
+    isSavingTitle.value = false
   }
 }
 
