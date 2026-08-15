@@ -64,7 +64,6 @@ export function useWorkflowNodes(
         data: {
           ...node.data,
           status,
-          colorClass: status === 'finished' ? 'node-yellow' : node.data.colorClass,
           highlighted,
           highlightColor: highlighted ? color : null,
           isSelected: node.id === selectedNodeId.value,
@@ -150,7 +149,7 @@ export function useWorkflowNodes(
         data: {
           icon: 'mdi-brain',
           label: name,
-          colorClass: 'node-pending',
+          nodeType: 'model',
           description: purposeZh || name,
           fields: [],
           config: { modelName: name },
@@ -232,7 +231,7 @@ export function useWorkflowNodes(
         data: {
           icon: def.icon,
           label: def.label,
-          colorClass: existing?.data.colorClass ?? 'node-pending',
+          nodeType: 'transform',
           description: def.desc,
           fields: [],
           config: { pipeline: def.pipeline },
@@ -311,7 +310,7 @@ export function useWorkflowNodes(
         data: {
           icon: 'mdi-chart-areaspline-variant',
           label: 'Compute\nCI',
-          colorClass: 'node-pending',
+          nodeType: 'evaluate',
           description: 'Bootstrap 信賴區間',
           fields: [],
           config: {},
@@ -357,8 +356,8 @@ export function useWorkflowNodes(
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
         data: id === 'preprocessor'
-          ? { icon: 'mdi-filter-cog-outline', label: 'Preprocessor', colorClass: 'node-pending', description: '資料前處理', fields: [], config: { pipeline: preprocessing } }
-          : { icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', colorClass: 'node-pending', description: '特徵工程', fields: [], config: { pipeline: featureEng } },
+          ? { icon: 'mdi-filter-cog-outline', label: 'Preprocessor', nodeType: 'transform', description: '資料前處理', fields: [], config: { pipeline: preprocessing } }
+          : { icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', nodeType: 'transform', description: '特徵工程', fields: [], config: { pipeline: featureEng } },
       }))
 
       const base = nodes.value.filter(n =>
