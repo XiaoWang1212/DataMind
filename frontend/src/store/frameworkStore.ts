@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createFramework, type CreateFrameworkPayload, listFrameworks } from '@/api/framework'
+import { createFramework, type CreateFrameworkPayload, listFrameworks, updateFramework } from '@/api/framework'
 
 export interface Framework {
   id: number
@@ -34,5 +34,22 @@ export const useFrameworkStore = defineStore('framework', () => {
     return created
   }
 
-  return { frameworks, loadFrameworks, addFramework }
+  async function renameFramework (id: number, title: string): Promise<void> {
+    const target = frameworks.value.find(f => f.id === id)
+    const previousTitle = target?.title
+    if (target) {
+      target.title = title
+    }
+    try {
+      await updateFramework(id, { title })
+    } catch (error) {
+      if (target && previousTitle !== undefined) {
+        target.title = previousTitle
+      }
+      console.error('更新框架名稱失敗', error)
+      throw error
+    }
+  }
+
+  return { frameworks, loadFrameworks, addFramework, renameFramework }
 })

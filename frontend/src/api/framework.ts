@@ -50,3 +50,18 @@ export async function createFramework (payload: CreateFrameworkPayload): Promise
   const result = await parseFrameworkResponse(response)
   return result.result as FrameworkDTO
 }
+
+export interface UpdateFrameworkPatch {
+  title?: string
+}
+
+export async function updateFramework (id: number, patch: UpdateFrameworkPatch): Promise<FrameworkDTO> {
+  const response = await fetch(`/api/frameworks/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(patch),
+  })
+  const result = await parseFrameworkResponse(response)
+  return result.result as FrameworkDTO
+}
