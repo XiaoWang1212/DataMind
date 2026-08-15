@@ -63,7 +63,7 @@ services:
       POSTGRES_PASSWORD: datamind
       POSTGRES_DB: datamind
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
