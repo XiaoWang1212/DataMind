@@ -194,7 +194,7 @@
   .canvas {
     background: transparent;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding-top: 6px;
     min-height: 0;
     min-width: 0;
@@ -210,7 +210,7 @@
     min-height: 300px;
     min-width: 0;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background-color: var(--color-surface);
     background-image: radial-gradient(
       color-mix(in oklab, var(--color-accent) 8%, transparent) 0.9px,
@@ -259,7 +259,7 @@
 
     .flow-area {
       min-height: 420px;
-      border-radius: 10px;
+      border-radius: var(--radius-md);
     }
   }
 </style>
