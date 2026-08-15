@@ -18,9 +18,9 @@
         type="file"
         @change="onFileChange"
       >
-      <button class="upload-modal-button" type="button" @click="browseFile">
+      <AppButton variant="primary" @click="browseFile">
         瀏覽檔案
-      </button>
+      </AppButton>
     </div>
 
     <div v-if="fileName" class="upload-modal-file">
@@ -36,6 +36,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
 
   const props = defineProps<{
     file?: File | null
@@ -106,26 +107,9 @@
       "Noto Sans TC", "Microsoft JhengHei", "Apple LiGothic", sans-serif;
   }
 
-  .upload-card {
-    padding: 18px;
-    border: 1px dashed color-mix(in oklab, var(--color-accent) 28%, transparent);
-    border-radius: 16px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .upload-card__desc {
-    margin: 0;
-    color: var(--color-secondary);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
   .upload-modal-dropzone {
     border: 2px dashed rgba(148, 163, 184, 0.9);
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     min-height: 220px;
     padding: 28px;
     display: grid;
@@ -133,8 +117,8 @@
     text-align: center;
     gap: 14px;
     transition:
-      border-color 0.2s ease,
-      background 0.2s ease;
+      border-color var(--dur-base) ease,
+      background var(--dur-base) ease;
   }
 
   .upload-modal-dropzone--active {
@@ -149,22 +133,12 @@
 
   .upload-modal-line1 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
   .upload-modal-line2 {
     color: var(--color-secondary);
-    font-size: 14px;
-  }
-
-  .upload-modal-button {
-    border: none;
-    border-radius: 999px;
-    padding: 10px 22px;
-    background: var(--color-accent);
-    color: #fff;
-    cursor: pointer;
     font-size: 14px;
   }
 
@@ -181,148 +155,9 @@
   }
 
   .upload-modal-error {
-    color: #ef4444;
+    color: var(--color-error);
     font-size: 13px;
     text-align: center;
-  }
-
-  .upload-modal-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .upload-modal-preview-header {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--color-text);
-  }
-
-  .upload-modal-preview-summary {
-    display: flex;
-    gap: 16px;
-    color: var(--color-secondary);
-    font-size: 13px;
-  }
-
-  .upload-modal-chart-grid {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scroll-snap-type: x proximity;
-  }
-
-  .upload-modal-chart-grid::-webkit-scrollbar {
-    height: 10px;
-  }
-
-  .upload-modal-chart-grid::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.7);
-    border-radius: 999px;
-  }
-
-  .upload-modal-chart-card {
-    flex: 0 0 320px;
-    min-width: 320px;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    border-radius: 18px;
-    padding: 16px;
-    background: var(--color-surface);
-    scroll-snap-align: start;
-  }
-
-  .upload-modal-chart-title {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: var(--color-text);
-  }
-
-  .upload-modal-chart-subtitle {
-    margin-top: 6px;
-    color: var(--color-secondary);
-    font-size: 12px;
-  }
-
-  .upload-modal-chart-meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--color-secondary);
-    font-size: 12px;
-    margin-bottom: 14px;
-  }
-
-  .upload-modal-chart-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .upload-modal-chart-bar-row {
-    display: grid;
-    grid-template-columns: minmax(75px, 1.4fr) 1fr auto;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .upload-modal-chart-bar-label {
-    font-size: 12px;
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-
-  .upload-modal-chart-bar-track {
-    height: 10px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    overflow: hidden;
-  }
-
-  .upload-modal-chart-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: var(--color-accent);
-  }
-
-  .upload-modal-chart-bar-value {
-    font-size: 12px;
-    color: var(--color-text);
-    text-align: right;
-  }
-
-  .upload-modal-preview-table {
-    max-height: 220px;
-    overflow: auto;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    border-radius: 14px;
-    background: var(--color-surface);
-    color: var(--color-text);
-  }
-
-  .upload-modal-preview-table table {
-    width: 100%;
-    min-width: max-content;
-    border-collapse: collapse;
-  }
-
-  .upload-modal-preview-table th,
-  .upload-modal-preview-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    text-align: left;
-    font-size: 13px;
-    white-space: nowrap;
-    color: var(--color-text);
-  }
-
-  .upload-modal-preview-table th {
-    background: var(--color-surface);
-    color: var(--color-text);
   }
 
   .workflow-file-upload-panel {
