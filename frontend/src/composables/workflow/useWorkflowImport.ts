@@ -127,7 +127,7 @@ export function useWorkflowImport (
       position: { x: 460 + i * 200, y: 290 },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      data: { icon: def.icon, label: def.label, colorClass: 'node-pending', description: def.desc, fields: [], config: { pipeline: def.pipeline } },
+      data: { icon: def.icon, label: def.label, nodeType: 'transform', description: def.desc, fields: [], config: { pipeline: def.pipeline } },
     }))
 
     const modelX = 460 + preDynDefs.length * 200
@@ -146,7 +146,7 @@ export function useWorkflowImport (
         data: {
           icon: 'mdi-brain',
           label: name,
-          colorClass: 'node-pending',
+          nodeType: 'model',
           description: purposeZh || name,
           fields: [],
           config: { modelName: name },
