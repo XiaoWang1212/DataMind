@@ -175,8 +175,100 @@
       <p v-else class="empty-hint">尚未加入任何模型</p>
     </div>
 
-    <!-- ── Step 3：信賴區間 ── -->
-    <div v-else class="step-body">
+    <!-- ── Step 3：驗證方式 ── -->
+    <div v-else-if="currentStep === 3" class="step-body">
+      <div class="validation-methods">
+        <div
+          v-for="method in VALIDATION_METHODS"
+          :key="method.value"
+          class="validation-method"
+        >
+          <label class="validation-method__radio">
+            <input
+              :checked="localValidation.method === method.value"
+              name="validation-method"
+              type="radio"
+              @change="setValidationMethod(method.value)"
+            >
+            {{ method.label }}
+          </label>
+
+          <div v-if="localValidation.method === method.value" class="validation-method__params">
+            <template v-if="method.value === 'k_fold' || method.value === 'group_k_fold'">
+              <div class="param-pair">
+                <span class="param-key">Number of folds</span>
+                <input
+                  class="param-num"
+                  min="2"
+                  type="number"
+                  :value="Number(localValidation.n_splits ?? 10)"
+                  @change="patchValidation('n_splits', Number(($event.target as HTMLInputElement).value))"
+                >
+              </div>
+            </template>
+            <template v-if="method.value === 'k_fold'">
+              <label class="param-checkbox">
+                <input
+                  :checked="Boolean(localValidation.stratified ?? true)"
+                  type="checkbox"
+                  @change="patchValidation('stratified', ($event.target as HTMLInputElement).checked)"
+                >
+                Stratified
+              </label>
+            </template>
+            <template v-if="method.value === 'group_k_fold'">
+              <div class="param-pair">
+                <span class="param-key">Group column</span>
+                <CustomSelect
+                  class="param-select"
+                  :disabled="datasetColumns.length === 0"
+                  :model-value="String(localValidation.group_column ?? '')"
+                  :options="datasetColumns.map(c => ({ value: c.name, label: c.name }))"
+                  placeholder="選擇欄位"
+                  @update:model-value="patchValidation('group_column', $event)"
+                />
+              </div>
+            </template>
+            <template v-if="method.value === 'random_sampling'">
+              <div class="param-pair">
+                <span class="param-key">Repeat train/test</span>
+                <input
+                  class="param-num"
+                  min="1"
+                  type="number"
+                  :value="Number(localValidation.n_repeats ?? 10)"
+                  @change="patchValidation('n_repeats', Number(($event.target as HTMLInputElement).value))"
+                >
+              </div>
+            </template>
+            <template v-if="method.value === 'random_sampling' || method.value === 'test_on_train' || method.value === 'test_on_test'">
+              <div class="param-pair">
+                <span class="param-key">Training set size (%)</span>
+                <input
+                  class="param-num"
+                  max="99"
+                  min="1"
+                  type="number"
+                  :value="Math.round(Number(localValidation.train_size ?? 0.8) * 100)"
+                  @change="patchValidation('train_size', Number(($event.target as HTMLInputElement).value) / 100)"
+                >
+              </div>
+              <label class="param-checkbox">
+                <input
+                  :checked="Boolean(localValidation.stratified ?? true)"
+                  type="checkbox"
+                  @change="patchValidation('stratified', ($event.target as HTMLInputElement).checked)"
+                >
+                Stratified
+              </label>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 4：信賴區間 ── -->
+    <div v-else-if="currentStep === 4" class="step-body">
       <div class="ci-card">
         <div class="ci-card__header">
           <div class="ci-card__info">
@@ -251,18 +343,21 @@
     availableModels: string[]
     usedModelNames: string[]
     modelOptionsLoading?: boolean
+    validation: Record<string, unknown>
+    datasetColumns: Array<{ name: string, type: string, role: string }>
   }>()
 
   const emit = defineEmits<{
     (e: 'add-model' | 'remove-model', name: string): void
     (e: 'update-preprocessing' | 'update-feature-engineering', steps: Array<Record<string, unknown>>): void
     (e: 'update-compute-ci', value: boolean): void
+    (e: 'update-validation', value: Record<string, unknown>): void
     (e: 'continue'): void
     (e: 'back-node'): void
     (e: 'step-change', step: number): void
   }>()
 
-  const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
+  const STEPS = ['前處理', '特徵工程', '模型', '驗證方式', '信賴區間'] as const
   const currentStep = ref(0)
 
   const LAST_STEP = STEPS.length - 1
@@ -302,11 +397,21 @@
     remove_sparse_features: '移除稀疏特徵',
   }
 
+  const VALIDATION_METHODS: Array<{ value: string, label: string }> = [
+    { value: 'k_fold', label: 'Cross validation' },
+    { value: 'group_k_fold', label: 'Cross validation by feature' },
+    { value: 'random_sampling', label: 'Random sampling' },
+    { value: 'leave_one_out', label: 'Leave one out' },
+    { value: 'test_on_train', label: 'Test on train data' },
+    { value: 'test_on_test', label: 'Test on test data' },
+  ]
+
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))
 
   const localPreprocessing = ref<Array<Record<string, unknown>>>([...props.preprocessing])
   const localFE = ref<Array<Record<string, unknown>>>([...props.featureEngineering])
+  const localValidation = ref<Record<string, unknown>>({ ...props.validation })
 
   watch(
     () => props.preprocessing,
@@ -319,6 +424,13 @@
     () => props.featureEngineering,
     v => {
       localFE.value = [...v]
+    },
+    { deep: true },
+  )
+  watch(
+    () => props.validation,
+    v => {
+      localValidation.value = { ...v }
     },
     { deep: true },
   )
@@ -410,6 +522,17 @@
     if (!selectedModel.value) return
     emit('add-model', selectedModel.value)
     selectedModel.value = ''
+  }
+
+  // ── 驗證方式 ──
+  function patchValidation (key: string, value: unknown): void {
+    localValidation.value = { ...localValidation.value, [key]: value }
+    emit('update-validation', localValidation.value)
+  }
+
+  function setValidationMethod (method: string): void {
+    localValidation.value = { ...localValidation.value, method }
+    emit('update-validation', localValidation.value)
   }
 </script>
 
@@ -626,6 +749,43 @@
     outline: none;
     background: rgba(255, 255, 255, 0.9);
     color: var(--color-ink);
+  }
+
+  .validation-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .validation-method {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .validation-method__radio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  .validation-method__params {
+    margin-top: 8px;
+    margin-left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .param-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--color-secondary);
+    cursor: pointer;
   }
 
   .del-btn {

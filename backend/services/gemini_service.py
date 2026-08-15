@@ -50,7 +50,9 @@ _WORKFLOW_EXAMPLE = """{
     "method": "k_fold",
     "n_splits": 10,
     "stratified": true,
-    "train_size": 0.8
+    "train_size": 0.8,
+    "n_repeats": 1,
+    "group_column": null
   },
   "metrics": ["balanced_accuracy", "auc", "auprc", "mcc", "f1", "recall", "specificity"],
   "resampling": {
@@ -97,7 +99,7 @@ target_col, models, preprocessing, featureEngineering, validation, metrics, resa
 - models：依論文列出的模型，name 必須完全符合可用模型名稱清單
 - preprocessing：依論文資料處理方式，若未提及則用 fill_na+standardize
 - featureEngineering：依論文特徵選擇方式，若未提及則用 select_relevant_features k=10
-- validation：依論文驗證方式，若未提及則用 k_fold n_splits=10
+- validation：依論文驗證方式，若未提及則用 k_fold n_splits=10；method 為 random_sampling 時 n_repeats 填重複抽樣次數，method 為 group_k_fold 時 group_column 填分組依據的欄位名稱，其餘情況這兩個欄位可省略或填 null
 - metrics：依論文評估指標，至少包含 balanced_accuracy 和 auc
 - resampling：論文有提類別不平衡處理 → 填對應 method；否則填 none
 - tuning：論文有提超參數搜尋 → 填 grid 或 random；否則填 none

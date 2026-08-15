@@ -81,12 +81,14 @@
             >
               <WorkflowOptionsPanel
                 :available-models="availableModelOptions"
+                :dataset-columns="dataTableColumns"
                 :drawer-stage="drawerStage"
                 :file="workflowDataFile"
                 :model-options-loading="modelOptionsLoading"
                 :paused-node-id="pausedAtNodeId"
                 :selected-node="selectedNode"
                 :used-model-names="usedModelNames"
+                :validation-config="testScoreValidationConfig"
                 :workflow-file-name="workflowDataFile?.name"
                 :workflow-result="workflowResult"
                 :workflow-summary="workflowSummary"
@@ -256,6 +258,18 @@
     if (!selectedNodeId.value) return null
     const node = nodes.value.find(n => n.id === selectedNodeId.value)
     return node ? { id: node.id, data: node.data } : null
+  })
+
+  const testScoreValidationConfig = computed<Record<string, unknown>>(() => {
+    const node = nodes.value.find(n => n.id === 'testScore')
+    const v = node?.data.config.validation
+    return (v && typeof v === 'object') ? (v as Record<string, unknown>) : {}
+  })
+
+  const dataTableColumns = computed<Array<{ name: string, type: string, role: string }>>(() => {
+    const node = nodes.value.find(n => n.id === 'dataTable')
+    const cols = node?.data.config.columnConfig
+    return Array.isArray(cols) ? (cols as Array<{ name: string, type: string, role: string }>) : []
   })
 
   const availableModelOptions = computed<string[]>(() =>
