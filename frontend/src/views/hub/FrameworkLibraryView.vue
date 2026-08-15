@@ -65,7 +65,22 @@
       <!-- Panel header -->
       <div class="panel-header">
         <div class="panel-header-info">
-          <div class="panel-title">{{ selectedFramework.title }}</div>
+          <div v-if="!isEditingTitle" class="panel-title-row">
+            <div class="panel-title">{{ selectedFramework.title }}</div>
+            <button class="panel-title-edit-btn" title="編輯名稱" @click="startEditingTitle">
+              <v-icon icon="mdi-pencil-outline" size="14" />
+            </button>
+          </div>
+          <div v-else class="panel-title-edit-wrap">
+            <input
+              ref="titleInputRef"
+              v-model="titleDraft"
+              class="panel-title-input"
+              @blur="commitTitleEdit"
+              @keydown="handleTitleKeydown"
+            >
+            <div v-if="titleError" class="panel-title-error">{{ titleError }}</div>
+          </div>
           <div class="panel-tag">{{ selectedFramework.tag }}</div>
         </div>
         <button class="panel-close" @click="selectedId = null">
@@ -157,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useFrameworkStore } from '@/store/frameworkStore'
 
@@ -176,6 +191,67 @@ const filteredFrameworks = computed(() => {
 const selectedFramework = computed(() =>
   selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
 )
+
+const isEditingTitle = ref(false)
+const titleDraft = ref('')
+const titleError = ref<string | null>(null)
+const titleInputRef = ref<HTMLInputElement | null>(null)
+
+watch(selectedId, () => {
+  isEditingTitle.value = false
+  titleError.value = null
+})
+
+function startEditingTitle () {
+  if (!selectedFramework.value) return
+  titleDraft.value = selectedFramework.value.title
+  titleError.value = null
+  isEditingTitle.value = true
+  nextTick(() => {
+    titleInputRef.value?.focus()
+    titleInputRef.value?.select()
+  })
+}
+
+function cancelEditingTitle () {
+  isEditingTitle.value = false
+  titleError.value = null
+}
+
+async function commitTitleEdit () {
+  if (!isEditingTitle.value || !selectedFramework.value) return
+
+  const trimmed = titleDraft.value.trim()
+  if (trimmed === selectedFramework.value.title) {
+    isEditingTitle.value = false
+    titleError.value = null
+    return
+  }
+  if (!trimmed) {
+    titleError.value = '名稱不可為空'
+    return
+  }
+
+  const frameworkId = selectedFramework.value.id
+  try {
+    await store.renameFramework(frameworkId, trimmed)
+    isEditingTitle.value = false
+    titleError.value = null
+  } catch (error) {
+    console.error('更新框架名稱失敗', error)
+    titleError.value = '儲存失敗，請重試'
+  }
+}
+
+function handleTitleKeydown (event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    commitTitleEdit()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    cancelEditingTitle()
+  }
+}
 </script>
 
 <style scoped>
@@ -402,11 +478,60 @@ const selectedFramework = computed(() =>
   padding-right: 12px;
 }
 
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .panel-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-ink);
   line-height: 1.3;
+}
+
+.panel-title-edit-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+
+.panel-title-edit-btn:hover {
+  background: #f5f5f5;
+}
+
+.panel-title-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panel-title-input {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.3;
+  border: none;
+  border-bottom: 1.5px solid var(--color-accent);
+  outline: none;
+  padding: 0 0 2px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.panel-title-error {
+  font-size: 12px;
+  color: #dc2626;
 }
 
 .panel-tag {
