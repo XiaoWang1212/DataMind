@@ -19,25 +19,27 @@
 
 ## 節點分類色
 
-### 為什麼不能直接照 Orange 的顏色
+### 為什麼不能直接照 Orange 的飽和度
 
-Orange 六類色系（黃橘=Data、綠=Model、紅粉=Evaluate…）中有三類正面撞上本專案既有的狀態色語意（success 綠、warning 琥珀、error 紅，§2.2）。同色系會讓「這是 Model 節點」跟「這個節點跑完了」在色相上分不出來——這不是美感問題，是色相距離的客觀衝突，經算圖驗證：直接沿用 Orange 色相時，Data 對 warning 只差 3°、Evaluate 對 error 只差 10°、Model 對 success 只差 21°，全部落在容易混淆的範圍內。
+Orange 六類色系（黃橘=Data、綠=Model、紅粉=Evaluate…）是高飽和的實色，其中三類正面撞上本專案既有的狀態色語意（success 綠、warning 琥珀、error 紅，§2.2）：直接沿用 Orange 的飽和色相時，Data 對 warning 只差 3°、Evaluate 對 error 只差 10°、Model 對 success 只差 21°，全部落在容易混淆的範圍內。
+
+最終決定：**色相順序跟大致色系沿用 Orange**（橘→藍→紫→綠→紅，一眼看得出是同一套配色語彙），但**飽和度大幅降低、明度統一拉高**（低飽和大地色系），並靠淺底+邊框+深色 icon 的節點構造，加上分類色只出現在節點本體、狀態色只出現在外部徽章/spinner 的位置區隔，來避免混淆——不是靠色相距離本身。這代表色相跟狀態色偶有貼近是被接受的取捨（見下表），使用者評估過一致性（跟 Orange 使用者的既有認知對得上）比色相距離更重要。
 
 ### 配色方法
 
 節點構造採 Orange 原本的做法——**淺底 + 深色 icon**（`--color-ink-strong`），而非目前 `IconNode.vue` 的飽和底 + 白色 icon。這個構造下，「五色之間要和諧」不是靠固定色相間距，而是靠 OKLCH 色彩空間裡明度（L）與彩度（C）維持一致：色相可以自由選，只要每個顏色的「感知重量」相同，整組看起來就不會有誰特別跳出來搶戲。
 
-經過與使用者來回試色（依序嘗試冷色安全區、Orange 直接飽和度版、彩虹漸層版，最終定案於低飽和大地色系），確認以下最終色票：
+經過與使用者來回試色（依序嘗試冷色安全區、Orange 直接飽和度版、彩虹漸層版、低飽和大地色系），最終再依 Orange 六類配色的大致順序（橘/藍/紫/綠/紅）重新指派到五個分類，確認以下最終色票：
 
 | 分類 | 色值 | OKLCH | 對應節點 |
 |---|---|---|---|
-| Data | `#CFA3B6` | H=350° L=0.76 C=0.058 | File、Data Table |
-| Transform | `#D2A596` | H=40° L=0.76 C=0.058 | Preprocessor、Feature Engineering |
-| Visualize | `#CEC068` | H=100° L=0.80 C=0.11（手動微調，見下） | Distribution |
+| Data | `#D2A596` | H=39° L=0.76 C=0.058 | File、Data Table |
+| Transform | `#8EB8D1` | H=235° L=0.76 C=0.058 | Preprocessor、Feature Engineering |
+| Visualize | `#A9AED6` | H=279° L=0.76 C=0.058 | Distribution |
 | Model | `#85BDBC` | H=195° L=0.76 C=0.058 | Settings、Models |
-| Evaluate | `#A9AED6` | H=280° L=0.76 C=0.058 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
+| Evaluate | `#CFA3B6` | H=351° L=0.76 C=0.058 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
 
-**Visualize 是手動調整過的例外**，不與其他四色共用 L/C：黃綠色相（100°附近）在同樣的低彩度下比其他色相更容易讀成「濁」，所以彩度單獨拉高到 0.11 才不顯髒；明度只能到 0.80，不能再往上調——會跟畫布底色太接近而消失，這正是原始參考色票（低飽和大地色系）踩到的同一個陷阱。
+五色同一套 OKLCH 明度/彩度（L=0.76 C=0.058），只有色相不同，感知重量一致不會互搶；色相間距最窄是 Transform 與 Model 的 40°，足夠區分。`Transform` 的藍是新算的——原本這個色相沒有被用過，取在 Model(195°) 與 Visualize(279°) 正中間（各差 40°），避免新加的藍跟這兩個既有色相太近。
 
 **分類跟舊分法的差異**：Data Table 原本歸在（已廢棄的）inspect 類，現在併入 Data（跟 File 同類，比照 Orange 的分法）；Distribution 獨立成 Visualize 一類。
 
@@ -76,11 +78,11 @@ export interface NodeData {
 `vuetify.ts` 的 `--color-node-*` token 需要跟分類欄位對齊，除了改色值，`node-inspect` 這個 key 已無對應分類（Data Table 併入 Data、Distribution 獨立成 Visualize），改名為 `node-visualize`；`node-source` 沿用既有 key 名但改用上表 Data 分類的新色值：
 
 ```
-node-source     #CFA3B6   (Data)
-node-transform  #D2A596   (Transform)
-node-visualize  #CEC068   (Visualize，取代舊的 node-inspect)
+node-source     #D2A596   (Data)
+node-transform  #8EB8D1   (Transform)
+node-visualize  #A9AED6   (Visualize，取代舊的 node-inspect)
 node-model      #85BDBC   (Model)
-node-evaluate   #A9AED6   (Evaluate)
+node-evaluate   #CFA3B6   (Evaluate)
 ```
 
 `IconNode.vue` 渲染調整：
