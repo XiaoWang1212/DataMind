@@ -13,14 +13,14 @@
       @select-node="handleSelectNode"
     />
 
-    <button
+    <AppButton
       v-if="workflowResult"
       class="view-results-btn"
-      type="button"
+      variant="primary"
       @click="router.push(`/hub/projects/${projectId}/result`)"
     >
       查看結果
-    </button>
+    </AppButton>
 
     <!-- 上傳 model 檔案 dialog -->
     <UploadDialog
@@ -122,6 +122,7 @@
   } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { fetchAvailableModels } from '@/api/workflow'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import { useWorkflowDemo } from '@/composables/workflow/useWorkflowDemo.ts'
   import { useWorkflowExecution } from '@/composables/workflow/useWorkflowExecution.ts'
@@ -636,7 +637,7 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    border-radius: 16px 16px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background-color: var(--color-surface);
     background-image: radial-gradient(color-mix(in oklab, var(--color-accent) 3.5%, transparent) 0.8px, transparent 0.8px);
     background-size: 16px 16px;
@@ -648,165 +649,11 @@
     width: 100%;
   }
 
-  .demo-btn {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: var(--color-accent);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0;
-  }
-
-  .demo-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.92);
-  }
-
-  .demo-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
-  .execute-workflow-btn {
-    position: absolute;
-    top: 14px;
-    right: 120px;
-    z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 92px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: var(--color-accent);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0 14px;
-  }
-
   .view-results-btn {
     position: absolute;
     top: 14px;
     right: 14px;
     z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 92px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: var(--color-accent);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0 14px;
-  }
-
-  .view-results-btn:hover {
-    background: rgba(255, 255, 255, 0.92);
-  }
-
-  .json-upload-btn {
-    position: absolute;
-    top: 14px;
-    z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 92px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: var(--color-accent);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0 14px;
-  }
-
-  .json-upload-btn:hover {
-    background: rgba(255, 255, 255, 0.92);
-  }
-
-  .paper-upload-btn {
-    position: absolute;
-    top: 14px;
-    right: 230px;
-    z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 92px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: var(--color-accent);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0 14px;
-  }
-
-  .paper-upload-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.92);
-  }
-
-  .gemini-upload-btn {
-    position: absolute;
-    top: 14px;
-    right: 340px;
-    z-index: 5;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 130px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid rgba(99, 102, 241, 0.3);
-    background: rgba(238, 242, 255, 0.85);
-    backdrop-filter: blur(8px);
-    font-size: 13px;
-    color: #4f46e5;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    user-select: none;
-    padding: 0 14px;
-  }
-
-  .gemini-upload-btn:hover:not(:disabled) {
-    background: rgba(224, 231, 255, 0.95);
-  }
-
-  .gemini-upload-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   .workflow-result {
@@ -820,16 +667,16 @@
     padding: 16px;
     background: var(--color-surface);
     border: 1px solid rgba(148, 163, 184, 0.32);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
     color: var(--color-text);
   }
 
   .workflow-error {
     margin-bottom: 10px;
-    color: #ef4444;
+    color: var(--color-error-text);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .options-drawer {
@@ -838,15 +685,15 @@
     right: 0;
     bottom: 0;
     z-index: 10;
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.45);
     background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(16px);
     box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.05);
     will-change: height, transform;
-    transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height var(--dur-slow) cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     /* 安全上限：實際高度由 useDrawerDrag 精確控制各段大小，
@@ -923,12 +770,12 @@
 
   @media (max-width: 768px) {
     .workspace {
-      border-radius: 12px;
+      border-radius: var(--radius-md);
     }
 
     .options-drawer {
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
+      border-top-left-radius: var(--radius-md);
+      border-top-right-radius: var(--radius-md);
     }
 
     .options-drawer__drag-zone {
@@ -938,7 +785,7 @@
 
   .slide-up-enter-active,
   .slide-up-leave-active {
-    transition: transform 0.22s ease, opacity 0.22s ease;
+    transition: transform var(--dur-base) ease, opacity var(--dur-base) ease;
   }
 
   .slide-up-enter-from,
@@ -955,7 +802,7 @@
 
   .drawer-content-enter-active,
   .drawer-content-leave-active {
-    transition: opacity 180ms ease, transform 180ms ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
   }
 
   .drawer-content-enter-from,
