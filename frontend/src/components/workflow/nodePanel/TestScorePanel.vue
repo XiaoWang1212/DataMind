@@ -102,7 +102,7 @@
   .workflow-summary h4 {
     margin: 0;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -110,7 +110,7 @@
     display: flex;
     flex-direction: column;
     border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--color-surface);
   }
@@ -133,7 +133,7 @@
 
   .table-row--header {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-secondary);
     background: var(--color-surface);
   }
@@ -163,7 +163,7 @@
   /* 該 metric 表現最好的模型。這是 leaderboard 真正要回答的問題，
      不用逐格比對小數點就看得出誰贏 */
   .table-cell--best {
-    font-weight: 700;
+    font-weight: 500;
   }
 
   /* 最左欄：模型名 + split 名兩行堆疊，靠左 */
@@ -176,7 +176,7 @@
   }
 
   .model-name {
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-text);
     font-size: 13px;
   }
