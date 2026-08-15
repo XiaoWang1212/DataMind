@@ -52,12 +52,16 @@ export default createVuetify({
           'warning-text': '#916308',
           'error-text': '#A22F43',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
-          // 全部避開綠/琥珀/紅 —— 那三色留給節點外圈的執行狀態，混用會讓「已完成」讀不出來
-          'node-source': '#2F7E8C',
-          'node-inspect': '#3A6BB8',
-          'node-transform': '#6252BE',
-          'node-model': '#93459F',
-          'node-evaluate': '#B44476',
+          // 依 Orange Data Mining 的六類配色大致順序（橘/藍/紫/綠/紅）指派，OKLCH 明度/彩度
+          // 統一（L=0.76 C=0.058，只有色相不同）。跟 success/warning/error 三個狀態色的
+          // 色相距離沒有嚴格要求——這組色相跟狀態色偶有貼近（例如 source 對 error 只差 24°），
+          // 是刻意換取「一眼看得出是 Orange 配色語彙」的結果，靠淺底+邊框+深色 icon 的構造
+          // 而非色相距離本身來避免混淆
+          'node-source': '#D2A596',
+          'node-transform': '#8EB8D1',
+          'node-visualize': '#A9AED6',
+          'node-model': '#85BDBC',
+          'node-evaluate': '#CFA3B6',
         },
       },
     },

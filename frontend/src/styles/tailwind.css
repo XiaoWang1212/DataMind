@@ -63,8 +63,8 @@
   --color-warning-text: rgb(var(--v-theme-warning-text));
   --color-error-text: rgb(var(--v-theme-error-text));
   --color-node-source: rgb(var(--v-theme-node-source));
-  --color-node-inspect: rgb(var(--v-theme-node-inspect));
   --color-node-transform: rgb(var(--v-theme-node-transform));
+  --color-node-visualize: rgb(var(--v-theme-node-visualize));
   --color-node-model: rgb(var(--v-theme-node-model));
   --color-node-evaluate: rgb(var(--v-theme-node-evaluate));
 

@@ -12,6 +12,7 @@
           <div class="sg-swatch-color" :style="{ background: swatch.varRef }" />
           <div class="sg-swatch-label">{{ swatch.name }}</div>
           <div class="sg-swatch-var">{{ swatch.varRef }}</div>
+          <div class="sg-swatch-hex">{{ swatch.hex }}</div>
         </div>
       </div>
     </section>
@@ -19,16 +20,20 @@
     <section>
       <h2 class="sg-h2">Workflow 節點分類色（§2.3）</h2>
       <p class="sg-note">
-        依 pipeline 角色分五類。全部避開綠／琥珀／紅 —— 那三色留給節點外圈的執行狀態，
-        混用會讓「已完成」讀不出來。節點是圓形 + 白色 icon。
+        依 pipeline 角色分五類，比照 Orange Data Mining 的六類配色大致順序（橘/藍/紫/綠/紅）指派，
+        低飽和大地色系。節點是圓形淺底 + 深色 icon + 細邊框，選中/完成用綠色勾勾徽章疊在右下角。
       </p>
       <div class="sg-node-grid">
         <div v-for="cat in nodeCategories" :key="cat.name" class="sg-node">
-          <div class="sg-node-dot" :style="{ background: cat.varRef }">
-            <v-icon icon="mdi-circle-outline" size="24" />
+          <div class="sg-node-dot sg-node-dot--bordered" :style="{ background: cat.varRef }">
+            <v-icon color="var(--color-ink-strong)" icon="mdi-circle-outline" size="24" />
+            <span class="sg-node-badge">
+              <v-icon icon="mdi-check" size="12" />
+            </span>
           </div>
           <div>
             <div class="sg-swatch-label">{{ cat.name }}</div>
+            <div class="sg-swatch-var">{{ cat.hex }}</div>
             <div class="sg-swatch-var">{{ cat.nodes }}</div>
           </div>
         </div>
@@ -194,33 +199,34 @@
     { value: 'gender', label: 'gender', hint: '類別', disabled: true },
   ]
 
-  interface Swatch { name: string, varRef: string }
+  // hex 值抄自 vuetify.ts 的 light theme colors，兩邊改動時要一起同步
+  interface Swatch { name: string, varRef: string, hex: string }
 
   const swatches: Swatch[] = [
-    { name: 'ink（品牌藏青）', varRef: 'var(--color-ink)' },
-    { name: 'ink-strong', varRef: 'var(--color-ink-strong)' },
-    { name: 'ink-soft', varRef: 'var(--color-ink-soft)' },
-    { name: 'text', varRef: 'var(--color-text)' },
-    { name: 'surface', varRef: 'var(--color-surface)' },
-    { name: 'surface-alt', varRef: 'var(--color-surface-alt)' },
-    { name: 'page', varRef: 'var(--color-page)' },
-    { name: 'border', varRef: 'var(--color-border)' },
-    { name: 'border-strong', varRef: 'var(--color-border-strong)' },
-    { name: 'success', varRef: 'var(--color-success)' },
-    { name: 'success-bg', varRef: 'var(--color-success-bg)' },
-    { name: 'warning', varRef: 'var(--color-warning)' },
-    { name: 'warning-bg', varRef: 'var(--color-warning-bg)' },
-    { name: 'error（danger）', varRef: 'var(--color-error)' },
-    { name: 'error-bg', varRef: 'var(--color-error-bg)' },
+    { name: 'ink（品牌藏青）', varRef: 'var(--color-ink)', hex: '#1A3159' },
+    { name: 'ink-strong', varRef: 'var(--color-ink-strong)', hex: '#12244A' },
+    { name: 'ink-soft', varRef: 'var(--color-ink-soft)', hex: '#626B7E' },
+    { name: 'text', varRef: 'var(--color-text)', hex: '#1C2130' },
+    { name: 'surface', varRef: 'var(--color-surface)', hex: '#FFFFFF' },
+    { name: 'surface-alt', varRef: 'var(--color-surface-alt)', hex: '#F1F4F8' },
+    { name: 'page', varRef: 'var(--color-page)', hex: '#E4E9ED' },
+    { name: 'border', varRef: 'var(--color-border)', hex: '#E4E6E8' },
+    { name: 'border-strong', varRef: 'var(--color-border-strong)', hex: '#D3D8DC' },
+    { name: 'success', varRef: 'var(--color-success)', hex: '#3B9A7F' },
+    { name: 'success-bg', varRef: 'var(--color-success-bg)', hex: '#DCEAE5' },
+    { name: 'warning', varRef: 'var(--color-warning)', hex: '#D89A1F' },
+    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#FDF4D3' },
+    { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
+    { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
   ]
 
-  // §2.3：依 pipeline 角色分五類，全部避開綠/琥珀/紅（那三色留給節點外圈的執行狀態）
+  // §2.3：依 pipeline 角色分五類，比照 Orange 的六類配色大致順序（橘/藍/紫/綠/紅）指派
   const nodeCategories = [
-    { name: 'source 資料來源', varRef: 'var(--color-node-source)', nodes: 'File' },
-    { name: 'inspect 檢視', varRef: 'var(--color-node-inspect)', nodes: 'Data Table、Distribution' },
-    { name: 'transform 轉換', varRef: 'var(--color-node-transform)', nodes: 'Preprocessor、Feature Engineering' },
-    { name: 'model 建模', varRef: 'var(--color-node-model)', nodes: 'Settings、Models' },
-    { name: 'evaluate 評估', varRef: 'var(--color-node-evaluate)', nodes: 'Test & Score、Feature Importance、Confusion Matrix、Compute CI' },
+    { name: 'source 資料來源', varRef: 'var(--color-node-source)', hex: '#D2A596', nodes: 'File、Data Table' },
+    { name: 'transform 轉換', varRef: 'var(--color-node-transform)', hex: '#8EB8D1', nodes: 'Preprocessor、Feature Engineering' },
+    { name: 'visualize 視覺化', varRef: 'var(--color-node-visualize)', hex: '#A9AED6', nodes: 'Distribution' },
+    { name: 'model 建模', varRef: 'var(--color-node-model)', hex: '#85BDBC', nodes: 'Settings、Models' },
+    { name: 'evaluate 評估', varRef: 'var(--color-node-evaluate)', hex: '#CFA3B6', nodes: 'Test & Score、Feature Importance、Confusion Matrix、Compute CI' },
   ]
 </script>
 
@@ -275,7 +281,8 @@
   margin-top: 6px;
 }
 
-.sg-swatch-var {
+.sg-swatch-var,
+.sg-swatch-hex {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-ink-soft);
@@ -294,6 +301,7 @@
 }
 
 .sg-node-dot {
+  position: relative;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -301,6 +309,27 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
+  color: #fff;
+}
+
+/* 淺色分類色跟頁面底色對比不足時的保險，不管色票怎麼調都通用 */
+.sg-node-dot--bordered {
+  border: 1.5px solid rgba(18, 36, 74, 0.16);
+}
+
+/* 外圈套一圈頁面底色，徽章才不會跟節點糊在一起 */
+.sg-node-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-page);
+  border-radius: 50%;
+  background: var(--color-success);
   color: #fff;
 }
 

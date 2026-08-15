@@ -84,23 +84,21 @@
 
 Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個顏色(類似 Orange ML pipeline),而非同色深淺。
 
-**五類色票**(冷色、低飽和,沿 pipeline 由青往紫推移):
+**五類色票**(低飽和大地色系,比照 Orange Data Mining 六類配色的大致順序——橘/藍/紫/綠/紅——指派給五個分類):
 
 | 分類 token | 色值 | 涵蓋節點 |
 |---|---|---|
-| `--color-node-source` | `#2F7E8C` 藍綠 | File |
-| `--color-node-inspect` | `#3A6BB8` 藍 | Data Table、Distribution |
-| `--color-node-transform` | `#6252BE` 靛紫 | Preprocessor、Feature Engineering |
-| `--color-node-model` | `#93459F` 紫 | Settings、Models |
-| `--color-node-evaluate` | `#B44476` 洋紅 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
+| `--color-node-source` | `#D2A596` 灰橘棕 | File、Data Table |
+| `--color-node-transform` | `#8EB8D1` 灰藍 | Preprocessor、Feature Engineering |
+| `--color-node-visualize` | `#A9AED6` 灰藍紫 | Distribution |
+| `--color-node-model` | `#85BDBC` 灰青綠 | Settings、Models |
+| `--color-node-evaluate` | `#CFA3B6` 灰玫瑰 | Test & Score、Feature Importance、Confusion Matrix、Compute CI |
 
-> **五個分類色一律避開綠、琥珀、紅。** 節點的底色表達「這是哪一類」,執行狀態(未執行/進行中/已完成)走節點**外圈**,用的正是那三個狀態色。分類色若混入狀態色系,使用者會分不出「這個節點跑完了」和「這個節點是評估類」。
+> 這五個分類色跟 success/warning/error 三個狀態色的色相距離**沒有**嚴格要求。分類色統一走圓形節點底色,狀態色統一走節點外部的徽章/spinner,兩者的區隔靠**構造與位置**,不是靠色相隔開。
 >
-> 白色 icon 疊在五個底色上的對比依序為 4.68 / 5.28 / 6.05 / 5.85 / 5.21:1,皆過圖形元素的 3:1 門檻。之後調整任何一個色值都要重新量。
->
-> **五色刻意拉開飽和度與色相跨度**(飽和 0.57–0.68、色相 189°→333°)。第一版取低飽和(0.36–0.45、跨度 111°)想維持安靜,結果五個節點在畫布上幾乎分不出來,失去分類色的意義。分類色需要能被一眼區分,這比「安靜」優先。
+> 深色 icon(`--color-ink-strong`)疊在五個淺底色上,節點另加一圈細邊框,靠淺底 + 邊框 + 深色 icon 的構造本身撐開跟畫布、跟彼此的對比,不是靠色相跨度。
 
-節點是圓形 + 白色 icon,節點間用連接線串起(見 §7.6)。新增節點時歸到既有五類之一,不要為單一節點另開顏色;真的需要新分類再回來更新此表,不要各畫面各自上色。
+節點是圓形淺底 + 深色 icon,節點間用連接線串起(見 §7.6)。新增節點時歸到既有五類之一,不要為單一節點另開顏色;真的需要新分類再回來更新此表,不要各畫面各自上色。
 
 > **這個專案沒有「AI 分析」節點。** `mdi-brain` 那顆是 Models(機器學習模型),不是 LLM 分析。早期版本的分類表把「AI / 模型分析」「人工確認」「完成」當成節點類型,那是誤解——後兩者是執行狀態不是類型,已於此次改版修正。
 
