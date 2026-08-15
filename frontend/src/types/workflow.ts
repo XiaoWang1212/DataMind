@@ -15,10 +15,13 @@ export type ConfigValue =
   | unknown[]
   | Record<string, unknown>;
 
+export type NodeType = "source" | "transform" | "visualize" | "model" | "evaluate";
+
 export interface NodeData {
   icon: string;
   label: string;
-  colorClass: string;
+  /** 節點分類，決定底色（docs/DESIGN_SYSTEM.md §2.3），建立節點時指定、不隨執行狀態改變 */
+  nodeType: NodeType;
   description: string;
   fields: NodeField[];
   config: Record<string, unknown>;
