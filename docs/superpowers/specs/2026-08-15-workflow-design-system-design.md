@@ -8,11 +8,14 @@
 
 `components/WorkflowBuilder.vue`（669 行）經確認沒有任何地方 import，是死代碼，內含一整套跟目前實際渲染節點不同的舊節點定義（Intent & Target、Predictions 等）。**本次範圍不動它**，維持現狀。
 
+早先的設計系統改版計畫（`2026-08-11-design-system-rollout-design.md`）已經記錄過同一個問題：`colorClass` 混用執行狀態與節點類型兩種語意，並打算加一個新欄位 `nodeType`（`source`/`inspect`/`transform`/`model`/`evaluate` 五類，對應 §2.3 的五個 token）來承接分類語意，色值一律走 token 不硬寫。**本次沿用該計畫定的欄位名稱 `nodeType`**（下方原本稱 `category` 之處統一改讀 `nodeType`）；但其中 `inspect` 這個分類名稱在後續盤點時發現不夠精確——Data Table 併入 Data、Distribution 獨立成 Visualize——本次一併訂正為 `visualize`，`docs/DESIGN_SYSTEM.md` §2.3 與 `2026-08-11-design-system-rollout-design.md` 的對應段落需同步更新。
+
 ## 目標
 
-1. 把「節點分類」和「執行狀態」拆成兩個獨立欄位，分類決定底色、狀態決定右下角徽章
+1. 把「節點分類」和「執行狀態」拆成兩個獨立欄位（`nodeType` + `status`），分類決定底色、狀態決定右下角徽章
 2. 節點分類改用 Orange Data Mining 的五類分法（Data / Transform / Visualize / Model / Evaluate），色票另外設計（不直接沿用 Orange 原色，見下）
 3. 清理 15 個檔案裡違反設計系統規範的殘留樣式：硬寫 hex、原生 button、字重、圓角、動畫時長
+4. 兩個先前已記錄但尚未處理的相關問題一併處理：Distribution 面板的長條圖用實色品牌藏青畫每一根柱子，在小面板裡顯得又重又硬；Settings 面板的「下一步／繼續」主要動作按鈕視覺上不夠像主要動作
 
 ## 節點分類色
 
@@ -51,10 +54,10 @@ Orange 六類色系（黃橘=Data、綠=Model、紅粉=Evaluate…）中有三�
 `types/workflow.ts` 的 `NodeData`：
 
 ```ts
-export type NodeCategory = 'source' | 'transform' | 'visualize' | 'model' | 'evaluate'
+export type NodeType = 'source' | 'transform' | 'visualize' | 'model' | 'evaluate'
 
 export interface NodeData {
-  category: NodeCategory   // 取代 colorClass，決定底色，不隨執行變化
+  nodeType: NodeType   // 取代 colorClass，決定底色，不隨執行變化
   status?: 'running' | 'finished' | null   // 不變，決定 spinner / 完成徽章
   // …其餘欄位不變
 }
@@ -112,7 +115,7 @@ node-evaluate   #A9AED6   (Evaluate)
 
 ### 3. 硬寫圓角 → `var(--radius-*)`（69 處）
 
-- 20 處 `999px`（pill）：本來就對，只需確認語意上是膠囊按鈕/徽章/輸入框
+- 20 處 `999px`（pill）：`--radius-*` token 只有 sm/md/lg 三檔，999px 沒有對應變數（§4.2 pill 值本身就是字面量），維持字面值不變，只需確認語意上是膠囊按鈕/徽章/輸入框
 - 28 處數值本身合規（8/12/16px）：補上對應的 `var(--radius-sm/md/lg)`
 - 21 處規範外數值，改成最接近的合法值：
   - `18px → 16px`、`20px → 16px`（明確更接近 lg）
@@ -120,6 +123,7 @@ node-evaluate   #A9AED6   (Evaluate)
   - `14px`：2 處皆為表格容器（`.upload-modal-preview-table`）→ `12px`
   - `6px → 8px`（無比 8px 更小的 token）
   - `3px`、`2px`：維持不變，屬於圖表刻度線等極小視覺細節，不在圓角規範管轄範圍內
+- 額外補查的長寫法屬性（`border-top-left-radius`/`border-top-right-radius`，前次掃描用的規則式只比對 `border-radius:` 短寫，漏掉這組）：`WorkflowWorkspace.vue` 的 `.options-drawer` 桌面版 `14px 14px`（兩兩相差 2px，取更能撐住這個全寬底部抽屜視覺重量的 `--radius-lg`）；行動版 `@media` 覆寫的 `12px 12px` 本來就對，補 `var(--radius-md)`
 
 ### 4. 硬寫動畫時長 → `var(--dur-*)`（32 處互動 transition）
 
@@ -137,7 +141,23 @@ node-evaluate   #A9AED6   (Evaluate)
 
 ### 5. 殘留 hex 色值
 
-除節點分類色（已在上面處理）外，15 個檔案裡其餘硬寫 hex（灰階邊框、狀態色等）比照既有 token 表（`--color-border`、`--color-border-strong`、`--color-success` 等）逐一替換，沒有需要新增 token 的情況。
+除節點分類色（已在上面處理）外，15 個檔案裡其餘硬寫 hex（灰階邊框、狀態色等）比照既有 token 表（`--color-border`、`--color-border-strong`、`--color-success` 等）逐一替換，沒有需要新增 token 的情況。純白色文字/圖示疊在實色按鈕或圓形色塊上的 `#fff` 是例外——設計系統沒有定義「疊在色塊上的文字」token，`--color-surface` 語意是背景不是文字，這類字面值維持不變；若剛好落在按鈕遷移會刪除的區塊，隨遷移自然消失。
+
+### 6. 掃描中發現的死代碼
+
+逐檔核對 `<style>` 裡每個 class 有沒有在 `<template>`/`<script>` 出現時，另外發現三塊完全沒被引用的 CSS，用刪的比套 token 更正確：
+
+- `WorkflowOptionsPanel.vue`：`.upload-card` 到 `.hint`/`.actions`（不含樣板實際在用的 `.btn`/`.btn-primary`）整段是舊版上傳彈窗的殘留樣式，這個元件現在的上傳流程已經另外走 `WorkflowFileUploadPanel.vue`，這段從未被任何 template 引用
+- `WorkflowFileUploadPanel.vue`：`.upload-card`/`.upload-card__desc` 一組，以及 `.upload-modal-preview` 到 `.upload-modal-preview-table th` 一整組預覽圖表樣式，同樣沒有對應的 template 元素
+- `WorkflowWorkspace.vue`：`.demo-btn`、`.execute-workflow-btn`、`.json-upload-btn`、`.paper-upload-btn`、`.gemini-upload-btn` 五個按鈕 class（含各自的 `:hover`/`:disabled` 變體）在 template 或 script 都查無引用，是舊版工具列的殘留
+- `DataTablePanel.vue`：`.role-select--attention` 單一規則同樣沒有引用
+
+這幾塊刪除後，原本落在裡面的 hex/圓角/字重殘留自然一併消失，不需要再對它們個別套 token。
+
+### 7. 另外兩個一併處理的視覺問題
+
+- **Distribution 面板的長條圖用實色品牌藏青畫柱子**：`fill="var(--color-accent)"`，小面板裡一排實色深藏青長條顯得又重又硬。改成淡化過的色調 `color-mix(in oklab, var(--color-ink) 45%, white)`，維持同一個品牌色系但份量輕很多。
+- **Settings 面板的主要動作按鈕不夠「主要」**：`.btn-continue`（回 Data Table 之後那顆推進到下一步/送出的按鈕）遷移到 `AppButton` 時明確用 `variant="primary"`（實色藏青底），跟 `.btn-back`（`variant="secondary"`）拉開視覺層級，讓使用者一眼看出哪個是往前走的動作。
 
 ## 明確排除（本次不動）
 
@@ -155,3 +175,6 @@ node-evaluate   #A9AED6   (Evaluate)
   - 進行中 spinner 動畫正常
   - 各 nodePanel 的按鈕遷移後行為（disabled/loading 狀態）與遷移前一致
   - `wizard-tab`、`ci-toggle` 未被誤套用 `AppButton` 樣式
+  - 刪除死代碼後三個檔案（`WorkflowOptionsPanel.vue`、`WorkflowFileUploadPanel.vue`、`WorkflowWorkspace.vue`）的實際畫面沒有變化
+  - Distribution 長條圖顏色變淡但仍看得出資料量差異
+  - Settings 步驟間「上一步」「下一步/繼續」兩顆按鈕視覺層級可辨識

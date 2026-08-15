@@ -113,12 +113,12 @@
 
 改成兩個獨立欄位：
 
-- `nodeType`：`source` / `inspect` / `transform` / `model` / `evaluate`，對應 §2.3 的五類分類色，決定節點底色。色值一律引用 token（`--color-node-source` 等五個），不在元件裡硬寫 hex。
+- `nodeType`：`source` / `transform` / `visualize` / `model` / `evaluate`，對應 §2.3 的五類分類色，決定節點底色。色值一律引用 token（`--color-node-source` 等五個），不在元件裡硬寫 hex。
 
-  > 這裡原本寫的是 `data` / `ai` / `manual` / `done` 四類。2026-08-12 確認**這個專案沒有 AI 節點**（`mdi-brain` 是 Models），而「人工確認」「完成」是執行狀態不是節點類型。實際十一種節點已依 pipeline 角色重新歸為五類，見 §2.3。
-- `status`：`pending` / `running` / `finished`，走節點外圈 — pending 無外圈、running 沿用現有 spinner 改成轉動進度環、finished 加綠色勾勾角標。
+  > 這裡原本寫的是 `data` / `ai` / `manual` / `done` 四類。2026-08-12 確認**這個專案沒有 AI 節點**（`mdi-brain` 是 Models），而「人工確認」「完成」是執行狀態不是節點類型。實際十一種節點已依 pipeline 角色重新歸為五類，見 §2.3。第五類原本暫定叫 `inspect`，Batch 3 盤點時發現 Data Table 該併入 Data、Distribution 該獨立一類，已訂正為 `visualize`。
+- `status`：`running` / `finished`，走節點外圈以外的位置 — 未執行沒有額外標記、running 沿用現有 spinner（不改成進度環）、finished 在節點右下角加一個重疊的綠色勾勾角標。
 
-節點形狀維持現狀（圓形 58px + 白色 icon + 下方 label），本來就符合 §7.6。
+節點形狀維持現狀（圓形 58px + 下方 label），但底色構造改成淺色底配深色 icon（比照 Orange Data Mining 的節點外觀），不再是原本的飽和底配白色 icon——五個分類色本身彩度低、配白色 icon 對比不夠，見 Batch 3 spec。
 
 這是整輪唯一動到資料結構的改動，排在 Batch 3 最後，並拆成兩步：先加 `nodeType`（給預設值讓畫面不變），再切狀態顯示。
 
@@ -141,4 +141,4 @@
 - 側邊欄深色 / 淺色玻璃 → 改寫 §7.2。
 - specular 按鈕的 proximity 距離與反光強度 → 實測後把定案數值補進 §6.2。
 
-§2.3 節點色表在 Batch 3 定案後同步更新，記錄 `nodeType` 四值與色碼的對應。
+§2.3 節點色表已隨 Batch 3 spec 定案，五值（`source`/`transform`/`visualize`/`model`/`evaluate`）與色碼對應見 Batch 3 spec 與 `vuetify.ts`。
