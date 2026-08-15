@@ -93,7 +93,7 @@
     padding: 10px 12px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     font-size: 13px;
   }
 

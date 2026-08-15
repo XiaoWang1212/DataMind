@@ -186,7 +186,7 @@
 
   .ci-panel__sub {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-secondary);
   }
 
@@ -198,11 +198,11 @@
     padding: 10px;
     background: color-mix(in oklab, var(--color-accent) 3%, transparent);
     border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
   }
 
   .ci-model-block__name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-accent);
   }
@@ -236,8 +236,8 @@
   .ci-table__row {
     display: grid;
     grid-template-columns: 1.6fr 1fr 1fr 1fr;
-    font-size: 11px;
-    padding: 4px 8px;
+    font-size: 12px;
+    padding: 5px 8px;
   }
 
   .ci-table__header {
@@ -305,7 +305,7 @@
 
   .ci-info__sub {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-secondary);
   }
 
@@ -326,7 +326,7 @@
 
   .ci-info__text {
     margin: 0;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-secondary);
     line-height: 1.6;
   }
@@ -337,7 +337,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-secondary);
     line-height: 1.5;
   }
@@ -347,10 +347,10 @@
     align-items: flex-start;
     gap: 8px;
     padding: 10px 12px;
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: color-mix(in oklab, var(--color-warning) 8%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-warning) 25%, transparent);
     border-radius: var(--radius-sm);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-warning-text);
     line-height: 1.5;
   }
@@ -368,7 +368,7 @@
     background: color-mix(in oklab, var(--color-accent) 4%, transparent);
     border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
     border-radius: var(--radius-sm);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-secondary);
     line-height: 1.5;
   }
