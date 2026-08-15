@@ -8,6 +8,7 @@
         :key="i"
         class="wizard-tab"
         :class="{ 'wizard-tab--active': currentStep === i }"
+        :style="{ '--tab-color': `var(--color-node-${STEP_CATEGORIES[i]})` }"
         type="button"
         @click="currentStep = i"
       >
@@ -22,7 +23,7 @@
     </div>
 
     <!-- ── Step 0：前處理 ── -->
-    <div v-if="currentStep === 0" class="step-body">
+    <div v-if="currentStep === 0" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[0]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="newPreprocessType"
@@ -101,7 +102,7 @@
     </div>
 
     <!-- ── Step 1：特徵工程 ── -->
-    <div v-else-if="currentStep === 1" class="step-body">
+    <div v-else-if="currentStep === 1" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[1]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="newFEType"
@@ -165,7 +166,7 @@
     </div>
 
     <!-- ── Step 2：模型 ── -->
-    <div v-else-if="currentStep === 2" class="step-body">
+    <div v-else-if="currentStep === 2" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[2]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="selectedModel"
@@ -200,7 +201,7 @@
     </div>
 
     <!-- ── Step 3：信賴區間 ── -->
-    <div v-else class="step-body">
+    <div v-else class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[3]})` }">
       <div class="ci-card">
         <div class="ci-card__header">
           <div class="ci-card__info">
@@ -281,6 +282,9 @@
   }>()
 
   const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
+  // 每個 step 對應的節點分類色（見 docs/DESIGN_SYSTEM.md §2.3），
+  // 讓 wizard 頁籤跟畫布上真正的節點顏色一致
+  const STEP_CATEGORIES = ['transform', 'transform', 'model', 'evaluate'] as const
   const currentStep = ref(0)
 
   const LAST_STEP = STEPS.length - 1
@@ -469,9 +473,9 @@
 
   .wizard-tab--active {
     background: var(--color-surface);
-    color: var(--color-accent);
+    color: var(--tab-color, var(--color-accent));
     font-weight: 500;
-    box-shadow: 0 1px 5px color-mix(in oklab, var(--color-accent) 14%, transparent);
+    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-accent)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -484,13 +488,13 @@
     font-size: 11px;
     font-weight: 500;
     flex-shrink: 0;
-    background: rgba(100, 116, 139, 0.12);
+    background: color-mix(in oklab, var(--color-secondary) 14%, transparent);
     color: var(--color-secondary);
     transition: background var(--dur-fast), color var(--dur-fast);
   }
 
   .wizard-tab--active .wizard-tab__num {
-    background: var(--color-accent);
+    background: var(--tab-color, var(--color-accent));
     color: #fff;
   }
 
@@ -502,9 +506,6 @@
     font-size: 9px;
     font-weight: 500;
     color: var(--color-error-text);
-    background: rgba(239, 68, 68, 0.12);
-    border-radius: var(--radius-sm);
-    padding: 1px 4px;
     white-space: nowrap;
   }
 
@@ -543,9 +544,9 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
-    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    border-radius: var(--radius-md);
     font-size: 13px;
   }
 
@@ -559,8 +560,8 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
-    color: var(--color-accent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 30%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -570,7 +571,7 @@
   }
 
   .item-idx--dot {
-    background: color-mix(in oklab, var(--color-accent) 20%, transparent);
+    background: var(--step-color, var(--color-accent));
   }
 
   .item-name {
@@ -590,7 +591,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed color-mix(in oklab, var(--color-accent) 14%, transparent);
+    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
   }
 
   .item-params .param-select {
@@ -613,13 +614,13 @@
   .param-num {
     width: 68px;
     height: 30px;
-    border: 1px solid color-mix(in oklab, var(--color-accent) 15%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
     border-radius: var(--radius-sm);
     padding: 0 8px;
     font-size: 13px;
     text-align: center;
     outline: none;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--color-surface);
     color: var(--color-text);
   }
 
@@ -636,8 +637,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -692,12 +693,12 @@
   }
 
   .ci-card__status--on {
-    background: color-mix(in oklab, var(--color-accent) 10%, transparent);
-    color: var(--color-accent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
   }
 
   .ci-card__status--off {
-    background: rgba(100, 116, 139, 0.1);
+    background: color-mix(in oklab, var(--color-secondary) 10%, transparent);
     color: var(--color-secondary);
   }
 
@@ -715,7 +716,7 @@
   }
 
   .ci-toggle--on {
-    background: var(--color-accent);
+    background: var(--step-color, var(--color-accent));
   }
 
   .ci-toggle__thumb {
