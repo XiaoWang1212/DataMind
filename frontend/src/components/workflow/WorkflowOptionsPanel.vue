@@ -36,6 +36,12 @@
           />
         </template>
 
+        <template v-else-if="selectedNode.id === 'confusionMatrix'">
+          <ConfusionMatrixPanel
+            :workflow-result="props.workflowResult ?? undefined"
+          />
+        </template>
+
         <!-- Preprocessor 節點：顯示前處理步驟 -->
         <template v-else-if="selectedNode.id === 'preprocessor'">
           <PreprocessorPanel
@@ -236,6 +242,7 @@
   import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, reactive, ref, watch } from 'vue'
   import ComputeCiPanel from './nodePanel/ComputeCiPanel.vue'
+  import ConfusionMatrixPanel from './nodePanel/ConfusionMatrixPanel.vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
   import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
