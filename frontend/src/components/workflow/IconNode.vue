@@ -23,15 +23,26 @@
     <!-- 節點主體 -->
     <div
       class="icon-node"
-      :class="[nodeTypeClass, { 'node-highlighted': highlighted, 'flash-add': flashType === 'add', 'flash-remove': flashType === 'remove' }]"
+      :class="[nodeTypeClass, { 'node-highlighted': highlighted }]"
     >
       <!-- running 時顯示 spinner，其餘顯示 icon -->
       <div v-if="status === 'running'" class="node-spinner" />
       <span v-else class="node-icon"><v-icon :icon="icon" size="26" /></span>
       <!-- 完成狀態：右下角重疊的勾勾徽章 -->
       <span v-if="status === 'finished'" class="node-done-badge">
-        <v-icon icon="mdi-check" size="12" />
+        <v-icon icon="mdi-check" size="13" />
       </span>
+
+      <!-- 增刪元素時，浮在節點正上方的通知圖示，旋轉進出場、出現一下就消失 -->
+      <Transition name="node-flash-pop">
+        <div
+          v-if="flashType"
+          class="node-flash-chip"
+          :class="`node-flash-chip--${flashType}`"
+        >
+          <v-icon :icon="flashType === 'add' ? 'mdi-plus' : 'mdi-minus'" size="13" />
+        </div>
+      </Transition>
     </div>
 
     <!-- 節點標籤（支援換行） -->
@@ -103,34 +114,48 @@
     border: 1.5px solid rgba(18, 36, 74, 0.16);
   }
 
-  .flash-add::before,
-  .flash-remove::before {
-    content: '';
+  /* 增刪通知圖示：浮在節點正上方的小圓，不疊在節點本體色塊上，也不用紅/綠填色 */
+  .node-flash-chip {
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    animation: flash-overlay 1.2s linear forwards;
+    top: -14px;
+    left: 50%;
+    transform: translate(-50%, -100%) rotate(0deg);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    box-shadow: var(--shadow-card);
     pointer-events: none;
-    z-index: 0;
   }
 
-  .flash-add::before {
-    background: var(--color-success);
+  /* 新增：用節點自己的分類色（半透明），強調「這個節點類型剛被加入」 */
+  .node-flash-chip--add {
+    background: color-mix(in oklab, var(--node-accent) 88%, transparent);
   }
 
-  .flash-remove::before {
-    background: var(--color-error);
+  /* 移除：中性深灰（半透明），不用紅色 */
+  .node-flash-chip--remove {
+    background: color-mix(in oklab, var(--color-ink-strong) 78%, transparent);
   }
 
-  @keyframes flash-overlay {
-    0%   { opacity: 0; }
-    8%   { opacity: 0.85; }
-    30%  { opacity: 0.85; }
-    42%  { opacity: 0; }
-    58%  { opacity: 0; }
-    70%  { opacity: 0.85; }
-    92%  { opacity: 0.85; }
-    100% { opacity: 0; }
+  .node-flash-pop-enter-active,
+  .node-flash-pop-leave-active {
+    transition: opacity var(--dur-slow) ease, transform var(--dur-slow) ease;
+  }
+
+  /* 進場從逆時針轉回正、離場再順著同方向轉出去，看起來是一路轉過去而不是轉回頭 */
+  .node-flash-pop-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -100%) rotate(-270deg) scale(0.4);
+  }
+
+  .node-flash-pop-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -100%) rotate(270deg) scale(0.4);
   }
 
   .node-highlighted {
@@ -164,7 +189,7 @@
     }
   }
 
-  /* 右下角重疊的完成徽章，外圈套一圈畫布底色把它跟節點本體分開 */
+  /* 右下角重疊的完成徽章：outline 風格，白底+綠框+綠勾，不管節點本身是什麼色都能跟它分開 */
   .node-done-badge {
     position: absolute;
     right: -2px;
@@ -173,12 +198,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--color-page);
+    width: 19px;
+    height: 19px;
     border-radius: 50%;
-    background: var(--color-success);
-    color: #fff;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-success);
+    color: var(--color-success);
   }
 
   .icon-node-label {
