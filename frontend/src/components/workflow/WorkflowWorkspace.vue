@@ -161,7 +161,7 @@
   const settingsStep = ref(0)
   const nodeFlash = ref<Map<string, 'add' | 'remove'>>(new Map())
 
-  function flashNode (nodeId: string, type: 'add' | 'remove', duration = 1200): void {
+  function flashNode (nodeId: string, type: 'add' | 'remove', duration = 950): void {
     nodeFlash.value = new Map(nodeFlash.value).set(nodeId, type)
     window.setTimeout(() => {
       const next = new Map(nodeFlash.value)
@@ -636,11 +636,12 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: auto;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    background-color: var(--color-surface);
-    background-image: radial-gradient(color-mix(in oklab, var(--color-accent) 3.5%, transparent) 0.8px, transparent 0.8px);
-    background-size: 16px 16px;
+    /* 四角一起裁：canvas 與抽屜都是這個容器的子層（抽屜還是絕對定位貼在底部），
+       圓角只在這一層做，兩者的邊角才會對齊。之前只有上面兩角圓，
+       貼著底部的抽屜就會露出方角 */
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: transparent;
   }
 
   .workspace-canvas {
@@ -769,6 +770,7 @@
   }
 
   @media (max-width: 768px) {
+    /* .workspace 裁四角，跟著一起縮，不然抽屜頂角跟外層裁切的圓角對不齊 */
     .workspace {
       border-radius: var(--radius-md);
     }

@@ -18,7 +18,10 @@
   height: 100vh;
   display: flex;
   overflow: hidden;
-  background-color: var(--color-surface);
+  /* 白色半透明罩，把底下的全域漸層壓淡。畫布不鋪底色、整片漸層會直接曝在畫面上，
+     Hub 那邊的濃度在這裡太重。蓋在整頁而不是只蓋主內容區，
+     否則側邊欄那條會留在原濃度，兩邊之間出現接縫 */
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .workflow-page__main {

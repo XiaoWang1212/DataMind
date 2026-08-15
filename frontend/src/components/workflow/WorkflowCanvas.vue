@@ -192,9 +192,9 @@
 
 <style scoped>
   .canvas {
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-md);
+    /* 不鋪底色也不套玻璃：直接讓頁面漸層透上來，畫布跟背景連成一片，
+       只疊一層點狀紋理標示可操作區域。圓角交給外層 .workspace 統一裁 */
+    background: radial-gradient(var(--color-border-strong) 0.9px, transparent 0.9px) 0 0 / 14px 14px;
     padding-top: 6px;
     min-height: 0;
     min-width: 0;
@@ -209,16 +209,9 @@
     flex: 1;
     min-height: 300px;
     min-width: 0;
-    border: none;
-    border-radius: var(--radius-md);
-    background-color: var(--color-surface);
-    background-image: radial-gradient(
-      color-mix(in oklab, var(--color-accent) 8%, transparent) 0.9px,
-      transparent 0.9px
-    );
-    background-size: 14px 14px;
     overflow: auto;
     padding-top: 6px;
+    background: transparent;
   }
 
   /* 拖曳時顯示手掌游標 */
@@ -259,7 +252,6 @@
 
     .flow-area {
       min-height: 420px;
-      border-radius: var(--radius-md);
     }
   }
 </style>
