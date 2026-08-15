@@ -64,3 +64,34 @@ def create_framework():
     db.session.add(framework)
     db.session.commit()
     return jsonify({"success": True, "result": _serialize_framework(framework)})
+
+
+@framework_bp.route("/<int:framework_id>", methods=["GET"])
+@login_required
+def get_framework(framework_id):
+    framework = Framework.query.get(framework_id)
+    if not framework or framework.user_id != current_user.id:
+        return jsonify({"success": False, "error": "找不到框架"}), 404
+
+    return jsonify({"success": True, "result": _serialize_framework(framework)})
+
+
+@framework_bp.route("/<int:framework_id>", methods=["PATCH"])
+@login_required
+def update_framework(framework_id):
+    framework = Framework.query.get(framework_id)
+    if not framework or framework.user_id != current_user.id:
+        return jsonify({"success": False, "error": "找不到框架"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "需要 JSON body"}), 400
+
+    if "title" in data:
+        title = (data["title"] or "").strip()
+        if not title:
+            return jsonify({"success": False, "error": "title 不可為空"}), 400
+        framework.title = title
+
+    db.session.commit()
+    return jsonify({"success": True, "result": _serialize_framework(framework)})
