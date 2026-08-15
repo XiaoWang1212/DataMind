@@ -130,7 +130,7 @@
     resizeObserver?.disconnect()
   })
 
-  // 只記錄節點的結構特徵（id + position），colorClass 變動不算結構改變
+  // 只記錄節點的結構特徵（id + position），nodeType 變動不算結構改變
   function nodeStructureKey (nodes: typeof props.nodes): string {
     return nodes.map(n => `${n.id}:${n.position.x},${n.position.y}`).join('|')
   }

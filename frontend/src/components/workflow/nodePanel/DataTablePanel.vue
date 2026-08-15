@@ -505,7 +505,7 @@
   }
 
   .data-table-guide--ready {
-    color: var(--color-success);
+    color: var(--color-success-text);
   }
 
   .data-table-column-settings {

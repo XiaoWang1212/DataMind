@@ -155,7 +155,7 @@
   }
 
   .upload-modal-error {
-    color: var(--color-error);
+    color: var(--color-error-text);
     font-size: 13px;
     text-align: center;
   }

@@ -1,6 +1,6 @@
 // 借用 §2.3 的節點分類色系，避開綠/琥珀/紅——那三色是狀態語意，混進圖表資料色會誤導
 export const CHART_COLORS = [
-  'var(--color-node-inspect)',
+  'var(--color-node-visualize)',
   'var(--color-node-model)',
   'var(--color-node-source)',
   'var(--color-node-transform)',

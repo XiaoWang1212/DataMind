@@ -501,7 +501,7 @@
   .wizard-tab__required {
     font-size: 9px;
     font-weight: 500;
-    color: var(--color-error);
+    color: var(--color-error-text);
     background: rgba(239, 68, 68, 0.12);
     border-radius: var(--radius-sm);
     padding: 1px 4px;
