@@ -3,9 +3,12 @@
   <section class="setting-area">
     <!-- 有選到節點時才渲染內容 -->
     <div v-if="selectedNode" class="panel">
-      <!-- 標題區：顯示目前節點名稱與說明 -->
-      <div class="panel-header">
-        <h3>{{ selectedNode.data.label.replace(/\n/g, " ") }}</h3>
+      <!-- 標題區：顯示目前節點名稱與說明，色點對應節點分類色（見 §2.3） -->
+      <div
+        class="panel-header"
+        :style="{ '--panel-color': `var(--color-node-${selectedNode.data.nodeType})` }"
+      >
+        <h3><span class="panel-header__dot" />{{ selectedNode.data.label.replace(/\n/g, " ") }}</h3>
         <p>{{ selectedNode.data.description }}</p>
       </div>
 
@@ -428,8 +431,19 @@
 
   .panel-header h3 {
     margin: 0 0 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 16px;
     color: var(--color-text);
+  }
+
+  .panel-header__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--panel-color, var(--color-accent));
   }
 
   .panel-header p {
