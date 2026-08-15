@@ -7,13 +7,14 @@
     <div class="upload-dialog-card">
       <div class="upload-dialog-header">
         <div>
-          <button
-            class="upload-dialog-close"
-            type="button"
+          <AppButton
+            aria-label="關閉"
+            icon-only
+            variant="ghost"
             @click="emit('close')"
           >
-            ×
-          </button>
+            <v-icon icon="mdi-close" size="18" />
+          </AppButton>
           <h3>上傳模型檔案</h3>
           <p>將檔案拖曳到此處，或點擊瀏覽選擇模型檔案。</p>
         </div>
@@ -44,21 +45,12 @@
       </div>
 
       <div class="upload-dialog-actions">
-        <button
-          class="btn btn-secondary"
-          type="button"
-          @click="emit('close')"
-        >
+        <AppButton variant="secondary" @click="emit('close')">
           取消
-        </button>
-        <button
-          class="btn btn-primary"
-          :disabled="!selectedFile"
-          type="button"
-          @click="handleConfirm"
-        >
+        </AppButton>
+        <AppButton :disabled="!selectedFile" variant="primary" @click="handleConfirm">
           上傳
-        </button>
+        </AppButton>
       </div>
     </div>
   </div>
@@ -66,6 +58,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
 
   const props = defineProps<{
     visible: boolean
@@ -118,7 +111,7 @@
 
   .upload-dialog-card {
     width: min(560px, calc(100% - 32px));
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
     box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
     overflow: hidden;
@@ -133,17 +126,6 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
-  }
-
-  .upload-dialog-close {
-    border: none;
-    background: rgba(243, 244, 246, 0.9);
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    color: var(--color-text);
-    font-size: 18px;
-    cursor: pointer;
   }
 
   .upload-dialog-card h3 {
@@ -162,13 +144,13 @@
     min-height: 210px;
     padding: 28px 20px;
     border: 2px dashed rgba(148, 163, 184, 0.8);
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     display: grid;
     place-items: center;
     text-align: center;
     gap: 14px;
     background: rgba(236, 246, 255, 0.68);
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition: border-color var(--dur-base) ease, background var(--dur-base) ease;
   }
 
   .upload-dropzone--active {
@@ -184,7 +166,7 @@
   .upload-dropzone__text {
     font-size: 18px;
     color: var(--color-text);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .upload-dropzone__browse {
