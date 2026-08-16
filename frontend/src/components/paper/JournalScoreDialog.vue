@@ -183,7 +183,7 @@
     font-size: 11.5px;
     font-weight: 500;
     letter-spacing: 0.01em;
-    color: var(--color-accent);
+    color: var(--color-ink);
   }
 
   .journal-score-title {
@@ -228,8 +228,8 @@
 
   .journal-score-tab--active {
     font-weight: 500;
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
+    color: var(--color-ink);
+    border-bottom-color: var(--color-ink);
   }
 
   .journal-score-body {
@@ -284,7 +284,7 @@
     margin: 0 0 14px;
     font-size: 12px;
     font-weight: 500;
-    color: var(--color-accent);
+    color: var(--color-ink);
   }
 
   .journal-score-criteria {
@@ -368,7 +368,7 @@
     flex-shrink: 0;
     font-size: 12px;
     font-weight: 500;
-    color: var(--color-accent);
+    color: var(--color-ink);
   }
 
   .journal-score-suggestion__text {
