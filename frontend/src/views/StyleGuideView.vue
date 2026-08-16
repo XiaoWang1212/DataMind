@@ -28,7 +28,7 @@
           <div class="sg-node-dot sg-node-dot--bordered" :style="{ background: cat.varRef }">
             <v-icon color="var(--color-ink-strong)" icon="mdi-circle-outline" size="24" />
             <span class="sg-node-badge">
-              <v-icon icon="mdi-check" size="12" />
+              <v-icon icon="mdi-check" size="13" />
             </span>
           </div>
           <div>
@@ -317,7 +317,7 @@
   border: 1.5px solid rgba(18, 36, 74, 0.16);
 }
 
-/* 外圈套一圈頁面底色，徽章才不會跟節點糊在一起 */
+/* outline 風格：白底＋綠框＋綠勾，不管節點本身是什麼色都能跟它分開，見 IconNode.vue */
 .sg-node-badge {
   position: absolute;
   right: -2px;
@@ -325,12 +325,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-page);
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
-  background: var(--color-success);
-  color: #fff;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-success);
+  color: var(--color-success);
 }
 
 .sg-radius-box {

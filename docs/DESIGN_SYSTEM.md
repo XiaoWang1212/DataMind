@@ -358,10 +358,12 @@ DataMind 有大量表格,規範:
 
 ### 7.6 Workflow
 
-- 節點:圓形(64px 上下)+ 白色 icon,依**類型**上色(見 §2.3)。
-- 節點下方放 label(12px,`--color-ink-soft`)。
-- 節點間用連接線(2px,`--color-border-strong`)串起,線在節點下層。
-- hover:節點 `translateY(-2px)`,`--dur-fast`。
+- 節點:圓形(58px,平板 54px、手機 48px)+ 深色 icon(`--color-ink-strong`)+ 細邊框,依**類型**上色(見 §2.3)。
+- 節點下方放 label(13px,`--color-text`)。
+- 節點間用連接線串起:已流過的線用 `color-mix(--color-accent 38%, transparent)`(1.8px),還沒流到的用 `--color-border-strong`(1.5px),線在節點下層。已流過的線同色也用在 Settings 步驟切換時的高亮圈(`color-mix(--color-accent 26%, transparent)`),都是中性品牌深藍調淡,不額外加新色相跟節點本身的分類色搶。
+- 完成狀態:節點右下角疊一個 outline 風格的勾勾徽章(白底 + `--color-success` 細框 + 綠勾),不用陰影也不用粗邊框,靠白底跟任何節點分類色分開。
+- 新增/移除節點(如 Settings 面板加減前處理步驟、模型):浮在節點正上方的小圓 icon,旋轉進出場後停留一下消失。新增用節點自己的分類色(`--node-accent`),移除用中性深灰,不額外引入紅/綠。
+- Canvas 背景不鋪底色,直接透出頁面漸層,只疊一層點狀紋理(`--color-border-strong`)標示可操作區域;圓角與裁切統一收在外層容器,canvas 本身不設 `border`/`box-shadow`。
 
 ### 7.7 論文編輯區
 
