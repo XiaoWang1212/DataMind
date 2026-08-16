@@ -19,7 +19,20 @@
       </div>
     </div>
 
-    <div v-if="currentMatrix" class="cm-table-wrap">
+    <div v-if="groupedResults.length > 0" class="cm-tabs">
+      <button
+        v-for="tab in TABS"
+        :key="tab.key"
+        type="button"
+        class="cm-tab"
+        :class="{ 'cm-tab--active': activeTab === tab.key }"
+        @click="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div v-if="activeTab === 'matrix' && currentMatrix" class="cm-table-wrap">
       <table class="cm-table">
         <thead>
           <tr>
@@ -51,8 +64,31 @@
       </table>
     </div>
 
-    <div v-else-if="groupedResults.length > 0" class="summary-empty">
+    <div v-else-if="activeTab === 'matrix' && groupedResults.length > 0" class="summary-empty">
       該抽樣沒有可用的混淆矩陣資訊。
+    </div>
+
+    <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
+      <svg class="cm-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+        <path class="cm-chart-line" :d="rocPath" fill="none" />
+      </svg>
+      <div class="cm-chart-axis-x">FPR (0 – 1)</div>
+      <div class="cm-chart-axis-y">TPR (0 – 1)</div>
+    </div>
+    <div v-else-if="activeTab === 'roc' && groupedResults.length > 0" class="summary-empty">
+      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出）。
+    </div>
+
+    <div v-if="activeTab === 'pr' && currentRocPrCurve" class="cm-chart-wrap">
+      <svg class="cm-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path class="cm-chart-line" :d="prPath" fill="none" />
+      </svg>
+      <div class="cm-chart-axis-x">Recall (0 – 1)</div>
+      <div class="cm-chart-axis-y">Precision (0 – 1)</div>
+    </div>
+    <div v-else-if="activeTab === 'pr' && groupedResults.length > 0" class="summary-empty">
+      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出）。
     </div>
 
     <div v-else class="summary-empty">
@@ -70,10 +106,17 @@
     matrix: number[][]
   }
 
+  interface RocPrCurveData {
+    posLabel: string
+    roc: { fpr: number[], tpr: number[] }
+    pr: { precision: number[], recall: number[] }
+  }
+
   interface ResultItem {
     model_name: string
     split_name: string
     confusion_matrix: ConfusionMatrixData | null
+    roc_pr_curve: RocPrCurveData | null
   }
 
   interface GroupedResult {
@@ -81,6 +124,7 @@
     splits: Array<{
       split_name: string
       confusion_matrix: ConfusionMatrixData | null
+      roc_pr_curve: RocPrCurveData | null
     }>
   }
 
@@ -98,6 +142,35 @@
     return { labels: labels as string[], matrix: matrix as number[][] }
   }
 
+  function parseRocPrCurve (value: unknown): RocPrCurveData | null {
+    if (!value || typeof value !== 'object') return null
+    const obj = value as Record<string, unknown>
+    const posLabel = obj.pos_label
+    const roc = obj.roc
+    const pr = obj.pr
+    if (typeof posLabel !== 'string') return null
+    if (!roc || typeof roc !== 'object' || !pr || typeof pr !== 'object') return null
+
+    const rocObj = roc as Record<string, unknown>
+    const prObj = pr as Record<string, unknown>
+    const fpr = rocObj.fpr
+    const tpr = rocObj.tpr
+    const precision = prObj.precision
+    const recall = prObj.recall
+
+    const isNumberArray = (arr: unknown): arr is number[] =>
+      Array.isArray(arr) && arr.every(n => typeof n === 'number')
+
+    if (!isNumberArray(fpr) || !isNumberArray(tpr)) return null
+    if (!isNumberArray(precision) || !isNumberArray(recall)) return null
+
+    return {
+      posLabel,
+      roc: { fpr, tpr },
+      pr: { precision, recall },
+    }
+  }
+
   const rawResults = computed<Array<Record<string, unknown>>>(() => {
     const results = props.workflowResult?.results
     if (!Array.isArray(results)) return []
@@ -105,14 +178,13 @@
   })
 
   const confusionResults = computed<ResultItem[]>(() =>
-    rawResults.value
-      .map(result => {
-        const model_name = String(result.model_name ?? 'Unknown model')
-        const split_name = String(result.split_name ?? 'Unknown split')
-        const confusion_matrix = parseConfusionMatrix(result.confusion_matrix)
-        return { model_name, split_name, confusion_matrix }
-      })
-      .filter(item => item.confusion_matrix !== null),
+    rawResults.value.map(result => {
+      const model_name = String(result.model_name ?? 'Unknown model')
+      const split_name = String(result.split_name ?? 'Unknown split')
+      const confusion_matrix = parseConfusionMatrix(result.confusion_matrix)
+      const roc_pr_curve = parseRocPrCurve(result.roc_pr_curve)
+      return { model_name, split_name, confusion_matrix, roc_pr_curve }
+    }).filter(item => item.confusion_matrix !== null || item.roc_pr_curve !== null),
   )
 
   const groupedResults = computed<GroupedResult[]>(() => {
@@ -123,6 +195,7 @@
       const entry = {
         split_name: result.split_name,
         confusion_matrix: result.confusion_matrix,
+        roc_pr_curve: result.roc_pr_curve,
       }
 
       if (existing) {
@@ -156,6 +229,49 @@
   const currentMatrix = computed(() =>
     currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.confusion_matrix ?? null,
   )
+
+  type TabKey = 'matrix' | 'roc' | 'pr'
+  const activeTab = ref<TabKey>('matrix')
+
+  const TABS: Array<{ key: TabKey, label: string }> = [
+    { key: 'matrix', label: '混淆矩陣' },
+    { key: 'roc', label: 'ROC 曲線' },
+    { key: 'pr', label: 'PR 曲線' },
+  ]
+
+  const currentRocPrCurve = computed(() =>
+    currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve ?? null,
+  )
+
+  const CHART_SIZE = 100
+  const CHART_PADDING = 4
+
+  function toChartX (value: number): number {
+    return CHART_PADDING + value * (CHART_SIZE - CHART_PADDING * 2)
+  }
+
+  function toChartY (value: number): number {
+    return CHART_SIZE - CHART_PADDING - value * (CHART_SIZE - CHART_PADDING * 2)
+  }
+
+  function buildLinePath (xs: number[], ys: number[]): string {
+    if (xs.length === 0 || xs.length !== ys.length) return ''
+    return xs
+      .map((x, i) => `${i === 0 ? 'M' : 'L'} ${toChartX(x).toFixed(2)} ${toChartY(ys[i]!).toFixed(2)}`)
+      .join(' ')
+  }
+
+  const rocPath = computed(() => {
+    const curve = currentRocPrCurve.value
+    if (!curve) return ''
+    return buildLinePath(curve.roc.fpr, curve.roc.tpr)
+  })
+
+  const prPath = computed(() => {
+    const curve = currentRocPrCurve.value
+    if (!curve) return ''
+    return buildLinePath(curve.pr.recall, curve.pr.precision)
+  })
 
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
   watch(groupedResults, groups => {
@@ -249,6 +365,74 @@
   .cm-cell--diagonal {
     background: color-mix(in oklab, var(--color-accent) 12%, transparent);
     font-weight: 700;
+  }
+
+  .cm-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .cm-tab {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: transparent;
+    color: var(--color-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-tab--active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+
+  .cm-chart-wrap {
+    position: relative;
+    padding: 12px 16px 28px 34px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    background: var(--color-surface);
+  }
+
+  .cm-chart {
+    width: 100%;
+    height: 260px;
+    display: block;
+  }
+
+  .cm-chart-diagonal {
+    stroke: rgba(148, 163, 184, 0.5);
+    stroke-width: 0.6;
+    stroke-dasharray: 2 2;
+  }
+
+  .cm-chart-line {
+    stroke: var(--color-accent);
+    stroke-width: 1.4;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .cm-chart-axis-x {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--color-secondary);
+  }
+
+  .cm-chart-axis-y {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: left center;
+    font-size: 11px;
+    color: var(--color-secondary);
+    white-space: nowrap;
   }
 
   .summary-empty {
