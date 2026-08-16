@@ -13,9 +13,11 @@ from sklearn.metrics import (
     confusion_matrix,
     f1_score,
     matthews_corrcoef,
+    precision_recall_curve,
     precision_score,
     recall_score,
     roc_auc_score,
+    roc_curve,
 )
 from sklearn.preprocessing import LabelBinarizer
 
@@ -201,6 +203,30 @@ def _bootstrap_ci(
 # ---------------------------------------------------------------------------
 # Public evaluation function
 # ---------------------------------------------------------------------------
+
+def build_roc_pr_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, Any]]:
+    """算 ROC / PR 曲線座標點，只支援二元分類（y_score 為 None 或多分類時回傳 None）"""
+    if y_score is None:
+        return None
+    score_vec = _get_score_vector(y_score)
+    if score_vec is None:
+        return None
+    unique_labels = pd.unique(y_true.dropna())
+    if len(unique_labels) != 2:
+        return None
+
+    pos_label = _infer_positive_label(y_true)
+    binary = _to_binary_array(y_true, pos_label)
+
+    fpr, tpr, _ = roc_curve(binary, score_vec)
+    precision, recall, _ = precision_recall_curve(binary, score_vec)
+
+    return {
+        "pos_label": str(pos_label),
+        "roc": {"fpr": fpr.tolist(), "tpr": tpr.tolist()},
+        "pr": {"precision": precision.tolist(), "recall": recall.tolist()},
+    }
+
 
 def evaluate_metrics(
     y_true: pd.Series,
