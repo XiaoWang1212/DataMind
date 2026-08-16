@@ -1,7 +1,8 @@
-// 分數不分高低，統一用品牌藍——曾經是「≥80 綠色/其餘金黃色」的二元判斷，
-// 但多數分數落在 80 以下，金黃色佔滿畫面，跟評分失敗的警告色也撞在一起。
-const SCORE_COLOR = 'var(--color-ink)'
+// frontend/src/utils/scoreColor.ts
+export const SCORE_THRESHOLD = 80
+export const SCORE_COLOR_HIGH = 'var(--color-success)'
+export const SCORE_COLOR_LOW = 'var(--color-warning)'
 
-export function getScoreColor (_score: number): string {
-  return SCORE_COLOR
+export function getScoreColor (score: number): string {
+  return score >= SCORE_THRESHOLD ? SCORE_COLOR_HIGH : SCORE_COLOR_LOW
 }

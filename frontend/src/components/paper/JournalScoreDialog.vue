@@ -306,7 +306,7 @@
   .journal-score-criterion__index {
     font-size: 11px;
     font-weight: 500;
-    color: var(--color-border-strong);
+    color: var(--color-ink-soft);
   }
 
   .journal-score-criterion__name {
@@ -356,12 +356,16 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
   }
 
+  /* 拿掉邊框後靠淡底色分組，比之前太淡看不出來的邊框更容易辨識每一條的範圍 */
   .journal-score-suggestion {
     display: flex;
     gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
   }
 
   .journal-score-suggestion__index {
@@ -372,7 +376,7 @@
   }
 
   .journal-score-suggestion__text {
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.65;
     color: var(--color-text);
   }
