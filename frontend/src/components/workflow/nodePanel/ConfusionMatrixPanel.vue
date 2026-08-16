@@ -91,7 +91,7 @@
       此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出）。
     </div>
 
-    <div v-else class="summary-empty">
+    <div v-if="groupedResults.length === 0" class="summary-empty">
       尚未有混淆矩陣結果，請執行 Workflow 後再查看。
     </div>
   </section>
