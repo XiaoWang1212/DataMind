@@ -69,26 +69,40 @@
     </div>
 
     <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
-      <svg class="cm-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
+      <svg class="cm-chart" viewBox="0 0 100 100">
         <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
         <path class="cm-chart-line" :d="rocPath" fill="none" />
+        <text class="cm-chart-tick" x="4" y="100">0</text>
+        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+        <text class="cm-chart-tick" x="0" y="96">0</text>
+        <text class="cm-chart-tick" x="0" y="50">0.5</text>
+        <text class="cm-chart-tick" x="0" y="4">1</text>
       </svg>
       <div class="cm-chart-axis-x">FPR (0 – 1)</div>
       <div class="cm-chart-axis-y">TPR (0 – 1)</div>
     </div>
     <div v-else-if="activeTab === 'roc' && groupedResults.length > 0" class="summary-empty">
-      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出）。
+      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
     </div>
 
     <div v-if="activeTab === 'pr' && currentRocPrCurve" class="cm-chart-wrap">
-      <svg class="cm-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
+      <svg class="cm-chart" viewBox="0 0 100 100">
         <path class="cm-chart-line" :d="prPath" fill="none" />
+        <text class="cm-chart-tick" x="4" y="100">0</text>
+        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+        <text class="cm-chart-tick" x="0" y="96">0</text>
+        <text class="cm-chart-tick" x="0" y="50">0.5</text>
+        <text class="cm-chart-tick" x="0" y="4">1</text>
       </svg>
       <div class="cm-chart-axis-x">Recall (0 – 1)</div>
       <div class="cm-chart-axis-y">Precision (0 – 1)</div>
     </div>
     <div v-else-if="activeTab === 'pr' && groupedResults.length > 0" class="summary-empty">
-      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出）。
+      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
     </div>
 
     <div v-if="groupedResults.length === 0" class="summary-empty">
@@ -399,20 +413,33 @@
 
   .cm-chart {
     width: 100%;
-    height: 260px;
+    max-width: 360px;
+    aspect-ratio: 1;
     display: block;
+  }
+
+  .cm-chart-label {
+    font-size: 12px;
+    color: var(--color-secondary);
+    margin-bottom: 4px;
   }
 
   .cm-chart-diagonal {
     stroke: rgba(148, 163, 184, 0.5);
     stroke-width: 0.6;
     stroke-dasharray: 2 2;
+    vector-effect: non-scaling-stroke;
   }
 
   .cm-chart-line {
     stroke: var(--color-accent);
     stroke-width: 1.4;
     vector-effect: non-scaling-stroke;
+  }
+
+  .cm-chart-tick {
+    font-size: 6px;
+    fill: var(--color-secondary);
   }
 
   .cm-chart-axis-x {

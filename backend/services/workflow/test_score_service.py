@@ -217,14 +217,20 @@ def build_roc_pr_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, An
 
     pos_label = _infer_positive_label(y_true)
     binary = _to_binary_array(y_true, pos_label)
+    # _to_binary_array 對數值 dtype 是原值透傳（不處理 pos_label），這裡補正成真正的 0/1
+    if not np.array_equal(np.unique(binary), np.array([0, 1])):
+        binary = (y_true == pos_label).to_numpy(dtype=int)
 
-    fpr, tpr, _ = roc_curve(binary, score_vec)
-    precision, recall, _ = precision_recall_curve(binary, score_vec)
+    try:
+        fpr, tpr, _ = roc_curve(binary, score_vec)
+        precision, recall, _ = precision_recall_curve(binary, score_vec, drop_intermediate=True)
+    except Exception:
+        return None
 
     return {
         "pos_label": str(pos_label),
-        "roc": {"fpr": fpr.tolist(), "tpr": tpr.tolist()},
-        "pr": {"precision": precision.tolist(), "recall": recall.tolist()},
+        "roc": {"fpr": [round(v, 6) for v in fpr.tolist()], "tpr": [round(v, 6) for v in tpr.tolist()]},
+        "pr": {"precision": [round(v, 6) for v in precision.tolist()], "recall": [round(v, 6) for v in recall.tolist()]},
     }
 
 
