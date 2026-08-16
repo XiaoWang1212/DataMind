@@ -105,6 +105,33 @@
       此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
     </div>
 
+    <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
+      <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
+      <svg class="cm-chart" viewBox="0 0 100 100">
+        <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+        <path class="cm-chart-line" :d="calibrationPath" fill="none" />
+        <circle
+          v-for="(point, index) in calibrationPoints"
+          :key="`cal-point-${index}`"
+          class="cm-chart-point"
+          :cx="point.x"
+          :cy="point.y"
+          r="1.5"
+        />
+        <text class="cm-chart-tick" x="4" y="100">0</text>
+        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+        <text class="cm-chart-tick" x="0" y="96">0</text>
+        <text class="cm-chart-tick" x="0" y="50">0.5</text>
+        <text class="cm-chart-tick" x="0" y="4">1</text>
+      </svg>
+      <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
+      <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+    </div>
+    <div v-else-if="activeTab === 'calibration' && groupedResults.length > 0" class="summary-empty">
+      此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
+    </div>
+
     <div v-if="groupedResults.length === 0" class="summary-empty">
       尚未有混淆矩陣結果，請執行 Workflow 後再查看。
     </div>
@@ -126,11 +153,18 @@
     pr: { precision: number[], recall: number[] }
   }
 
+  interface CalibrationCurveData {
+    posLabel: string
+    probTrue: number[]
+    probPred: number[]
+  }
+
   interface ResultItem {
     model_name: string
     split_name: string
     confusion_matrix: ConfusionMatrixData | null
     roc_pr_curve: RocPrCurveData | null
+    calibration_curve: CalibrationCurveData | null
   }
 
   interface GroupedResult {
@@ -139,6 +173,7 @@
       split_name: string
       confusion_matrix: ConfusionMatrixData | null
       roc_pr_curve: RocPrCurveData | null
+      calibration_curve: CalibrationCurveData | null
     }>
   }
 
@@ -185,6 +220,22 @@
     }
   }
 
+  function parseCalibrationCurve (value: unknown): CalibrationCurveData | null {
+    if (!value || typeof value !== 'object') return null
+    const obj = value as Record<string, unknown>
+    const posLabel = obj.pos_label
+    const probTrue = obj.prob_true
+    const probPred = obj.prob_pred
+    if (typeof posLabel !== 'string') return null
+
+    const isNumberArray = (arr: unknown): arr is number[] =>
+      Array.isArray(arr) && arr.every(n => typeof n === 'number')
+
+    if (!isNumberArray(probTrue) || !isNumberArray(probPred)) return null
+
+    return { posLabel, probTrue, probPred }
+  }
+
   const rawResults = computed<Array<Record<string, unknown>>>(() => {
     const results = props.workflowResult?.results
     if (!Array.isArray(results)) return []
@@ -197,8 +248,11 @@
       const split_name = String(result.split_name ?? 'Unknown split')
       const confusion_matrix = parseConfusionMatrix(result.confusion_matrix)
       const roc_pr_curve = parseRocPrCurve(result.roc_pr_curve)
-      return { model_name, split_name, confusion_matrix, roc_pr_curve }
-    }).filter(item => item.confusion_matrix !== null || item.roc_pr_curve !== null),
+      const calibration_curve = parseCalibrationCurve(result.calibration_curve)
+      return { model_name, split_name, confusion_matrix, roc_pr_curve, calibration_curve }
+    }).filter(item =>
+      item.confusion_matrix !== null || item.roc_pr_curve !== null || item.calibration_curve !== null,
+    ),
   )
 
   const groupedResults = computed<GroupedResult[]>(() => {
@@ -210,6 +264,7 @@
         split_name: result.split_name,
         confusion_matrix: result.confusion_matrix,
         roc_pr_curve: result.roc_pr_curve,
+        calibration_curve: result.calibration_curve,
       }
 
       if (existing) {
@@ -244,17 +299,22 @@
     currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.confusion_matrix ?? null,
   )
 
-  type TabKey = 'matrix' | 'roc' | 'pr'
+  type TabKey = 'matrix' | 'roc' | 'pr' | 'calibration'
   const activeTab = ref<TabKey>('matrix')
 
   const TABS: Array<{ key: TabKey, label: string }> = [
     { key: 'matrix', label: '混淆矩陣' },
     { key: 'roc', label: 'ROC 曲線' },
     { key: 'pr', label: 'PR 曲線' },
+    { key: 'calibration', label: '校準曲線' },
   ]
 
   const currentRocPrCurve = computed(() =>
     currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve ?? null,
+  )
+
+  const currentCalibrationCurve = computed(() =>
+    currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.calibration_curve ?? null,
   )
 
   const CHART_SIZE = 100
@@ -285,6 +345,26 @@
     const curve = currentRocPrCurve.value
     if (!curve) return ''
     return buildLinePath(curve.pr.recall, curve.pr.precision)
+  })
+
+  const calibrationPath = computed(() => {
+    const curve = currentCalibrationCurve.value
+    if (!curve) return ''
+    return buildLinePath(curve.probPred, curve.probTrue)
+  })
+
+  interface ChartPoint {
+    x: number
+    y: number
+  }
+
+  const calibrationPoints = computed<ChartPoint[]>(() => {
+    const curve = currentCalibrationCurve.value
+    if (!curve) return []
+    return curve.probPred.map((x, i) => ({
+      x: toChartX(x),
+      y: toChartY(curve.probTrue[i]!),
+    }))
   })
 
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
@@ -434,6 +514,13 @@
   .cm-chart-line {
     stroke: var(--color-accent);
     stroke-width: 1.4;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .cm-chart-point {
+    fill: var(--color-accent);
+    stroke: var(--color-surface);
+    stroke-width: 0.5;
     vector-effect: non-scaling-stroke;
   }
 
