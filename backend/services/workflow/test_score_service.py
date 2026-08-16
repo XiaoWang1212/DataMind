@@ -19,6 +19,7 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
+from sklearn.calibration import calibration_curve
 from sklearn.preprocessing import LabelBinarizer
 
 SUPPORTED_METRICS = {
@@ -231,6 +232,35 @@ def build_roc_pr_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, An
         "pos_label": str(pos_label),
         "roc": {"fpr": [round(v, 6) for v in fpr.tolist()], "tpr": [round(v, 6) for v in tpr.tolist()]},
         "pr": {"precision": [round(v, 6) for v in precision.tolist()], "recall": [round(v, 6) for v in recall.tolist()]},
+    }
+
+
+def build_calibration_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, Any]]:
+    """算校準曲線（reliability diagram），只支援二元分類。任何失敗都回傳 None，絕不讓例外往外傳。"""
+    if y_score is None:
+        return None
+    score_vec = _get_score_vector(y_score)
+    if score_vec is None:
+        return None
+    unique_labels = pd.unique(y_true.dropna())
+    if len(unique_labels) != 2:
+        return None
+
+    try:
+        pos_label = _infer_positive_label(y_true)
+        binary = _to_binary_array(y_true, pos_label)
+        # _to_binary_array 對數值 dtype 是原值透傳（不處理 pos_label），這裡補正成真正的 0/1
+        if not np.array_equal(np.unique(binary), np.array([0, 1])):
+            binary = (y_true == pos_label).to_numpy(dtype=int)
+
+        prob_true, prob_pred = calibration_curve(binary, score_vec, n_bins=10, strategy="uniform")
+    except Exception:
+        return None
+
+    return {
+        "pos_label": str(pos_label),
+        "prob_true": [round(v, 6) for v in prob_true.tolist()],
+        "prob_pred": [round(v, 6) for v in prob_pred.tolist()],
     }
 
 
