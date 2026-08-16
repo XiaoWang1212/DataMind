@@ -4,7 +4,7 @@
     class="journal-score-backdrop"
     @click.self="emit('close')"
   >
-    <div class="journal-score-card glass-panel">
+    <div class="journal-score-card">
       <header class="journal-score-header">
         <div class="journal-score-header__text">
           <p class="journal-score-eyebrow">期刊評分報告</p>
@@ -155,7 +155,8 @@
     z-index: 1000;
   }
 
-  /* 底色、邊框、圓角、陰影由 .glass-panel 提供，在這裡重寫會蓋掉玻璃 */
+  /* 實色白底，不套玻璃：backdrop-filter 疊在深色遮罩前面會把深色一起模糊進來，
+     顏色會偏濁。跟 2026-08-15 workflow canvas 同一個判斷 */
   .journal-score-card {
     width: 680px;
     max-width: calc(100vw - 32px);
@@ -163,6 +164,9 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
   }
 
   .journal-score-header {
@@ -195,11 +199,9 @@
     align-items: center;
     gap: 6px;
     margin: 14px 24px 0;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    background: var(--color-warning-bg);
     color: var(--color-warning-text);
     font-size: 12px;
+    font-weight: 500;
     flex-shrink: 0;
   }
 
@@ -354,15 +356,12 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
   }
 
   .journal-score-suggestion {
     display: flex;
     gap: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 12px 14px;
   }
 
   .journal-score-suggestion__index {
