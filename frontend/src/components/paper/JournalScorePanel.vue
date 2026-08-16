@@ -3,7 +3,7 @@
   <div class="score-panel">
     <div v-if="journalScores.length === 0" class="score-panel-empty">
       <div class="score-panel-empty__icon">
-        <v-icon color="var(--color-warning-text)" icon="mdi-star" size="22" />
+        <v-icon color="var(--color-ink-soft)" icon="mdi-star" size="22" />
       </div>
       <p class="score-panel-empty__text">
         點擊「期刊評分」按鈕，以 <strong>JAMIA</strong>、<strong>npj Digital Medicine</strong>、<strong>BMC MIDM</strong> 的審稿標準評估本文
@@ -87,7 +87,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-warning-bg);
+    background: var(--color-surface-alt);
     border-radius: var(--radius-md);
   }
 
@@ -131,7 +131,7 @@
     margin: 0 0 10px;
     font-size: 12.5px;
     font-weight: 500;
-    color: var(--color-warning-text);
+    color: var(--color-text);
   }
 
   .score-panel-summary__list {
