@@ -7,7 +7,7 @@
     <div class="journal-score-card glass-panel">
       <header class="journal-score-header">
         <div class="journal-score-header__text">
-          <p class="journal-score-eyebrow" :style="{ color: activeAccent.text }">期刊評分報告</p>
+          <p class="journal-score-eyebrow">期刊評分報告</p>
           <h3 class="journal-score-title">Journal Peer Review Simulation</h3>
         </div>
         <AppButton icon-only title="按 Esc 關閉" variant="ghost" @click="emit('close')">
@@ -26,9 +26,6 @@
           :key="js.journal"
           class="journal-score-tab"
           :class="{ 'journal-score-tab--active': index === activeIndex }"
-          :style="index === activeIndex
-            ? { color: getJournalAccent(js.journal).text, borderBottomColor: getJournalAccent(js.journal).main }
-            : undefined"
           type="button"
           @click="activeIndex = index"
         >
@@ -64,7 +61,7 @@
 
         <hr class="journal-score-divider">
 
-        <p class="journal-score-section-title" :style="{ color: activeAccent.text }">逐項評分準則</p>
+        <p class="journal-score-section-title">逐項評分準則</p>
 
         <ol class="journal-score-criteria">
           <li
@@ -93,11 +90,11 @@
 
         <hr class="journal-score-divider">
 
-        <p class="journal-score-section-title" :style="{ color: activeAccent.text }">修改建議</p>
+        <p class="journal-score-section-title">修改建議</p>
 
         <ol class="journal-score-suggestions">
           <li v-for="(suggestion, index) in activeJournal.suggestions" :key="index" class="journal-score-suggestion">
-            <span class="journal-score-suggestion__index" :style="{ color: activeAccent.text }">
+            <span class="journal-score-suggestion__index">
               {{ String(index + 1).padStart(2, '0') }}.
             </span>
             <span class="journal-score-suggestion__text">{{ suggestion }}</span>
@@ -113,7 +110,6 @@
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
   import AppButton from '@/components/ui/AppButton.vue'
-  import { getJournalAccent } from '@/utils/journalTheme'
   import { getScoreColor } from '@/utils/scoreColor'
 
   const props = defineProps<{
@@ -129,7 +125,6 @@
   const activeIndex = ref(0)
 
   const activeJournal = computed(() => props.journalScores[activeIndex.value] ?? null)
-  const activeAccent = computed(() => getJournalAccent(activeJournal.value?.journal ?? ''))
 
   function onKeydown (event: KeyboardEvent) {
     if (event.key === 'Escape') emit('close')
@@ -184,6 +179,7 @@
     font-size: 11.5px;
     font-weight: 500;
     letter-spacing: 0.01em;
+    color: var(--color-accent);
   }
 
   .journal-score-title {
@@ -230,7 +226,8 @@
 
   .journal-score-tab--active {
     font-weight: 500;
-    color: var(--color-text);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
   }
 
   .journal-score-body {
@@ -285,6 +282,7 @@
     margin: 0 0 14px;
     font-size: 12px;
     font-weight: 500;
+    color: var(--color-accent);
   }
 
   .journal-score-criteria {
@@ -371,6 +369,7 @@
     flex-shrink: 0;
     font-size: 12px;
     font-weight: 500;
+    color: var(--color-accent);
   }
 
   .journal-score-suggestion__text {
