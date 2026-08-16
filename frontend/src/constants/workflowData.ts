@@ -110,9 +110,9 @@ export const INITIAL_NODES: FlowNode[] = [
     targetPosition: Position.Left,
     data: {
       icon: "mdi-grid",
-      label: "Confusion\nMatrix",
+      label: "Classification\nEvaluation",
       colorClass: "node-pending",
-      description: "輸出混淆矩陣",
+      description: "顯示混淆矩陣與 ROC/PR 曲線",
       fields: [],
       config: { normalize: "none" },
     },
