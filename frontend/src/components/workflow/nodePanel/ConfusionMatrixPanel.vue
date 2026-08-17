@@ -32,134 +32,157 @@
       </button>
     </div>
 
-    <div v-if="activeTab === 'matrix' && currentMatrix" class="cm-table-wrap">
-      <table class="cm-table">
-        <thead>
-          <tr>
-            <th class="cm-corner" />
-            <th
-              v-for="label in currentMatrix.labels"
-              :key="`pred-${label}`"
-              class="cm-header"
+    <div v-if="groupedResults.length > 0" class="cm-tab-row">
+      <div v-if="activeTab === 'matrix' && currentMatrix" class="cm-table-wrap">
+        <table class="cm-table">
+          <thead>
+            <tr>
+              <th class="cm-corner" />
+              <th
+                v-for="label in currentMatrix.labels"
+                :key="`pred-${label}`"
+                class="cm-header"
+              >
+                預測：{{ label }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, rowIndex) in currentMatrix.matrix" :key="`row-${rowIndex}`">
+              <th class="cm-header cm-header--row">
+                實際：{{ currentMatrix.labels[rowIndex] }}
+              </th>
+              <td
+                v-for="(cell, colIndex) in row"
+                :key="`cell-${rowIndex}-${colIndex}`"
+                class="cm-cell"
+                :class="{ 'cm-cell--diagonal': rowIndex === colIndex }"
+              >
+                {{ cell }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-else-if="activeTab === 'matrix'" class="summary-empty">
+        該抽樣沒有可用的混淆矩陣資訊。
+      </div>
+
+      <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
+        <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
+        <svg class="cm-chart" viewBox="0 0 100 100">
+          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <path class="cm-chart-line" :d="rocPath" fill="none" />
+          <text class="cm-chart-tick" x="4" y="100">0</text>
+          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+          <text class="cm-chart-tick" x="0" y="96">0</text>
+          <text class="cm-chart-tick" x="0" y="50">0.5</text>
+          <text class="cm-chart-tick" x="0" y="4">1</text>
+        </svg>
+        <div class="cm-chart-axis-x">FPR (0 – 1)</div>
+        <div class="cm-chart-axis-y">TPR (0 – 1)</div>
+      </div>
+      <div v-else-if="activeTab === 'roc'" class="summary-empty">
+        此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
+      </div>
+
+      <div v-if="activeTab === 'pr' && currentRocPrCurve" class="cm-chart-wrap">
+        <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
+        <svg class="cm-chart" viewBox="0 0 100 100">
+          <path class="cm-chart-line" :d="prPath" fill="none" />
+          <text class="cm-chart-tick" x="4" y="100">0</text>
+          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+          <text class="cm-chart-tick" x="0" y="96">0</text>
+          <text class="cm-chart-tick" x="0" y="50">0.5</text>
+          <text class="cm-chart-tick" x="0" y="4">1</text>
+        </svg>
+        <div class="cm-chart-axis-x">Recall (0 – 1)</div>
+        <div class="cm-chart-axis-y">Precision (0 – 1)</div>
+      </div>
+      <div v-else-if="activeTab === 'pr'" class="summary-empty">
+        此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
+      </div>
+
+      <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
+        <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
+        <svg class="cm-chart" viewBox="0 0 100 100">
+          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <path class="cm-chart-line" :d="calibrationPath" fill="none" />
+          <circle
+            v-for="(point, index) in calibrationPoints"
+            :key="`cal-point-${index}`"
+            class="cm-chart-point"
+            :cx="point.x"
+            :cy="point.y"
+            r="1.5"
+          />
+          <text class="cm-chart-tick" x="4" y="100">0</text>
+          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
+          <text class="cm-chart-tick" x="0" y="96">0</text>
+          <text class="cm-chart-tick" x="0" y="50">0.5</text>
+          <text class="cm-chart-tick" x="0" y="4">1</text>
+        </svg>
+        <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
+        <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+      </div>
+      <div v-else-if="activeTab === 'calibration'" class="summary-empty">
+        此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
+      </div>
+
+      <div v-if="activeTab === 'perClass' && currentPerClassMetrics" class="cm-table-wrap">
+        <table class="cm-table">
+          <thead>
+            <tr>
+              <th class="cm-header">類別</th>
+              <th class="cm-header">Precision</th>
+              <th class="cm-header">Recall</th>
+              <th class="cm-header">F1</th>
+              <th class="cm-header">樣本數</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in perClassRows"
+              :key="row.label"
+              :class="{ 'cm-row--lowest': row.label === lowestF1Label }"
             >
-              預測：{{ label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, rowIndex) in currentMatrix.matrix" :key="`row-${rowIndex}`">
-            <th class="cm-header cm-header--row">
-              實際：{{ currentMatrix.labels[rowIndex] }}
-            </th>
-            <td
-              v-for="(cell, colIndex) in row"
-              :key="`cell-${rowIndex}-${colIndex}`"
-              class="cm-cell"
-              :class="{ 'cm-cell--diagonal': rowIndex === colIndex }"
-            >
-              {{ cell }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <td class="cm-cell">{{ row.label }}</td>
+              <td class="cm-cell">{{ row.precision.toFixed(3) }}</td>
+              <td class="cm-cell">{{ row.recall.toFixed(3) }}</td>
+              <td class="cm-cell">{{ row.f1.toFixed(3) }}</td>
+              <td class="cm-cell">{{ row.support }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else-if="activeTab === 'perClass'" class="summary-empty">
+        該抽樣沒有可用的各類別指標資訊。
+      </div>
 
-    <div v-else-if="activeTab === 'matrix' && groupedResults.length > 0" class="summary-empty">
-      該抽樣沒有可用的混淆矩陣資訊。
-    </div>
+      <div v-if="hasCurrentTabData" class="cm-insight-panel">
+        <div class="cm-insight-header">AI 解讀</div>
 
-    <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
-      <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
-      <svg class="cm-chart" viewBox="0 0 100 100">
-        <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
-        <path class="cm-chart-line" :d="rocPath" fill="none" />
-        <text class="cm-chart-tick" x="4" y="100">0</text>
-        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-        <text class="cm-chart-tick" x="0" y="96">0</text>
-        <text class="cm-chart-tick" x="0" y="50">0.5</text>
-        <text class="cm-chart-tick" x="0" y="4">1</text>
-      </svg>
-      <div class="cm-chart-axis-x">FPR (0 – 1)</div>
-      <div class="cm-chart-axis-y">TPR (0 – 1)</div>
-    </div>
-    <div v-else-if="activeTab === 'roc' && groupedResults.length > 0" class="summary-empty">
-      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
-    </div>
+        <p v-if="tabInsightLoading" class="cm-insight-loading">生成中...</p>
 
-    <div v-if="activeTab === 'pr' && currentRocPrCurve" class="cm-chart-wrap">
-      <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
-      <svg class="cm-chart" viewBox="0 0 100 100">
-        <path class="cm-chart-line" :d="prPath" fill="none" />
-        <text class="cm-chart-tick" x="4" y="100">0</text>
-        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-        <text class="cm-chart-tick" x="0" y="96">0</text>
-        <text class="cm-chart-tick" x="0" y="50">0.5</text>
-        <text class="cm-chart-tick" x="0" y="4">1</text>
-      </svg>
-      <div class="cm-chart-axis-x">Recall (0 – 1)</div>
-      <div class="cm-chart-axis-y">Precision (0 – 1)</div>
-    </div>
-    <div v-else-if="activeTab === 'pr' && groupedResults.length > 0" class="summary-empty">
-      此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
-    </div>
+        <template v-else-if="tabInsightError">
+          <p class="cm-insight-error">{{ tabInsightError }}</p>
+          <button class="cm-insight-btn" type="button" @click="generateTabInsight">重試</button>
+        </template>
 
-    <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
-      <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
-      <svg class="cm-chart" viewBox="0 0 100 100">
-        <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
-        <path class="cm-chart-line" :d="calibrationPath" fill="none" />
-        <circle
-          v-for="(point, index) in calibrationPoints"
-          :key="`cal-point-${index}`"
-          class="cm-chart-point"
-          :cx="point.x"
-          :cy="point.y"
-          r="1.5"
-        />
-        <text class="cm-chart-tick" x="4" y="100">0</text>
-        <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-        <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-        <text class="cm-chart-tick" x="0" y="96">0</text>
-        <text class="cm-chart-tick" x="0" y="50">0.5</text>
-        <text class="cm-chart-tick" x="0" y="4">1</text>
-      </svg>
-      <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
-      <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
-    </div>
-    <div v-else-if="activeTab === 'calibration' && groupedResults.length > 0" class="summary-empty">
-      此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
-    </div>
+        <template v-else-if="currentTabInsight">
+          <p class="cm-insight-text">{{ currentTabInsight }}</p>
+          <button class="cm-insight-btn" type="button" @click="generateTabInsight">重新生成</button>
+        </template>
 
-    <div v-if="activeTab === 'perClass' && currentPerClassMetrics" class="cm-table-wrap">
-      <table class="cm-table">
-        <thead>
-          <tr>
-            <th class="cm-header">類別</th>
-            <th class="cm-header">Precision</th>
-            <th class="cm-header">Recall</th>
-            <th class="cm-header">F1</th>
-            <th class="cm-header">樣本數</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in perClassRows"
-            :key="row.label"
-            :class="{ 'cm-row--lowest': row.label === lowestF1Label }"
-          >
-            <td class="cm-cell">{{ row.label }}</td>
-            <td class="cm-cell">{{ row.precision.toFixed(3) }}</td>
-            <td class="cm-cell">{{ row.recall.toFixed(3) }}</td>
-            <td class="cm-cell">{{ row.f1.toFixed(3) }}</td>
-            <td class="cm-cell">{{ row.support }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div v-else-if="activeTab === 'perClass' && groupedResults.length > 0" class="summary-empty">
-      該抽樣沒有可用的各類別指標資訊。
+        <template v-else>
+          <p class="cm-insight-empty">點擊下方按鈕，讓 AI 針對目前的圖表/表格生成一段解讀。</p>
+          <button class="cm-insight-btn" type="button" @click="generateTabInsight">AI 解讀</button>
+        </template>
+      </div>
     </div>
 
     <div v-if="groupedResults.length === 0" class="summary-empty">
@@ -170,7 +193,9 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import { fetchTabInsight } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import { loadTabInsightFromStorage, saveTabInsightToStorage } from '@/composables/workflow/useWorkflowStorage.ts'
 
   interface ConfusionMatrixData {
     labels: string[]
@@ -219,6 +244,7 @@
 
   const props = defineProps<{
     workflowResult?: Record<string, unknown> | null
+    projectId?: string
   }>()
 
   function parseConfusionMatrix (value: unknown): ConfusionMatrixData | null {
@@ -421,6 +447,64 @@
     if (rows.length === 0) return null
     return rows.reduce((min, row) => (row.f1 < min.f1 ? row : min)).label
   })
+
+  const hasCurrentTabData = computed(() => {
+    switch (activeTab.value) {
+      case 'matrix': return currentMatrix.value !== null
+      case 'roc':
+      case 'pr': return currentRocPrCurve.value !== null
+      case 'calibration': return currentCalibrationCurve.value !== null
+      case 'perClass': return currentPerClassMetrics.value !== null
+      default: return false
+    }
+  })
+
+  const tabInsightCache = ref<Map<string, string>>(new Map())
+  const tabInsightLoading = ref(false)
+  const tabInsightError = ref<string | null>(null)
+
+  function tabInsightCacheKey (tab: TabKey, model: string, fold: string): string {
+    return `${tab}::${model}::${fold}`
+  }
+
+  const currentTabInsight = computed(() =>
+    tabInsightCache.value.get(tabInsightCacheKey(activeTab.value, selectedModel.value, selectedFold.value)) ?? null,
+  )
+
+  async function generateTabInsight (): Promise<void> {
+    if (!props.projectId || !props.workflowResult) return
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+
+    tabInsightLoading.value = true
+    tabInsightError.value = null
+    try {
+      const insight = await fetchTabInsight(props.workflowResult, tab, model, fold)
+      tabInsightCache.value = new Map(tabInsightCache.value).set(key, insight)
+      saveTabInsightToStorage(props.projectId, model, fold, tab, insight)
+    } catch (error) {
+      tabInsightError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      tabInsightLoading.value = false
+    }
+  }
+
+  // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
+  watch([activeTab, selectedModel, selectedFold], () => {
+    tabInsightError.value = null
+    if (!props.projectId) return
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+    if (tabInsightCache.value.has(key)) return
+    const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
+    if (cached !== null) {
+      tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
+    }
+  }, { immediate: true })
 
   const CHART_SIZE = 100
   const CHART_PADDING = 4
@@ -657,6 +741,63 @@
     font-size: 11px;
     color: var(--color-secondary);
     white-space: nowrap;
+  }
+
+  .cm-tab-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cm-tab-row > .cm-table-wrap,
+  .cm-tab-row > .cm-chart-wrap,
+  .cm-tab-row > .summary-empty {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .cm-insight-panel {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    background: var(--color-surface);
+  }
+
+  .cm-insight-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-secondary);
+  }
+
+  .cm-insight-empty,
+  .cm-insight-loading,
+  .cm-insight-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-ink);
+    line-height: 1.6;
+  }
+
+  .cm-insight-error {
+    margin: 0;
+    font-size: 13px;
+    color: #b91c1c;
+  }
+
+  .cm-insight-btn {
+    align-self: flex-start;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
   }
 
   .summary-empty {
