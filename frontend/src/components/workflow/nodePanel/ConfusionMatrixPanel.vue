@@ -166,21 +166,21 @@
       <div v-if="hasCurrentTabData" class="cm-insight-panel">
         <div class="cm-insight-header">AI 解讀</div>
 
-        <p v-if="tabInsightLoading" class="cm-insight-loading">生成中...</p>
+        <p v-if="isCurrentTabInsightLoading" class="cm-insight-loading">生成中...</p>
 
         <template v-else-if="tabInsightError">
           <p class="cm-insight-error">{{ tabInsightError }}</p>
-          <button class="cm-insight-btn" type="button" @click="generateTabInsight">重試</button>
+          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重試</button>
         </template>
 
         <template v-else-if="currentTabInsight">
           <p class="cm-insight-text">{{ currentTabInsight }}</p>
-          <button class="cm-insight-btn" type="button" @click="generateTabInsight">重新生成</button>
+          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重新生成</button>
         </template>
 
         <template v-else>
           <p class="cm-insight-empty">點擊下方按鈕，讓 AI 針對目前的圖表/表格生成一段解讀。</p>
-          <button class="cm-insight-btn" type="button" @click="generateTabInsight">AI 解讀</button>
+          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">AI 解讀</button>
         </template>
       </div>
     </div>
@@ -460,16 +460,22 @@
   })
 
   const tabInsightCache = ref<Map<string, string>>(new Map())
-  const tabInsightLoading = ref(false)
+  const tabInsightLoadingKey = ref<string | null>(null)
   const tabInsightError = ref<string | null>(null)
 
   function tabInsightCacheKey (tab: TabKey, model: string, fold: string): string {
     return `${tab}::${model}::${fold}`
   }
 
-  const currentTabInsight = computed(() =>
-    tabInsightCache.value.get(tabInsightCacheKey(activeTab.value, selectedModel.value, selectedFold.value)) ?? null,
+  const currentTabInsightKey = computed(() =>
+    tabInsightCacheKey(activeTab.value, selectedModel.value, selectedFold.value),
   )
+
+  const currentTabInsight = computed(() =>
+    tabInsightCache.value.get(currentTabInsightKey.value) ?? null,
+  )
+
+  const isCurrentTabInsightLoading = computed(() => tabInsightLoadingKey.value === currentTabInsightKey.value)
 
   async function generateTabInsight (): Promise<void> {
     if (!props.projectId || !props.workflowResult) return
@@ -478,7 +484,7 @@
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
 
-    tabInsightLoading.value = true
+    tabInsightLoadingKey.value = key
     tabInsightError.value = null
     try {
       const insight = await fetchTabInsight(props.workflowResult, tab, model, fold)
@@ -487,7 +493,11 @@
     } catch (error) {
       tabInsightError.value = error instanceof Error ? error.message : String(error)
     } finally {
-      tabInsightLoading.value = false
+      // 只清自己那把 key 的 loading 狀態——避免使用者切到別的組合又按了一次生成，
+      // 這次 finally 執行時把「新的那次」的 loading 狀態誤清掉
+      if (tabInsightLoadingKey.value === key) {
+        tabInsightLoadingKey.value = null
+      }
     }
   }
 

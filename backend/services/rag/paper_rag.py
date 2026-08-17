@@ -430,6 +430,8 @@ class PaperRAGService:
         "perClass": "請指出表現最差的類別，並簡述可能的原因或後續建議。",
     }
 
+    _MAX_TAB_TEXT_CHARS = 4000
+
     @staticmethod
     def _sample_curve_points(
         xs: List[float], ys: List[float], n: int = 5
@@ -502,7 +504,9 @@ class PaperRAGService:
             prob_true = curve.get("prob_true", [])
             prob_pred = curve.get("prob_pred", [])
             points_str = "、".join(
-                f"(預測{p:.2f}, 實際{t:.2f})" for p, t in zip(prob_pred, prob_true)
+                f"(預測{p:.2f}, 實際{t:.2f})"
+                for p, t in zip(prob_pred, prob_true)
+                if isinstance(p, (int, float)) and isinstance(t, (int, float))
             ) or "N/A"
             return (
                 f"【校準曲線】\n"
@@ -545,6 +549,9 @@ class PaperRAGService:
         if tab_text is None:
             return "此分頁沒有可供解讀的資料。"
 
+        if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
+            tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
+
         hint = self._TAB_PROMPT_HINTS.get(tab, "")
         prompt = (
             "你是資料科學顧問，正在協助解讀一份醫學研究的機器學習分類結果。\n"
@@ -555,6 +562,8 @@ class PaperRAGService:
         )
         usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         text = self._call_gemini(prompt, usage_total)
+        if text.startswith("（生成失敗："):
+            raise RuntimeError(text)
         return text.strip()
 
     def score_paper(self, paper_text: str) -> dict:
