@@ -401,12 +401,17 @@ def _compute_metric(
     elif metric in {"precision", "recall", "f1"}:
         kwargs: Dict[str, Any] = {"zero_division": 0}
         effective_pos = pos_label or _infer_positive_label(y_true, labels)
-        if effective_pos is not None:
+        # sklearn 判定 binary/multiclass 用的是 y_true ∪ y_pred，不是只看 y_true，
+        # 這裡要對齊，否則某些 fold 的 y_true 類別數矇混過關、實際上還是多分類
+        is_multiclass = len(pd.unique(pd.concat([y_true, y_pred]).dropna())) > 2
+        if effective_pos is not None and not is_multiclass:
             kwargs["pos_label"] = effective_pos
-        else:
-            # 多分類且沒有明確正類：sklearn 預設 average='binary' 對多分類會拋例外，
+        elif is_multiclass:
+            # 多分類：sklearn 預設 average='binary' 對多分類會拋例外，
             # 改用 macro，讓少數類別的表現不被多數類別稀釋掉
             kwargs["average"] = "macro"
+        # else: effective_pos is None 且非多分類（退化的單一類別 fold，例如 LOOCV）——
+        # 維持 sklearn 預設行為，不加 pos_label 也不加 average，行為跟這個 feature 之前完全一樣
         if labels is not None:
             kwargs["labels"] = labels
 
