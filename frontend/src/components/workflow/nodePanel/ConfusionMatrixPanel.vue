@@ -603,7 +603,7 @@
 
   .cm-chart {
     width: 100%;
-    max-width: 360px;
+    max-width: 260px;
     aspect-ratio: 1;
     display: block;
   }
