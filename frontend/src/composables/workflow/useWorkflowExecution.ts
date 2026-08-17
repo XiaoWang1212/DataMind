@@ -45,6 +45,7 @@ export function useWorkflowExecution(deps: {
   const pausedAtNodeId = ref<string | null>(null)
   const dataTableApplied = ref(false)
   const activeJobId = ref<string | null>(null)
+  const pollIntervalId = ref<number | null>(null)
 
   const dataTableCanContinue = computed(
     () =>
@@ -132,7 +133,7 @@ export function useWorkflowExecution(deps: {
     seenInit = 0,
   ): void {
     let seen = seenInit
-    const intervalId = window.setInterval(() => {
+    pollIntervalId.value = window.setInterval(() => {
       ;(async () => {
         try {
           const job = await fetchWorkflowJob(jobId)
@@ -155,12 +156,14 @@ export function useWorkflowExecution(deps: {
           }
 
           if (job.status === 'done') {
-            window.clearInterval(intervalId)
+            if (pollIntervalId.value !== null) window.clearInterval(pollIntervalId.value)
+            pollIntervalId.value = null
             activeJobId.value = null
             workflowResult.value = job.result
             window.setTimeout(() => finishGatedSteps(postModelSteps), 200)
           } else if (job.status === 'error') {
-            window.clearInterval(intervalId)
+            if (pollIntervalId.value !== null) window.clearInterval(pollIntervalId.value)
+            pollIntervalId.value = null
             activeJobId.value = null
             workflowError.value = job.error ?? 'Workflow 執行失敗'
             window.setTimeout(() => finishGatedSteps(postModelSteps), 200)
@@ -398,6 +401,16 @@ export function useWorkflowExecution(deps: {
     }
   }
 
+  /** 前端放棄目前正在追蹤的 job：停止輪詢、清空 activeJobId。
+   * 後端的模型訓練執行緒可能還在跑，但前端從此不再理會其結果。 */
+  function abandonActiveJob (): void {
+    if (pollIntervalId.value !== null) {
+      window.clearInterval(pollIntervalId.value)
+      pollIntervalId.value = null
+    }
+    activeJobId.value = null
+  }
+
   return {
     workflowResult,
     workflowError,
@@ -412,5 +425,6 @@ export function useWorkflowExecution(deps: {
     executeWorkflow,
     continueWorkflow,
     resumeJob,
+    abandonActiveJob,
   }
 }
