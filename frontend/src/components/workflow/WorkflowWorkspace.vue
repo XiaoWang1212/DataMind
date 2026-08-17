@@ -76,7 +76,7 @@
         <div class="options-drawer__scroll">
           <Transition mode="out-in" name="drawer-content">
             <div
-              :key="selectedNode?.id ?? 'no-node'"
+              :key="`${selectedNode?.id ?? 'no-node'}-${panelResetKey}`"
               class="drawer-content-wrapper"
             >
               <WorkflowOptionsPanel
@@ -107,6 +107,13 @@
         </div>
       </div>
     </Transition>
+
+    <InterruptConfirmDialog
+      :message="interruptMessage"
+      :visible="showInterruptConfirm"
+      @cancel="cancelInterrupt"
+      @confirm="confirmInterrupt"
+    />
   </section>
 </template>
 
@@ -141,6 +148,7 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import IconNode from './IconNode.vue'
+  import InterruptConfirmDialog from './InterruptConfirmDialog.vue'
   import UploadDialog from './UploadDialog.vue'
   import WorkflowCanvas from './WorkflowCanvas.vue'
   import WorkflowOptionsPanel from './WorkflowOptionsPanel.vue'
@@ -161,6 +169,9 @@
   const selectedNodeId = ref<string | null>(null)
   const settingsStep = ref(0)
   const nodeFlash = ref<Map<string, 'add' | 'remove'>>(new Map())
+  const pendingConfigChange = ref<{ nodeId: string, config: Record<string, ConfigValue> } | null>(null)
+  const showInterruptConfirm = ref(false)
+  const panelResetKey = ref(0)
 
   function flashNode (nodeId: string, type: 'add' | 'remove', duration = 1200): void {
     nodeFlash.value = new Map(nodeFlash.value).set(nodeId, type)
@@ -220,6 +231,7 @@
     executeWorkflow,
     continueWorkflow,
     resumeJob,
+    abandonActiveJob,
   } = useWorkflowExecution({
     nodes,
     workflowDataFile,
@@ -274,6 +286,12 @@
 
   const availableModelOptions = computed<string[]>(() =>
     availableModels.value.filter(name => !usedModelNames.value.includes(name)),
+  )
+
+  const interruptMessage = computed(() =>
+    activeJobId.value !== null
+      ? '目前有 Workflow 正在執行中，更改此設定將會中斷執行並清除結果，確定要繼續嗎？'
+      : '更改此設定將會清除目前的執行結果，確定要繼續嗎？',
   )
 
   // ─── handlers ────────────────────────────────────────────────────────────
@@ -342,6 +360,20 @@
     saveState()
   }
 
+  // testScore/featureImportance/confusionMatrix 是一直留在畫布上的靜態節點，
+  // 光靠「篩掉已從 nodes.value 移除的節點」清不到它們——結果失效時要另外明確重置，
+  // 不然它們會一直卡在 nodeStatuses 的 'finished'（對應 useWorkflowNodes.ts 的 node-yellow 顏色）
+  function resetDownstreamResultNodeStatuses (): void {
+    const staleStaticIds = new Set(['testScore', 'featureImportance', 'confusionMatrix'])
+    const next = new Map(nodeStatuses.value)
+    for (const id of [...next.keys()]) {
+      if (staleStaticIds.has(id) || id.startsWith('model-')) {
+        next.delete(id)
+      }
+    }
+    nodeStatuses.value = next
+  }
+
   // 改了欄位設定就把下游清空：清 Settings 設定、移除 model / pipeline / CI 節點
   function clearSettingsDownstream (): void {
     nodes.value = nodes.value
@@ -355,6 +387,8 @@
     nodeStatuses.value = new Map(
       [...nodeStatuses.value].filter(([id]) => validIds.has(id)),
     )
+    // 一直留在畫布上的靜態結果節點也要重置，不然顏色不會退回預設
+    resetDownstreamResultNodeStatuses()
     // 舊的執行結果也失效
     workflowResult.value = null
     isDemoFinished.value = false
@@ -386,20 +420,66 @@
     }
   }
 
-  function columnConfigEqual (a: unknown, b: unknown): boolean {
-    if (!Array.isArray(a) || !Array.isArray(b)) return a === b
-    if (a.length !== b.length) return false
-    return a.every((col, i) => {
-      const cur = col as { name?: unknown, type?: unknown, role?: unknown }
-      const other = b[i] as { name?: unknown, type?: unknown, role?: unknown } | undefined
-      return other !== undefined
-        && cur.name === other.name
-        && cur.type === other.type
-        && cur.role === other.role
-    })
+  // 通用深度比對：取代原本只比對 columnConfig 陣列的 columnConfigEqual，
+  // 這次也要拿來比對 settings/testScore 的各種設定值（陣列、布林、巢狀物件都要能比）
+  function configValuesEqual (a: unknown, b: unknown): boolean {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
+
+  const GATED_NODE_IDS = new Set(['settings', 'dataTable', 'testScore'])
+
+  function hasResultsToProtect (): boolean {
+    return workflowResult.value !== null || activeJobId.value !== null
+  }
+
+  function configChangeIsNoOp (nodeId: string, config: Record<string, ConfigValue>): boolean {
+    const current = nodes.value.find(n => n.id === nodeId)?.data.config ?? {}
+    return Object.keys(config).every(key => configValuesEqual(current[key], config[key]))
   }
 
   function handleUpdateConfig (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
+    if (
+      GATED_NODE_IDS.has(payload.nodeId)
+      && hasResultsToProtect()
+      && !configChangeIsNoOp(payload.nodeId, payload.config)
+    ) {
+      pendingConfigChange.value = payload
+      showInterruptConfirm.value = true
+      return
+    }
+    applyConfigChange(payload)
+  }
+
+  function confirmInterrupt (): void {
+    const payload = pendingConfigChange.value
+    pendingConfigChange.value = null
+    showInterruptConfirm.value = false
+    if (!payload) return
+
+    resetDownstreamResultNodeStatuses()
+    workflowResult.value = null
+    isDemoFinished.value = false
+    if (activeJobId.value !== null) {
+      abandonActiveJob()
+    }
+
+    applyConfigChange(payload)
+
+    // testScore 的驗證方式是在 settings 節點的面板上編輯的（emit 時 nodeId 是 'testScore'，
+    // 見 WorkflowOptionsPanel.vue 的 handleSettingsValidationUpdate），所以要導回 'settings'
+    // 節點的面板，而不是跳到唯讀的 testScore 節點面板
+    selectedNodeId.value = payload.nodeId === 'testScore' ? 'settings' : payload.nodeId
+    expandDrawer()
+    saveState()
+  }
+
+  function cancelInterrupt (): void {
+    pendingConfigChange.value = null
+    showInterruptConfirm.value = false
+    panelResetKey.value += 1
+  }
+
+  function applyConfigChange (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
     if (payload.nodeId === 'settings' && ('preprocessing' in payload.config || 'featureEngineering' in payload.config)) {
       const settingsNode = nodes.value.find(n => n.id === 'settings')
 
@@ -472,7 +552,7 @@
     }
     if (payload.nodeId === 'dataTable' && 'columnConfig' in payload.config) {
       // 真的改了才重置（面板重掛送出相同設定不算改）
-      if (dataTableApplied.value && !columnConfigEqual(prevColumnConfig, payload.config.columnConfig)) {
+      if (dataTableApplied.value && !configValuesEqual(prevColumnConfig, payload.config.columnConfig)) {
         dataTableApplied.value = false
         clearSettingsDownstream()
         // 改了就把流程拉回 dataTable，讓「繼續」可以再按
