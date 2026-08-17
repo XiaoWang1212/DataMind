@@ -374,20 +374,10 @@
     nodeStatuses.value = next
   }
 
-  // 改了欄位設定就把下游清空：清 Settings 設定、移除 model / pipeline / CI 節點
+  // 改了欄位設定就把過期的執行結果清掉：保留現有的前處理/特徵工程/模型設定，
+  // 使用者自己判斷這些設定套在新的欄位設定上還適不適用（現在編輯前已經有確認彈窗提醒了）
   function clearSettingsDownstream (): void {
-    nodes.value = nodes.value
-      .filter(n => !n.id.startsWith('model-') && n.id !== 'computeCi')
-      .map(n => n.id === 'settings'
-        ? { ...n, data: { ...n.data, config: { ...n.data.config, preprocessing: [], featureEngineering: [], models: [], compute_ci: false } } }
-        : n)
-    syncPipelineCanvasNodes()
-    // 清掉已被移除節點的殘留狀態，免得之後重加同 id 的節點誤顯示成已完成
-    const validIds = new Set(nodes.value.map(n => n.id))
-    nodeStatuses.value = new Map(
-      [...nodeStatuses.value].filter(([id]) => validIds.has(id)),
-    )
-    // 一直留在畫布上的靜態結果節點也要重置，不然顏色不會退回預設
+    // 一直留在畫布上的靜態結果節點要重置，不然顏色不會退回預設
     resetDownstreamResultNodeStatuses()
     // 舊的執行結果也失效
     workflowResult.value = null
