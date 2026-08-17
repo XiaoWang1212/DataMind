@@ -461,9 +461,17 @@
     isDemoFinished.value = false
     if (activeJobId.value !== null) {
       abandonActiveJob()
+      if (projectId.value) projectStore.stopProjectJobPolling(Number(projectId.value))
     }
 
     applyConfigChange(payload)
+
+    // settings/testScore 路徑：dataTable 路徑已經在 applyConfigChange 裡透過
+    // snapFlowToDataTable() 把 pausedAtNodeId 設回 'dataTable'，這裡只補 settings/testScore
+    // 沒被設過（仍是 null）的情況，讓「繼續」按鈕重新變成可點擊
+    if (payload.nodeId !== 'dataTable' && pausedAtNodeId.value === null) {
+      pausedAtNodeId.value = 'settings'
+    }
 
     // testScore 的驗證方式是在 settings 節點的面板上編輯的（emit 時 nodeId 是 'testScore'，
     // 見 WorkflowOptionsPanel.vue 的 handleSettingsValidationUpdate），所以要導回 'settings'

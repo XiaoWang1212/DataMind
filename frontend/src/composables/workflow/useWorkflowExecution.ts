@@ -137,6 +137,7 @@ export function useWorkflowExecution(deps: {
       ;(async () => {
         try {
           const job = await fetchWorkflowJob(jobId)
+          if (activeJobId.value !== jobId) return // 已被 abandonActiveJob() 放棄，這個 tick 的結果不再有效
 
           if (job.completedModels.length > seen) {
             const next = new Map(nodeStatuses.value)

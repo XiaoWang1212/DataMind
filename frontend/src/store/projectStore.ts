@@ -133,6 +133,15 @@ export const useProjectStore = defineStore('project', () => {
     jobPollers.set(projectId, { intervalId, jobId })
   }
 
+  // 供「放棄 job」流程呼叫：只停止輪詢、不做其他事（不寫回資料庫、不清 activeContext），
+  // 讓呼叫端（例如中斷確認）自行決定後續要不要更新狀態
+  function stopProjectJobPolling (projectId: number): void {
+    const existing = jobPollers.get(projectId)
+    if (!existing) return
+    window.clearInterval(existing.intervalId)
+    jobPollers.delete(projectId)
+  }
+
   function setActiveContext (ctx: ActiveProjectContext): void {
     activeContext.value = ctx
   }
@@ -172,5 +181,5 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, setActiveContext, clearActiveContext, saveColumnMapping }
+  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, stopProjectJobPolling, setActiveContext, clearActiveContext, saveColumnMapping }
 })
