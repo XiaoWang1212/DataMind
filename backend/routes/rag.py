@@ -454,6 +454,41 @@ def generate_insight():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@rag_bp.route("/tab-insight", methods=["POST"])
+def generate_tab_insight():
+    """針對 workflow 結果裡某個分頁（混淆矩陣/ROC/PR/校準曲線/各類別指標）生成 AI 解讀文字
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+        - tab             : 'matrix' | 'roc' | 'pr' | 'calibration' | 'perClass'（必填）
+        - model_name      : 要解讀哪個模型（必填）
+        - split_name      : 要解讀哪個 fold/split（必填）
+
+    回傳：
+        - insight : AI 生成的解讀文字
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+    tab = data.get("tab")
+    model_name = data.get("model_name")
+    split_name = data.get("split_name")
+    if not tab or not model_name or not split_name:
+        return jsonify({"success": False, "error": "tab、model_name、split_name 為必填欄位"}), 400
+
+    service = get_paper_rag_service()
+
+    try:
+        insight = service.generate_tab_insight(data["mining_results"], tab, model_name, split_name)
+        return jsonify({"success": True, "insight": insight})
+
+    except Exception as e:
+        logger.exception("分頁解讀生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @rag_bp.route("/score-paper", methods=["POST"])
 def score_paper():
     """對論文全文，依固定的期刊評分準則逐一評分
