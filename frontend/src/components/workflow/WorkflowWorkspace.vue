@@ -360,11 +360,12 @@
     saveState()
   }
 
-  // testScore/featureImportance/confusionMatrix 是一直留在畫布上的靜態節點，
+  // preprocessor/featureEngineering/computeCi/testScore/featureImportance/confusionMatrix
+  // 都是編輯 dataTable/settings 時不會被移除、會一直留在畫布上的節點，
   // 光靠「篩掉已從 nodes.value 移除的節點」清不到它們——結果失效時要另外明確重置，
   // 不然它們會一直卡在 nodeStatuses 的 'finished'（對應 useWorkflowNodes.ts 的 node-yellow 顏色）
   function resetDownstreamResultNodeStatuses (): void {
-    const staleStaticIds = new Set(['testScore', 'featureImportance', 'confusionMatrix'])
+    const staleStaticIds = new Set(['preprocessor', 'featureEngineering', 'computeCi', 'testScore', 'featureImportance', 'confusionMatrix'])
     const next = new Map(nodeStatuses.value)
     for (const id of [...next.keys()]) {
       if (staleStaticIds.has(id) || id.startsWith('model-')) {
