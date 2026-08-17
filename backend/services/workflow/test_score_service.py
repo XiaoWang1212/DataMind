@@ -14,6 +14,7 @@ from sklearn.metrics import (
     f1_score,
     matthews_corrcoef,
     precision_recall_curve,
+    precision_recall_fscore_support,
     precision_score,
     recall_score,
     roc_auc_score,
@@ -264,6 +265,21 @@ def build_calibration_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[st
     }
 
 
+def build_per_class_metrics(y_true: pd.Series, y_pred: pd.Series) -> Dict[str, Any]:
+    """算每個類別各自的 precision/recall/f1/support，二元、多分類皆適用，永遠有值。"""
+    labels = sorted(pd.unique(pd.concat([y_true, y_pred]).dropna()), key=str)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, average=None, zero_division=0
+    )
+    return {
+        "labels": [str(label) for label in labels],
+        "precision": [round(v, 6) for v in precision.tolist()],
+        "recall": [round(v, 6) for v in recall.tolist()],
+        "f1": [round(v, 6) for v in f1.tolist()],
+        "support": [int(v) for v in support.tolist()],
+    }
+
+
 def evaluate_metrics(
     y_true: pd.Series,
     y_pred: pd.Series,
@@ -387,6 +403,10 @@ def _compute_metric(
         effective_pos = pos_label or _infer_positive_label(y_true, labels)
         if effective_pos is not None:
             kwargs["pos_label"] = effective_pos
+        else:
+            # 多分類且沒有明確正類：sklearn 預設 average='binary' 對多分類會拋例外，
+            # 改用 macro，讓少數類別的表現不被多數類別稀釋掉
+            kwargs["average"] = "macro"
         if labels is not None:
             kwargs["labels"] = labels
 

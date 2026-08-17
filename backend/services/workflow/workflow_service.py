@@ -26,6 +26,7 @@ from .preprocess_service import apply_preprocess_pipeline_for_split, generate_pr
 from .resampling_service import apply_resampling, describe_class_distribution
 from .test_score_service import (
     build_calibration_curve,
+    build_per_class_metrics,
     build_roc_pr_curve,
     evaluate_metrics,
     generate_score_variants,
@@ -489,6 +490,7 @@ class WorkflowService:
                                 estimator, list(X_train.columns)
                             ),
                             "confusion_matrix": cls._build_confusion_matrix(y_test, y_pred),
+                            "per_class_metrics": build_per_class_metrics(y_test, y_pred),
                             "roc_pr_curve": build_roc_pr_curve(y_test, y_score),
                             "calibration_curve": build_calibration_curve(y_test, y_score),
                             "feature_count": int(X_train.shape[1]),
@@ -693,6 +695,7 @@ class WorkflowService:
                             estimator, list(X_train.columns)
                         ),
                         "confusion_matrix": cls._build_confusion_matrix(y_test, y_pred),
+                        "per_class_metrics": build_per_class_metrics(y_test, y_pred),
                         "roc_pr_curve": build_roc_pr_curve(y_test, y_score),
                         "calibration_curve": build_calibration_curve(y_test, y_score),
                         "feature_count": int(X_train.shape[1]),
