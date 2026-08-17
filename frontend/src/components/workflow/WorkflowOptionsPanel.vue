@@ -38,6 +38,7 @@
 
         <template v-else-if="selectedNode.id === 'confusionMatrix'">
           <ConfusionMatrixPanel
+            :project-id="props.projectId"
             :workflow-result="props.workflowResult ?? undefined"
           />
         </template>
@@ -279,6 +280,7 @@
     modelOptionsLoading?: boolean
     validationConfig?: Record<string, unknown>
     datasetColumns?: Array<{ name: string, type: string, role: string }>
+    projectId?: string
   }>()
 
   // 將設定變更回傳給父層

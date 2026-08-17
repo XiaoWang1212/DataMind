@@ -86,6 +86,7 @@
                 :file="workflowDataFile"
                 :model-options-loading="modelOptionsLoading"
                 :paused-node-id="pausedAtNodeId"
+                :project-id="projectId"
                 :selected-node="selectedNode"
                 :used-model-names="usedModelNames"
                 :validation-config="testScoreValidationConfig"
@@ -137,6 +138,7 @@
   import { useWorkflowImport } from '@/composables/workflow/useWorkflowImport.ts'
   import { useWorkflowNodes } from '@/composables/workflow/useWorkflowNodes.ts'
   import {
+    clearAllTabInsightsFromStorage,
     clearResultInsightFromStorage,
     loadWorkflowDataFileFromStorage,
     loadWorkflowJsonFileFromStorage,
@@ -329,7 +331,10 @@
 
   function handleApplyColumnConfig (): void {
     if (pausedAtNodeId.value !== 'dataTable') return
-    if (projectId.value) clearResultInsightFromStorage(projectId.value)
+    if (projectId.value) {
+      clearResultInsightFromStorage(projectId.value)
+      clearAllTabInsightsFromStorage(projectId.value)
+    }
     dataTableApplied.value = true
     workflowError.value = null
     markProjectRunning()
@@ -338,7 +343,10 @@
   }
 
   function handleContinueSettings (): void {
-    if (projectId.value) clearResultInsightFromStorage(projectId.value)
+    if (projectId.value) {
+      clearResultInsightFromStorage(projectId.value)
+      clearAllTabInsightsFromStorage(projectId.value)
+    }
     markProjectRunning()
     continueWorkflow()
     closeMenu()
