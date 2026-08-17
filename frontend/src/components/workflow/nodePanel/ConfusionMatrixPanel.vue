@@ -132,6 +132,36 @@
       此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
     </div>
 
+    <div v-if="activeTab === 'perClass' && currentPerClassMetrics" class="cm-table-wrap">
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th class="cm-header">類別</th>
+            <th class="cm-header">Precision</th>
+            <th class="cm-header">Recall</th>
+            <th class="cm-header">F1</th>
+            <th class="cm-header">樣本數</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="row in perClassRows"
+            :key="row.label"
+            :class="{ 'cm-row--lowest': row.label === lowestF1Label }"
+          >
+            <td class="cm-cell">{{ row.label }}</td>
+            <td class="cm-cell">{{ row.precision.toFixed(3) }}</td>
+            <td class="cm-cell">{{ row.recall.toFixed(3) }}</td>
+            <td class="cm-cell">{{ row.f1.toFixed(3) }}</td>
+            <td class="cm-cell">{{ row.support }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else-if="activeTab === 'perClass' && groupedResults.length > 0" class="summary-empty">
+      該抽樣沒有可用的各類別指標資訊。
+    </div>
+
     <div v-if="groupedResults.length === 0" class="summary-empty">
       尚未有混淆矩陣結果，請執行 Workflow 後再查看。
     </div>
@@ -159,12 +189,21 @@
     probPred: number[]
   }
 
+  interface PerClassMetricsData {
+    labels: string[]
+    precision: number[]
+    recall: number[]
+    f1: number[]
+    support: number[]
+  }
+
   interface ResultItem {
     model_name: string
     split_name: string
     confusion_matrix: ConfusionMatrixData | null
     roc_pr_curve: RocPrCurveData | null
     calibration_curve: CalibrationCurveData | null
+    per_class_metrics: PerClassMetricsData | null
   }
 
   interface GroupedResult {
@@ -174,6 +213,7 @@
       confusion_matrix: ConfusionMatrixData | null
       roc_pr_curve: RocPrCurveData | null
       calibration_curve: CalibrationCurveData | null
+      per_class_metrics: PerClassMetricsData | null
     }>
   }
 
@@ -236,6 +276,35 @@
     return { posLabel, probTrue, probPred }
   }
 
+  function parsePerClassMetrics (value: unknown): PerClassMetricsData | null {
+    if (!value || typeof value !== 'object') return null
+    const obj = value as Record<string, unknown>
+    const labels = obj.labels
+    const precision = obj.precision
+    const recall = obj.recall
+    const f1 = obj.f1
+    const support = obj.support
+
+    if (!Array.isArray(labels) || !labels.every(l => typeof l === 'string')) return null
+
+    const isNumberArray = (arr: unknown): arr is number[] =>
+      Array.isArray(arr) && arr.every(n => typeof n === 'number')
+
+    if (!isNumberArray(precision) || !isNumberArray(recall) || !isNumberArray(f1) || !isNumberArray(support)) {
+      return null
+    }
+    if (
+      precision.length !== labels.length
+      || recall.length !== labels.length
+      || f1.length !== labels.length
+      || support.length !== labels.length
+    ) {
+      return null
+    }
+
+    return { labels, precision, recall, f1, support }
+  }
+
   const rawResults = computed<Array<Record<string, unknown>>>(() => {
     const results = props.workflowResult?.results
     if (!Array.isArray(results)) return []
@@ -249,9 +318,13 @@
       const confusion_matrix = parseConfusionMatrix(result.confusion_matrix)
       const roc_pr_curve = parseRocPrCurve(result.roc_pr_curve)
       const calibration_curve = parseCalibrationCurve(result.calibration_curve)
-      return { model_name, split_name, confusion_matrix, roc_pr_curve, calibration_curve }
+      const per_class_metrics = parsePerClassMetrics(result.per_class_metrics)
+      return { model_name, split_name, confusion_matrix, roc_pr_curve, calibration_curve, per_class_metrics }
     }).filter(item =>
-      item.confusion_matrix !== null || item.roc_pr_curve !== null || item.calibration_curve !== null,
+      item.confusion_matrix !== null
+      || item.roc_pr_curve !== null
+      || item.calibration_curve !== null
+      || item.per_class_metrics !== null,
     ),
   )
 
@@ -265,6 +338,7 @@
         confusion_matrix: result.confusion_matrix,
         roc_pr_curve: result.roc_pr_curve,
         calibration_curve: result.calibration_curve,
+        per_class_metrics: result.per_class_metrics,
       }
 
       if (existing) {
@@ -299,7 +373,7 @@
     currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.confusion_matrix ?? null,
   )
 
-  type TabKey = 'matrix' | 'roc' | 'pr' | 'calibration'
+  type TabKey = 'matrix' | 'roc' | 'pr' | 'calibration' | 'perClass'
   const activeTab = ref<TabKey>('matrix')
 
   const TABS: Array<{ key: TabKey, label: string }> = [
@@ -307,6 +381,7 @@
     { key: 'roc', label: 'ROC 曲線' },
     { key: 'pr', label: 'PR 曲線' },
     { key: 'calibration', label: '校準曲線' },
+    { key: 'perClass', label: '各類別指標' },
   ]
 
   const currentRocPrCurve = computed(() =>
@@ -316,6 +391,36 @@
   const currentCalibrationCurve = computed(() =>
     currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.calibration_curve ?? null,
   )
+
+  const currentPerClassMetrics = computed(() =>
+    currentModel.value?.splits.find(s => s.split_name === selectedFold.value)?.per_class_metrics ?? null,
+  )
+
+  interface PerClassRow {
+    label: string
+    precision: number
+    recall: number
+    f1: number
+    support: number
+  }
+
+  const perClassRows = computed<PerClassRow[]>(() => {
+    const data = currentPerClassMetrics.value
+    if (!data) return []
+    return data.labels.map((label, i) => ({
+      label,
+      precision: data.precision[i]!,
+      recall: data.recall[i]!,
+      f1: data.f1[i]!,
+      support: data.support[i]!,
+    }))
+  })
+
+  const lowestF1Label = computed(() => {
+    const rows = perClassRows.value
+    if (rows.length === 0) return null
+    return rows.reduce((min, row) => (row.f1 < min.f1 ? row : min)).label
+  })
 
   const CHART_SIZE = 100
   const CHART_PADDING = 4
@@ -457,6 +562,11 @@
   }
 
   .cm-cell--diagonal {
+    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    font-weight: 700;
+  }
+
+  .cm-row--lowest .cm-cell {
     background: color-mix(in oklab, var(--color-accent) 12%, transparent);
     font-weight: 700;
   }
