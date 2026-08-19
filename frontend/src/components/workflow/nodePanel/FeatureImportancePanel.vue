@@ -206,7 +206,7 @@
     display: flex;
     flex-direction: column;
     border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--color-surface);
   }
@@ -228,7 +228,7 @@
 
   .fi-row--header {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-secondary);
     background: var(--color-surface);
   }
@@ -239,14 +239,14 @@
 
   .fi-cell {
     padding: 11px 14px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-size: 13px;
     min-width: 0;
     word-break: break-word;
   }
 
   .fi-cell--feature {
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .fi-cell--num {

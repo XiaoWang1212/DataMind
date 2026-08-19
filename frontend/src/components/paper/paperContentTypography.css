@@ -1,7 +1,7 @@
 .editor-content {
-  font-size: 13.5px;
-  line-height: 1.9;
-  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text);
 }
 
 .editor-content .ProseMirror {
@@ -12,8 +12,21 @@
 .editor-content h2,
 .editor-content h3 {
   margin: 0 0 10px;
-  font-weight: 700;
-  color: var(--color-ink);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* 標題只靠 Medium 字重跟內文分不開，改用字級拉出層級 */
+.editor-content h1 {
+  font-size: 18px;
+}
+
+.editor-content h2 {
+  font-size: 16px;
+}
+
+.editor-content h3 {
+  font-size: 15px;
 }
 
 .editor-content p {
@@ -31,7 +44,7 @@
 
 .editor-content th,
 .editor-content td {
-  border: 1px solid #d8dbe3;
+  border: 1px solid var(--color-border-strong);
   padding: 6px 10px;
   position: relative;
   min-width: 1em;
@@ -60,7 +73,7 @@
 }
 
 .citation-mark {
-  background: #fdf0a8;
+  background: color-mix(in oklab, var(--color-ink) 14%, white);
   padding: 1px 2px;
   border-radius: 3px;
 }

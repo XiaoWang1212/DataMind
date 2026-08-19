@@ -4,8 +4,8 @@
     :model-value="modelValue"
     @update:model-value="value => emit('update:modelValue', value)"
   >
-    <v-card class="insert-chart-dialog">
-      <v-card-title>插入圖表</v-card-title>
+    <v-card class="insert-chart-dialog glass-panel">
+      <v-card-title class="dialog-title">插入圖表</v-card-title>
 
       <v-card-text>
         <p v-if="summaries.length === 0" class="empty-hint">
@@ -25,6 +25,7 @@
                 v-for="model in availableModels"
                 :key="model"
                 v-model="selectedModels"
+                color="primary"
                 density="compact"
                 hide-details
                 :label="model"
@@ -37,6 +38,7 @@
                 v-for="metric in availableMetrics"
                 :key="metric"
                 v-model="selectedMetrics"
+                color="primary"
                 density="compact"
                 hide-details
                 :label="metric"
@@ -53,10 +55,10 @@
         </template>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="dialog-actions">
         <v-spacer />
-        <v-btn variant="text" @click="emit('update:modelValue', false)">取消</v-btn>
-        <v-btn class="bg-accent" color="accent" :disabled="chartSeries.length === 0" @click="handleInsert">插入</v-btn>
+        <AppButton variant="ghost" @click="emit('update:modelValue', false)">取消</AppButton>
+        <AppButton :disabled="chartSeries.length === 0" @click="handleInsert">插入</AppButton>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -64,11 +66,12 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import BarChart from '@/components/paper/charts/BarChart.vue'
+  import { CHART_COLORS } from '@/components/paper/charts/chartColors'
+  import RadarChart from '@/components/paper/charts/RadarChart.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
-  import { colorForIndex } from '@/components/paper/charts/chartColors'
-  import BarChart from '@/components/paper/charts/BarChart.vue'
-  import RadarChart from '@/components/paper/charts/RadarChart.vue'
 
   const props = defineProps<{
     modelValue: boolean
@@ -132,6 +135,14 @@
     const svgEl = previewRef.value?.querySelector('svg')
     if (!svgEl) return
 
+    // 匯出的 SVG 帶不走 CSS 變數，在這裡先解析成實際色值
+    const rootStyle = getComputedStyle(document.documentElement)
+    const legendTextColor = rootStyle.getPropertyValue('--color-ink-soft').trim()
+    const resolvedChartColors = CHART_COLORS.map(c => {
+      const match = /var\((--[\w-]+)\)/.exec(c)
+      return match?.[1] ? rootStyle.getPropertyValue(match[1]).trim() : c
+    })
+
     const width = Number(svgEl.getAttribute('width'))
     const chartHeight = Number(svgEl.getAttribute('height'))
     const legendRowHeight = 18
@@ -145,8 +156,9 @@
     const legendMarkup = legendModels.value
       .map((model, index) => {
         const y = legendTop + index * legendRowHeight
-        return `<rect x="8" y="${y}" width="10" height="10" rx="2" fill="${colorForIndex(index)}" />`
-          + `<text x="24" y="${y + 9}" font-size="11" fill="#4a4f5c">${escapeXml(model)}</text>`
+        const fill = resolvedChartColors[index % resolvedChartColors.length]
+        return `<rect x="8" y="${y}" width="10" height="10" rx="2" fill="${fill}" />`
+          + `<text x="24" y="${y + 9}" font-size="11" fill="${legendTextColor}">${escapeXml(model)}</text>`
       })
       .join('')
 

@@ -1,17 +1,17 @@
 <template>
   <div>
     <svg
+      class="chart-svg"
       :height="height"
       :viewBox="`0 0 ${width} ${height}`"
       :width="width"
-      class="chart-svg"
       xmlns="http://www.w3.org/2000/svg"
     >
       <line
         v-for="tick in yTicks"
         :key="`grid-${tick.value}`"
         class="chart-gridline"
-        stroke="#e8ebf1"
+        stroke="var(--color-border)"
         stroke-width="1"
         :x1="padding.left"
         :x2="width - padding.right"
@@ -22,7 +22,7 @@
         v-for="tick in yTicks"
         :key="`label-${tick.value}`"
         class="chart-axis-label"
-        fill="#6f7480"
+        fill="var(--color-ink-soft)"
         font-size="10"
         text-anchor="end"
         :x="padding.left - 8"
@@ -43,7 +43,7 @@
         />
         <text
           class="chart-axis-label"
-          fill="#6f7480"
+          fill="var(--color-ink-soft)"
           font-size="10"
           text-anchor="middle"
           :x="group.centerX"
@@ -55,7 +55,7 @@
 
       <line
         class="chart-axis-line"
-        stroke="#d8dbe3"
+        stroke="var(--color-border-strong)"
         stroke-width="1"
         :x1="padding.left"
         :x2="width - padding.right"
@@ -139,18 +139,18 @@
   }
 
   .chart-gridline {
-    stroke: #e8ebf1;
+    stroke: var(--color-border);
     stroke-width: 1;
   }
 
   .chart-axis-line {
-    stroke: #d8dbe3;
+    stroke: var(--color-border-strong);
     stroke-width: 1;
   }
 
   .chart-axis-label {
     font-size: 10px;
-    fill: #6f7480;
+    fill: var(--color-ink-soft);
   }
 
   .chart-legend {
@@ -167,7 +167,7 @@
     align-items: center;
     gap: 5px;
     font-size: 11px;
-    color: #4a4f5c;
+    color: var(--color-text);
   }
 
   .chart-legend-swatch {

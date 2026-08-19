@@ -1,16 +1,13 @@
 <template>
-  <div>
-    <!-- Back link -->
-    <RouterLink to="/hub/projects" class="back-link">
-      <v-icon icon="mdi-arrow-left" size="15" />
-      返回專案
-    </RouterLink>
-
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">建立新專案</h1>
-      <p class="page-sub">按照步驟設定您的研究專案</p>
-    </div>
+  <div class="create-project">
+    <PageHeader subtitle="按照步驟設定您的研究專案" title="建立新專案">
+      <template #back>
+        <RouterLink class="back-link" to="/hub/projects">
+          <v-icon icon="mdi-arrow-left" size="15" />
+          返回專案
+        </RouterLink>
+      </template>
+    </PageHeader>
 
     <!-- Stepper -->
     <div class="stepper">
@@ -38,15 +35,15 @@
             v-model="form.name"
             class="form-input"
             placeholder="例如：客戶流失分析"
-          />
+          >
         </div>
         <div class="form-field">
           <label class="form-label">描述（選填）</label>
           <textarea
             v-model="form.description"
             class="form-textarea"
-            rows="4"
             placeholder="描述您的研究目標..."
+            rows="4"
           />
         </div>
       </template>
@@ -62,7 +59,7 @@
             @click="form.frameworkId = fw.id"
           >
             <div class="fw-select-icon">
-              <v-icon icon="mdi-book-open-outline" size="20" color="#4f46e5" />
+              <v-icon icon="mdi-book-open-outline" size="20" />
             </div>
             <div class="fw-select-name">{{ fw.title }}</div>
             <div class="fw-select-tag">{{ fw.tag }}</div>
@@ -74,17 +71,23 @@
       <template v-if="currentStep === 2">
         <div
           class="drop-zone"
+          @click="datasetInput?.click()"
           @dragover.prevent
           @drop.prevent="handleDatasetDrop"
-          @click="datasetInput?.click()"
         >
-          <v-icon icon="mdi-table-arrow-up" size="48" class="drop-icon" />
+          <v-icon class="drop-icon" icon="mdi-table-arrow-up" size="48" />
           <div class="drop-text">點擊或拖放資料集檔案</div>
           <div class="drop-hint">支援 CSV、Excel（最大 50MB）</div>
-          <input ref="datasetInput" type="file" accept=".csv,.xlsx,.xls" hidden @change="handleDatasetChange" />
+          <input
+            ref="datasetInput"
+            accept=".csv,.xlsx,.xls"
+            hidden
+            type="file"
+            @change="handleDatasetChange"
+          >
         </div>
         <div v-if="form.datasetFile" class="file-info">
-          <v-icon icon="mdi-file-table-outline" size="18" color="var(--color-accent)" />
+          <v-icon icon="mdi-file-table-outline" size="18" />
           <span class="file-name">{{ form.datasetFile.name }}</span>
         </div>
       </template>
@@ -115,453 +118,411 @@
 
     <!-- Footer buttons -->
     <div class="form-footer">
-      <button class="prev-btn" :disabled="currentStep === 0" @click="currentStep--">
+      <AppButton :disabled="currentStep === 0" variant="ghost" @click="currentStep--">
         上一步
-      </button>
-      <button v-if="currentStep < 3" class="next-btn" @click="currentStep++">
+      </AppButton>
+      <AppButton v-if="currentStep < 3" variant="secondary" @click="currentStep++">
         下一步
         <v-icon icon="mdi-chevron-right" size="17" />
-      </button>
-      <button v-else class="next-btn" @click="executeProject">
+      </AppButton>
+      <AppButton v-else :loading="submitting" variant="primary" @click="executeProject">
         執行分析
-        <v-icon icon="mdi-play" size="17" />
-      </button>
+        <v-icon icon="mdi-play-outline" size="17" />
+      </AppButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
   import { saveWorkflowDataFileToStorage } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
-const router = useRouter()
-const frameworkStore = useFrameworkStore()
-const projectStore = useProjectStore()
-const datasetInput = ref<HTMLInputElement | null>(null)
-const currentStep = ref(0)
+  const router = useRouter()
+  const frameworkStore = useFrameworkStore()
+  const projectStore = useProjectStore()
+  const datasetInput = ref<HTMLInputElement | null>(null)
+  const currentStep = ref(0)
+  const submitting = ref(false)
 
-const steps = [
-  { title: '專案設定', sub: '基本資訊' },
-  { title: '選擇框架', sub: '選擇研究框架' },
-  { title: '上傳資料集', sub: '對應您的資料' },
-  { title: '審閱並執行', sub: '確認並執行' },
-]
+  const steps = [
+    { title: '專案設定', sub: '基本資訊' },
+    { title: '選擇框架', sub: '選擇研究框架' },
+    { title: '上傳資料集', sub: '對應您的資料' },
+    { title: '審閱並執行', sub: '確認並執行' },
+  ]
 
-const form = ref({
-  name: '',
-  description: '',
-  frameworkId: null as number | null,
-  datasetFile: null as File | null,
-})
-
-const selectedFramework = computed(() =>
-  frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
-)
-
-function stepCircleClass(i: number): string {
-  if (i < currentStep.value) return 'step-circle--done'
-  if (i === currentStep.value) return 'step-circle--active'
-  return 'step-circle--inactive'
-}
-
-function handleDatasetChange(e: Event): void {
-  const input = e.target as HTMLInputElement
-  if (input.files?.[0]) form.value.datasetFile = input.files[0]
-}
-
-function handleDatasetDrop(e: DragEvent): void {
-  const file = e.dataTransfer?.files[0]
-  if (file) form.value.datasetFile = file
-}
-
-async function executeProject (): Promise<void> {
-  const project = await projectStore.addProject({
-    name: form.value.name || '未命名專案',
-    description: form.value.description,
-    frameworkId: form.value.frameworkId,
-    datasetName: form.value.datasetFile?.name ?? '',
-    variables: selectedFramework.value?.variables ?? 0,
+  const form = ref({
+    name: '',
+    description: '',
+    frameworkId: null as number | null,
+    datasetFile: null as File | null,
   })
 
-  projectStore.setActiveContext({
-    projectId: project.id,
-    datasetFile: form.value.datasetFile,
-    frameworkId: form.value.frameworkId,
-  })
+  const selectedFramework = computed(() =>
+    frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
+  )
 
-  // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
-  // 使用者在對齊頁按重新整理就會遺失。
-  // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
-  if (form.value.datasetFile) {
-    await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
+  function stepCircleClass (i: number): string {
+    if (i < currentStep.value) return 'step-circle--done'
+    if (i === currentStep.value) return 'step-circle--active'
+    return 'step-circle--inactive'
   }
 
-  router.push(`/hub/projects/${project.id}/mapping`)
-}
+  function handleDatasetChange (e: Event): void {
+    const input = e.target as HTMLInputElement
+    if (input.files?.[0]) form.value.datasetFile = input.files[0]
+  }
+
+  function handleDatasetDrop (e: DragEvent): void {
+    const file = e.dataTransfer?.files[0]
+    if (file) form.value.datasetFile = file
+  }
+
+  async function executeProject (): Promise<void> {
+    submitting.value = true
+    try {
+      const project = await projectStore.addProject({
+        name: form.value.name || '未命名專案',
+        description: form.value.description,
+        frameworkId: form.value.frameworkId,
+        datasetName: form.value.datasetFile?.name ?? '',
+        variables: selectedFramework.value?.variables ?? 0,
+      })
+
+      projectStore.setActiveContext({
+        projectId: project.id,
+        datasetFile: form.value.datasetFile,
+        frameworkId: form.value.frameworkId,
+      })
+
+      // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
+      // 使用者在對齊頁按重新整理就會遺失。
+      // useWorkflowStorage 的 projectId 參數是字串，而 Project.id 是數字。
+      if (form.value.datasetFile) {
+        await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
+      }
+
+      router.push(`/hub/projects/${project.id}/mapping`)
+    } finally {
+      submitting.value = false
+    }
+  }
 </script>
 
 <style scoped>
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--color-secondary);
-  text-decoration: none;
-  margin-bottom: 20px;
-  transition: color 0.12s;
-}
+  .create-project {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.back-link:hover {
-  color: var(--color-ink);
-}
+  /* 對齊 22px 標題的第一行 */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--color-ink-soft);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
 
-.page-header {
-  margin-bottom: 28px;
-}
+  .back-link:hover {
+    color: var(--color-text);
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-ink);
-  margin: 0 0 5px;
-}
+  /* ── Stepper ── */
+  .stepper {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 28px;
+  }
 
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
-}
+  .stepper-item {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    gap: 10px;
+  }
 
-/* ── Stepper ── */
-.stepper {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-  margin-bottom: 28px;
-  position: relative;
-}
+  .stepper-line {
+    position: absolute;
+    top: 16px;
+    left: calc(100% - 50%);
+    z-index: 0;
+    width: calc(100% - 44px);
+    height: 1px;
+    background: var(--color-border);
+  }
 
-.stepper-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  flex: 1;
-  position: relative;
-}
+  .step-circle {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 500;
+  }
 
-.stepper-line {
-  position: absolute;
-  top: 16px;
-  left: calc(100% - 50%);
-  width: calc(100% - 44px);
-  height: 1px;
-  background: #e5e7eb;
-  z-index: 0;
-}
+  .step-circle--active,
+  .step-circle--done {
+    background: var(--color-ink);
+    color: var(--color-surface);
+  }
 
-.step-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
+  .step-circle--inactive {
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-ink-soft);
+  }
 
-.step-circle--active {
-  background: var(--color-accent);
-  color: #ffffff;
-}
+  .step-info {
+    flex: 1;
+    padding-top: 4px;
+  }
 
-.step-circle--done {
-  background: var(--color-accent);
-  color: #ffffff;
-}
+  .step-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-.step-circle--inactive {
-  background: #ffffff;
-  color: var(--color-secondary);
-  border: 2px solid #e5e7eb;
-}
+  .step-title--active {
+    color: var(--color-text);
+  }
 
-.step-info {
-  flex: 1;
-  padding-top: 4px;
-}
+  .step-sub {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.step-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-secondary);
-}
+  /* ── Form card ── */
+  /* 卡片與頁尾按鈕列拼成同一塊，圓角只留在整組的外緣 */
+  .form-card {
+    padding: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
 
-.step-title--active {
-  color: var(--color-ink);
-}
+  .form-field {
+    margin-bottom: 20px;
+  }
 
-.step-sub {
-  font-size: 11.5px;
-  color: var(--color-secondary);
-  margin-top: 2px;
-}
+  .form-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-/* ── Form card ── */
-.form-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 28px;
-  margin-bottom: 0;
-  color: var(--color-ink);
-}
+  .form-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    color-scheme: light;
+    font-size: 14px;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
 
-.form-field {
-  margin-bottom: 20px;
-}
+  .form-input::placeholder {
+    color: var(--color-ink-soft);
+  }
 
-.form-label {
-  display: block;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--color-secondary);
-  margin-bottom: 7px;
-}
+  .form-input:focus {
+    border-color: var(--color-ink);
+  }
 
-.form-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
-  font-size: 14px;
-  color: var(--color-ink);
-  background-color: #ffffff;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.15s;
-  color-scheme: light;
-}
+  .form-textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    color-scheme: light;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
 
-.form-input::placeholder {
-  color: var(--color-secondary);
-}
+  .form-textarea::placeholder {
+    color: var(--color-ink-soft);
+  }
 
-.form-input:focus {
-  border-color: var(--color-accent);
-}
+  .form-textarea:focus {
+    border-color: var(--color-ink);
+  }
 
-.form-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
-  font-size: 14px;
-  color: var(--color-ink);
-  background-color: #ffffff;
-  outline: none;
-  box-sizing: border-box;
-  resize: vertical;
-  font-family: inherit;
-  transition: border-color 0.15s;
-  color-scheme: light;
-}
+  /* ── Framework select ── */
+  .fw-select-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
 
-.form-textarea::placeholder {
-  color: var(--color-secondary);
-}
+  .fw-select-card {
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
 
-.form-textarea:focus {
-  border-color: var(--color-accent);
-}
+  .fw-select-card:hover {
+    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+  }
 
-/* ── Framework select ── */
-.fw-select-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
+  .fw-select-card--selected {
+    border-color: var(--color-ink);
+    background: color-mix(in oklab, var(--color-ink) 6%, white);
+  }
 
-.fw-select-card {
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
+  .fw-select-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    color: var(--color-ink);
+  }
 
-.fw-select-card:hover {
-  border-color: #a5b4fc;
-}
+  .fw-select-name {
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.fw-select-card--selected {
-  border-color: var(--color-accent);
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
-}
+  .fw-select-tag {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.fw-select-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
-  background: #e0e7ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-}
+  /* ── Drop zone ── */
+  .drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 48px 24px;
+    border: 2px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
 
-.fw-select-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 4px;
-}
+  .drop-zone:hover {
+    border-color: var(--color-ink);
+    background: color-mix(in oklab, var(--color-ink) 6%, white);
+  }
 
-.fw-select-tag {
-  font-size: 12px;
-  color: var(--color-secondary);
-}
+  .drop-icon {
+    margin-bottom: 4px;
+    color: var(--color-ink-soft);
+  }
 
-/* ── Drop zone ── */
-.drop-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 10px;
-  padding: 48px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
+  .drop-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.drop-zone:hover {
-  border-color: var(--color-accent);
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
-}
+  .drop-hint {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.drop-icon {
-  color: var(--color-secondary);
-  margin-bottom: 4px;
-}
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-alt);
+    color: var(--color-ink);
+  }
 
-.drop-text {
-  font-size: 14px;
-  color: var(--color-secondary);
-  font-weight: 500;
-}
+  .file-name {
+    font-size: 13px;
+    color: var(--color-text);
+  }
 
-.drop-hint {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-}
+  /* ── Review ── */
+  .review-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
-}
+  .review-title {
+    margin-bottom: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.file-name {
-  font-size: 13px;
-  color: var(--color-secondary);
-}
+  .review-row {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 14px;
+  }
 
-/* ── Review ── */
-.review-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+  .review-key {
+    flex-shrink: 0;
+    width: 120px;
+    color: var(--color-ink-soft);
+  }
 
-.review-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 16px;
-}
+  .review-val {
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.review-row {
-  display: flex;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f1f3;
-  font-size: 13.5px;
-}
-
-.review-key {
-  width: 120px;
-  flex-shrink: 0;
-  color: var(--color-secondary);
-}
-
-.review-val {
-  color: var(--color-ink);
-  font-weight: 500;
-}
-
-/* ── Footer buttons ── */
-.form-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 28px;
-  background: #ffffff;
-  color: var(--color-ink);
-  border-radius: 0 0 8px 8px;
-  border: 1px solid #e8e8e8;
-  border-top: 1px solid #f0f0f0;
-  margin-top: -1px;
-}
-
-.prev-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--color-secondary);
-  padding: 0 8px;
-  transition: color 0.12s;
-}
-
-.prev-btn:disabled {
-  color: #d1d5db;
-  cursor: default;
-}
-
-.prev-btn:not(:disabled):hover {
-  color: var(--color-ink);
-}
-
-.next-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 22px;
-  height: 40px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.next-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
+  /* ── Footer buttons ── */
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: -1px;
+    padding: 18px 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
 </style>

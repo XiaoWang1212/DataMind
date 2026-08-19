@@ -1,19 +1,16 @@
 <template>
-  <div>
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">專案</h1>
-      <p class="page-sub">管理您的研究專案與分析</p>
-    </div>
-
-    <!-- New project button -->
-    <RouterLink class="new-btn" to="/hub/projects/new">
-      <v-icon icon="mdi-folder-plus-outline" size="17" />
-      新專案
-    </RouterLink>
+  <div class="projects">
+    <PageHeader subtitle="管理您的研究專案與分析" title="專案">
+      <template #actions>
+        <AppButton variant="primary" @click="goToCreate">
+          <v-icon icon="mdi-folder-plus-outline" size="17" />
+          新專案
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <!-- Project list -->
-    <div class="project-list">
+    <div class="project-list enter-stagger">
       <RouterLink
         v-for="project in store.projects"
         :key="project.id"
@@ -23,9 +20,9 @@
         <div class="project-main">
           <div class="project-title-row">
             <span class="project-name">{{ project.name }}</span>
-            <span class="badge" :class="`badge--${project.status}`">
+            <StatusBadge :status="statusTone[project.status]">
               {{ statusLabel[project.status] }}
-            </span>
+            </StatusBadge>
           </div>
           <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
           <div class="project-date">
@@ -50,17 +47,28 @@
 
 <script setup lang="ts">
   import type { Project } from '@/store/projectStore'
-  import { RouterLink } from 'vue-router'
+  import { RouterLink, useRouter } from 'vue-router'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import StatusBadge from '@/components/ui/StatusBadge.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
+  const router = useRouter()
   const store = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
-  const statusLabel: Record<string, string> = {
+  const statusLabel: Record<Project['status'], string> = {
     completed: '已完成',
     running: '進行中',
     draft: '草稿',
+  }
+
+  // 草稿是「還沒開始」而不是警示，用 neutral 才不會把狀態色當裝飾用
+  const statusTone: Record<Project['status'], 'success' | 'warning' | 'neutral'> = {
+    completed: 'success',
+    running: 'warning',
+    draft: 'neutral',
   }
 
   function frameworkTitle (project: Project): string {
@@ -81,168 +89,119 @@
       ? `/workflow?project=${project.id}`
       : `/hub/projects/${project.id}`
   }
+
+  function goToCreate (): void {
+    router.push('/hub/projects/new')
+  }
 </script>
 
 <style scoped>
-.page-header {
-  margin-bottom: 22px;
-}
+  .projects {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-ink);
-  margin: 0 0 5px;
-}
+  /* ── Project list ── */
+  .project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
-}
+  .project-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    text-decoration: none;
+    transition: border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
 
-/* ── New button ── */
-.new-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 18px;
-  height: 38px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border-radius: 7px;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  margin-bottom: 18px;
-  transition: background 0.15s;
-}
+  .project-card:hover {
+    border-color: color-mix(in oklab, var(--color-ink) 16%, white);
+    background: var(--color-surface-alt);
+  }
 
-.new-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
+  .project-main {
+    flex: 1;
+    min-width: 0;
+  }
 
-/* ── Project list ── */
-.project-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+  .project-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
 
-.project-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 18px 22px;
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
+  .project-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.project-card:hover {
-  border-color: #c7d2fe;
-}
+  /* ── Meta ── */
+  .project-meta {
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-.project-main {
-  flex: 1;
-  min-width: 0;
-}
+  .project-date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-.project-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
+  .date-icon {
+    color: var(--color-ink-soft);
+  }
 
-.project-name {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
+  /* ── Progress ── */
+  .progress-wrap {
+    margin-top: 10px;
+  }
 
-/* ── Badges ── */
-.badge {
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 2px 9px;
-  border-radius: 99px;
-}
+  .progress-label-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
 
-.badge--completed {
-  background: #dbeafe;
-  color: #2347c5;
-}
+  .progress-label {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.badge--running {
-  background: #fef3c7;
-  color: #d97706;
-}
+  .progress-pct {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.badge--draft {
-  background: #f3f4f6;
-  color: var(--color-secondary);
-}
+  .progress-track {
+    height: 5px;
+    border-radius: 999px;
+    background: var(--color-surface-alt);
+    overflow: hidden;
+  }
 
-/* ── Meta ── */
-.project-meta {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  margin-bottom: 5px;
-}
+  /* 進度條沿用「進行中」徽章的琥珀，讓同一張卡上的狀態訊號一致 */
+  .progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-warning);
+    transition: width var(--dur-base) var(--ease-in-out);
+  }
 
-.project-date {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12.5px;
-  color: var(--color-secondary);
-}
-
-.date-icon {
-  color: var(--color-secondary);
-}
-
-/* ── Progress ── */
-.progress-wrap {
-  margin-top: 10px;
-}
-
-.progress-label-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-
-.progress-label {
-  font-size: 12px;
-  color: var(--color-secondary);
-}
-
-.progress-pct {
-  font-size: 12px;
-  color: var(--color-secondary);
-}
-
-.progress-track {
-  height: 5px;
-  background: #f0f0f0;
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: #f59e0b;
-  border-radius: 99px;
-  transition: width 0.3s;
-}
-
-.project-arrow {
-  color: #c4c9d4;
-  flex-shrink: 0;
-  margin-left: 16px;
-}
+  .project-arrow {
+    flex-shrink: 0;
+    margin-left: 16px;
+    color: var(--color-border-strong);
+  }
 </style>

@@ -92,8 +92,8 @@
     box-sizing: border-box;
     padding: 10px 12px;
     background: var(--color-surface);
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 13px;
   }
 
@@ -107,22 +107,22 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #e0e7ff;
-    color: #4f46e5;
+    background: color-mix(in oklab, var(--color-ink) 12%, white);
+    color: var(--color-ink);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     flex-shrink: 0;
   }
 
   .step-label {
     flex: 1;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 13px;
     line-height: 1.3;
-    color: var(--color-ink);
+    color: var(--color-text);
     min-width: 0;
     word-break: break-word;
   }
@@ -134,7 +134,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed #e2e8f0;
+    border-top: 1px dashed var(--color-border);
   }
 
   .param-row {
@@ -151,7 +151,7 @@
 
   .param-val {
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
     font-weight: 500;
   }
 

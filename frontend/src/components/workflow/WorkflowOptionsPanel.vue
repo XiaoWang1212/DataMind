@@ -3,9 +3,12 @@
   <section class="setting-area">
     <!-- 有選到節點時才渲染內容 -->
     <div v-if="selectedNode" class="panel">
-      <!-- 標題區：顯示目前節點名稱與說明 -->
-      <div class="panel-header">
-        <h3>{{ selectedNode.data.label.replace(/\n/g, " ") }}</h3>
+      <!-- 標題區：顯示目前節點名稱與說明，色點對應節點分類色（見 §2.3） -->
+      <div
+        class="panel-header"
+        :style="{ '--panel-color': `var(--color-node-${selectedNode.data.nodeType})` }"
+      >
+        <h3><span class="panel-header__dot" />{{ selectedNode.data.label.replace(/\n/g, " ") }}</h3>
         <p>{{ selectedNode.data.description }}</p>
       </div>
 
@@ -125,14 +128,13 @@
             </select>
           </div>
           <div class="form-row">
-            <button
-              class="btn btn-primary"
+            <AppButton
               :disabled="!selectedModel || modelOptionsLoading"
-              type="button"
+              variant="primary"
               @click="handleAddModel"
             >
               新增模型
-            </button>
+            </AppButton>
           </div>
           <div v-if="availableModels.length === 0" class="info-text">
             目前沒有可用模型，請稍後再試。
@@ -232,6 +234,7 @@
   import type { ConfigValue, SimpleNode } from '@/types/workflow'
   import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, reactive, ref, watch } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import ComputeCiPanel from './nodePanel/ComputeCiPanel.vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
@@ -428,8 +431,19 @@
 
   .panel-header h3 {
     margin: 0 0 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 16px;
-    color: var(--color-ink);
+    color: var(--color-text);
+  }
+
+  .panel-header__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--panel-color, var(--color-accent));
   }
 
   .panel-header p {
@@ -457,14 +471,14 @@
 
   .form-row label {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-secondary);
   }
 
   .form-row input,
   .form-row select {
     border: 1px solid color-mix(in oklab, var(--color-accent) 20%, transparent);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 7px 10px;
     font-size: 13px;
     outline: none;
@@ -480,280 +494,6 @@
     background-repeat: no-repeat;
     background-position: right 8px center;
     cursor: pointer;
-  }
-
-  .upload-card {
-    padding: 18px;
-    border: 1px dashed color-mix(in oklab, var(--color-accent) 28%, transparent);
-    border-radius: 16px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .upload-card__title {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .upload-card__desc {
-    margin: 0;
-    color: var(--color-secondary);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .upload-card__input-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .upload-card__info {
-    color: var(--color-ink);
-  }
-
-  .upload-modal-dropzone {
-    border: 2px dashed rgba(148, 163, 184, 0.9);
-    border-radius: 18px;
-    min-height: 220px;
-    padding: 28px;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    gap: 14px;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease;
-  }
-
-  .upload-modal-dropzone--active {
-    border-color: var(--color-accent);
-    background: color-mix(in oklab, var(--color-accent) 13%, transparent);
-  }
-
-  .upload-modal-icon {
-    font-size: 32px;
-    color: var(--color-accent);
-  }
-
-  .upload-modal-line1 {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--color-ink);
-  }
-
-  .upload-modal-line2 {
-    color: var(--color-secondary);
-    font-size: 14px;
-  }
-
-  .upload-modal-button {
-    border: none;
-    border-radius: 999px;
-    padding: 10px 22px;
-    background: var(--color-accent);
-    color: #fff;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .upload-modal-file {
-    font-size: 13px;
-    color: var(--color-secondary);
-  }
-
-  .upload-modal-error {
-    color: #ef4444;
-    font-size: 13px;
-    text-align: center;
-  }
-
-  .upload-modal-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .upload-modal-preview-header {
-    color: var(--color-ink);
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .upload-modal-preview-summary {
-    display: flex;
-    gap: 16px;
-    color: var(--color-secondary);
-    font-size: 13px;
-  }
-
-  .upload-modal-chart-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .upload-modal-chart-card {
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    border-radius: 18px;
-    padding: 16px;
-    background: var(--color-surface);
-  }
-
-  .upload-modal-chart-title {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .upload-modal-chart-meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--color-secondary);
-    font-size: 12px;
-    margin-bottom: 14px;
-  }
-
-  .upload-modal-chart-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .upload-modal-chart-bar-row {
-    display: grid;
-    grid-template-columns: 1.2fr 3fr auto;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .upload-modal-chart-bar-label {
-    font-size: 12px;
-    color: var(--color-ink);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .upload-modal-chart-bar-track {
-    height: 10px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    overflow: hidden;
-  }
-
-  .upload-modal-chart-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: var(--color-accent);
-  }
-
-  .upload-modal-chart-bar-value {
-    font-size: 12px;
-    color: var(--color-ink);
-    text-align: right;
-  }
-
-  .upload-modal-preview-table {
-    max-height: 220px;
-    overflow: auto;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    border-radius: 14px;
-  }
-
-  .upload-modal-preview-table table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .upload-modal-preview-table th,
-  .upload-modal-preview-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    text-align: left;
-    font-size: 13px;
-  }
-
-  .upload-modal-preview-table th {
-    background: var(--color-surface);
-    color: var(--color-ink);
-  }
-
-  .details__summary {
-    user-select: none;
-    padding: 10px 12px;
-    font-weight: 600;
-    font-size: 13px;
-    background: color-mix(in oklab, var(--color-accent) 6%, transparent);
-    border-bottom: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
-  }
-
-  .details__content {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .preview-box {
-    margin-top: 6px;
-    border: 1px solid color-mix(in oklab, var(--color-accent) 16%, transparent);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.28);
-    overflow: auto;
-  }
-
-  .preview-box table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .preview-box th,
-  .preview-box td {
-    border-bottom: 1px solid #f0f2f5;
-    text-align: left;
-    padding: 6px 8px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .preview-box th {
-    background: rgba(160, 192, 232, 0.35);
-    font-weight: 700;
-  }
-
-  .hint {
-    font-size: 13px;
-    color: var(--color-secondary);
-  }
-
-  .actions {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px 0 14px;
-  }
-
-  .btn {
-    border: none;
-    border-radius: 10px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 13px;
-  }
-
-  .btn-primary {
-    background: var(--color-accent);
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .btn-primary:hover {
-    background: color-mix(in oklab, var(--color-accent) 85%, black);
   }
 
   @media (max-width: 768px) {
@@ -785,18 +525,6 @@
       padding: 8px 9px;
     }
 
-    .details__summary {
-      font-size: 12px;
-      padding: 9px 10px;
-    }
-
-    .actions {
-      padding: 8px 0 12px;
-    }
-
-    .btn {
-      width: 100%;
-    }
   }
 
 </style>

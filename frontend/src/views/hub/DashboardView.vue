@@ -1,14 +1,9 @@
 <template>
-  <div>
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">儀表板</h1>
-      <p class="page-sub">歡迎回來，這是您的研究概覽。</p>
-    </div>
+  <div class="dashboard">
+    <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="儀表板" />
 
-    <!-- Stat cards -->
-    <div class="stat-grid">
-      <div class="stat-card" v-for="stat in stats" :key="stat.label">
+    <div class="stat-grid enter-stagger">
+      <div v-for="stat in stats" :key="stat.label" class="stat-card">
         <div class="stat-label">{{ stat.label }}</div>
         <div class="stat-number">{{ stat.value }}</div>
         <div class="stat-trend">
@@ -18,11 +13,10 @@
       </div>
     </div>
 
-    <!-- Action cards -->
-    <div class="action-grid">
-      <RouterLink to="/hub/library/extract" class="action-card">
-        <div class="action-icon-wrap action-icon-wrap--blue">
-          <v-icon icon="mdi-plus" size="22" color="#4f46e5" />
+    <div class="action-grid enter-stagger">
+      <RouterLink class="action-card" to="/hub/library/extract">
+        <div class="action-icon-wrap">
+          <v-icon icon="mdi-file-document-plus-outline" size="22" />
         </div>
         <div class="action-text">
           <div class="action-title">提取新框架</div>
@@ -30,9 +24,9 @@
         </div>
       </RouterLink>
 
-      <RouterLink to="/hub/projects/new" class="action-card">
-        <div class="action-icon-wrap action-icon-wrap--orange">
-          <v-icon icon="mdi-plus" size="22" color="#f59e0b" />
+      <RouterLink class="action-card" to="/hub/projects/new">
+        <div class="action-icon-wrap">
+          <v-icon icon="mdi-folder-plus-outline" size="22" />
         </div>
         <div class="action-text">
           <div class="action-title">建立新專案</div>
@@ -41,7 +35,6 @@
       </RouterLink>
     </div>
 
-    <!-- Recent activity -->
     <div class="activity-card">
       <div class="activity-header">
         <v-icon icon="mdi-clock-outline" size="18" />
@@ -64,184 +57,180 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+  import { RouterLink } from 'vue-router'
+  import PageHeader from '@/components/ui/PageHeader.vue'
 
-const stats = [
-  { label: '框架總數', value: '24', trend: '本週新增 3 個' },
-  { label: '活躍專案', value: '8', trend: '2 個進行中' },
-  { label: '已完成分析', value: '156', trend: '本月新增 12 個' },
-]
+  const stats = [
+    { label: '框架總數', value: '24', trend: '本週新增 3 個' },
+    { label: '活躍專案', value: '8', trend: '2 個進行中' },
+    { label: '已完成分析', value: '156', trend: '本月新增 12 個' },
+  ]
 
-const activities = [
-  { name: 'CNN 架構分析', status: '框架已提取', time: '2 小時前' },
-  { name: '市場情緒研究', status: '專案已完成', time: '5 小時前' },
-  { name: '回歸模型模板', status: '框架已儲存', time: '1 天前' },
-]
+  const activities = [
+    { name: 'CNN 架構分析', status: '框架已提取', time: '2 小時前' },
+    { name: '市場情緒研究', status: '專案已完成', time: '5 小時前' },
+    { name: '回歸模型模板', status: '框架已儲存', time: '1 天前' },
+  ]
 </script>
 
 <style scoped>
-.page-header {
-  margin-bottom: 24px;
-}
+  .dashboard {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-ink);
-  margin: 0 0 5px;
-}
+  /* ── 統計 ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
 
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
-}
+  .stat-card {
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
 
-/* ── Stats ── */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 16px;
-}
+  .stat-label {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-.stat-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 22px 22px 18px;
-}
+  /* 用藏青讓三個數字成為畫面的視覺錨點 */
+  .stat-number {
+    margin-bottom: 10px;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--color-ink);
+  }
 
-.stat-label {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  margin-bottom: 10px;
-  font-weight: 400;
-}
+  .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
 
-.stat-number {
-  font-size: 42px;
-  font-weight: 700;
-  color: var(--color-ink);
-  line-height: 1;
-  margin-bottom: 12px;
-  letter-spacing: -1px;
-}
+  /* ── 行動 ── */
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
 
-.stat-trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--color-secondary);
-}
+  /* 虛線邊框區分「這是動作」與統計卡的「這是資料」 */
+  .action-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    text-decoration: none;
+    transition: transform var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
 
-/* ── Actions ── */
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin-bottom: 16px;
-}
+  .action-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-ink);
+    box-shadow: var(--shadow-card);
+  }
 
-.action-card {
-  background: #ffffff;
-  border: 1.5px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 20px 22px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
-}
+  .action-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    /* 從品牌色推導，不另外引入游離色碼 */
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    color: var(--color-ink);
+  }
 
-.action-card:hover {
-  border-color: #a5b4fc;
-  background: #fafafa;
-}
+  .action-title {
+    margin-bottom: 3px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.action-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+  .action-desc {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--color-ink-soft);
+  }
 
-.action-icon-wrap--blue {
-  background: #c7d2fe;
-}
+  /* ── 最近活動 ── */
+  .activity-card {
+    padding: 20px 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
 
-.action-icon-wrap--orange {
-  background: #fed7aa;
-}
+  .activity-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    color: var(--color-text);
+  }
 
-.action-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 3px;
-}
+  .activity-title {
+    font-size: 15px;
+    font-weight: 500;
+  }
 
-.action-desc {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  line-height: 1.45;
-}
+  /* 負邊距讓 hover 底色延伸到卡片邊緣 */
+  .activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -24px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
 
-/* ── Activity ── */
-.activity-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 22px 24px;
-}
+  .activity-item:hover {
+    background: var(--color-surface-alt);
+  }
 
-.activity-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-  color: var(--color-ink);
-}
+  .activity-item--last {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 
-.activity-title {
-  font-size: 15px;
-  font-weight: 600;
-}
+  .activity-name {
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.activity-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
+  .activity-status {
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-.activity-item--last {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.activity-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-ink);
-  margin-bottom: 4px;
-}
-
-.activity-status {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-}
-
-.activity-time {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-  white-space: nowrap;
-  margin-left: 24px;
-}
+  .activity-time {
+    margin-left: 24px;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--color-ink-soft);
+  }
 </style>

@@ -3,7 +3,7 @@
   <div class="score-panel">
     <div v-if="journalScores.length === 0" class="score-panel-empty">
       <div class="score-panel-empty__icon">
-        <v-icon color="#8a6d1a" icon="mdi-star" size="22" />
+        <v-icon color="var(--color-ink-soft)" icon="mdi-star" size="22" />
       </div>
       <p class="score-panel-empty__text">
         點擊「期刊評分」按鈕，以 <strong>JAMIA</strong>、<strong>npj Digital Medicine</strong>、<strong>BMC MIDM</strong> 的審稿標準評估本文
@@ -36,10 +36,10 @@
         </li>
       </ul>
 
-      <button class="score-panel-summary__cta" type="button" @click="emit('openReport')">
+      <AppButton class="score-panel-summary__cta" variant="secondary" @click="emit('openReport')">
         查看完整評分報告
         <v-icon icon="mdi-arrow-right" size="14" />
-      </button>
+      </AppButton>
     </div>
   </div>
 </template>
@@ -48,6 +48,7 @@
   import type { JournalScore } from '@/api/arxiv'
   import { computed } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { getScoreColor } from '@/utils/scoreColor'
 
   const props = defineProps<{
@@ -72,8 +73,8 @@
   }
 
   .score-panel-empty {
-    background: #ffffff;
-    border: 1px solid #e8ebf1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 24px 18px;
     text-align: center;
@@ -86,30 +87,30 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fffbe8;
-    border-radius: 10px;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
   }
 
   .score-panel-empty__text {
     margin: 0 0 8px;
     font-size: 12.5px;
     line-height: 1.7;
-    color: #4a4f5c;
+    color: var(--color-text);
   }
 
   .score-panel-empty__text strong {
-    color: #1c2130;
+    color: var(--color-text);
   }
 
   .score-panel-empty__meta {
     margin: 0;
     font-size: 11.5px;
-    color: #1058d6;
+    color: var(--color-ink);
   }
 
   .score-panel-summary {
-    background: #ffffff;
-    border: 1px solid #e8ebf1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 16px 16px 14px;
   }
@@ -123,14 +124,14 @@
 
   .score-panel-summary__avg-label {
     font-size: 11px;
-    color: #6f7480;
+    color: var(--color-ink-soft);
   }
 
   .score-panel-summary__title {
     margin: 0 0 10px;
     font-size: 12.5px;
-    font-weight: 700;
-    color: #8a6d1a;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .score-panel-summary__list {
@@ -152,20 +153,20 @@
 
   .score-panel-summary__row-name {
     font-size: 12px;
-    font-weight: 600;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .score-panel-summary__row-score {
     font-size: 12.5px;
-    font-weight: 700;
+    font-weight: 500;
     flex-shrink: 0;
   }
 
   .score-panel-summary__bar {
     height: 5px;
     border-radius: 3px;
-    background: #e8ebf1;
+    background: var(--color-border);
     overflow: hidden;
   }
 
@@ -174,24 +175,7 @@
     border-radius: 3px;
   }
 
-  .score-panel-summary__cta {
+  .score-panel-summary__cta.app-btn {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 10px;
-    border: 1px solid #d8dbe3;
-    border-radius: 8px;
-    background: none;
-    font-size: 12px;
-    font-weight: 600;
-    color: #4a4f5c;
-    cursor: pointer;
-  }
-
-  .score-panel-summary__cta:hover {
-    border-color: #1058d6;
-    color: #1058d6;
   }
 </style>

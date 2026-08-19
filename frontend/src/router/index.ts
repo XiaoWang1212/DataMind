@@ -6,9 +6,20 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-passwor
 // in a browser tab where the user is still logged in from before.
 const ALWAYS_ACCESSIBLE_PATHS = ["/reset-password"];
 
+const devOnlyRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: "/style-guide",
+        name: "style-guide",
+        component: () => import("@/views/StyleGuideView.vue"),
+      },
+    ]
+  : [];
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    ...devOnlyRoutes,
     {
       path: "/",
       redirect: "/hub/dashboard",

@@ -8,7 +8,9 @@ export const DYNAMIC_NODE_IDS = ['preprocessor', 'featureEngineering'] as const
 export const RESULT_NODE_IDS = ['featureImportance', 'confusionMatrix', 'computeCi'] as const
 export const MODEL_Y_GAP = 110
 
-const STEP_HIGHLIGHT_COLORS = ['#f0e274', '#f0e274', '#f0e274', '#f0e274'] as const
+// 高亮圈用中性的品牌深藍（調更淡），不額外加新色相跟節點本身的分類色搶戲；
+// 四個 step 都用同一色，不需要照 step 索引查表
+const STEP_HIGHLIGHT_COLOR = 'color-mix(in oklab, var(--color-accent) 26%, transparent)'
 
 export function useWorkflowNodes(
   nodeStatuses: Ref<Map<string, 'running' | 'finished'>>,
@@ -54,7 +56,6 @@ export function useWorkflowNodes(
 
   const canvasNodes = computed<FlowNode[]>(() => {
     const highlightedIds = getHighlightedIds()
-    const color: string | null = STEP_HIGHLIGHT_COLORS[settingsStep.value] ?? null
     return nodes.value.map(node => {
       const status = nodeStatuses.value.get(node.id) ?? null
       const highlighted = highlightedIds.has(node.id)
@@ -64,9 +65,8 @@ export function useWorkflowNodes(
         data: {
           ...node.data,
           status,
-          colorClass: status === 'finished' ? 'node-yellow' : node.data.colorClass,
           highlighted,
-          highlightColor: highlighted ? color : null,
+          highlightColor: highlighted ? STEP_HIGHLIGHT_COLOR : null,
           isSelected: node.id === selectedNodeId.value,
           flashType: nodeFlash.value.get(node.id) ?? null,
         },
@@ -91,8 +91,8 @@ export function useWorkflowNodes(
         ...edge,
         animated: done && !isDemoFinished.value,
         style: done
-          ? { stroke: '#F0E274', strokeWidth: 2 }
-          : { stroke: '#d9d9d9', strokeWidth: 1.5 },
+          ? { stroke: 'color-mix(in oklab, var(--color-accent) 38%, transparent)', strokeWidth: 1.8 }
+          : { stroke: 'var(--color-border-strong)', strokeWidth: 1.5 },
       }
     }),
   )
@@ -150,7 +150,7 @@ export function useWorkflowNodes(
         data: {
           icon: 'mdi-brain',
           label: name,
-          colorClass: 'node-pending',
+          nodeType: 'model',
           description: purposeZh || name,
           fields: [],
           config: { modelName: name },
@@ -232,7 +232,7 @@ export function useWorkflowNodes(
         data: {
           icon: def.icon,
           label: def.label,
-          colorClass: existing?.data.colorClass ?? 'node-pending',
+          nodeType: 'transform',
           description: def.desc,
           fields: [],
           config: { pipeline: def.pipeline },
@@ -311,7 +311,7 @@ export function useWorkflowNodes(
         data: {
           icon: 'mdi-chart-areaspline-variant',
           label: 'Compute\nCI',
-          colorClass: 'node-pending',
+          nodeType: 'evaluate',
           description: 'Bootstrap 信賴區間',
           fields: [],
           config: {},
@@ -357,8 +357,8 @@ export function useWorkflowNodes(
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
         data: id === 'preprocessor'
-          ? { icon: 'mdi-filter-cog-outline', label: 'Preprocessor', colorClass: 'node-pending', description: '資料前處理', fields: [], config: { pipeline: preprocessing } }
-          : { icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', colorClass: 'node-pending', description: '特徵工程', fields: [], config: { pipeline: featureEng } },
+          ? { icon: 'mdi-filter-cog-outline', label: 'Preprocessor', nodeType: 'transform', description: '資料前處理', fields: [], config: { pipeline: preprocessing } }
+          : { icon: 'mdi-chart-scatter-plot', label: 'Feature\nEngineering', nodeType: 'transform', description: '特徵工程', fields: [], config: { pipeline: featureEng } },
       }))
 
       const base = nodes.value.filter(n =>

@@ -8,6 +8,7 @@
         :key="i"
         class="wizard-tab"
         :class="{ 'wizard-tab--active': currentStep === i }"
+        :style="{ '--tab-color': `var(--color-node-${STEP_CATEGORIES[i]})` }"
         type="button"
         @click="currentStep = i"
       >
@@ -22,7 +23,7 @@
     </div>
 
     <!-- ── Step 0：前處理 ── -->
-    <div v-if="currentStep === 0" class="step-body">
+    <div v-if="currentStep === 0" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[0]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="newPreprocessType"
@@ -30,9 +31,9 @@
           :options="preprocessOptions.map(([value, label]) => ({ value, label }))"
           placeholder="選擇步驟類型"
         />
-        <button class="add-btn" :disabled="!newPreprocessType" type="button" @click="addPreprocessStep">
+        <AppButton :disabled="!newPreprocessType" variant="secondary" @click="addPreprocessStep">
           新增
-        </button>
+        </AppButton>
       </div>
 
       <div v-if="localPreprocessing.length > 0" class="item-list">
@@ -40,7 +41,15 @@
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
             <span class="item-name">{{ PREPROCESS_LABELS[step.type as string] ?? step.type }}</span>
-            <button class="del-btn" title="移除" type="button" @click="removePreprocessStep(i)">✕</button>
+            <AppButton
+              aria-label="移除"
+              icon-only
+              title="移除"
+              variant="ghost"
+              @click="removePreprocessStep(i)"
+            >
+              <v-icon icon="mdi-close" size="14" />
+            </AppButton>
           </div>
           <div
             v-if="step.type === 'fill_na' || step.type === 'knn_impute' || step.type === 'remove_outliers_iqr' || step.type === 'remove_outliers_zscore'"
@@ -93,7 +102,7 @@
     </div>
 
     <!-- ── Step 1：特徵工程 ── -->
-    <div v-else-if="currentStep === 1" class="step-body">
+    <div v-else-if="currentStep === 1" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[1]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="newFEType"
@@ -101,9 +110,9 @@
           :options="featureOptions.map(([value, label]) => ({ value, label }))"
           placeholder="選擇步驟類型"
         />
-        <button class="add-btn" :disabled="!newFEType" type="button" @click="addFEStep">
+        <AppButton :disabled="!newFEType" variant="secondary" @click="addFEStep">
           新增
-        </button>
+        </AppButton>
       </div>
 
       <div v-if="localFE.length > 0" class="item-list">
@@ -111,7 +120,15 @@
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
             <span class="item-name">{{ FEATURE_LABELS[step.type as string] ?? step.type }}</span>
-            <button class="del-btn" title="移除" type="button" @click="removeFEStep(i)">✕</button>
+            <AppButton
+              aria-label="移除"
+              icon-only
+              title="移除"
+              variant="ghost"
+              @click="removeFEStep(i)"
+            >
+              <v-icon icon="mdi-close" size="14" />
+            </AppButton>
           </div>
           <div
             v-if="step.type === 'select_relevant_features' || step.type === 'pca'"
@@ -149,7 +166,7 @@
     </div>
 
     <!-- ── Step 2：模型 ── -->
-    <div v-else-if="currentStep === 2" class="step-body">
+    <div v-else-if="currentStep === 2" class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[2]})` }">
       <div class="add-bar">
         <CustomSelect
           v-model="selectedModel"
@@ -158,9 +175,9 @@
           :placeholder="props.modelOptionsLoading ? '載入中…' : availableModels.length === 0 ? '已全部加入' : '選擇模型'"
           :disabled="props.modelOptionsLoading || availableModels.length === 0"
         />
-        <button class="add-btn" :disabled="!selectedModel" type="button" @click="addModel">
+        <AppButton :disabled="!selectedModel" variant="secondary" @click="addModel">
           新增
-        </button>
+        </AppButton>
       </div>
 
       <div v-if="props.models.length > 0" class="item-list">
@@ -168,7 +185,15 @@
           <div class="item-head">
             <span class="item-idx item-idx--dot" />
             <span class="item-name">{{ modelName(model) }}</span>
-            <button class="del-btn" title="移除" type="button" @click="emit('remove-model', modelName(model))">✕</button>
+            <AppButton
+              aria-label="移除"
+              icon-only
+              title="移除"
+              variant="ghost"
+              @click="emit('remove-model', modelName(model))"
+            >
+              <v-icon icon="mdi-close" size="14" />
+            </AppButton>
           </div>
         </div>
       </div>
@@ -176,7 +201,7 @@
     </div>
 
     <!-- ── Step 3：信賴區間 ── -->
-    <div v-else class="step-body">
+    <div v-else class="step-body" :style="{ '--step-color': `var(--color-node-${STEP_CATEGORIES[3]})` }">
       <div class="ci-card">
         <div class="ci-card__header">
           <div class="ci-card__info">
@@ -206,31 +231,24 @@
     </div>
 
     <div class="settings-footer">
-      <button
-        class="btn-back"
-        type="button"
-        @click="emit('back-node')"
-      >
+      <AppButton variant="secondary" @click="emit('back-node')">
         回 Data Table
-      </button>
+      </AppButton>
       <div class="settings-footer__right">
-        <button
+        <AppButton
           v-if="currentStep > 0"
-          class="btn-back"
-          type="button"
+          variant="secondary"
           @click="currentStep -= 1"
         >
           上一步
-        </button>
-        <button
-          class="btn-continue"
-          :class="{ 'btn-continue--disabled': isPrimaryDisabled }"
+        </AppButton>
+        <AppButton
           :disabled="isPrimaryDisabled"
-          type="button"
+          variant="primary"
           @click="handlePrimary"
         >
           {{ primaryLabel }}
-        </button>
+        </AppButton>
       </div>
     </div>
 
@@ -240,6 +258,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -263,6 +282,9 @@
   }>()
 
   const STEPS = ['前處理', '特徵工程', '模型', '信賴區間'] as const
+  // 每個 step 對應的節點分類色（見 docs/DESIGN_SYSTEM.md §2.3），
+  // 讓 wizard 頁籤跟畫布上真正的節點顏色一致
+  const STEP_CATEGORIES = ['transform', 'transform', 'model', 'evaluate'] as const
   const currentStep = ref(0)
 
   const LAST_STEP = STEPS.length - 1
@@ -429,7 +451,7 @@
     gap: 4px;
     padding: 4px;
     background: color-mix(in oklab, var(--color-accent) 5%, transparent);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   .wizard-tab {
@@ -440,20 +462,20 @@
     gap: 6px;
     padding: 7px 4px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--color-secondary);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
   }
 
   .wizard-tab--active {
     background: var(--color-surface);
-    color: var(--color-accent);
-    font-weight: 700;
-    box-shadow: 0 1px 5px color-mix(in oklab, var(--color-accent) 14%, transparent);
+    color: var(--tab-color, var(--color-accent));
+    font-weight: 500;
+    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-accent)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -464,15 +486,15 @@
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     flex-shrink: 0;
-    background: rgba(100, 116, 139, 0.12);
+    background: color-mix(in oklab, var(--color-secondary) 14%, transparent);
     color: var(--color-secondary);
-    transition: background 0.15s, color 0.15s;
+    transition: background var(--dur-fast), color var(--dur-fast);
   }
 
   .wizard-tab--active .wizard-tab__num {
-    background: var(--color-accent);
+    background: var(--tab-color, var(--color-accent));
     color: #fff;
   }
 
@@ -482,11 +504,8 @@
 
   .wizard-tab__required {
     font-size: 9px;
-    font-weight: 700;
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.12);
-    border-radius: 6px;
-    padding: 1px 4px;
+    font-weight: 500;
+    color: var(--color-error-text);
     white-space: nowrap;
   }
 
@@ -511,29 +530,6 @@
     min-width: 0;
   }
 
-  .add-btn {
-    height: 32px;
-    padding: 0 14px;
-    border: none;
-    border-radius: 8px;
-    background: var(--color-accent);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: opacity 0.12s;
-  }
-
-  .add-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .add-btn:not(:disabled):hover {
-    opacity: 0.82;
-  }
-
   .item-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -548,9 +544,9 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
-    border-radius: 8px;
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    border-radius: var(--radius-md);
     font-size: 13px;
   }
 
@@ -564,26 +560,26 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
-    color: var(--color-accent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 30%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 500;
     flex-shrink: 0;
   }
 
   .item-idx--dot {
-    background: color-mix(in oklab, var(--color-accent) 20%, transparent);
+    background: var(--step-color, var(--color-accent));
   }
 
   .item-name {
     flex: 1;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 13px;
     line-height: 1.3;
-    color: var(--color-ink);
+    color: var(--color-text);
     min-width: 0;
     word-break: break-word;
   }
@@ -595,7 +591,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed color-mix(in oklab, var(--color-accent) 14%, transparent);
+    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
   }
 
   .item-params .param-select {
@@ -618,41 +614,20 @@
   .param-num {
     width: 68px;
     height: 30px;
-    border: 1px solid color-mix(in oklab, var(--color-accent) 15%, transparent);
-    border-radius: 6px;
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border-radius: var(--radius-sm);
     padding: 0 8px;
     font-size: 13px;
     text-align: center;
     outline: none;
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--color-ink);
-  }
-
-  .del-btn {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: none;
-    color: #94a3b8;
-    cursor: pointer;
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: color 0.12s, background 0.12s;
-  }
-
-  .del-btn:hover {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.08);
+    background: var(--color-surface);
+    color: var(--color-text);
   }
 
   .empty-hint {
     margin: 0;
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     padding: 6px 0;
   }
 
@@ -662,9 +637,9 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
-    border-radius: 10px;
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    border-radius: var(--radius-md);
   }
 
   .ci-card__header {
@@ -682,8 +657,8 @@
 
   .ci-card__title {
     font-size: 13px;
-    font-weight: 700;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .ci-card__sub {
@@ -711,19 +686,19 @@
 
   .ci-card__status {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     padding: 5px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     text-align: center;
   }
 
   .ci-card__status--on {
-    background: color-mix(in oklab, var(--color-accent) 10%, transparent);
-    color: var(--color-accent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
   }
 
   .ci-card__status--off {
-    background: rgba(100, 116, 139, 0.1);
+    background: color-mix(in oklab, var(--color-secondary) 10%, transparent);
     color: var(--color-secondary);
   }
 
@@ -733,15 +708,15 @@
     height: 20px;
     border-radius: 999px;
     border: none;
-    background: #e2e8f0;
+    background: var(--color-border);
     cursor: pointer;
     padding: 2px;
-    transition: background 0.2s;
+    transition: background var(--dur-base);
     position: relative;
   }
 
   .ci-toggle--on {
-    background: var(--color-accent);
+    background: var(--step-color, var(--color-accent));
   }
 
   .ci-toggle__thumb {
@@ -751,7 +726,7 @@
     border-radius: 50%;
     background: var(--color-surface);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s;
+    transition: transform var(--dur-base);
     transform: translateX(0);
   }
 
@@ -775,34 +750,4 @@
     gap: 10px;
   }
 
-  .btn-continue {
-    min-width: 88px;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 10px;
-    background: var(--color-accent);
-    color: #fff;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .btn-continue--disabled {
-    background: #94a3b8;
-    cursor: not-allowed;
-  }
-
-  .btn-back {
-    min-width: 88px;
-    padding: 10px 14px;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    background: var(--color-surface);
-    color: var(--color-secondary);
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .btn-back:hover {
-    background: #f1f5f9;
-  }
 </style>

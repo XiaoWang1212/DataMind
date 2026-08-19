@@ -1,4 +1,12 @@
-export const CHART_COLORS = ['#1058d6', '#2fb380', '#e08a1e', '#c2418f', '#5b6dd6', '#d64545']
+// 借用 §2.3 的節點分類色系，避開綠/琥珀/紅——那三色是狀態語意，混進圖表資料色會誤導
+export const CHART_COLORS = [
+  'var(--color-node-visualize)',
+  'var(--color-node-model)',
+  'var(--color-node-source)',
+  'var(--color-node-transform)',
+  'var(--color-node-evaluate)',
+  'var(--color-ink-strong)',
+]
 
 export function colorForIndex (index: number): string {
   // Non-null assertion is safe: CHART_COLORS is a fixed non-empty literal and

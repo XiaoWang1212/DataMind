@@ -12,7 +12,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-file-outline",
       label: "File",
-      colorClass: "node-pending",
+      nodeType: "source",
       description: "上傳資料檔案",
       fields: [],
       config: { fileName: "" },
@@ -27,7 +27,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-table",
       label: "Data\nTable",
-      colorClass: "node-pending",
+      nodeType: "source",
       description: "設定欄位型別與目標變數",
       fields: [],
       config: {},
@@ -42,7 +42,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-chart-histogram",
       label: "Distribution",
-      colorClass: "node-pending",
+      nodeType: "visualize",
       description: "資料分布視覺化",
       fields: [],
       config: {},
@@ -57,7 +57,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-tune-variant",
       label: "Settings",
-      colorClass: "node-pending",
+      nodeType: "model",
       description: "設定前處理、特徵工程與模型",
       fields: [],
       config: {
@@ -76,7 +76,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-test-tube",
       label: "Test &\nScore",
-      colorClass: "node-pending",
+      nodeType: "evaluate",
       description: "切分資料、選擇評估指標",
       fields: [],
       config: {
@@ -96,7 +96,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-chart-bell-curve",
       label: "Feature\nImportance",
-      colorClass: "node-pending",
+      nodeType: "evaluate",
       description: "顯示特徵重要性，協助找出影響模型的欄位",
       fields: [],
       config: {},
@@ -111,7 +111,7 @@ export const INITIAL_NODES: FlowNode[] = [
     data: {
       icon: "mdi-grid",
       label: "Confusion\nMatrix",
-      colorClass: "node-pending",
+      nodeType: "evaluate",
       description: "輸出混淆矩陣",
       fields: [],
       config: { normalize: "none" },

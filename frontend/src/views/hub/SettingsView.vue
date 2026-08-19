@@ -1,10 +1,6 @@
 <template>
-  <div>
-    <!-- Page header -->
-    <div class="page-header">
-      <h1 class="page-title">設定</h1>
-      <p class="page-sub">設定您的研究環境</p>
-    </div>
+  <div class="settings">
+    <PageHeader subtitle="設定您的研究環境" title="設定" />
 
     <!-- General Settings -->
     <div class="settings-card">
@@ -32,11 +28,11 @@
           <div class="setting-desc">自動儲存框架提取結果</div>
         </div>
         <button
+          :aria-checked="autoSave"
           class="toggle-btn"
           :class="{ 'toggle-btn--on': autoSave }"
-          @click="autoSave = !autoSave"
           role="switch"
-          :aria-checked="autoSave"
+          @click="autoSave = !autoSave"
         >
           <span class="toggle-thumb" />
         </button>
@@ -53,7 +49,7 @@
           v-model="nlpEndpoint"
           class="api-input"
           placeholder="https://api.your-service.internal"
-        />
+        >
       </div>
 
       <div class="api-field">
@@ -61,225 +57,195 @@
         <input
           v-model="apiKey"
           class="api-input"
-          type="password"
           placeholder="••••••••••••••••"
-        />
+          type="password"
+        >
       </div>
     </div>
 
     <!-- Save button -->
     <div class="save-row">
-      <button class="save-btn" @click="saveSettings">儲存設定</button>
-      <div v-if="saved" class="save-msg">
-        <v-icon icon="mdi-check-circle" size="16" color="#16a34a" />
+      <AppButton variant="primary" @click="saveSettings">儲存設定</AppButton>
+      <StatusBadge v-if="saved" status="success">
+        <v-icon icon="mdi-check-circle-outline" size="14" />
         設定已儲存
-      </div>
+      </StatusBadge>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+  import { ref } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import StatusBadge from '@/components/ui/StatusBadge.vue'
 
-const timeout = ref('10')
-const autoSave = ref(true)
-const nlpEndpoint = ref('https://api.nlp-service.internal')
-const apiKey = ref('')
-const saved = ref(false)
+  const timeout = ref('10')
+  const autoSave = ref(true)
+  const nlpEndpoint = ref('https://api.nlp-service.internal')
+  const apiKey = ref('')
+  const saved = ref(false)
 
-function saveSettings() {
-  saved.value = true
-  setTimeout(() => { saved.value = false }, 2500)
-}
+  function saveSettings () {
+    saved.value = true
+    setTimeout(() => {
+      saved.value = false
+    }, 2500)
+  }
 </script>
 
 <style scoped>
-.page-header {
-  margin-bottom: 24px;
-}
+  .settings {
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
 
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--color-ink);
-  margin: 0 0 5px;
-}
+  /* ── Settings card ── */
+  .settings-card {
+    margin-bottom: 16px;
+    padding: 22px 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    color: var(--color-text);
+  }
 
-.page-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
-  margin: 0;
-}
+  .card-title {
+    margin-bottom: 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-/* ── Settings card ── */
-.settings-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 22px 24px;
-  margin-bottom: 16px;
-  color: var(--color-ink);
-}
+  /* ── Setting row ── */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+  }
 
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 20px;
-}
+  .setting-divider {
+    height: 1px;
+    margin: 16px 0;
+    background: var(--color-border);
+  }
 
-/* ── Setting row ── */
-.setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 4px 0;
-}
+  .setting-info {
+    flex: 1;
+  }
 
-.setting-divider {
-  height: 1px;
-  background: #f0f1f3;
-  margin: 16px 0;
-}
+  .setting-name {
+    margin-bottom: 3px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
 
-.setting-info {
-  flex: 1;
-}
+  .setting-desc {
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
 
-.setting-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-accent);
-  margin-bottom: 3px;
-}
+  /* ── Timeout select ── */
+  .timeout-select {
+    min-width: 110px;
+    height: 36px;
+    padding: 0 30px 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+    cursor: pointer;
+    appearance: auto;
+    color-scheme: light;
+  }
 
-.setting-desc {
-  font-size: 12.5px;
-  color: var(--color-secondary);
-}
+  .timeout-select:focus {
+    border-color: var(--color-ink);
+  }
 
-/* ── Timeout select ── */
-.timeout-select {
-  height: 36px;
-  padding: 0 30px 0 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
-  background-color: #ffffff;
-  font-size: 13.5px;
-  color: var(--color-ink);
-  outline: none;
-  cursor: pointer;
-  appearance: auto;
-  min-width: 110px;
-  color-scheme: light;
-}
+  /* ── Toggle ── */
+  .toggle-btn {
+    position: relative;
+    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-border);
+    cursor: pointer;
+    transition: background-color var(--dur-base) var(--ease-in-out);
+  }
 
-.timeout-select:focus {
-  border-color: var(--color-accent);
-}
+  .toggle-btn--on {
+    background: var(--color-ink);
+  }
 
-/* ── Toggle ── */
-.toggle-btn {
-  width: 44px;
-  height: 24px;
-  border-radius: 99px;
-  border: none;
-  cursor: pointer;
-  background: #e5e7eb;
-  position: relative;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    /* 陰影帶藏青而非純黑，跟 --shadow-* 同一個光源與色調；滑塊小，用更緊的擴散 */
+    box-shadow: 0 1px 3px rgba(14, 30, 66, 0.24);
+    transition: left var(--dur-base) var(--ease-in-out);
+  }
 
-.toggle-btn--on {
-  background: var(--color-accent);
-}
+  .toggle-btn--on .toggle-thumb {
+    left: 22px;
+  }
 
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  transition: left 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
+  /* ── API fields ── */
+  .api-field {
+    margin-bottom: 16px;
+  }
 
-.toggle-btn--on .toggle-thumb {
-  left: 22px;
-}
+  .api-field:last-child {
+    margin-bottom: 0;
+  }
 
-/* ── API fields ── */
-.api-field {
-  margin-bottom: 16px;
-}
+  .api-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
 
-.api-field:last-child {
-  margin-bottom: 0;
-}
+  .api-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-alt);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--color-text);
+    outline: none;
+    transition: border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+    color-scheme: light;
+  }
 
-.api-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-secondary);
-  margin-bottom: 7px;
-}
+  .api-input:focus {
+    border-color: var(--color-ink);
+    background-color: var(--color-surface);
+  }
 
-.api-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
-  font-size: 13.5px;
-  color: var(--color-ink);
-  background-color: #f9fafb;
-  outline: none;
-  box-sizing: border-box;
-  font-family: 'Roboto Mono', monospace;
-  transition: border-color 0.15s;
-  color-scheme: light;
-}
-
-.api-input:focus {
-  border-color: var(--color-accent);
-  background-color: #ffffff;
-}
-
-/* ── Save ── */
-.save-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.save-btn {
-  height: 40px;
-  padding: 0 24px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.save-btn:hover {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
-
-.save-msg {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  color: #16a34a;
-  font-weight: 500;
-}
+  /* ── Save ── */
+  .save-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
 </style>

@@ -325,7 +325,7 @@
     --card-bg: var(--color-surface);
     --line: #d8dbe3;
     --line-soft: #e8ebf1;
-    --text-main: var(--color-ink);
+    --text-main: var(--color-text);
     --text-secondary: var(--color-secondary);
     --brand: var(--color-accent);
     --brand-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
@@ -363,7 +363,7 @@
   }
 
   .back-btn {
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .toolbar-tabs {
@@ -390,7 +390,7 @@
 
   .toolbar-tab--active {
     background: var(--color-surface);
-    color: var(--color-ink);
+    color: var(--color-text);
     box-shadow: 0 1px 3px rgba(20, 38, 84, 0.12);
   }
 
@@ -429,7 +429,7 @@
     margin: 0;
     font-size: 12px;
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .metric-value {
@@ -450,7 +450,7 @@
     border-radius: 14px;
     color: var(--color-inverted);
     padding: 14px 16px;
-    background: linear-gradient(102deg, var(--color-accent) 0%, color-mix(in oklab, var(--color-accent) 70%, var(--color-ink)) 100%);
+    background: linear-gradient(102deg, var(--color-accent) 0%, color-mix(in oklab, var(--color-accent) 70%, var(--color-text)) 100%);
     animation: reveal-up 0.5s ease both;
     animation-delay: 0.12s;
   }
@@ -546,7 +546,7 @@
 
   .result-table th {
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
     background: var(--color-surface);
   }
 
@@ -556,7 +556,7 @@
 
   .model-name {
     font-weight: 700;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .score-best {

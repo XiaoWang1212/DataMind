@@ -1,250 +1,86 @@
 <template>
   <div class="mapping-page">
-    <RouterLink class="back-link" to="/hub/projects">
-      <v-icon icon="mdi-arrow-left" size="15" />
-      返回專案列表
-    </RouterLink>
-
-    <div class="page-header">
-      <h1 class="page-title">欄位對齊</h1>
-      <span v-if="!loading && !loadError" class="page-progress">
-        已確認 {{ confirmedCount }} / {{ items.length }}
-        <template v-if="reviewCount > 0">
-          <span class="page-progress-sep">·</span>
-          <span class="page-progress-review">{{ reviewCount }} 個待確認</span>
-        </template>
-      </span>
-      <button
-        v-if="reviewCount > 0"
-        class="confirm-all-btn"
-        type="button"
-        @click="confirmAll"
-      >
-        全部確認
-      </button>
-    </div>
+    <PageHeader title="欄位對齊">
+      <template #back>
+        <RouterLink class="back-link" to="/hub/projects">
+          <v-icon icon="mdi-arrow-left" size="15" />
+          返回專案列表
+        </RouterLink>
+      </template>
+      <template #meta>
+        <span v-if="!loading && !loadError" class="page-progress">
+          已確認 {{ confirmedCount }} / {{ items.length }}
+          <template v-if="reviewCount > 0">
+            <span class="page-progress-sep">·</span>
+            <span class="page-progress-review">{{ reviewCount }} 個待確認</span>
+          </template>
+        </span>
+        <AppButton v-if="reviewCount > 0" variant="secondary" @click="confirmAll">
+          全部確認
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <div v-if="loadError" class="load-error">
       <v-icon icon="mdi-alert-circle-outline" size="20" />
       <span>{{ loadError }}</span>
-      <RouterLink to="/hub/projects/new" class="load-error-link">重新上傳資料集</RouterLink>
+      <RouterLink class="load-error-link" to="/hub/projects/new">重新上傳資料集</RouterLink>
     </div>
 
     <div v-else class="mapping-layout">
       <!-- 左：對映表 + 資料預覽 -->
       <section class="mapping-main">
-        <div v-if="loading" class="mapping-loading">
-          <v-progress-circular indeterminate size="28" color="accent" />
-          <span>正在自動配對…</span>
+        <!-- 骨架屏用五行模擬對映表的列，載入前後的版面高度才接近 -->
+        <div v-if="loading" class="mapping-skeleton">
+          <div v-for="n in 5" :key="n" class="skeleton-line" />
         </div>
 
-        <div v-else class="mapping-scroll">
-        <table class="mapping-table">
-          <thead>
-            <tr>
-              <th class="col-var">論文變數</th>
-              <th class="col-col">你的欄位</th>
-              <th class="col-status">狀態</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in sortedItems"
-              :key="item.paper_variable"
-              :class="{ 'row-flash': flashed.has(item.paper_variable) }"
-            >
-              <td class="col-var">
-                <div class="var-name-row">
-                  <span
-                    v-if="isTarget(item)"
-                    aria-label="預測目標"
-                    class="target-badge"
-                    role="img"
-                  >★</span>
-                  <span class="var-name" :title="item.paper_variable">{{ item.paper_variable }}</span>
-                  <v-tooltip
-                    v-if="item.definition"
-                    content-class="status-tooltip"
-                    location="bottom"
-                    max-width="240"
-                    :text="item.definition"
-                  >
-                    <template #activator="{ props }">
-                      <v-icon
-                        v-bind="props"
-                        class="var-info-icon"
-                        icon="mdi-information-outline"
-                        size="14"
-                      />
-                    </template>
-                  </v-tooltip>
-                </div>
-                <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
-              </td>
-              <td class="col-col">
-                <CustomSelect
-                  :aria-label="`${item.paper_variable} 對應到的資料表欄位`"
-                  :highlight="item.status === 'UNMATCHED'"
-                  :model-value="item.matched_user_column ?? selectionKey(item)"
-                  :options="optionsFor(item)"
-                  placeholder="請選擇"
-                  @update:model-value="value => applySelection(item, value)"
-                />
-                <div v-if="item.sample_values.length" class="col-samples">
-                  {{ item.sample_values.slice(0, 3).join('、') }}
-                </div>
-                <!-- 配不出來時給幾個最接近的讓使用者一鍵選，不必自己在幾十個欄位裡翻 -->
-                <div v-if="item.status === 'UNMATCHED' && item.candidate_columns.length" class="col-candidates">
-                  <span class="candidates-label">可能是</span>
-                  <button
-                    v-for="name in item.candidate_columns"
-                    :key="name"
-                    class="candidate-chip"
-                    :title="`選擇 ${name}`"
-                    type="button"
-                    @click="applySelection(item, name)"
-                  >
-                    {{ name }}
-                  </button>
-                </div>
-              </td>
-              <td class="col-status">
-                <div class="status-cell">
-                  <!-- 用 v-tooltip 而非 CSS 絕對定位：外層 .mapping-scroll 有 overflow，
-                       自製的提示會被裁掉，v-tooltip 會 teleport 出去 -->
-                  <v-tooltip
-                    content-class="status-tooltip"
-                    location="bottom end"
-                    max-width="210"
-                    :text="STATUS_HINT[item.status]"
-                  >
-                    <template #activator="{ props }">
-                      <span
-                        v-bind="props"
-                        class="status-chip"
-                        :class="`status-chip--${item.status.toLowerCase()}`"
-                        tabindex="0"
-                      >
-                        {{ STATUS_LABEL[item.status] }}
-                      </span>
-                    </template>
-                  </v-tooltip>
-                  <button
-                    v-if="item.status === 'NEEDS_REVIEW'"
-                    :aria-label="`${item.paper_variable}：對應正確，標記為已確認`"
-                    class="check-btn"
-                    title="對應正確，標記為已確認"
-                    type="button"
-                    @click="confirmRow(item)"
-                  >
-                    <v-icon icon="mdi-check" size="16" />
-                  </button>
-                  <button
-                    v-else-if="item.status === 'CONFIRMED'"
-                    :aria-label="`${item.paper_variable}：取消確認`"
-                    class="undo-btn"
-                    title="取消確認"
-                    type="button"
-                    @click="unconfirmRow(item)"
-                  >
-                    <v-icon icon="mdi-undo-variant" size="14" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        </div>
+        <MappingTable
+          v-else
+          :flashed="flashed"
+          :items="items"
+          :target-name="targetName"
+          :user-columns="userColumns"
+          @confirm="confirmRow"
+          @unconfirm="unconfirmRow"
+          @update:selection="applySelection"
+        />
 
-        <div v-if="!loading && previewColumns.length" class="preview-block">
-          <div class="preview-title">資料預覽（前 {{ previewRows.length }} 筆）</div>
-          <div class="preview-scroll">
-            <table class="preview-table">
-              <thead>
-                <tr><th v-for="col in previewColumns" :key="col">{{ col }}</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, i) in previewRows" :key="i">
-                  <td v-for="(cell, j) in row" :key="j">{{ cell }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DatasetPreview
+          v-if="!loading && previewColumns.length > 0"
+          :columns="previewColumns"
+          :rows="previewRows"
+        />
 
         <div class="mapping-footer">
           <span v-if="saveError" class="footer-error">{{ saveError }}</span>
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
-          <button class="skip-btn" type="button" @click="skipToWorkflow">
+          <AppButton variant="ghost" @click="skipToWorkflow">
             略過（開發用）
-          </button>
-          <button class="confirm-btn" :disabled="!canConfirm || confirming" @click="confirmAndRun">
+          </AppButton>
+          <AppButton :disabled="!canConfirm || confirming" variant="primary" @click="confirmAndRun">
             {{ confirming ? '處理中…' : '確認並執行' }}
             <v-icon v-if="!confirming" icon="mdi-arrow-right" size="17" />
-          </button>
+          </AppButton>
         </div>
       </section>
 
       <!-- 右：AI 對話 -->
-      <aside class="mapping-chat">
-        <div class="chat-head">
-          <div class="chat-head-icon">
-            <v-icon icon="mdi-chat-processing-outline" size="18" />
-          </div>
-          <span>AI 助理</span>
-        </div>
-
-        <div v-if="loading" class="chat-offline">
-          AI 助理需等待欄位對應結果產生後才能使用。
-        </div>
-        <div v-else-if="!aiAvailable" class="chat-offline">
-          AI 建議暫時無法使用，可用左側下拉選單手動對應。
-        </div>
-
-        <div ref="chatScroll" class="chat-body">
-          <div v-if="!loading && aiAvailable" class="chat-bubble chat-bubble--assistant chat-bubble--opener">
-            {{ CHAT_OPENER }}
-          </div>
-          <div
-            v-for="(message, i) in chatHistory"
-            :key="i"
-            class="chat-bubble"
-            :class="`chat-bubble--${message.role}`"
-          >
-            {{ message.content }}
-          </div>
-          <div v-if="chatPending" class="chat-bubble chat-bubble--assistant chat-bubble--pending">
-            思考中…
-          </div>
-        </div>
-
-        <form class="chat-input" @submit.prevent="sendMessage">
-          <textarea
-            ref="chatFieldRef"
-            v-model="chatDraft"
-            class="chat-field"
-            :disabled="!aiAvailable || chatPending"
-            placeholder="例如：Braden 分數是 braden_total"
-            rows="1"
-            @input="autoGrowChatField"
-            @keydown="onChatFieldKeydown"
-          />
-          <button
-            class="chat-send"
-            type="submit"
-            :disabled="!aiAvailable || chatPending || !chatDraft.trim()"
-          >
-            送出
-          </button>
-        </form>
-      </aside>
+      <MappingChatPanel
+        :available="aiAvailable"
+        :history="chatHistory"
+        :loading="loading"
+        :pending="chatPending"
+        @send="sendMessage"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+  import type { ChatMessage as StoredChatMessage } from '@/api/resultAnalysis'
   import type {
     ChatMessage,
     MappingAction,
@@ -252,10 +88,16 @@
     PaperVariable,
     UserColumn,
   } from '@/types/fieldMapping'
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
-  import CustomSelect from '@/components/common/CustomSelect.vue'
+  import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
+  import MappingChatPanel from '@/components/hub/fieldMapping/MappingChatPanel.vue'
+  import MappingTable from '@/components/hub/fieldMapping/MappingTable.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import PageHeader from '@/components/ui/PageHeader.vue'
+  import { useMappingDraft } from '@/composables/fieldMapping/useMappingDraft'
+  import { useMappingHistory } from '@/composables/fieldMapping/useMappingHistory'
   import {
     loadChatHistoryFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -264,39 +106,16 @@
   } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
+  import { SKIP_VALUE } from '@/types/fieldMapping'
   import { readTablePreview, rewriteDatasetHeader } from '@/utils/dataset'
-
-  const SKIP_VALUE = '__skip__'
-
-  const STATUS_LABEL: Record<string, string> = {
-    CONFIRMED: '已確認',
-    AUTO_MATCHED: '已對應',
-    NEEDS_REVIEW: '待確認',
-    UNMATCHED: '未對應',
-    SKIPPED: '不使用',
-  }
-
-  // 開場白：不進 chatHistory，不存草稿
-  const CHAT_OPENER = '我可以協助調整左側的欄位對應，請直接以文字說明您的需求，'
-    + '例如「年齡對應到 pt_age」或「BMI 這一欄資料表中沒有」。'
-
-  // 滑過標籤時顯示。用一般說法，避免「信心度」這類系統內部用語
-  const STATUS_HINT: Record<string, string> = {
-    CONFIRMED: '您已確認此對應正確。如需修改，請點選右側的復原按鈕。',
-    AUTO_MATCHED: '欄位名稱與資料內容皆相符，可直接使用。',
-    NEEDS_REVIEW: '兩邊名稱不同，此為 AI 依語意提供的建議對應，請確認無誤後點選右側的勾選按鈕。',
-    UNMATCHED: '資料表中沒有相符的欄位，請由左側選單自行指定。',
-    SKIPPED: '您已指定資料表中沒有此變數，執行時將會略過。',
-  }
 
   const route = useRoute()
   const router = useRouter()
   const projectStore = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
-  // Project.id 在資料庫裡是 int；useWorkflowStorage 的參數是字串，呼叫時要轉
+  // Project.id 在資料庫是 int，useWorkflowStorage 收字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
-  const draftKey = computed(() => `datamind_field_mapping_draft_${projectId.value}`)
 
   const loading = ref(true)
   const loadError = ref('')
@@ -307,56 +126,35 @@
   const targetName = ref('')
   const datasetFile = ref<File | null>(null)
   const flashed = ref(new Set<string>())
-  // 使用者手動選過的變數：後續 AI 建議不覆蓋
+  // 使用者手動選過的變數，後續 AI 建議不覆蓋
   const locked = ref(new Set<string>())
 
   const aiAvailable = ref(false)
-  // 確認並執行失敗時顯示給使用者；下次改選項就清掉，避免舊錯誤一直卡著
+  // 確認並執行失敗時顯示，下次改動就清掉，避免舊錯誤一直留著
   const saveError = ref('')
 
   const chatHistory = ref<ChatMessage[]>([])
-  const chatDraft = ref('')
   const chatPending = ref(false)
-  const chatScroll = ref<HTMLElement | null>(null)
-  const chatFieldRef = ref<HTMLTextAreaElement | null>(null)
   const confirming = ref(false)
 
-  // 約 5 行，超過就內部捲動
-  const CHAT_FIELD_MAX_HEIGHT = 118
-
-  function autoGrowChatField (): void {
-    const el = chatFieldRef.value
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, CHAT_FIELD_MAX_HEIGHT)}px`
-    // 沒滿高度就不留 scrollbar，一行字的時候才不會看起來怪怪的
-    el.style.overflowY = el.scrollHeight > CHAT_FIELD_MAX_HEIGHT ? 'auto' : 'hidden'
-  }
-
-  function onChatFieldKeydown (event: KeyboardEvent): void {
-    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
-    event.preventDefault()
-    void sendMessage()
-  }
-
-  // Ctrl+Z 用的快照堆疊。上限避免使用者改很久之後記憶體一直長大
-  const MAX_UNDO = 50
-  interface Snapshot { items: MappingItem[], locked: string[] }
-  const undoStack = ref<Snapshot[]>([])
-  const redoStack = ref<Snapshot[]>([])
-
-  function isTarget (item: MappingItem): boolean {
-    return item.paper_variable === targetName.value
-  }
-
-  // target 永遠排最前面：它配錯的話整個實驗都白做，不能混在幾十列裡被滑過去
-  const sortedItems = computed(() => {
-    const list = [...items.value]
-    list.sort((a, b) => Number(isTarget(b)) - Number(isTarget(a)))
-    return list
+  const { saveDraft, loadDraft, clearDraft } = useMappingDraft({
+    projectId,
+    items,
+    locked,
+    aiAvailable,
+    userColumns,
   })
 
-  // 綠色的兩種：演算法有把握的，和使用者親自點過確認的
+  const { pushHistory } = useMappingHistory({
+    items,
+    locked,
+    onRestore: () => {
+      saveError.value = ''
+      saveDraft()
+    },
+  })
+
+  // 顯示為綠色的兩種狀態，自動配對成功的與使用者確認過的
   const confirmedCount = computed(
     () => items.value.filter(
       i => i.status === 'AUTO_MATCHED' || i.status === 'CONFIRMED',
@@ -370,31 +168,7 @@
   )
   const canConfirm = computed(() => !loading.value && unmatchedCount.value === 0)
 
-  function selectionKey (item: MappingItem): string {
-    return item.status === 'SKIPPED' ? SKIP_VALUE : ''
-  }
-
-  function optionsFor (item: MappingItem) {
-    const taken = new Map<string, string>()
-    for (const other of items.value) {
-      if (other.paper_variable !== item.paper_variable && other.matched_user_column) {
-        taken.set(other.matched_user_column, other.paper_variable)
-      }
-    }
-    const options = userColumns.value.map(column => ({
-      value: column.name,
-      label: column.name,
-      hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
-      muted: taken.has(column.name),
-    }))
-    // target 一定要有對應欄位，不提供「沒有這個變數」的選項
-    if (!isTarget(item)) {
-      options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined, muted: false })
-    }
-    return options
-  }
-
-  /** 順手鎖住：親自確認過的列，後續 AI 建議不該再改動它。 */
+  // 確認過的列一併鎖住，後續 AI 建議不再改動
   function confirmRow (item: MappingItem): void {
     if (item.status !== 'NEEDS_REVIEW') return
     pushHistory()
@@ -404,64 +178,7 @@
     saveDraft()
   }
 
-  /**
-   * 改動前先存快照。沒有復原的話，點錯一步只能整頁重跑。
-   *
-   * locked 一定要跟著存：只還原 items 的話，復原後那一列看起來回到未對應，
-   * 但它還留在 locked 裡，之後所有 AI 建議都會被靜默忽略，而聊天仍回「已更新」。
-   */
-  function snapshot (): Snapshot {
-    return { items: structuredClone(toRaw(items.value)), locked: [...locked.value] }
-  }
-
-  function restore (snap: Snapshot): void {
-    items.value = snap.items
-    locked.value = new Set(snap.locked)
-    saveError.value = ''
-    saveDraft()
-  }
-
-  function pushHistory (): void {
-    undoStack.value.push(snapshot())
-    if (undoStack.value.length > MAX_UNDO) undoStack.value.shift()
-    // 做了新動作，原本能重做的那條分支就失效了
-    redoStack.value = []
-  }
-
-  function undo (): void {
-    const previous = undoStack.value.pop()
-    if (!previous) return
-    redoStack.value.push(snapshot())
-    restore(previous)
-  }
-
-  function redo (): void {
-    const next = redoStack.value.pop()
-    if (!next) return
-    undoStack.value.push(snapshot())
-    restore(next)
-  }
-
-  /** 焦點在輸入框時不攔截：那時使用者要復原的是自己打的字。 */
-  function onKeydown (event: KeyboardEvent): void {
-    if (!(event.metaKey || event.ctrlKey)) return
-
-    // 重做的按法各家不同：Mac 是 ⌘⇧Z，Windows 上 Ctrl+Y 與 Ctrl+Shift+Z 都常見，三種都收
-    const key = event.key.toLowerCase()
-    const isRedo = (key === 'z' && event.shiftKey) || key === 'y'
-    const isUndo = key === 'z' && !event.shiftKey
-    if (!isRedo && !isUndo) return
-
-    const target = event.target as HTMLElement | null
-    const tag = target?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
-
-    event.preventDefault()
-    if (isRedo) redo()
-    else undo()
-  }
-
-  /** 按錯了要能反悔，不然使用者只敢把整頁重跑一次。 */
+  // 讓使用者能取消確認，避免只能整頁重跑
   function unconfirmRow (item: MappingItem): void {
     if (item.status !== 'CONFIRMED') return
     pushHistory()
@@ -470,7 +187,7 @@
     saveDraft()
   }
 
-  /** 整批當成一步：不然使用者要按 N 次 Ctrl+Z 才回得去 */
+  // 使用者整批修改當作一步，避免使用者需要多按 Ctrl+Z
   function confirmAll (): void {
     if (reviewCount.value === 0) return
     pushHistory()
@@ -485,8 +202,7 @@
   }
 
   function applySelection (item: MappingItem, value: string): void {
-    // 選到跟現在一樣的東西就什麼都不做。少了這道，使用者只是打開下拉看一眼、
-    // 又點回原本那個，「已對應」就會莫名其妙降成「待確認」
+    // 選到跟目前相同的值就不處理，避免重新點選同一欄位時狀態被降級
     const unchanged = value === SKIP_VALUE
       ? item.status === 'SKIPPED'
       : value === item.matched_user_column
@@ -506,7 +222,7 @@
       return
     }
 
-    // 同一個欄位不能同時服務兩個變數：搶過來，原持有者退回未對應
+    // 一個欄位只能對應一個變數，原本對應到的變數退回未對應
     for (const other of items.value) {
       if (other.paper_variable !== item.paper_variable && other.matched_user_column === value) {
         other.matched_user_column = null
@@ -522,66 +238,12 @@
     item.sample_values = column?.sample_values ?? []
     item.candidate_columns = []
     item.confidence_score = 1
-    // 自己從下拉挑的就是已確認：標成「待確認」等於要他確認自己剛做的動作
+    // 使用者自己選的直接視為已確認，不需要再確認一次自己的操作
     item.status = 'CONFIRMED'
     saveDraft()
   }
 
-  /**
-   * 存編輯中的草稿。沒有它的話重新整理會把改過的全部沖掉，還會再打一次 Gemini。
-   * 真正的結果是按下「確認並執行」才寫進資料庫。
-   */
-  function saveDraft (): void {
-    if (!projectId.value) return
-    try {
-      localStorage.setItem(draftKey.value, JSON.stringify({
-        columns: columnSignature(),
-        items: items.value,
-        locked: [...locked.value],
-        aiAvailable: aiAvailable.value,
-      }))
-    } catch (error) {
-      console.warn('無法保存欄位對映草稿', error)
-    }
-  }
-
-  function loadDraft (): boolean {
-    try {
-      const raw = localStorage.getItem(draftKey.value)
-      if (!raw) return false
-      const saved = JSON.parse(raw) as {
-        columns?: string
-        items?: MappingItem[]
-        locked?: string[]
-        aiAvailable?: boolean
-      }
-      // 換了資料集就不能沿用舊草稿，裡面的欄位名已經對不上了
-      if (saved.columns !== columnSignature()) {
-        clearDraft()
-        return false
-      }
-      if (!Array.isArray(saved.items) || saved.items.length === 0) return false
-      items.value = saved.items
-      locked.value = new Set<string>(saved.locked)
-      // 沿用當初的可用狀態：寫死 true 的話，Gemini 掛掉時重整會讓離線提示消失、
-      // 輸入框又變成可打，送出才發現還是不通
-      aiAvailable.value = saved.aiAvailable ?? true
-      return true
-    } catch {
-      localStorage.removeItem(draftKey.value)
-      return false
-    }
-  }
-
-  function columnSignature (): string {
-    return userColumns.value.map(c => c.name).join('|')
-  }
-
-  function clearDraft (): void {
-    localStorage.removeItem(draftKey.value)
-  }
-
-  /** 被改動的列閃一下：沒有這個提示，使用者不知道剛才那一步改到了哪裡。 */
+  // 讓被改動的列閃一下，提示改到哪些欄位
   function flash (variable: string): void {
     flashed.value.add(variable)
     setTimeout(() => {
@@ -591,10 +253,7 @@
     flashed.value = new Set(flashed.value)
   }
 
-  /**
-   * main.ts 那兩個 load 沒有 await，重新整理時 onMounted 可能先跑完，
-   * 拿到空陣列就會誤判成「框架沒有變數清單」。
-   */
+  // main.ts 的兩個 load 沒有 await，重整時 onMounted 可能先跑完而拿到空陣列
   async function ensureStoresLoaded (): Promise<void> {
     const waiting: Promise<void>[] = []
     if (projectStore.projects.length === 0) waiting.push(projectStore.loadProjects())
@@ -625,7 +284,7 @@
       definition: feature.description_zh ?? feature.descriptionZh,
     }))
 
-    // target 不在 features 裡時自己補一筆，否則使用者無從指定預測目標
+    // 預測目標不在 features 裡時補一筆，否則使用者無從指定
     if (targetCol && !features.some(f => f.name === targetCol)) {
       variables.unshift({ name: targetCol, type: 'categorical', is_target: true })
     }
@@ -638,7 +297,7 @@
     return await loadWorkflowDataFileFromStorage(String(projectId.value))
   }
 
-  /** 把 AI 回傳的 diff 套用到本地狀態；使用者手動選過的列不覆蓋。 */
+  // 把 AI 回傳的異動套用到本地狀態，使用者手動選過的列不覆蓋
   function applyActions (actions: MappingAction[]): string[] {
     const changed: string[] = []
     for (const action of actions) {
@@ -646,8 +305,7 @@
       if (!item || locked.value.has(item.paper_variable)) continue
 
       if (action.matched_user_column) {
-        // 欄位被手動鎖定的列占用時，整個動作放棄。
-        // 只做一半（新的設了、舊的沒清）比什麼都不做更糟。
+        // 欄位被鎖定的列占用時整個動作放棄，避免只完成一半
         const lockedHolder = items.value.find(
           other => other.paper_variable !== item.paper_variable
             && other.matched_user_column === action.matched_user_column
@@ -655,7 +313,7 @@
         )
         if (lockedHolder) continue
 
-        // 搶欄位：原持有者退回未對應，同樣要閃給使用者看
+        // 原本對應到的變數退回未對應，同樣閃一下提示使用者
         for (const other of items.value) {
           if (
             other.paper_variable !== item.paper_variable
@@ -678,25 +336,16 @@
       }
 
       item.confidence_score = action.confidence_score
-      // 後端已擋一層，這裡再擋一層：AI 提的對應一律要人確認，不能自己變綠
+      // AI 提的對應一律要人確認，不直接標為已對應（後端也有擋一層）
       item.status = action.status === 'AUTO_MATCHED' ? 'NEEDS_REVIEW' : action.status
       changed.push(item.paper_variable)
     }
     return changed
   }
 
-  async function sendMessage (): Promise<void> {
-    const message = chatDraft.value.trim()
-    if (!message || chatPending.value) return
-
-    chatDraft.value = ''
-    if (chatFieldRef.value) {
-      chatFieldRef.value.style.height = 'auto'
-      chatFieldRef.value.style.overflowY = 'hidden'
-    }
+  async function sendMessage (message: string): Promise<void> {
     chatHistory.value.push({ role: 'user', content: message })
     chatPending.value = true
-    await scrollChatToBottom()
 
     try {
       const { actions, reply } = await refineFieldMapping({
@@ -721,19 +370,13 @@
       })
     } finally {
       chatPending.value = false
-      // 前綴 mapping- 才不會和 ResultView 的聊天撞 key。
-      // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存所以轉型即可。
+      // 前綴 mapping- 避免和 ResultView 的聊天撞 key。
+      // 那組函式的型別是 { role, text }，這裡是 { role, content }，純本地暫存故直接轉型
       saveChatHistoryToStorage(
         `mapping-${projectId.value}`,
-        chatHistory.value as unknown as import('@/api/resultAnalysis').ChatMessage[],
+        chatHistory.value as unknown as StoredChatMessage[],
       )
-      await scrollChatToBottom()
     }
-  }
-
-  async function scrollChatToBottom (): Promise<void> {
-    await nextTick()
-    if (chatScroll.value) chatScroll.value.scrollTop = chatScroll.value.scrollHeight
   }
 
   /**
@@ -753,12 +396,8 @@
     router.push(`/workflow?project=${projectId.value}`)
   }
 
-  /**
-   * 依對映改寫表頭後交給 workflow。
-   *
-   * 只改名、不刪欄位：使用者沒對應到的欄位在 workflow 那邊還是可以選用，
-   * 在這裡刪掉只會讓他失去選擇。
-   */
+  // 依對映改寫表頭後交給 workflow。
+  // 只改名不刪欄位，未對應的欄位在 workflow 仍可選用
   async function confirmAndRun (): Promise<void> {
     if (!datasetFile.value) return
     confirming.value = true
@@ -779,12 +418,11 @@
         renameByColumn.set(info.column, variable)
       }
 
-      // 先改寫檔案再寫資料庫：反過來的話，檔案沒寫成功但對映已存檔，
-      // 下次點專案就會帶著沒改過表頭的資料集直接進 workflow，錯得無聲無息
+      // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
       const renamed = await rewriteDatasetHeader(datasetFile.value, renameByColumn)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
-      // IndexedDB 寫入失敗只會在 console 留紀錄、不會拋例外，只好回讀確認
+      // IndexedDB 寫入失敗不會拋例外，只在 console 留紀錄，因此回讀確認
       const stored = await loadWorkflowDataFileFromStorage(String(projectId.value))
       if (!stored || stored.size !== renamed.size) {
         throw new Error('資料檔案沒有存進瀏覽器儲存空間')
@@ -802,17 +440,13 @@
       clearDraft()
       router.push(`/workflow?project=${projectId.value}`)
     } catch (error) {
-      // 失敗時本地狀態都已復原，但畫面上必須告訴使用者，
-      // 不然按鈕悄悄恢復可按，使用者只會覺得「怎麼沒反應」再按一次
+      // 本地狀態雖已復原，仍要顯示錯誤，避免按鈕恢復可按卻沒有任何說明
       const detail = error instanceof Error ? error.message : ''
       saveError.value = detail ? `儲存失敗，請再試一次（${detail}）` : '儲存失敗，請再試一次'
     } finally {
       confirming.value = false
     }
   }
-
-  onMounted(() => window.addEventListener('keydown', onKeydown))
-  onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
   onMounted(async () => {
     try {
@@ -842,10 +476,10 @@
 
       const seen = new Set<string>()
       userColumns.value = preview.columns
-        // 先綁住原始欄位位置：dedup 會改變陣列索引，之後再用索引取值就會取到別欄的資料
+        // 先記住原始欄位位置，去重會改變索引，之後用索引取值會取到別欄的資料
         .map((name, index) => ({ name, index }))
         .filter(({ name }) => {
-          if (seen.has(name)) return false  // 重複欄位名只留第一個
+          if (seen.has(name)) return false // 重複欄位名只留第一個
           seen.add(name)
           return true
         })
@@ -861,7 +495,7 @@
         return
       }
 
-      // 有草稿就直接還原，不重跑配對：重跑會蓋掉使用者改過的東西，也會白花一次 Gemini
+      // 有草稿就直接還原不重跑配對，避免蓋掉使用者的改動並多打一次 Gemini
       if (loadDraft()) return
 
       const { state, aiAvailable: available } = await initFieldMapping({
@@ -884,59 +518,37 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  /* 標題、進度、全部確認擠在同一列，把垂直空間留給對映表 */
-  .page-header {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    max-width: var(--content-max-width-wide);
+    margin-inline: auto;
   }
 
   .page-progress {
     font-size: 13px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .page-progress-sep {
     margin: 0 6px;
-    color: #cbd5e1;
+    color: var(--color-border-strong);
   }
 
   .page-progress-review {
-    color: #b45309;
-  }
-
-  .confirm-all-btn {
-    padding: 5px 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    background: #fff;
-    color: var(--color-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-  }
-
-  .confirm-all-btn:hover {
-    background: #f0f1f3;
-    border-color: #94a3b8;
+    color: var(--color-warning-text);
   }
 
   .back-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-secondary);
+    /* 對齊 22px 標題的第一行中線 */
+    margin-top: 4px;
+    color: var(--color-ink-soft);
     font-size: 13px;
     text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .page-title {
-    font-size: 19px;
-    font-weight: 700;
+  .back-link:hover {
     color: var(--color-ink);
   }
 
@@ -945,16 +557,17 @@
     align-items: center;
     gap: 10px;
     padding: 16px;
-    border: 1px solid #fecaca;
-    border-radius: 12px;
-    background: #fef2f2;
-    color: #b91c1c;
+    /* 邊框取比底色深一階的混色，否則與底色同值會看不出區塊邊界 */
+    border: 1px solid color-mix(in oklab, var(--color-error) 20%, var(--color-error-bg));
+    border-radius: var(--radius-md);
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
     font-size: 14px;
   }
 
   .load-error-link {
-    color: #b91c1c;
-    font-weight: 600;
+    color: var(--color-error-text);
+    font-weight: 500;
   }
 
   .mapping-layout {
@@ -969,300 +582,47 @@
     flex-direction: column;
     gap: 14px;
     padding: 18px;
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
   }
 
-  .mapping-loading {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 40px 0;
-    justify-content: center;
-    color: var(--color-secondary);
-    font-size: 14px;
-  }
-
-  /* 下拉欄固定寬度，視窗窄的時候讓表格自己捲，不要把整頁撐開 */
-  .mapping-scroll {
-    overflow-x: auto;
-  }
-
-  .mapping-table {
-    width: 100%;
-    min-width: 700px;
-    table-layout: fixed;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  .mapping-table th {
-    padding: 8px 10px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--color-secondary);
-    border-bottom: 1px solid #e8e8e8;
-  }
-
-  .mapping-table td {
-    padding: 10px;
-    border-bottom: 1px solid #f0f1f3;
-    vertical-align: top;
-  }
-
-  /* 要放得下「待確認」標籤 + 勾勾按鈕，不然標籤會被擠到換行；
-     比例寬讓視窗變寬時能跟著縮放，min-width 是原本的固定值，縮太窄時觸發 .mapping-scroll 的水平捲動 */
-  .col-status {
-    width: 18%;
-    min-width: 124px;
-  }
-
-  .col-col {
-    width: 38%;
-    min-width: 260px;
-  }
-
-  .var-name-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .target-badge {
-    color: #d97706;
-  }
-
-  .var-name {
-    flex: 0 1 auto;
-    min-width: 0;
+  /* 表格切齊卡片邊緣，不要在外框內再留一圈白邊看起來像卡中卡。
+     負邊距寫在這裡而不是子元件裡：padding 是這張卡的，子元件不該去猜它的值 */
+  /* 表格切齊卡片邊緣。overflow 讓表格的方角被卡片圓角裁掉 */
+  .mapping-main {
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 600;
-    color: var(--color-ink);
   }
 
-  .var-info-icon {
-    flex-shrink: 0;
-    color: #94a3b8;
-    cursor: help;
-    vertical-align: middle;
+  .mapping-main :deep(.table-shell) {
+    margin-inline: -18px;
   }
 
-  .var-type {
-    display: block;
-    margin-top: 2px;
-    font-size: 11px;
-    color: #94a3b8;
+  .mapping-main > :deep(.table-shell:first-child) {
+    margin-top: -18px;
   }
 
-  .col-samples {
-    margin-top: 4px;
-    font-size: 11px;
-    color: #94a3b8;
-    overflow-wrap: anywhere;
+  /* 表頭底色與 row hover 滿版到卡片邊，但首尾欄的內容補回卡片內距，
+     不要讓文字貼著外框 */
+  .mapping-main :deep(.ds-table th:first-child),
+  .mapping-main :deep(.ds-table td:first-child) {
+    padding-left: 32px;
   }
 
-  .col-candidates {
+  .mapping-main :deep(.ds-table th:last-child),
+  .mapping-main :deep(.ds-table td:last-child) {
+    padding-right: 18px;
+  }
+
+  .mapping-skeleton {
     display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 6px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
   }
 
-  .candidates-label {
-    font-size: 11px;
-    color: #94a3b8;
-  }
-
-  .candidate-chip {
-    padding: 2px 8px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    background: #fff;
-    font-size: 11px;
-    color: var(--color-secondary);
-    cursor: pointer;
-    overflow-wrap: anywhere;
-    transition: background-color 0.15s, border-color 0.15s;
-  }
-
-  .candidate-chip:hover {
-    background: var(--color-background);
-    border-color: var(--color-accent);
-  }
-
-  .candidate-chip:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .status-chip {
-    display: inline-block;
-    padding: 3px 9px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 600;
-    /* 不換行：三個字被擠成兩行的話，圓角會把它變成一顆球 */
-    white-space: nowrap;
-  }
-
-  .status-chip--auto_matched {
-    background: #dcfce7;
-    color: #15803d;
-  }
-
-  .status-chip--needs_review {
-    background: #fef3c7;
-    color: #b45309;
-  }
-
-  .status-chip--unmatched {
-    background: #fee2e2;
-    color: #b91c1c;
-  }
-
-  .status-chip--skipped {
-    background: #f0f1f3;
-    color: var(--color-secondary);
-  }
-
-  .status-chip--confirmed {
-    background: #dcfce7;
-    color: #15803d;
-  }
-
-  .status-chip[tabindex] {
-    cursor: help;
-  }
-
-  .status-chip[tabindex]:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .status-cell {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  /* 標籤先講清楚是什麼狀態，使用者才知道旁邊的勾勾是要確認什麼 */
-  .check-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    border: 1px solid #cbd5e1;
-    border-radius: 50%;
-    background: #fff;
-    color: #94a3b8;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-  }
-
-  /* 不用綠色：那是「已確認」的語意色，跟旁邊黃色的「待確認」會打架 */
-  .check-btn:hover {
-    background: #f0f1f3;
-    border-color: #94a3b8;
-    /* 從色票推導，不另外引入游離色碼 */
-    color: color-mix(in oklab, var(--color-secondary) 60%, white);
-  }
-
-  .check-btn:focus-visible,
-  .undo-btn:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  /* 視覺上 26px，但用 ::after 把可點範圍撐到 40px，手指才按得到 */
-  .check-btn::after,
-  .undo-btn::after {
-    content: '';
-    position: absolute;
-    inset: -7px;
-  }
-
-  .undo-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 7px;
-    background: none;
-    color: #cbd5e1;
-    cursor: pointer;
-    transition: color 0.15s, background-color 0.15s;
-  }
-
-  .undo-btn:hover {
-    background: #f0f1f3;
-    color: var(--color-secondary);
-  }
-
-  /* AI 或搶欄位造成的變動閃一下，讓使用者看見改到哪一列 */
-  .row-flash {
-    animation: row-flash 2s ease-out;
-  }
-
-  @keyframes row-flash {
-    0%, 40% { background: #fef9c3; }
-    100% { background: transparent; }
-  }
-
-  /* 有人對動態效果敏感（會頭暈）；改成靜態底色淡出，資訊不減 */
-  @media (prefers-reduced-motion: reduce) {
-    .row-flash {
-      animation: none;
-      background: #fef9c3;
-    }
-
-    .confirm-all-btn,
-    .check-btn {
-      transition: none;
-    }
-  }
-
-  .preview-block {
-    padding-top: 4px;
-  }
-
-  .preview-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-secondary);
-    margin-bottom: 8px;
-  }
-
-  .preview-scroll {
-    overflow-x: auto;
-  }
-
-  .preview-table {
-    border-collapse: collapse;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .preview-table th,
-  .preview-table td {
-    padding: 6px 10px;
-    border: 1px solid #f0f1f3;
-    color: var(--color-secondary);
-  }
-
-  .preview-table th {
-    background: var(--color-background);
-    font-weight: 600;
+  .mapping-skeleton .skeleton-line {
+    height: 20px;
   }
 
   .mapping-footer {
@@ -1275,192 +635,12 @@
 
   .footer-hint {
     font-size: 12px;
-    color: #b91c1c;
+    color: var(--color-error-text);
   }
 
   .footer-error {
     font-size: 12px;
-    color: #b91c1c;
-    font-weight: 600;
-  }
-
-  .skip-btn {
-    height: 38px;
-    padding: 0 14px;
-    border: 1px solid #e5e7eb;
-    border-radius: 7px;
-    background: none;
-    color: var(--color-secondary);
-    font-size: 12.5px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .skip-btn:hover {
-    background: #f3f4f6;
-  }
-
-  /* 尺寸比照 ProjectsView 的 .new-btn。border: none 不能省，<button> 預設帶外框 */
-  .confirm-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    height: 38px;
-    padding: 0 18px;
-    border: none;
-    border-radius: 7px;
-    background: var(--color-accent);
-    color: #ffffff;
-    font-size: 13.5px;
+    color: var(--color-error-text);
     font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .confirm-btn:hover:not(:disabled),
-  .chat-send:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--color-accent) 85%, black);
-  }
-
-  .confirm-btn:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
-  }
-
-  .mapping-chat {
-    display: flex;
-    flex-direction: column;
-    /* 跟著視窗高度走：筆電上不會被擠到要捲，大螢幕也不會留一大片空白 */
-    height: clamp(420px, calc(100vh - 190px), 720px);
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    background: #fff;
-    overflow: hidden;
-  }
-
-  /* 圖示樣式比照 ResultView 的 .analysis-icon-wrap，兩邊的 AI 區塊看起來才是一組的 */
-  .chat-head-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: #eef1ff;
-    color: var(--color-accent);
-  }
-
-  .chat-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 16px;
-    border-bottom: 1px solid #e8e8e8;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-ink);
-  }
-
-  .chat-offline {
-    padding: 10px 16px;
-    background: #fffbeb;
-    border-bottom: 1px solid #fde68a;
-    font-size: 12px;
-    color: #b45309;
-  }
-
-  .chat-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .chat-bubble {
-    max-width: 88%;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: 13px;
-    line-height: 1.55;
-    white-space: pre-wrap;
-  }
-
-  .chat-bubble--user {
-    align-self: flex-end;
-    background: var(--color-chat-user);
-    color: var(--color-inverted);
-  }
-
-  .chat-bubble--assistant {
-    align-self: flex-start;
-    background: var(--color-chat-system);
-    color: var(--color-ink);
-  }
-
-  .chat-bubble--pending {
-    color: #94a3b8;
-  }
-
-  .chat-bubble--opener {
-    align-self: flex-start;
-    background: var(--color-background);
-    color: var(--color-secondary);
-  }
-
-  .chat-input {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 12px 14px;
-    border-top: 1px solid #e8e8e8;
-  }
-
-  .chat-field {
-    flex: 1;
-    min-width: 0;
-    max-height: 118px;
-    padding: 8px 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    font-size: 13px;
-    font-family: inherit;
-    line-height: 1.5;
-    resize: none;
-    overflow-y: hidden;
-  }
-
-  .chat-field:disabled {
-    background: var(--color-background);
-  }
-
-  .chat-send {
-    flex-shrink: 0;
-    padding: 0 16px;
-    height: 36px;
-    border: none;
-    border-radius: 7px;
-    background: var(--color-accent);
-    color: #ffffff;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .chat-send:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
-  }
-</style>
-
-<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，所以另開一個全域區塊 -->
-<style>
-  .status-tooltip {
-    padding: 7px 10px !important;
-    font-size: 12px !important;
-    line-height: 1.55 !important;
   }
 </style>

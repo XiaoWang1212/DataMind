@@ -32,9 +32,9 @@
             type="password"
           >
         </div>
-        <button class="auth-submit-btn" :disabled="isSubmitting" type="submit">
-          {{ isSubmitting ? '登入中...' : '登入' }}
-        </button>
+        <AppButton class="auth-submit-btn" :loading="isSubmitting" type="submit" variant="primary">
+          登入
+        </AppButton>
       </form>
 
       <template v-if="hasGoogleClientId">
@@ -42,9 +42,9 @@
         <GoogleSignInButton class="google-btn" @credential="handleGoogleCredential" />
       </template>
 
-      <button class="auth-dev-btn" type="button" @click="fillAdminCredentials">
+      <AppButton class="auth-dev-btn" variant="ghost" @click="fillAdminCredentials">
         使用管理員帳號（開發用）
-      </button>
+      </AppButton>
 
       <p class="auth-switch">
         還沒有帳號？<RouterLink to="/register">註冊</RouterLink>
@@ -57,6 +57,7 @@
   import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { useAuthStore } from '@/store/authStore'
 
   const DEV_ADMIN_EMAIL = 'admin@datamind.local'
@@ -105,41 +106,41 @@
 </script>
 
 <style scoped>
+/* 頁面漸層畫在 .v-application 上，這裡不鋪底色才透得出來 */
 .auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
 }
 
 .auth-card {
   width: 100%;
   max-width: 380px;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
   padding: 32px;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 
 .auth-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 500;
   margin: 0 0 5px;
 }
 
 .auth-sub {
-  font-size: 13.5px;
-  color: var(--color-secondary);
+  font-size: 13px;
+  color: var(--color-ink-soft);
   margin: 0 0 20px;
 }
 
 .auth-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  border-radius: 6px;
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-radius: var(--radius-sm);
   padding: 9px 12px;
   font-size: 13px;
   margin-bottom: 16px;
@@ -151,9 +152,9 @@
 
 .form-label {
   display: block;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   margin-bottom: 7px;
 }
 
@@ -161,75 +162,51 @@
   width: 100%;
   height: 40px;
   padding: 0 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 14px;
-  color: var(--color-ink);
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-surface);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-fast) var(--ease-out);
   color-scheme: light;
 }
 
 .form-input::placeholder {
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .form-input:focus {
-  border-color: var(--color-accent);
+  border-color: var(--color-ink);
 }
 
 .auth-submit-btn {
   width: 100%;
   height: 40px;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
   margin-top: 4px;
 }
 
-.auth-submit-btn:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--color-accent) 85%, black);
-}
-
-.auth-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.auth-dev-btn {
+/* 用 .auth-card 加權，蓋掉 AppButton 自己的 border: none */
+.auth-card .auth-dev-btn {
+  box-sizing: border-box;
   width: 100%;
   height: 36px;
   margin-top: 12px;
-  background: #ffffff;
-  color: var(--color-secondary);
-  border: 1px dashed #d1d5db;
-  border-radius: 7px;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.auth-dev-btn:hover {
-  color: var(--color-ink);
-  border-color: var(--color-accent);
+  /* 虛線界定範圍，同時暗示這是開發用捷徑而非正式動作 */
+  border: 1px dashed var(--color-border-strong);
+  font-size: 13px;
 }
 
 .auth-switch {
   text-align: center;
   font-size: 13px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
   margin: 18px 0 0;
 }
 
 .auth-switch a {
-  color: var(--color-accent);
+  color: var(--color-ink);
   font-weight: 500;
   text-decoration: none;
 }
@@ -245,8 +222,8 @@
 }
 
 .forgot-link {
-  font-size: 12.5px;
-  color: var(--color-accent);
+  font-size: 13px;
+  color: var(--color-ink);
   text-decoration: none;
 }
 
@@ -260,7 +237,7 @@
   gap: 10px;
   margin: 18px 0;
   font-size: 12px;
-  color: var(--color-secondary);
+  color: var(--color-ink-soft);
 }
 
 .auth-divider::before,
@@ -268,7 +245,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e8e8e8;
+  background: var(--color-border);
 }
 
 .google-btn {

@@ -1,16 +1,5 @@
 <template>
   <div class="paper-editor">
-    <svg aria-hidden="true" class="glass-distort-filter-defs">
-      <defs>
-        <filter id="paper-editor-glass-distort" color-interpolation-filters="sRGB" height="100%" width="100%" x="0%" y="0%">
-          <feTurbulence baseFrequency="0.01 0.05" numOctaves="1" result="turbulence" seed="2" type="fractalNoise" />
-          <feGaussianBlur in="turbulence" result="blurredNoise" stdDeviation="2" />
-          <feDisplacementMap in="SourceGraphic" in2="blurredNoise" result="displaced" scale="12" xChannelSelector="R" yChannelSelector="B" />
-          <feGaussianBlur in="displaced" stdDeviation="0.5" />
-        </filter>
-      </defs>
-    </svg>
-
     <template v-if="editable">
       <div v-if="editor?.isActive('image')" class="editor-toolbar">
         <div class="toolbar-btn-wrap" data-tooltip="靠左對齊">
@@ -123,7 +112,7 @@
               />
             </div>
           </template>
-          <v-card class="link-menu-card">
+          <v-card class="link-menu-card glass-menu">
             <v-text-field
               v-model="linkUrlDraft"
               density="compact"
@@ -132,8 +121,8 @@
               placeholder="https://"
             />
             <div class="link-menu-actions">
-              <v-btn size="small" variant="text" @click="removeLink">移除連結</v-btn>
-              <v-btn class="bg-accent" color="accent" size="small" @click="applyLink">套用</v-btn>
+              <AppButton variant="ghost" @click="removeLink">移除連結</AppButton>
+              <AppButton variant="primary" @click="applyLink">套用</AppButton>
             </div>
           </v-card>
         </v-menu>
@@ -357,12 +346,12 @@
               <v-btn icon="mdi-format-color-fill" size="small" variant="text" v-bind="menuProps" />
             </div>
           </template>
-          <v-card class="cell-color-menu-card">
+          <v-card class="cell-color-menu-card glass-menu">
             <button
               v-for="swatch in CELL_BACKGROUND_COLORS"
               :key="swatch.label"
               class="cell-color-swatch"
-              :style="{ backgroundColor: swatch.value ?? '#ffffff' }"
+              :style="{ backgroundColor: swatch.value ?? 'var(--color-surface)' }"
               :title="swatch.label"
               type="button"
               @click="setCellBackgroundColor(swatch.value)"
@@ -372,7 +361,7 @@
       </div>
     </template>
 
-    <EditorContent :editor="editor" class="editor-content" :class="{ 'editor-content--readonly': !editable }" />
+    <EditorContent class="editor-content" :class="{ 'editor-content--readonly': !editable }" :editor="editor" />
 
     <div v-if="editable" class="editor-status-bar">
       字數：{{ editor?.storage.characterCount.characters() ?? 0 }}
@@ -405,6 +394,7 @@
   import InsertChartDialog from '@/components/paper/InsertChartDialog.vue'
   import { buildPaperContentExtensions } from '@/components/paper/paperExtensions'
   import StrikethroughIcon from '@/components/paper/StrikethroughIcon.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import '@/components/paper/paperContentTypography.css'
 
   const props = defineProps<{
@@ -461,6 +451,7 @@
     editor.value?.chain().focus().insertContent(html).run()
   }
 
+  // 色值會寫進文件內容並隨論文儲存，不能改用 token
   const CELL_BACKGROUND_COLORS: { label: string, value: string | null }[] = [
     { label: '橘', value: '#fdecd2' },
     { label: '灰藍', value: '#e2e8f0' },
@@ -529,7 +520,7 @@
       handleClick: (_view, _pos, event) => {
         if (props.editable) return false
         const target = (event.target as HTMLElement).closest<HTMLElement>('[data-citation-id]')
-        const citationId = target?.getAttribute('data-citation-id')
+        const citationId = target?.dataset.citationId
         if (citationId && target) {
           emit('citation-click', { citationId, target })
           return true
@@ -562,55 +553,38 @@
     gap: 10px;
   }
 
-  /* SVG 濾鏡定義本身不用顯示，但不能用 display:none（會讓部分瀏覽器連濾鏡本身都失效）。 */
-  .glass-distort-filter-defs {
-    position: absolute;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-  }
-
+  /* 工具列嵌在實色白紙上，玻璃沒有東西可以透（DESIGN_SYSTEM.md §5.1），
+     改用 §7.7 的 surface-alt 實色底 */
   .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 2px;
     padding: 8px 10px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.8),
-      inset 0 -3px 6px -2px rgba(28, 33, 48, 0.09),
-      0 2px 6px rgba(28, 33, 48, 0.06),
-      0 10px 28px rgba(28, 33, 48, 0.14);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
   }
 
+  /* 表格工具列疊一層更淡的藏青，跟主工具列區分 */
   .editor-table-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 2px;
     padding: 6px 10px;
-    border-radius: 12px;
-    background: color-mix(in oklab, var(--color-accent) 12%, rgba(255, 255, 255, 0.55));
-    backdrop-filter: blur(20px) saturate(180%) url('#paper-editor-glass-distort');
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.8),
-      inset 0 -3px 6px -2px rgba(28, 33, 48, 0.09),
-      0 2px 6px rgba(28, 33, 48, 0.06),
-      0 10px 28px rgba(28, 33, 48, 0.14);
+    border-radius: var(--radius-md);
+    background: color-mix(in oklab, var(--color-ink) 8%, white);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
   }
 
   .toolbar-divider {
     width: 1px;
     height: 20px;
     margin: 0 5px;
-    background: rgba(28, 33, 48, 0.15);
+    background: var(--color-border-strong);
   }
 
   .toolbar-btn-wrap {
@@ -623,15 +597,15 @@
     bottom: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    background: #1c2130;
-    color: #fff;
-    font-size: 10px;
+    background: var(--color-text);
+    color: var(--color-inverted);
+    font-size: 11px;
     padding: 3px 7px;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--dur-fast) var(--ease-out);
     z-index: 5;
   }
 
@@ -639,8 +613,24 @@
     opacity: 1;
   }
 
-  .toolbar-btn-wrap :deep(.v-btn:hover) {
-    transform: translateY(-2px);
+  .editor-toolbar :deep(.v-btn),
+  .editor-table-toolbar :deep(.v-btn) {
+    color: var(--color-ink-soft);
+    transition: background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  /* 生效中的格式（tonal）用藏青，v-btn 的 underlay 吃 currentColor 所以底色會跟著變 */
+  .editor-toolbar :deep(.v-btn--variant-tonal),
+  .editor-table-toolbar :deep(.v-btn--variant-tonal) {
+    color: var(--color-ink);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
+      background: color-mix(in oklab, var(--color-ink) 10%, white);
+      color: var(--color-ink);
+    }
   }
 
   .hidden-file-input {

@@ -4,68 +4,51 @@
 
     <main class="paper-main">
       <header class="paper-toolbar">
-        <v-btn
-          class="back-btn"
-          icon="mdi-arrow-left"
-          size="small"
-          variant="text"
-          @click="router.back()"
-        />
+        <AppButton aria-label="返回" icon-only variant="ghost" @click="router.back()">
+          <v-icon icon="mdi-arrow-left" size="18" />
+        </AppButton>
         <h2 class="paper-title">{{ report.title }}</h2>
 
         <div class="toolbar-actions">
-          <v-select
-            v-model="report.citationStyle"
+          <CustomSelect
+            aria-label="引用格式"
             class="citation-style-select"
-            density="compact"
             :disabled="loading || mode === 'edit'"
-            hide-details
-            :items="citationStyleItems"
-            variant="outlined"
+            :model-value="report.citationStyle"
+            :options="citationStyleOptions"
             @update:model-value="onCitationStyleChange"
           />
           <ModeSwitch v-model="mode" :disabled="loading" :locked="mode === 'edit'" />
           <div v-if="mode === 'edit'" class="edit-actions">
-            <v-btn size="small" variant="text" @click="cancelEdit">取消</v-btn>
-            <v-btn
-              class="bg-accent"
-              color="accent"
-              :disabled="!projectId"
-              :loading="saving"
-              size="small"
-              @click="save"
-            >
+            <AppButton variant="ghost" @click="cancelEdit">取消</AppButton>
+            <AppButton :disabled="!projectId" :loading="saving" variant="primary" @click="save">
               儲存
-            </v-btn>
+            </AppButton>
           </div>
-          <v-btn
-            class="score-btn"
-            :class="{ 'score-btn--loading': scoring }"
-            :disabled="scoring"
-            size="small"
-            variant="flat"
-            @click="handleScorePaper"
-          >
-            <template #prepend>
-              <v-icon :class="{ 'mdi-spin': scoring }" :icon="scoring ? 'mdi-loading' : 'mdi-star'" />
-            </template>
+          <AppButton :loading="scoring" variant="secondary" @click="handleScorePaper">
+            <v-icon icon="mdi-star-outline" size="16" />
             {{ scoreButtonLabel }}
-          </v-btn>
+          </AppButton>
         </div>
       </header>
 
       <p v-if="scoreError" class="score-error">
         {{ scoreError }}
-        <v-btn size="small" variant="text" @click="handleScorePaper">重試</v-btn>
+        <AppButton variant="ghost" @click="handleScorePaper">重試</AppButton>
       </p>
       <p v-if="mode === 'edit' && !projectId" class="save-hint">
         此論文尚未關聯專案,無法儲存
       </p>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
-      <p v-if="loading" class="loading-hint">載入中...</p>
+      <div v-if="loading" aria-label="載入中" class="paper-skeleton" role="status">
+        <div class="skeleton-line" style="width: 45%" />
+        <div class="skeleton-line" style="width: 100%" />
+        <div class="skeleton-line" style="width: 94%" />
+        <div class="skeleton-line" style="width: 76%" />
+      </div>
 
-      <div v-else class="paper-body">
+      <div v-else class="paper-body enter-rise">
         <article v-if="mode === 'view'" class="paper-sheet paper-sheet--paginated">
           <PaginatedPaperView
             :citation-style="report.citationStyle"
@@ -112,11 +95,12 @@
 </template>
 
 <script setup lang="ts">
-  import type { PaperReport } from '@/constants/reportData'
+  import type { CitationStyle, PaperReport } from '@/constants/reportData'
   import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { type JournalScore, scorePaper } from '@/api/arxiv'
   import { getReport, saveReport } from '@/api/report'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPopover from '@/components/paper/CitationPopover.vue'
   import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
@@ -125,6 +109,7 @@
   import PaginatedPaperView from '@/components/paper/PaginatedPaperView.vue'
   import PaperEditor from '@/components/paper/PaperEditor.vue'
   import ReferencesSection from '@/components/paper/ReferencesSection.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { mockPaperReport } from '@/constants/reportData'
   import { usePaperStore } from '@/store/paperStore'
   import { citationStyleLabels } from '@/utils/paper/formatCitation'
@@ -207,16 +192,17 @@
     popoverTarget.value = target
   }
 
-  const citationStyleItems = Object.entries(citationStyleLabels).map(([value, title]) => ({ value, title }))
+  const citationStyleOptions = Object.entries(citationStyleLabels).map(([value, label]) => ({ value, label }))
 
   function cancelEdit () {
     report.value = structuredClone(savedSnapshot)
     mode.value = 'view'
   }
 
-  async function onCitationStyleChange () {
+  async function onCitationStyleChange (style: string) {
+    const previousStyle = report.value.citationStyle
+    report.value.citationStyle = style as CitationStyle
     if (!projectId.value) return
-    const previousStyle = savedSnapshot.citationStyle
     try {
       await saveReport(projectId.value, {
         title: report.value.title,
@@ -275,21 +261,17 @@
 </script>
 
 <style scoped>
+  /* 不設背景，讓 .v-application 的頁面漸層透出來，側邊欄與工具列上的玻璃才有東西可透 */
   .paper-page {
-    --page-bg: var(--color-primary);
-    --card-bg: var(--color-surface);
-    --line: #d8dbe3;
-    --line-soft: #e8ebf1;
-    --text-main: var(--color-ink);
-    --text-secondary: var(--color-secondary);
-    --brand: var(--color-accent);
+    /* 閱讀欄的寬度由 A4 頁寬（794px）決定，比 --content-measure 寬；
+       再加 24px 間距與 280px 評分面板 */
+    --paper-column: 1100px;
     min-height: 100vh;
     display: flex;
     gap: 0;
     padding: 0;
-    background: var(--color-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: var(--text-main);
+    color: var(--color-text);
   }
 
   .paper-main {
@@ -297,9 +279,6 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background:
-      radial-gradient(circle, color-mix(in oklab, var(--color-secondary) 8%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
-      var(--color-primary);
     padding: 12px 20px 18px;
     overflow: hidden;
   }
@@ -309,89 +288,74 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    max-width: 1100px;
+    max-width: var(--paper-column);
     margin: 0 auto;
     padding: 0 2px 10px;
-    border-bottom: 1px solid var(--line-soft);
-  }
-
-  .back-btn {
-    color: #1f2430;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .paper-title {
     margin: 0;
-    font-size: 14px;
-    font-weight: 700;
-    color: #1c2130;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin-left: auto;
   }
 
-  .score-btn {
-    background: #6f5613 !important;
-    color: #ffffff !important;
-    opacity: 1 !important;
-  }
-
-  .score-btn :deep(.v-icon) {
-    color: #ffffff;
-  }
-
-  .score-btn.score-btn--loading {
-    background: #fffbe8 !important;
-    color: #8a6d1a !important;
-    border: 1px solid #c9ad2a;
-  }
-
-  .score-btn.score-btn--loading :deep(.v-icon) {
-    color: #8a6d1a;
+  /* 三段提示都對齊內容欄，不要貼在視窗左緣 */
+  .score-error,
+  .save-hint,
+  .save-error {
+    width: 100%;
+    max-width: var(--paper-column);
+    margin: 10px auto 0;
+    font-size: 13px;
   }
 
   .score-error {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin: 10px 2px 0;
-    font-size: 12px;
-    color: #b91c1c;
+    gap: 8px;
+    color: var(--color-error-text);
   }
 
   .citation-style-select {
     width: 92px;
   }
 
-  .citation-style-select :deep(.v-field) {
-    font-size: 12px;
-  }
-
   .edit-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .save-hint {
-    margin: 8px 2px 0;
-    font-size: 12px;
-    color: #b45309;
+    color: var(--color-warning-text);
   }
 
   .save-error {
-    margin: 8px 2px 0;
-    font-size: 12px;
-    color: #dc2626;
+    color: var(--color-error-text);
   }
 
-  .loading-hint {
-    margin: 24px 2px 0;
-    font-size: 13px;
-    color: var(--text-secondary);
+  /* 骨架屏跟論文紙張同一個外框，載入完換上內容時版面不跳 */
+  .paper-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: var(--paper-column);
+    margin: 14px auto 0;
+    padding: 28px 34px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
   }
 
   .paper-body {
@@ -399,7 +363,7 @@
     min-height: 0;
     display: flex;
     width: 100%;
-    max-width: 1100px;
+    max-width: var(--paper-column);
     gap: 24px;
     margin: 14px auto 0;
     overflow: auto;
@@ -408,9 +372,10 @@
   .paper-sheet {
     flex: 1;
     min-width: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--line);
-    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
     padding: 28px 34px;
     height: fit-content;
   }

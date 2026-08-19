@@ -113,18 +113,16 @@
         </div>
 
         <div class="column-settings-actions">
-          <button class="btn-reset" type="button" @click="resetColumnSettings">
+          <AppButton variant="secondary" @click="resetColumnSettings">
             Reset
-          </button>
-          <button
-            class="btn-apply"
-            :class="{ 'btn-apply--disabled': !hasTarget || !props.loading }"
+          </AppButton>
+          <AppButton
             :disabled="!hasTarget || !props.loading"
-            type="button"
+            variant="primary"
             @click="applyColumnSettings"
           >
             繼續
-          </button>
+          </AppButton>
         </div>
       </div>
     </div>
@@ -134,6 +132,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { readTableRows } from '@/utils/dataset'
 
   type ColumnType = 'numeric' | 'categorial' | 'text' | 'datetime'
@@ -437,7 +436,7 @@
     align-items: center;
     gap: 12px;
     padding: 24px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     border: 1px dashed rgba(96, 165, 250, 0.7);
     background: rgba(255, 255, 255, 0.88);
     color: var(--color-accent);
@@ -467,7 +466,7 @@
 
   .data-table-empty {
     padding: 20px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--color-surface);
     color: var(--color-secondary);
   }
@@ -506,14 +505,14 @@
   }
 
   .data-table-guide--ready {
-    color: #16a34a;
+    color: var(--color-success-text);
   }
 
   .data-table-column-settings {
     display: flex;
     flex-direction: column;
     padding: 0;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
     background: var(--color-surface);
     flex: 1 1 380px;
@@ -526,7 +525,7 @@
     padding: 10px 12px;
     font-size: 13px;
     color: var(--color-secondary);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .column-settings-body {
@@ -591,7 +590,7 @@
     position: sticky;
     top: 0;
     background: var(--color-surface);
-    font-weight: 600;
+    font-weight: 500;
     z-index: 1;
   }
 
@@ -601,17 +600,17 @@
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
     text-align: left;
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .column-name-input {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--color-surface);
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
   }
 
   .values-cell {
@@ -620,40 +619,14 @@
     text-overflow: ellipsis;
   }
 
-  .btn-reset,
-  .btn-apply {
-    min-width: 88px;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .btn-reset {
-    background: var(--color-surface);
-    color: var(--color-ink);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-  }
-
-  .btn-apply {
-    background: var(--color-accent);
-    color: #fff;
-  }
-
-  .btn-apply--disabled {
-    background: #94a3b8;
-    cursor: not-allowed;
-  }
-
   .column-settings-table select {
     width: 100%;
     padding: 8px 30px 8px 10px;
     border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background-color: var(--color-surface);
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-text);
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
@@ -661,7 +634,7 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23E8A33D' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 8px center;
-    transition: border-color 0.12s, box-shadow 0.12s;
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
   }
 
   .column-settings-table select:hover {
@@ -691,7 +664,7 @@
 
   /* 點過 Role 選單後，圈圈淡出消失，而不是瞬間不見 */
   .tap-hint-fade-leave-active {
-    transition: opacity 0.3s ease;
+    transition: opacity var(--dur-slow) ease;
   }
 
   .tap-hint-fade-leave-to {
@@ -728,11 +701,6 @@
       transform: scale(1.5);
       opacity: 0;
     }
-  }
-
-  /* 未選 target 前，Role 下拉維持靜態高亮，把動效留給漣漪圈 */
-  .role-select--attention {
-    border-color: #94a3b8;
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -2,4 +2,31 @@
   code, pre, .v-code {
     font-family: var(--font-mono);
   }
+
+  // docs/DESIGN_SYSTEM.md §5.4：頁面底鋪柔和漸層，讓玻璃效果（之後階段套用）有東西可以透出來。
+  // 蓋在 .v-application 而不是 body，因為 VApp 元件本身有不透明的 background
+  // （node_modules/vuetify/lib/components/VApp/VApp.css），蓋在 body 上的話漸層完全看不到。
+  // 主色塊改成窄而高的橢圓並貼齊左緣：縱向覆蓋整條側邊欄（220px 寬）供玻璃透光，
+  // 橫向在側邊欄右緣外就衰減完，讓頁面上方標題帶落在近乎純底色的區域。
+  // 標題與副標沒有卡片墊底，只能靠底色夠淺維持對比（§2.4 禁用 text-shadow）。
+  // 右側色塊同樣下移到視窗中段，避開標題帶，並留在浮動面板常駐的高度。
+  .v-application {
+    background:
+      radial-gradient(520px 900px ellipse at 4% 60%, rgba(90, 130, 190, 0.50), transparent 70%),
+      radial-gradient(640px circle at 92% 58%, rgba(110, 143, 178, 0.22), transparent 60%),
+      radial-gradient(520px circle at 25% 92%, rgba(196, 150, 130, 0.10), transparent 55%),
+      linear-gradient(175deg, #F4F7F9 0%, #E4EAEF 55%, #DCE3E9 100%);
+    background-attachment: fixed;
+  }
+}
+
+// docs/DESIGN_SYSTEM.md §6.3：動畫可及性。刻意不放進任何 @layer，
+// CSS 規則沒有 layer 時優先權天生高於所有 layer 內的規則，確保這個 reset 一定生效。
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

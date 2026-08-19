@@ -7,10 +7,12 @@
     <div class="journal-score-card">
       <header class="journal-score-header">
         <div class="journal-score-header__text">
-          <p class="journal-score-eyebrow" :style="{ color: activeAccent.text }">期刊評分報告</p>
+          <p class="journal-score-eyebrow">期刊評分報告</p>
           <h3 class="journal-score-title">Journal Peer Review Simulation</h3>
         </div>
-        <button class="journal-score-esc" type="button" @click="emit('close')">ESC</button>
+        <AppButton icon-only title="按 Esc 關閉" variant="ghost" @click="emit('close')">
+          <v-icon icon="mdi-close" size="16" />
+        </AppButton>
       </header>
 
       <p v-if="failedJournals.length > 0" class="journal-score-warning">
@@ -24,9 +26,6 @@
           :key="js.journal"
           class="journal-score-tab"
           :class="{ 'journal-score-tab--active': index === activeIndex }"
-          :style="index === activeIndex
-            ? { color: getJournalAccent(js.journal).text, borderBottomColor: getJournalAccent(js.journal).main }
-            : undefined"
           type="button"
           @click="activeIndex = index"
         >
@@ -62,7 +61,7 @@
 
         <hr class="journal-score-divider">
 
-        <p class="journal-score-section-title" :style="{ color: activeAccent.text }">逐項評分準則</p>
+        <p class="journal-score-section-title">逐項評分準則</p>
 
         <ol class="journal-score-criteria">
           <li
@@ -91,11 +90,11 @@
 
         <hr class="journal-score-divider">
 
-        <p class="journal-score-section-title" :style="{ color: activeAccent.text }">修改建議</p>
+        <p class="journal-score-section-title">修改建議</p>
 
         <ol class="journal-score-suggestions">
           <li v-for="(suggestion, index) in activeJournal.suggestions" :key="index" class="journal-score-suggestion">
-            <span class="journal-score-suggestion__index" :style="{ color: activeAccent.text }">
+            <span class="journal-score-suggestion__index">
               {{ String(index + 1).padStart(2, '0') }}.
             </span>
             <span class="journal-score-suggestion__text">{{ suggestion }}</span>
@@ -110,7 +109,7 @@
   import type { JournalScore } from '@/api/arxiv'
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
-  import { getJournalAccent } from '@/utils/journalTheme'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { getScoreColor } from '@/utils/scoreColor'
 
   const props = defineProps<{
@@ -126,7 +125,6 @@
   const activeIndex = ref(0)
 
   const activeJournal = computed(() => props.journalScores[activeIndex.value] ?? null)
-  const activeAccent = computed(() => getJournalAccent(activeJournal.value?.journal ?? ''))
 
   function onKeydown (event: KeyboardEvent) {
     if (event.key === 'Escape') emit('close')
@@ -153,20 +151,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(20, 22, 30, 0.45);
+    background: rgba(18, 30, 58, 0.45);
     z-index: 1000;
   }
 
+  /* 實色白底，不套玻璃：backdrop-filter 疊在深色遮罩前面會把深色一起模糊進來，
+     顏色會偏濁。跟 2026-08-15 workflow canvas 同一個判斷 */
   .journal-score-card {
     width: 680px;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 64px);
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
     overflow: hidden;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
   }
 
   .journal-score-header {
@@ -181,33 +181,17 @@
   .journal-score-eyebrow {
     margin: 0 0 4px;
     font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--color-ink);
   }
 
   .journal-score-title {
     margin: 0;
-    font-family: 'Noto Serif TC', Georgia, 'Times New Roman', serif;
+    font-family: var(--font-heading);
     font-size: 22px;
-    font-weight: 700;
-    color: #1c2130;
-  }
-
-  .journal-score-esc {
-    flex-shrink: 0;
-    border: 1px solid #d8dbe3;
-    border-radius: 8px;
-    background: none;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #8a8f9c;
-    cursor: pointer;
-  }
-
-  .journal-score-esc:hover {
-    border-color: #b7bcc7;
-    color: #4a4f5c;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-warning {
@@ -215,11 +199,9 @@
     align-items: center;
     gap: 6px;
     margin: 14px 24px 0;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: #fff4e5;
-    color: #9a5b00;
+    color: var(--color-warning-text);
     font-size: 12px;
+    font-weight: 500;
     flex-shrink: 0;
   }
 
@@ -227,7 +209,7 @@
     display: flex;
     gap: 20px;
     padding: 18px 24px 0;
-    border-bottom: 1px solid #e8ebf1;
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
   }
 
@@ -237,14 +219,17 @@
     background: none;
     padding: 0 0 10px;
     font-size: 13px;
-    font-weight: 600;
-    color: #8a8f9c;
+    font-weight: 500;
+    color: var(--color-ink-soft);
     cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out),
+      border-bottom-color var(--dur-fast) var(--ease-out);
   }
 
   .journal-score-tab--active {
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-ink);
+    border-bottom-color: var(--color-ink);
   }
 
   .journal-score-body {
@@ -265,19 +250,17 @@
 
   .journal-score-overview__name {
     margin: 0 0 6px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #8a8f9c;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
   }
 
   .journal-score-overview__comment {
     margin: 0 0 12px;
     font-size: 14.5px;
     line-height: 1.6;
-    font-weight: 600;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-overview__minis {
@@ -288,20 +271,20 @@
 
   .journal-score-overview__more {
     font-size: 12px;
-    color: #8a8f9c;
+    color: var(--color-ink-soft);
   }
 
   .journal-score-divider {
     margin: 20px 0;
     border: none;
-    border-top: 1px solid #e8ebf1;
+    border-top: 1px solid var(--color-border);
   }
 
   .journal-score-section-title {
     margin: 0 0 14px;
     font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-weight: 500;
+    color: var(--color-ink);
   }
 
   .journal-score-criteria {
@@ -322,14 +305,14 @@
 
   .journal-score-criterion__index {
     font-size: 11px;
-    font-weight: 700;
-    color: #b7bcc7;
+    font-weight: 500;
+    color: var(--color-ink-soft);
   }
 
   .journal-score-criterion__name {
     font-size: 13.5px;
-    font-weight: 700;
-    color: #1c2130;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .journal-score-criterion__bar-row {
@@ -343,7 +326,7 @@
     flex: 1;
     height: 6px;
     border-radius: 3px;
-    background: #e8ebf1;
+    background: var(--color-border);
     overflow: hidden;
   }
 
@@ -355,7 +338,7 @@
   .journal-score-criterion__score {
     flex-shrink: 0;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     min-width: 24px;
     text-align: right;
   }
@@ -364,7 +347,7 @@
     margin: 0;
     font-size: 12.5px;
     line-height: 1.65;
-    color: #4a4f5c;
+    color: var(--color-text);
   }
 
   .journal-score-suggestions {
@@ -373,26 +356,28 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
+  /* 拿掉邊框後靠淡底色分組，比之前太淡看不出來的邊框更容易辨識每一條的範圍 */
   .journal-score-suggestion {
     display: flex;
     gap: 10px;
-    border: 1px solid #e8ebf1;
-    border-radius: 10px;
-    padding: 12px 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
   }
 
   .journal-score-suggestion__index {
     flex-shrink: 0;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
+    color: var(--color-ink);
   }
 
   .journal-score-suggestion__text {
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.65;
-    color: #3a3f4a;
+    color: var(--color-text);
   }
 </style>

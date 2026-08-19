@@ -39,14 +39,14 @@
             >
               {{ chart.label }}
             </div>
-            <button
+            <AppButton
               v-if="isChartLabelLong(chart.label)"
               class="distribution-title-toggle"
-              type="button"
+              variant="ghost"
               @click="toggleChartLabel(index)"
             >
               {{ isChartLabelExpanded(index) ? "收起" : "更多" }}
-            </button>
+            </AppButton>
             <div class="distribution-chart-subtitle">
               {{ chart.type === "numeric" ? "直方圖" : "類別分布" }}
             </div>
@@ -60,7 +60,7 @@
               <svg preserveAspectRatio="none" viewBox="0 0 320 170">
                 <g v-for="(item, idx) in chart.counts" :key="item.label">
                   <rect
-                    fill="var(--color-accent)"
+                    fill="color-mix(in oklab, var(--color-ink) 45%, white)"
                     :height="
                       Math.max(4, Math.round((item.count / chart.maxCount) * 110))
                     "
@@ -86,7 +86,7 @@
                     {{ item.label }}
                   </text>
                   <text
-                    fill="var(--color-ink)"
+                    fill="var(--color-text)"
                     font-size="10"
                     text-anchor="middle"
                     :x="
@@ -113,6 +113,7 @@
 <script setup lang="ts">
   import type { Stage } from '@/composables/useDrawerDrag'
   import { computed, ref, watch } from 'vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { getFileExtension, readTableRows } from '@/utils/dataset'
 
   const props = defineProps<{
@@ -300,7 +301,7 @@
   }
 
   .distribution-title {
-    font-weight: 700;
+    font-weight: 500;
     font-size: 16px;
   }
 
@@ -313,7 +314,7 @@
 
   .distribution-empty {
     padding: 24px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--color-surface);
     color: var(--color-secondary);
   }
@@ -363,7 +364,7 @@
     align-items: center;
     justify-content: center;
     min-height: 160px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: rgba(248, 250, 252, 0.9);
     color: var(--color-secondary);
     font-size: 14px;
@@ -373,7 +374,7 @@
     flex: 0 0 320px;
     min-width: 320px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
     border: 1px solid rgba(148, 163, 184, 0.16);
     scroll-snap-align: start;
@@ -381,7 +382,7 @@
   }
 
   .distribution-chart-title {
-    font-weight: 600;
+    font-weight: 500;
     font-size: 14px;
     margin-bottom: 4px;
     color: var(--color-secondary);
@@ -398,14 +399,7 @@
   }
 
   .distribution-title-toggle {
-    border: none;
-    background: transparent;
-    color: var(--color-accent);
-    font-size: 12px;
-    padding: 0;
     margin-bottom: 8px;
-    cursor: pointer;
-    text-align: left;
   }
 
   .distribution-chart-subtitle {
@@ -424,7 +418,7 @@
 
   .distribution-chart-plot {
     background: var(--color-surface);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 10px;
   }
 </style>

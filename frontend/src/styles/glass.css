@@ -1,0 +1,51 @@
+/* docs/DESIGN_SYSTEM.md §5。只用在浮動/導覽性元件，一般卡片與表格維持實色 */
+@layer vuetify-final {
+  .glass-panel,
+  .glass-menu {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.78),
+      rgba(255, 255, 255, 0.58)
+    );
+    /* saturate 讓透過來的顏色不會被 blur 洗淡 */
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* 上下緣的 inset 白線是玻璃的折射邊，比 border 更能撐出材質感 */
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+      var(--shadow-float);
+  }
+
+  .glass-panel {
+    border-radius: var(--radius-md);
+  }
+
+  /* 選單多半開在實色白卡上，backdrop-filter 透不出顏色，靠冷色 tint 撐出層次 */
+  .glass-menu {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-ink) 2%, rgba(255, 255, 255, 0.88)),
+      color-mix(in oklab, var(--color-ink) 4%, rgba(255, 255, 255, 0.78))
+    );
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-panel,
+    .glass-menu {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-panel,
+    .glass-menu {
+      background: rgba(255, 255, 255, 0.96);
+    }
+  }
+}

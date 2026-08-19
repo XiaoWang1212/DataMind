@@ -1,0 +1,42 @@
+/* docs/DESIGN_SYSTEM.md §6.2 進場與載入。做成全域 utility 而非各檔 scoped keyframes，
+   scoped CSS 的 @keyframes 不能跨檔共用 */
+@layer vuetify-final {
+  .enter-rise {
+    animation: enter-rise var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* 列表依序進場。總長壓在 250ms 內，超過五個就不再往後延。
+     只用在初次載入就固定下來的列表 — 會因為篩選/排序重新渲染的列表用這個，每次操作整串都會重跑 */
+  .enter-stagger > * {
+    animation: enter-rise var(--dur-slow) var(--ease-out) both;
+  }
+
+  .enter-stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .enter-stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .enter-stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .enter-stagger > *:nth-child(n + 5) { animation-delay: 160ms; }
+
+  @keyframes enter-rise {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* 底色壓深、亮帶用純白，兩者要有足夠明度差，掃光才看得出來 */
+  .skeleton-line {
+    height: 1em;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-ink) 10%, white) 0%,
+      #fff 50%,
+      color-mix(in oklab, var(--color-ink) 10%, white) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-sweep 1.2s linear infinite;
+  }
+
+  @keyframes skeleton-sweep {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+}

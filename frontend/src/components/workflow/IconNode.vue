@@ -23,11 +23,26 @@
     <!-- 節點主體 -->
     <div
       class="icon-node"
-      :class="[colorClass, { 'node-highlighted': highlighted, 'flash-add': flashType === 'add', 'flash-remove': flashType === 'remove' }]"
+      :class="[nodeTypeClass, { 'node-highlighted': highlighted }]"
     >
       <!-- running 時顯示 spinner，其餘顯示 icon -->
       <div v-if="status === 'running'" class="node-spinner" />
       <span v-else class="node-icon"><v-icon :icon="icon" size="26" /></span>
+      <!-- 完成狀態：右下角重疊的勾勾徽章 -->
+      <span v-if="status === 'finished'" class="node-done-badge">
+        <v-icon icon="mdi-check" size="13" />
+      </span>
+
+      <!-- 增刪元素時，浮在節點正上方的通知圖示，旋轉進出場、出現一下就消失 -->
+      <Transition name="node-flash-pop">
+        <div
+          v-if="flashType"
+          class="node-flash-chip"
+          :class="`node-flash-chip--${flashType}`"
+        >
+          <v-icon :icon="flashType === 'add' ? 'mdi-plus' : 'mdi-minus'" size="13" />
+        </div>
+      </Transition>
     </div>
 
     <!-- 節點標籤（支援換行） -->
@@ -50,20 +65,14 @@
   // 從節點 data 取出 label
   const label = computed(() => String(props.data?.label ?? ''))
 
-  // 從節點 data 取出顏色 class（例如 node-yellow / node-pending）
-  const colorClass = computed(() =>
-    String(props.data?.colorClass ?? 'node-purple'),
-  )
+  // 從節點 data 取出分類，決定底色 class（見 docs/DESIGN_SYSTEM.md §2.3）
+  const nodeType = computed(() => String(props.data?.nodeType ?? 'source'))
+  const nodeTypeClass = computed(() => `node-${nodeType.value}`)
 
-  // 選取指示線的顏色，對應各 colorClass 的底色（壓深過，淺色在近白的畫布上看不見）
-  const LABEL_ACCENTS: Record<string, string> = {
-    'node-pending': '#7c88a8',
-    'node-purple': '#005dff',
-    'node-yellow': '#c2a935',
-  }
-  const accentColor = computed(() => LABEL_ACCENTS[colorClass.value] ?? '#005dff')
+  // 選取指示線的顏色，直接用分類色 token，不用 JS 對照表重算一次
+  const accentColor = computed(() => `var(--color-node-${nodeType.value})`)
 
-  // demo 動畫狀態（running 時顯示 spinner）
+  // demo 動畫狀態（running 顯示 spinner、finished 顯示右下角徽章）
   const status = computed(() => props.data?.status ?? null)
 
   // 用 data.isSelected 而非 Vue Flow 的 props.selected：
@@ -93,44 +102,60 @@
 
   .icon-node {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     width: var(--icon-size);
     height: var(--icon-size);
     border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    /* 淺底配深色 icon（比照 Orange Data Mining 的構造），取代原本的飽和底配白色 icon */
+    color: var(--color-ink-strong);
+    border: 1.5px solid rgba(18, 36, 74, 0.16);
   }
 
-  .flash-add::before,
-  .flash-remove::before {
-    content: '';
+  /* 增刪通知圖示：浮在節點正上方的小圓，不疊在節點本體色塊上，也不用紅/綠填色 */
+  .node-flash-chip {
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    animation: flash-overlay 1.2s linear forwards;
+    top: -14px;
+    left: 50%;
+    transform: translate(-50%, -100%) rotate(0deg);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    box-shadow: var(--shadow-card);
     pointer-events: none;
-    z-index: 0;
   }
 
-  .flash-add::before {
-    background: #06b6d4;
+  /* 新增：用節點自己的分類色（半透明），強調「這個節點類型剛被加入」 */
+  .node-flash-chip--add {
+    background: color-mix(in oklab, var(--node-accent) 88%, transparent);
   }
 
-  .flash-remove::before {
-    background: #ef4444;
+  /* 移除：中性深灰（半透明），不用紅色 */
+  .node-flash-chip--remove {
+    background: color-mix(in oklab, var(--color-ink-strong) 78%, transparent);
   }
 
-  @keyframes flash-overlay {
-    0%   { opacity: 0; }
-    8%   { opacity: 0.85; }
-    30%  { opacity: 0.85; }
-    42%  { opacity: 0; }
-    58%  { opacity: 0; }
-    70%  { opacity: 0.85; }
-    92%  { opacity: 0.85; }
-    100% { opacity: 0; }
+  .node-flash-pop-enter-active,
+  .node-flash-pop-leave-active {
+    transition: opacity var(--dur-slow) ease, transform var(--dur-slow) ease;
+  }
+
+  /* 進場從逆時針轉回正、離場再順著同方向轉出去，看起來是一路轉過去而不是轉回頭 */
+  .node-flash-pop-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -100%) rotate(-270deg) scale(0.4);
+  }
+
+  .node-flash-pop-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -100%) rotate(270deg) scale(0.4);
   }
 
   .node-highlighted {
@@ -152,8 +177,8 @@
   .node-spinner {
     width: 22px;
     height: 22px;
-    border: 3px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
+    border: 3px solid color-mix(in oklab, var(--color-ink-strong) 25%, transparent);
+    border-top-color: var(--color-ink-strong);
     border-radius: 50%;
     animation: node-spin 0.75s linear infinite;
   }
@@ -164,13 +189,30 @@
     }
   }
 
+  /* 右下角重疊的完成徽章：outline 風格，白底+綠框+綠勾，不管節點本身是什麼色都能跟它分開 */
+  .node-done-badge {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-success);
+    color: var(--color-success);
+  }
+
   .icon-node-label {
     min-height: 32px;
     text-align: center;
     font-size: 13px;
     line-height: 1.2;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--color-text);
     white-space: pre-line;
   }
 
@@ -191,8 +233,8 @@
     height: 2px;
     transform: translateX(-50%);
     border-radius: 2px;
-    background: var(--node-accent, #005dff);
-    animation: underline-in 0.2s ease-out;
+    background: var(--node-accent, var(--color-node-source));
+    animation: underline-in var(--dur-base) var(--ease-out);
   }
 
   @keyframes underline-in {
@@ -213,17 +255,24 @@
     }
   }
 
-  .node-yellow {
-    background: #f0e274;
-    color: #fdfdfd;
+  .node-source {
+    background: var(--color-node-source);
   }
 
-  .node-pending {
-    background: #ced3e9;
+  .node-transform {
+    background: var(--color-node-transform);
   }
 
-  .node-purple {
-    background: linear-gradient(165deg, #005dff 0%, #4c8cff 100%);
+  .node-visualize {
+    background: var(--color-node-visualize);
+  }
+
+  .node-model {
+    background: var(--color-node-model);
+  }
+
+  .node-evaluate {
+    background: var(--color-node-evaluate);
   }
 
   .invisible-handle {

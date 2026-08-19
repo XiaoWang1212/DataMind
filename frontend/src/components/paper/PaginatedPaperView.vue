@@ -131,10 +131,10 @@
 .a4-page {
   width: 794px;
   height: 1123px;
-  background: var(--card-bg);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(28, 33, 48, 0.12);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
   padding: 96px;
   box-sizing: border-box;
   display: flex;
@@ -149,8 +149,8 @@
 .a4-page-number {
   margin-top: 16px;
   text-align: center;
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: var(--color-ink-soft);
 }
 
 .measure-container {
@@ -164,20 +164,20 @@
 
 :deep(.citation-mark) {
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 :deep(.citation-mark:hover) {
-  background: #fae57e;
+  background: color-mix(in oklab, var(--color-ink) 24%, white);
 }
 
 :deep(.references-title) {
   margin: 28px 0 12px;
   padding-top: 18px;
-  border-top: 1px solid #d8dbe3;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-ink);
+  border-top: 1px solid var(--color-border);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 :deep(.references-list) {
@@ -190,8 +190,8 @@
 }
 
 :deep(.references-list li) {
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.7;
-  color: var(--color-ink);
+  color: var(--color-text);
 }
 </style>

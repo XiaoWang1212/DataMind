@@ -96,7 +96,7 @@
     border: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      0 1px 4px rgba(28, 33, 48, 0.08);
+      var(--shadow-card);
   }
 
   .pill {
@@ -106,10 +106,10 @@
     left: 0;
     width: 0;
     border-radius: 999px;
-    background: var(--brand, #1058d6);
+    background: var(--color-ink);
     transition:
-      left 0.4s cubic-bezier(0.65, 0, 0.35, 1),
-      width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+      left var(--dur-slow) var(--ease-in-out),
+      width var(--dur-slow) var(--ease-in-out);
   }
 
   .mode-switch-btn {
@@ -119,10 +119,10 @@
     border: none;
     background: transparent;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary, #6f7480);
+    font-weight: 500;
+    color: var(--color-ink-soft);
     cursor: pointer;
-    transition: color 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+    transition: color var(--dur-slow) var(--ease-in-out);
   }
 
   .mode-switch-btn:disabled {
@@ -131,6 +131,6 @@
   }
 
   .mode-switch-btn.active {
-    color: #ffffff;
+    color: var(--color-inverted);
   }
 </style>
