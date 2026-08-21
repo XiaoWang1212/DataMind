@@ -17,6 +17,8 @@
 - 後端測試不連網、不需要 `GEMINI_API_KEY`（比照 `backend/tests/test_gemini_field_mapping.py` 的既有慣例：用假物件，不呼叫真的模型）
 - 前端目前沒有設定任何測試框架（沒有 vitest，`package.json` 沒有 test script）——這份 plan 不新增測試框架，前端驗證一律用瀏覽器手動驗證（比照這個 session 稍早 A/B/D 三個功能的驗證方式：暫時的 dev-only 路由，驗證完刪掉，不留痕跡）
 - 後端跑測試指令：在 `backend/` 目錄下 `uv run pytest tests/<file> -v`
+- **前置環境修復（已完成，執行 Task 1/2 前不用再處理）**：`backend/.venv` 原本因為缺了 `Scripts`/`bin` 目錄而無法用，已經用 PowerShell 的 `Remove-Item -Recurse -Force` 手動移除、讓 `uv run` 重新建置乾淨的 venv，並確認既有的 19 個測試全過（baseline 乾淨）
+- **`sentence-transformers` 需要真的加成依賴**：`requirements.txt` 有列這個套件，但那份檔案已經跟 `pyproject.toml`/`uv.lock` 脫鉤、沒人維護，實際上這個套件從沒被裝進這個專案的環境。Task 2 動工前要先 `uv add sentence-transformers`（已手動驗證過：因為 `mineru`/`openai-whisper` 已經帶了 `torch`/`transformers` 這些底層套件，`uv add` 只需要多裝 1 個套件、幾秒鐘完成，不會觸發大量下載或版本衝突）
 
 ---
 
@@ -312,6 +314,7 @@ there."
 **Files:**
 - Create: `backend/services/rag/reranker.py`
 - Modify: `backend/services/rag/paper_rag.py`（`PaperRAGService.__init__`、`search()`）
+- Modify: `backend/pyproject.toml`、`backend/uv.lock`（新增 `sentence-transformers` 依賴，Step 3）
 - Test: `backend/tests/test_reranker.py`（新檔案）
 
 **Interfaces:**
@@ -389,7 +392,14 @@ def test_reranker_unavailable_when_model_fails_to_load(monkeypatch):
 Run: `cd backend && uv run pytest tests/test_reranker.py -v`
 Expected: FAIL —— `ModuleNotFoundError: No module named 'services.rag.reranker'`（檔案還沒建立）
 
-- [ ] **Step 3: 建立 `backend/services/rag/reranker.py`**
+- [ ] **Step 3: 把 `sentence-transformers` 加成真的依賴**
+
+`requirements.txt` 雖然列了這個套件，但那份檔案已經跟 `pyproject.toml`/`uv.lock` 脫鉤、沒人維護，實際上這個套件從沒被裝進這個專案的環境（`Embedder` 目前在真實環境裡其實一直是跑 TF-IDF fallback）。
+
+Run: `cd backend && uv add sentence-transformers`
+Expected: 成功安裝（`torch`/`transformers`/`huggingface-hub` 這些底層套件已經因為 `mineru`/`openai-whisper` 裝過了，這裡應該只需要多裝 1 個套件、幾秒鐘完成）。`pyproject.toml` 的 `dependencies` 陣列、`uv.lock` 會被更動，這兩個檔案的變動要一起 commit。
+
+- [ ] **Step 4: 建立 `backend/services/rag/reranker.py`**
 
 ```python
 import logging
@@ -404,8 +414,8 @@ class Reranker:
     """
     用 CrossEncoder 對「查詢 / 候選段落」重新評分排序，取代單純的向量相似度排名。
 
-    跟 Embedder（embedder.py）用同一個 sentence-transformers 套件，不用新增依賴。
-    模型載入失敗（沒裝套件、下載失敗等）就優雅降級成不可用，呼叫端要自己檢查
+    跟 Embedder（embedder.py）用同一個 sentence-transformers 套件（CrossEncoder）。
+    模型載入失敗（下載失敗等）就優雅降級成不可用，呼叫端要自己檢查
     available 並 fall back 成不重排，不能讓整個論文生成流程掛掉。
     """
 
@@ -450,12 +460,12 @@ class Reranker:
         return combined
 ```
 
-- [ ] **Step 4: 執行測試，確認通過**
+- [ ] **Step 5: 執行測試，確認通過**
 
 Run: `cd backend && uv run pytest tests/test_reranker.py -v`
 Expected: PASS（2 個測試都過）
 
-- [ ] **Step 5: 把 `Reranker` 接進 `PaperRAGService`**
+- [ ] **Step 6: 把 `Reranker` 接進 `PaperRAGService`**
 
 在 `backend/services/rag/paper_rag.py` 頂部的 import 區塊（第 21-24 行）加一行：
 
@@ -491,7 +501,7 @@ from .reranker import Reranker
         return [SearchResult(chunk=c, score=s) for c, s in raw[:top_k]]
 ```
 
-- [ ] **Step 6: 讓 `local_refs` 帶上 `rerank_score`，Task 1 寫的 `.get("rerank_score")` 才吃得到值**
+- [ ] **Step 7: 讓 `local_refs` 帶上 `rerank_score`，Task 1 寫的 `.get("rerank_score")` 才吃得到值**
 
 在 `generate_paper()` 建立 `local_refs` 的迴圈（第 241-256 行）：
 
@@ -525,22 +535,25 @@ from .reranker import Reranker
                 }
 ```
 
-- [ ] **Step 7: 執行全部後端測試，確認沒有連帶弄壞其他東西**
+- [ ] **Step 8: 執行全部後端測試，確認沒有連帶弄壞其他東西**
 
 Run: `cd backend && uv run pytest tests/test_reranker.py tests/test_paper_rag_citation_map.py -v`
 Expected: PASS（全部 5 個測試都過——`sr.rerank_score` 在 Task 1 的測試裡沒有被用到真的 `search()`，`local_refs` 是手動構造的，不受這個改動影響）
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add backend/services/rag/reranker.py backend/services/rag/paper_rag.py backend/tests/test_reranker.py
+git add backend/pyproject.toml backend/uv.lock backend/services/rag/reranker.py backend/services/rag/paper_rag.py backend/tests/test_reranker.py
 git commit -m "feat: wire up a real cross-encoder reranker for RAG search
 
 use_rerank was accepted by search() but never read, and
 SearchResult.rerank_score was always None — a documented API surface
-that did nothing. Adds a Reranker wrapping sentence-transformers'
-CrossEncoder (already a dependency, no new package), over-fetches
-candidates and reranks them down to top_k. citation_map's
+that did nothing. requirements.txt claimed sentence-transformers was
+already a dependency, but it had drifted out of sync with
+pyproject.toml/uv.lock and was never actually installed — Embedder has
+been silently running in TF-IDF fallback mode. Adds sentence-transformers
+as a real dependency and a Reranker wrapping its CrossEncoder,
+over-fetches candidates and reranks them down to top_k. citation_map's
 similarity_score now prefers the rerank score when available."
 ```
 

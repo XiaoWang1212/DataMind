@@ -110,7 +110,11 @@ class Reranker:
         """回傳 (chunk, original_score, rerank_score)，依 rerank_score 降冪排序。"""
 ```
 
-用的是 `sentence-transformers` 套件內建的 `CrossEncoder`（跟現有 `Embedder` 用的 `SentenceTransformer` 同一個套件，`requirements.txt` 已經有，不用新增依賴）。預設模型 `BAAI/bge-reranker-base`，跟現有 embedding model `bge-small-zh-v1.5` 同語系；可用 `RAG_RERANK_MODEL` 環境變數覆蓋，比照 `RAG_EMBED_MODEL` 的既有慣例。
+用的是 `sentence-transformers` 套件內建的 `CrossEncoder`，跟現有 `Embedder` 用的 `SentenceTransformer` 同一個套件。
+
+**執行計畫時才發現的修正**：`requirements.txt` 有列 `sentence-transformers`，但這個檔案已經跟專案實際用的 `pyproject.toml`/`uv.lock` 脫鉤（列的還是 `mineru[all]`、`whisper` 這種舊名稱，跟 `pyproject.toml` 現在的 `mineru[core]>=2.7,<3`、`openai-whisper` 對不上），是一份沒人維護、實際上沒被拿來裝套件的舊檔案。實際檢查 `uv.lock` 後確認 `sentence-transformers`從來沒被裝進這個專案的環境——也就是說 `Embedder` 目前在真實環境裡其實一直是跑 TF-IDF fallback，dense embedding 那條路徑從沒被真的用過。所以這次要用 `uv add sentence-transformers` 真的把它加成 `pyproject.toml` 的相依套件（已經手動驗證過：`torch`/`transformers`/`huggingface-hub` 這些底層套件因為 `mineru`/`openai-whisper` 已經裝了，`uv add` 只需要多裝 1 個套件、幾秒鐘就完成，不會觸發大量下載或版本衝突）。這個發現同時代表：接上 reranker 之後，`Embedder` 也會第一次真的跑在 dense embedding 模式，而不是 TF-IDF——這是額外的正面影響，不在原本的修復範圍內，但值得記錄。
+
+預設模型 `BAAI/bge-reranker-base`，跟現有 embedding model `bge-small-zh-v1.5` 同語系；可用 `RAG_RERANK_MODEL` 環境變數覆蓋，比照 `RAG_EMBED_MODEL` 的既有慣例。
 
 `PaperRAGService.__init__` 比照 `self._embedder` 的建立方式，新增 `self._reranker = Reranker(model_name=os.getenv("RAG_RERANK_MODEL", "BAAI/bge-reranker-base"))`（eager 載入，跟 embedder 一致）。
 
