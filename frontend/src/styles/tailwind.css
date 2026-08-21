@@ -51,6 +51,7 @@
      （見 docs/superpowers/specs/2026-08-10-design-token-foundation-design.md） */
   --color-ink: rgb(var(--v-theme-primary));
   --color-ink-strong: rgb(var(--v-theme-ink-strong));
+  --color-ink-vivid: rgb(var(--v-theme-ink-vivid));
   --color-ink-soft: rgb(var(--v-theme-secondary));
   --color-surface-alt: rgb(var(--v-theme-surface-alt));
   --color-page: rgb(var(--v-theme-background));

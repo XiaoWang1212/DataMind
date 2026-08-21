@@ -34,6 +34,8 @@ export default createVuetify({
           'error': '#D7445C',
           // 品牌藏青深一階：hover/按下、標題強調
           'ink-strong': '#12244A',
+          // 藏青亮一階。ink 疊在深色內文旁邊看不出差別時用，例如選單的已選項目
+          'ink-vivid': '#2B5CA8',
           // 內文深色文字。原本借用 primary 的位置（--color-ink），Task 1 已把舊引用改名讓出這裡
           'text': '#1C2130',
           // 次級底：表頭、hover 背景、工具列。偏冷的淺灰藍，跟頁面漸層與藏青同一個色溫

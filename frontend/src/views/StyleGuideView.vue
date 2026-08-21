@@ -205,6 +205,7 @@
   const swatches: Swatch[] = [
     { name: 'ink（品牌藏青）', varRef: 'var(--color-ink)', hex: '#1A3159' },
     { name: 'ink-strong', varRef: 'var(--color-ink-strong)', hex: '#12244A' },
+    { name: 'ink-vivid', varRef: 'var(--color-ink-vivid)', hex: '#2B5CA8' },
     { name: 'ink-soft', varRef: 'var(--color-ink-soft)', hex: '#626B7E' },
     { name: 'text', varRef: 'var(--color-text)', hex: '#1C2130' },
     { name: 'surface', varRef: 'var(--color-surface)', hex: '#FFFFFF' },

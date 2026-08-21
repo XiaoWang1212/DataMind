@@ -405,7 +405,7 @@
 
   .cs-option-check {
     flex-shrink: 0;
-    color: var(--color-ink);
+    color: var(--color-ink-vivid);
   }
 
   .cs-option-hint {
@@ -421,7 +421,7 @@
   }
 
   .cs-option.is-selected {
-    color: var(--color-ink);
+    color: var(--color-ink-vivid);
     font-weight: 500;
   }
 
