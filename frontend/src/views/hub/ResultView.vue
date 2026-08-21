@@ -90,7 +90,7 @@
         </div>
       </TableShell>
 
-      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card glass-panel">
+      <section v-if="analysisLoading || analysisError || analysis" class="analysis-card">
         <div class="analysis-header">
           <div class="analysis-icon-wrap">
             <v-icon icon="mdi-shimmer" size="18" />
@@ -554,12 +554,20 @@
   font-weight: 500;
 }
 
-/* 底色、邊框、圓角、陰影由 .glass-panel 提供。scoped 樣式不在 CSS layer 內、
+/* .chat-card 的底色、邊框、圓角、陰影由 .glass-panel 提供。scoped 樣式不在 CSS layer 內、
    優先權高於 glass.css，在這裡重寫任何一項都會蓋掉玻璃 */
 .analysis-card,
 .chat-card {
   margin-top: 16px;
   padding: 18px;
+}
+
+/* 內文量大，照 §5.3 用實色而非玻璃 */
+.analysis-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .analysis-header {
