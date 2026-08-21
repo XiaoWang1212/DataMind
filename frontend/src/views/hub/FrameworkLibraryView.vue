@@ -19,7 +19,7 @@
     </div>
 
     <!-- Framework cards -->
-    <div class="card-grid">
+    <div class="card-grid enter-stagger">
       <div
         v-for="fw in filteredFrameworks"
         :key="fw.id"
