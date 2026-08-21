@@ -126,13 +126,12 @@
     margin-bottom: 16px;
   }
 
-  /* 虛線邊框區分「這是動作」與統計卡的「這是資料」 */
   .action-card {
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 20px;
-    border: 1px dashed var(--color-border-strong);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
     text-decoration: none;
