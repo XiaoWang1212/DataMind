@@ -132,7 +132,7 @@
             class="chat-bubble"
             :class="[msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--model', { 'chat-bubble--failed': msg.failed }]"
           >
-            <p class="chat-bubble-text">{{ msg.text }}</p>
+            <p class="chat-bubble-text" v-html="renderChatText(msg.text)" />
             <p v-if="msg.failed" class="chat-bubble-failed-hint">傳送失敗</p>
             <div v-if="msg.papers && msg.papers.length > 0" class="chat-papers">
               <a
@@ -187,6 +187,7 @@
   } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
+  import { renderChatText } from '@/utils/formatChatText'
   import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
   interface MetricCard {

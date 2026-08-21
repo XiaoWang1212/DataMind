@@ -138,6 +138,7 @@
         </div>
         <div class="sg-bubble sg-bubble--user">年齡對應到 pt_age</div>
         <div class="sg-bubble sg-bubble--assistant">好的，已將「年齡」對應到 pt_age。</div>
+        <div class="sg-bubble sg-bubble--assistant" v-html="renderChatText(boldSample)" />
         <div class="sg-bubble sg-bubble--assistant sg-bubble--muted">思考中…</div>
       </div>
     </section>
@@ -201,6 +202,9 @@
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import { renderChatText } from '@/utils/formatChatText'
+
+  const boldSample = '建議把 **年齡** 對應到 pt_age，其餘欄位維持不變。'
 
   const selectValue = ref('')
   const selectOptions = [
