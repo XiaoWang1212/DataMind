@@ -1,14 +1,16 @@
 /* docs/DESIGN_SYSTEM.md §6.2 進場與載入。做成全域 utility 而非各檔 scoped keyframes，
    scoped CSS 的 @keyframes 不能跨檔共用 */
 @layer vuetify-final {
+  /* 用 backwards 不用 both：forwards 會把結束幀的 transform 留在元素上，
+     壓掉卡片 hover 的 translateY */
   .enter-rise {
-    animation: enter-rise var(--dur-slow) var(--ease-out) both;
+    animation: enter-rise var(--dur-slow) var(--ease-out) backwards;
   }
 
   /* 列表依序進場。總長壓在 250ms 內，超過五個就不再往後延。
      只用在初次載入就固定下來的列表 — 會因為篩選/排序重新渲染的列表用這個，每次操作整串都會重跑 */
   .enter-stagger > * {
-    animation: enter-rise var(--dur-slow) var(--ease-out) both;
+    animation: enter-rise var(--dur-slow) var(--ease-out) backwards;
   }
 
   .enter-stagger > *:nth-child(2) { animation-delay: 40ms; }
