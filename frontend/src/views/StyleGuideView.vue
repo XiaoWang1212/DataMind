@@ -215,8 +215,8 @@
     { name: 'border-strong', varRef: 'var(--color-border-strong)', hex: '#D3D8DC' },
     { name: 'success', varRef: 'var(--color-success)', hex: '#3B9A7F' },
     { name: 'success-bg', varRef: 'var(--color-success-bg)', hex: '#DCEAE5' },
-    { name: 'warning', varRef: 'var(--color-warning)', hex: '#BC8836' },
-    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#EFE7D7' },
+    { name: 'warning', varRef: 'var(--color-warning)', hex: '#C88819' },
+    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#F7EECF' },
     { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
     // 只能當圖形填色，不能當文字（見 utils/scoreColor.ts）

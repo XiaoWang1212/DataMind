@@ -29,7 +29,7 @@ export default createVuetify({
           // 色相往冷調偏（綠→青綠、紅→玫瑰紅）跟藏青同色溫，飽和度維持在 0.45 以上，
           // 三色都貼著圖形元素 3:1 的下限，再提亮或再降飽和就會不合格
           'success': '#3B9A7F',
-          'warning': '#BC8836',
+          'warning': '#C88819',
           // docs/DESIGN_SYSTEM.md 稱這個角色為 danger，這裡沿用 Vuetify 內建的 error 插槽名稱
           'error': '#D7445C',
           // 品牌藏青深一階：hover/按下、標題強調
@@ -46,12 +46,12 @@ export default createVuetify({
           // 強調分隔、輸入框邊界
           'border-strong': '#D3D8DC',
           'success-bg': '#DCEAE5',
-          'warning-bg': '#EFE7D7',
+          'warning-bg': '#F7EECF',
           'error-bg': '#F2DEE2',
           // 徽章文字疊在對應的 -bg 淺底上時，圓點色的對比不足 4.5:1，文字另用深一階的值
           // 量到的對比：5.88 / 4.77 / 5.40:1，皆過 §2.4 的 WCAG AA 4.5:1
           'success-text': '#1D6151',
-          'warning-text': '#78530F',
+          'warning-text': '#835A07',
           'error-text': '#A22F43',
           // 期刊評分低分的進度條填色。對比不足 4.5:1，不可當文字色
           'score-low': '#E6B800',
