@@ -29,7 +29,7 @@ export default createVuetify({
           // 色相往冷調偏（綠→青綠、紅→玫瑰紅）跟藏青同色溫，飽和度維持在 0.45 以上，
           // 三色都貼著圖形元素 3:1 的下限，再提亮或再降飽和就會不合格
           'success': '#3B9A7F',
-          'warning': '#D89A1F',
+          'warning': '#BC8836',
           // docs/DESIGN_SYSTEM.md 稱這個角色為 danger，這裡沿用 Vuetify 內建的 error 插槽名稱
           'error': '#D7445C',
           // 品牌藏青深一階：hover/按下、標題強調
@@ -44,13 +44,16 @@ export default createVuetify({
           // 強調分隔、輸入框邊界
           'border-strong': '#D3D8DC',
           'success-bg': '#DCEAE5',
-          'warning-bg': '#FDF4D3',
+          'warning-bg': '#EFE7D7',
           'error-bg': '#F2DEE2',
           // 徽章文字疊在對應的 -bg 淺底上時，圓點色的對比不足 4.5:1，文字另用深一階的值
           // 量到的對比：5.88 / 4.77 / 5.40:1，皆過 §2.4 的 WCAG AA 4.5:1
           'success-text': '#1D6151',
-          'warning-text': '#916308',
+          'warning-text': '#78530F',
           'error-text': '#A22F43',
+          // 期刊評分「低分」進度條填色專用，選色中（見 /style-guide 的候選比較區），
+          // 只能用在圖形填色（進度條），不可當文字色——文字一律走上面的 warning-text
+          'score-low': '#FFD000',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
           // 依 Orange Data Mining 的六類配色大致順序（橘/藍/紫/綠/紅）指派，OKLCH 明度/彩度
           // 統一（L=0.76 C=0.058，只有色相不同）。跟 success/warning/error 三個狀態色的

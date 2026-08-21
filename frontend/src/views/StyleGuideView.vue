@@ -18,6 +18,25 @@
     </section>
 
     <section>
+      <!-- 暫時比較區：挑定 score-low 之後整段刪掉 -->
+      <h2 class="sg-h2">score-low 候選比較（決定後刪掉這段）</h2>
+      <p class="sg-note">
+        左邊是色塊本身，右邊是同一顏色實際畫在進度條軌道（--color-border）上的樣子——
+        比色塊本身更接近期刊評分頁面的真實觀感。
+      </p>
+      <div class="sg-swatch-grid">
+        <div v-for="c in scoreLowCandidates" :key="c.label" class="sg-swatch">
+          <div class="sg-swatch-color" :style="{ background: c.hex }" />
+          <div class="sg-score-track">
+            <div class="sg-score-track-fill" :style="{ width: '62%', background: c.hex }" />
+          </div>
+          <div class="sg-swatch-label">{{ c.label }}</div>
+          <div class="sg-swatch-hex">{{ c.hex }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">Workflow 節點分類色（§2.3）</h2>
       <p class="sg-note">
         依 pipeline 角色分五類，比照 Orange Data Mining 的六類配色大致順序（橘/藍/紫/綠/紅）指派，
@@ -214,10 +233,21 @@
     { name: 'border-strong', varRef: 'var(--color-border-strong)', hex: '#D3D8DC' },
     { name: 'success', varRef: 'var(--color-success)', hex: '#3B9A7F' },
     { name: 'success-bg', varRef: 'var(--color-success-bg)', hex: '#DCEAE5' },
-    { name: 'warning', varRef: 'var(--color-warning)', hex: '#D89A1F' },
-    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#FDF4D3' },
+    { name: 'warning', varRef: 'var(--color-warning)', hex: '#BC8836' },
+    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#EFE7D7' },
     { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
+    // 期刊評分「低分」進度條填色專用，只能當圖形填色不能當文字（見 utils/scoreColor.ts）
+    { name: 'score-low（評分填色）', varRef: 'var(--color-score-low)', hex: '#FFD000' },
+  ]
+
+  // score-low 選色候選：涵蓋淺→深、偏黃→偏橘幾種方向，決定後刪掉這個陣列跟對應區塊
+  const scoreLowCandidates = [
+    { label: 'A 目前值', hex: '#FFD000' },
+    { label: 'B 深金橘', hex: '#C98A0A' },
+    { label: 'C 亮橙金', hex: '#F2A900' },
+    { label: 'D 飽和琥珀', hex: '#E8A317' },
+    { label: 'E 清亮金黃', hex: '#E6B800' },
   ]
 
   // §2.3：依 pipeline 角色分五類，比照 Orange 的六類配色大致順序（橘/藍/紫/綠/紅）指派
@@ -273,6 +303,20 @@
   height: 56px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+}
+
+/* 比照 JournalScorePanel.vue 的 .score-panel-summary__bar / -fill 尺寸與底色 */
+.sg-score-track {
+  height: 5px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.sg-score-track-fill {
+  height: 100%;
+  border-radius: 3px;
 }
 
 .sg-swatch-label {
