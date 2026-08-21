@@ -61,16 +61,16 @@
 
     const rect = target.getBoundingClientRect()
     const cardHeight = card.offsetHeight
-    const left = Math.min(
-      Math.max(8, rect.left),
-      Math.max(8, window.innerWidth - cardWidth - 8),
+    const top = Math.min(
+      Math.max(8, rect.top),
+      Math.max(8, window.innerHeight - cardHeight - 8),
     )
 
-    const spaceBelow = window.innerHeight - rect.bottom - 8
-    const placeAbove = spaceBelow < cardHeight && rect.top - 8 - cardHeight > 0
-    const top = placeAbove
-      ? Math.max(8, rect.top - 8 - cardHeight)
-      : Math.min(rect.bottom + 8, Math.max(8, window.innerHeight - cardHeight - 8))
+    const spaceRight = window.innerWidth - rect.right - 8
+    const placeLeft = spaceRight < cardWidth && rect.left - 8 - cardWidth > 0
+    const left = placeLeft
+      ? Math.max(8, rect.left - 8 - cardWidth)
+      : Math.min(rect.right + 8, Math.max(8, window.innerWidth - cardWidth - 8))
 
     cardStyle.value = {
       position: 'fixed',

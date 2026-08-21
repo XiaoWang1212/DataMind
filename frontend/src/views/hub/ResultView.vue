@@ -11,8 +11,16 @@
           返回專案
         </RouterLink>
       </template>
-      <template v-if="summary.length > 0" #actions>
-        <RouterLink class="generate-paper-btn" :to="`/paper/sources?project=${projectId}`">
+      <template v-if="summary.length > 0 && hasPaper !== null" #actions>
+        <template v-if="hasPaper">
+          <RouterLink class="generate-paper-btn generate-paper-btn--secondary" :to="`/paper/sources?project=${projectId}`">
+            重新生成論文
+          </RouterLink>
+          <RouterLink class="generate-paper-btn" :to="`/paper?project=${projectId}`">
+            查看論文
+          </RouterLink>
+        </template>
+        <RouterLink v-else class="generate-paper-btn" :to="`/paper/sources?project=${projectId}`">
           生成論文
         </RouterLink>
       </template>
@@ -170,6 +178,7 @@
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import { usePaperExists } from '@/composables/paper/usePaperExists'
   import {
     loadChatHistoryFromStorage,
     loadStructuredAnalysisFromStorage,
@@ -209,6 +218,8 @@
     const state = loadWorkflowStateFromStorage(projectId.value)
     return summarizeWorkflowResult(state?.workflowResult ?? null)
   })
+
+  const { hasPaper } = usePaperExists(projectId)
 
   const metricNames = computed(() => {
     const names: string[] = []
@@ -399,6 +410,18 @@
 .generate-paper-btn:hover,
 .open-workflow-btn:hover {
   background: var(--color-ink-strong);
+}
+
+/* 重新生成是次要動作，查看論文才是主要路徑，用 outline 拉開層級 */
+.generate-paper-btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.generate-paper-btn--secondary:hover {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
 }
 
 .not-found {

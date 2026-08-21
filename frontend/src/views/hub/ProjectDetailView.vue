@@ -37,6 +37,20 @@
               查看完整結果
               <v-icon icon="mdi-arrow-right" size="14" />
             </RouterLink>
+
+            <div v-if="hasPaper !== null" class="paper-actions">
+              <template v-if="hasPaper">
+                <RouterLink class="paper-btn paper-btn--secondary" :to="`/paper/sources?project=${project.id}`">
+                  重新生成論文
+                </RouterLink>
+                <RouterLink class="paper-btn" :to="`/paper?project=${project.id}`">
+                  查看論文
+                </RouterLink>
+              </template>
+              <RouterLink v-else class="paper-btn" :to="`/paper/sources?project=${project.id}`">
+                生成論文
+              </RouterLink>
+            </div>
           </template>
 
           <!-- Running -->
@@ -102,6 +116,7 @@
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
+  import { usePaperExists } from '@/composables/paper/usePaperExists'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { type Project, useProjectStore } from '@/store/projectStore'
 
@@ -130,6 +145,8 @@
   const frameworkTitle = computed(() =>
     frameworkStore.frameworks.find(fw => fw.id === project.value?.frameworkId)?.title ?? '（未選擇）',
   )
+
+  const { hasPaper } = usePaperExists(computed(() => project.value?.id))
 
   // 欄位對映還沒完成的話，先回對齊頁 —— 這時候進 workflow 也是什麼都不能做
   const needsMapping = computed(() =>
@@ -246,6 +263,44 @@
 
   .view-result-btn:hover {
     color: var(--color-ink-strong);
+  }
+
+  .paper-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 14px;
+  }
+
+  /* 樣式比照 ResultView 的論文按鈕，同一個功能在兩處要長得一樣 */
+  .paper-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-surface);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--dur-fast) var(--ease-out);
+  }
+
+  .paper-btn:hover {
+    background: var(--color-ink-strong);
+  }
+
+  .paper-btn--secondary {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+  }
+
+  .paper-btn--secondary:hover {
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-ink);
   }
 
   /* ── Running state ── */

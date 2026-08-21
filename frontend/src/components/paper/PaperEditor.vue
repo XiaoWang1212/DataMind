@@ -66,6 +66,16 @@
       </div>
 
       <div v-else class="editor-toolbar">
+        <div class="toolbar-btn-wrap toolbar-font-size" data-tooltip="字級">
+          <v-combobox
+            v-model="fontSizeDraft"
+            density="compact"
+            hide-details
+            :items="FONT_SIZE_PRESETS"
+            placeholder="字級"
+          />
+        </div>
+        <span class="toolbar-divider" />
         <div class="toolbar-btn-wrap" data-tooltip="粗體">
           <v-btn
             icon="mdi-format-bold"
@@ -464,6 +474,26 @@
     editor.value?.chain().focus().setCellAttribute('backgroundColor', color).run()
   }
 
+  // Word 標準字級清單，使用者也可以直接輸入任意數字
+  const FONT_SIZE_PRESETS = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
+
+  const fontSizeDraft = computed<number | null>({
+    get () {
+      const raw = editor.value?.getAttributes('textStyle').fontSize as string | undefined
+      if (!raw) return null
+      const parsed = Number.parseFloat(raw)
+      return Number.isNaN(parsed) ? null : parsed
+    },
+    set (value) {
+      const parsed = typeof value === 'string' ? Number.parseFloat(value) : value
+      if (parsed === null || parsed === undefined || Number.isNaN(parsed) || parsed <= 0) {
+        editor.value?.chain().focus().unsetFontSize().run()
+        return
+      }
+      editor.value?.chain().focus().setFontSize(`${parsed}pt`).run()
+    },
+  })
+
   function openLinkMenu () {
     linkUrlDraft.value = editor.value?.getAttributes('link').href ?? ''
   }
@@ -589,6 +619,16 @@
 
   .toolbar-btn-wrap {
     position: relative;
+  }
+
+  .toolbar-font-size {
+    width: 92px;
+  }
+
+  .toolbar-font-size :deep(.v-field__input) {
+    font-size: 13px;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 
   .toolbar-btn-wrap::after {
