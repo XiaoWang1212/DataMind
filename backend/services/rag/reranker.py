@@ -43,10 +43,15 @@ class Reranker:
         """
         candidates: [(chunk, original_score), ...]
         回傳依 rerank_score 由高到低排序的 [(chunk, original_score, rerank_score), ...]。
-        呼叫前應該先檢查 self.available。
+        呼叫前應該先檢查 self.available。呼叫期間失敗（OOM、tokenizer 錯誤等）
+        會優雅降級，回傳未重排的原始順序，不讓論文生成流程因為這一步掛掉。
         """
         pairs = [(query, chunk.content) for chunk, _ in candidates]
-        scores = self._model.predict(pairs)
+        try:
+            scores = self._model.predict(pairs)
+        except Exception:
+            logger.warning("Reranker: rerank() 呼叫失敗，退回原始相似度排序", exc_info=True)
+            return [(chunk, orig_score, orig_score) for chunk, orig_score in candidates]
 
         combined = [
             (chunk, orig_score, float(rerank_score))

@@ -149,7 +149,8 @@ class PaperRAGService:
         self._store = VectorStore(index_dir=index_dir, embedder=self._embedder)
 
         rerank_model = os.getenv("RAG_RERANK_MODEL", "BAAI/bge-reranker-base")
-        self._reranker = Reranker(model_name=rerank_model)
+        rerank_enabled = os.getenv("RAG_RERANK_ENABLED", "true").strip().lower() not in ("false", "0")
+        self._reranker = Reranker(model_name=rerank_model) if rerank_enabled else None
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -173,7 +174,7 @@ class PaperRAGService:
         }
 
     def search(self, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
-        should_rerank = use_rerank and self._reranker.available
+        should_rerank = use_rerank and self._reranker is not None and self._reranker.available
         overfetch_k = top_k * 4 if should_rerank else top_k
 
         raw = self._store.search(query, top_k=overfetch_k)
@@ -303,6 +304,11 @@ class PaperRAGService:
 
         for entry in citation_map:
             entry["cited_ref_ids"] = [old_to_new[rid] for rid in entry["cited_ref_ids"]]
+            entry["text"] = re.sub(
+                r"\[(\d+)\]",
+                lambda m: f"[{old_to_new.get(int(m.group(1)), int(m.group(1)))}]",
+                entry["text"],
+            )
             for src in entry["sources"]:
                 src["ref_id"] = old_to_new[src["ref_id"]]
 
@@ -944,7 +950,8 @@ class PaperRAGService:
         {
             section        : 章節名稱
             paragraph_index: 該段在章節中的位置（0-indexed）
-            text           : 段落文字（含 [n] 標記，本地編號）
+            text           : 段落文字（含 [n] 標記，已轉成全域編號——
+                              跟 _build_citation_report() 顯示的其他編號一致）
             cited_ref_ids  : 該段引用的全域 ref_id 列表（去重、由小到大）
             sources        : 每個引用的詳細資訊（供前端展示）
         }
@@ -996,7 +1003,7 @@ class PaperRAGService:
             citation_map.append({
                 "section": section_name,
                 "paragraph_index": para_idx,
-                "text": para,
+                "text": PaperRAGService._localref_to_global(para, local_refs),
                 "cited_ref_ids": cited_gids,
                 "sources": sources,
             })

@@ -57,3 +57,23 @@ def test_reranker_unavailable_when_model_fails_to_load(monkeypatch):
     reranker = Reranker(model_name="fake-model")
 
     assert reranker.available is False
+
+
+class FailingCrossEncoder:
+    def predict(self, pairs):
+        raise RuntimeError("simulated OOM")
+
+
+def test_rerank_degrades_gracefully_when_predict_fails():
+    candidates = [
+        (FakeChunk(paper_id="a", content="content a"), 0.5),
+        (FakeChunk(paper_id="b", content="content b"), 0.4),
+    ]
+    reranker = Reranker.__new__(Reranker)
+    reranker.model_name = "fake-model"
+    reranker._model = FailingCrossEncoder()
+
+    result = reranker.rerank("query", candidates)
+
+    assert len(result) == 2
+    assert [chunk.paper_id for chunk, _orig, _rerank in result] == ["a", "b"]

@@ -81,6 +81,21 @@ class VectorStore:
             self._embeddings = np.load(str(emb_file))
             logger.info("VectorStore: loaded embeddings %s", self._embeddings.shape)
 
+        # 索引可能是在 embedding backend 還是 tfidf fallback 時建的（沒有 embeddings.npy），
+        # 或者 add() 曾經在筆數不一致的狀態下被呼叫過。backend 變成 transformers 後
+        # 兩者都要重新編碼，不然 search() 會直接因為 None 炸掉，或用對不上的索引
+        # 悄悄配到錯的 chunk。
+        if self.embedder.backend == "transformers" and self._chunks and (
+            self._embeddings is None or len(self._embeddings) != len(self._chunks)
+        ):
+            logger.warning(
+                "VectorStore: 索引缺少或落後於 embeddings（chunks=%d, embeddings=%s），重新編碼全部 chunk",
+                len(self._chunks),
+                0 if self._embeddings is None else len(self._embeddings),
+            )
+            self._embeddings = self.embedder.encode([c.content for c in self._chunks])
+            self._save()
+
     # ── Mutation ──────────────────────────────────────────────────────────────
 
     def add(self, chunks: List[Chunk]) -> None:

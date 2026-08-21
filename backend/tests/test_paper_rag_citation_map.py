@@ -95,3 +95,17 @@ def test_same_paragraph_citing_same_paper_twice_keeps_first_occurrence():
     assert len(citation_map) == 1
     assert citation_map[0]["cited_ref_ids"] == [1]
     assert citation_map[0]["sources"][0]["relevant_chunk"] == "PM2.5 濃度與呼吸道發炎反應"
+
+
+def test_citation_map_text_uses_global_ref_ids_not_local_ids():
+    local_refs = make_local_refs()
+    section_text = "第一段引用[1]。\n\n第二段引用[3]。"
+
+    citation_map: list = []
+    PaperRAGService._build_citation_map(
+        "前言", section_text, local_refs, GLOBAL_REF_LIST, citation_map
+    )
+
+    # local_id=1 → global_ref_id=1（不變）、local_id=3 → global_ref_id=2
+    assert citation_map[0]["text"] == "第一段引用[1]。"
+    assert citation_map[1]["text"] == "第二段引用[2]。"
