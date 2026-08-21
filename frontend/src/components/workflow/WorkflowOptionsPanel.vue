@@ -39,6 +39,13 @@
           />
         </template>
 
+        <template v-else-if="selectedNode.id === 'confusionMatrix'">
+          <ConfusionMatrixPanel
+            :project-id="props.projectId"
+            :workflow-result="props.workflowResult ?? undefined"
+          />
+        </template>
+
         <!-- Preprocessor 節點：顯示前處理步驟 -->
         <template v-else-if="selectedNode.id === 'preprocessor'">
           <PreprocessorPanel
@@ -76,11 +83,13 @@
           <SettingsPanel
             :available-models="availableModels"
             :compute-ci="settingsComputeCi"
+            :dataset-columns="settingsDatasetColumns"
             :feature-engineering="settingsFeatureEngineering"
             :model-options-loading="props.modelOptionsLoading"
             :models="settingsModels"
             :preprocessing="settingsPreprocessing"
             :used-model-names="(props.usedModelNames ?? [])"
+            :validation="settingsValidation"
             @add-model="name => emit('add-model', name)"
             @back-node="emit('back-node')"
             @continue="emit('continue-settings')"
@@ -89,6 +98,7 @@
             @update-compute-ci="handleSettingsComputeCiUpdate"
             @update-feature-engineering="handleSettingsFEUpdate"
             @update-preprocessing="handleSettingsPreprocessingUpdate"
+            @update-validation="handleSettingsValidationUpdate"
           />
         </template>
 
@@ -236,6 +246,7 @@
   import { computed, reactive, ref, watch } from 'vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import ComputeCiPanel from './nodePanel/ComputeCiPanel.vue'
+  import ConfusionMatrixPanel from './nodePanel/ConfusionMatrixPanel.vue'
   import DataTablePanel from './nodePanel/DataTablePanel.vue'
   import DistributionPanel from './nodePanel/DistributionPanel.vue'
   import FeatureEngineeringPanel from './nodePanel/FeatureEngineeringPanel.vue'
@@ -270,6 +281,9 @@
     availableModels?: string[]
     usedModelNames?: string[]
     modelOptionsLoading?: boolean
+    validationConfig?: Record<string, unknown>
+    datasetColumns?: Array<{ name: string, type: string, role: string }>
+    projectId?: string
   }>()
 
   // 將設定變更回傳給父層
@@ -367,6 +381,9 @@
 
   const settingsComputeCi = computed(() => Boolean(localConfig.compute_ci ?? false))
 
+  const settingsValidation = computed(() => props.validationConfig ?? {})
+  const settingsDatasetColumns = computed(() => props.datasetColumns ?? [])
+
   function handleSettingsPreprocessingUpdate (steps: Array<Record<string, unknown>>): void {
     localConfig.preprocessing = steps
     if (!props.selectedNode) return
@@ -383,6 +400,10 @@
     localConfig.compute_ci = value
     if (!props.selectedNode) return
     emit('update-config', { nodeId: props.selectedNode.id, config: { compute_ci: value } })
+  }
+
+  function handleSettingsValidationUpdate (value: Record<string, unknown>): void {
+    emit('update-config', { nodeId: 'testScore', config: { validation: value } })
   }
 
   // 當切換節點時，把該節點 config 複製到本地表單狀態

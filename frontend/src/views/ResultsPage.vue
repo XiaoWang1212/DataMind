@@ -53,6 +53,28 @@
           </article>
         </section>
 
+        <section v-if="classDistribution" class="distribution-card">
+          <div class="distribution-head">
+            <h3>類別分佈</h3>
+            <span
+              v-if="classDistribution.imbalanceRatio !== null"
+              class="imbalance-badge"
+              :class="{ 'imbalance-badge--warn': isImbalanced }"
+            >
+              不平衡比 {{ classDistribution.imbalanceRatio }}:1
+            </span>
+          </div>
+          <div class="distribution-bars">
+            <div v-for="row in distributionRows" :key="row.label" class="distribution-row">
+              <span class="distribution-label">{{ row.label }}</span>
+              <div class="distribution-bar-track">
+                <div class="distribution-bar-fill" :style="{ width: `${row.percent}%` }" />
+              </div>
+              <span class="distribution-count">{{ row.count }}（{{ row.percent.toFixed(1) }}%）</span>
+            </div>
+          </div>
+        </section>
+
         <section class="insight-card">
           <div class="insight-header">
             <div class="insight-icon-wrap">
@@ -283,6 +305,49 @@
     })
   })
 
+  // ─── 類別分佈 ────────────────────────────────────────────────────────────────
+
+  interface ClassDistribution {
+    counts: Record<string, number>
+    imbalanceRatio: number | null
+  }
+
+  const classDistribution = computed<ClassDistribution | null>(() => {
+    const raw = workflowResult.value?.class_distribution
+    if (!raw || typeof raw !== 'object') return null
+    const rawCounts = (raw as Record<string, unknown>).counts
+    if (!rawCounts || typeof rawCounts !== 'object') return null
+
+    const counts: Record<string, number> = {}
+    for (const [label, value] of Object.entries(rawCounts as Record<string, unknown>)) {
+      const num = Number(value)
+      if (!Number.isNaN(num)) counts[label] = num
+    }
+    if (Object.keys(counts).length === 0) return null
+
+    const rawRatio = (raw as Record<string, unknown>).imbalance_ratio
+    const imbalanceRatio = typeof rawRatio === 'number' ? rawRatio : null
+    return { counts, imbalanceRatio }
+  })
+
+  interface DistributionRow {
+    label: string
+    count: number
+    percent: number
+  }
+
+  const distributionRows = computed<DistributionRow[]>(() => {
+    const dist = classDistribution.value
+    if (!dist) return []
+    const total = Object.values(dist.counts).reduce((sum, n) => sum + n, 0)
+    if (total === 0) return []
+    return Object.entries(dist.counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count, percent: (count / total) * 100 }))
+  })
+
+  const isImbalanced = computed(() => (classDistribution.value?.imbalanceRatio ?? 0) >= 3)
+
   // ─── AI 洞察文字(快取) ───────────────────────────────────────────────────────
 
   const insightText = ref<string | null>(null)
@@ -443,6 +508,87 @@
     margin: 0;
     font-size: 12px;
     color: var(--text-secondary);
+  }
+
+  .distribution-card {
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card-bg);
+    padding: 14px 16px;
+    animation: reveal-up 0.46s ease both;
+    animation-delay: 0.08s;
+  }
+
+  .distribution-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .distribution-head h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-main);
+  }
+
+  .imbalance-badge {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--brand-soft);
+  }
+
+  .imbalance-badge--warn {
+    color: #b45309;
+    background: color-mix(in oklab, #f59e0b 18%, transparent);
+  }
+
+  .distribution-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .distribution-row {
+    display: grid;
+    grid-template-columns: minmax(60px, 140px) 1fr auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .distribution-label {
+    font-size: 13px;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .distribution-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+
+  .distribution-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
+    transition: width 0.3s ease;
+  }
+
+  .distribution-count {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
   }
 
   .insight-card {

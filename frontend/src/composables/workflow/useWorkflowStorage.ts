@@ -178,6 +178,49 @@ export function clearResultInsightFromStorage (projectId: string): void {
   localStorage.removeItem(key)
 }
 
+const TAB_INSIGHT_KEY = 'tabInsight'
+
+function tabInsightStorageKey (
+  projectId: string, modelName: string, splitName: string, tab: string,
+): string {
+  return k(`${TAB_INSIGHT_KEY}_${tab}_${modelName}_${splitName}`, projectId)
+}
+
+export function saveTabInsightToStorage (
+  projectId: string, modelName: string, splitName: string, tab: string, insight: string,
+): void {
+  const key = tabInsightStorageKey(projectId, modelName, splitName, tab)
+  try {
+    localStorage.setItem(key, insight)
+  } catch (error) {
+    console.error('[WF-SAVE] 無法儲存分頁解讀文字:', error)
+  }
+}
+
+export function loadTabInsightFromStorage (
+  projectId: string, modelName: string, splitName: string, tab: string,
+): string | null {
+  const key = tabInsightStorageKey(projectId, modelName, splitName, tab)
+  return localStorage.getItem(key)
+}
+
+// 分頁解讀是組合鍵（tab/model/fold 各自獨立一個 key），沒辦法像單一 key 那樣直接刪，
+// 要掃描 localStorage 找出屬於這個 projectId 的全部分頁解讀 key 再逐一移除
+export function clearAllTabInsightsFromStorage (projectId: string): void {
+  const prefix = `${TAB_INSIGHT_KEY}_`
+  const suffix = `_${projectId}`
+  const staleKeys: string[] = []
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith(prefix) && key.endsWith(suffix)) {
+      staleKeys.push(key)
+    }
+  }
+  for (const key of staleKeys) {
+    localStorage.removeItem(key)
+  }
+}
+
 // job 在後端已經永久查不到時（重啟、超過 TTL）呼叫，避免下次重新整理又試著輪詢同一個死掉的 job_id
 export function clearActiveJobIdFromStorage (projectId?: string): void {
   const key = k(WORKFLOW_STATE_KEY, projectId)

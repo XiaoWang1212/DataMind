@@ -449,6 +449,150 @@ class PaperRAGService:
         text = self._call_gemini(prompt, usage_total)
         return text.strip()
 
+    _TAB_PROMPT_HINTS: Dict[str, str] = {
+        "matrix": "請指出模型最容易把哪個類別誤判成哪個類別，這對臨床判讀有什麼提醒。",
+        "roc": "請說明這個 AUC 數值代表模型的判別力好不好，並簡述曲線形狀反映的意義。",
+        "pr": "請說明在類別不平衡的情境下 PR 曲線的意義，以及這個結果顯示模型在少數類別上的表現如何。",
+        "calibration": "請說明這個模型輸出的機率是否可信賴，是偏樂觀還是偏保守。",
+        "perClass": "請指出表現最差的類別，並簡述可能的原因或後續建議。",
+    }
+
+    _MAX_TAB_TEXT_CHARS = 4000
+
+    @staticmethod
+    def _sample_curve_points(
+        xs: List[float], ys: List[float], n: int = 5
+    ) -> List[tuple]:
+        """均勻取樣最多 n 個點，避免把整條曲線的完整座標陣列丟給 Gemini。"""
+        if not xs or not ys:
+            return []
+        if len(xs) <= n:
+            return list(zip(xs, ys))
+        step = (len(xs) - 1) / (n - 1)
+        indices = sorted({round(i * step) for i in range(n)})
+        return [(xs[i], ys[i]) for i in indices]
+
+    def _find_tab_result(
+        self, mining_results: dict, model_name: str, split_name: str
+    ) -> Optional[dict]:
+        for r in mining_results.get("results", []):
+            if (
+                r.get("model_name") == model_name
+                and r.get("split_name") == split_name
+                and "error" not in r
+            ):
+                return r
+        return None
+
+    def _format_tab_data(self, result: dict, tab: str) -> Optional[str]:
+        """只挑該分頁需要的欄位轉成精簡文字，不送整包原始資料。"""
+        if tab == "matrix":
+            cm = result.get("confusion_matrix")
+            if not cm:
+                return None
+            labels = cm.get("labels", [])
+            matrix = cm.get("matrix", [])
+            rows = []
+            for i, label in enumerate(labels):
+                row = matrix[i] if i < len(matrix) else []
+                row_str = "、".join(
+                    f"預測{labels[j]}={row[j]}" for j in range(min(len(row), len(labels)))
+                )
+                rows.append(f"實際{label}：{row_str}")
+            return "【混淆矩陣】\n" + "\n".join(rows)
+
+        if tab in ("roc", "pr"):
+            curve = result.get("roc_pr_curve")
+            if not curve:
+                return None
+            metric_key = "auc" if tab == "roc" else "auprc"
+            metric_val = next(
+                (m.get("value") for m in result.get("metrics", []) if m.get("metric") == metric_key),
+                None,
+            )
+            sub = curve.get("roc" if tab == "roc" else "pr", {})
+            xs_key, ys_key = ("fpr", "tpr") if tab == "roc" else ("recall", "precision")
+            points = self._sample_curve_points(sub.get(xs_key, []), sub.get(ys_key, []))
+            points_str = "、".join(f"({x:.2f}, {y:.2f})" for x, y in points) or "N/A"
+            metric_label = "AUC" if tab == "roc" else "AUPRC"
+            metric_str = f"{metric_val:.4f}" if isinstance(metric_val, (int, float)) else "N/A"
+            axis_label = "FPR, TPR" if tab == "roc" else "Recall, Precision"
+            return (
+                f"【{'ROC' if tab == 'roc' else 'PR'} 曲線】\n"
+                f"正類：{curve.get('pos_label', 'N/A')}\n"
+                f"{metric_label}：{metric_str}\n"
+                f"取樣座標點（{axis_label}）：{points_str}"
+            )
+
+        if tab == "calibration":
+            curve = result.get("calibration_curve")
+            if not curve:
+                return None
+            prob_true = curve.get("prob_true", [])
+            prob_pred = curve.get("prob_pred", [])
+            points_str = "、".join(
+                f"(預測{p:.2f}, 實際{t:.2f})"
+                for p, t in zip(prob_pred, prob_true)
+                if isinstance(p, (int, float)) and isinstance(t, (int, float))
+            ) or "N/A"
+            return (
+                f"【校準曲線】\n"
+                f"正類：{curve.get('pos_label', 'N/A')}\n"
+                f"各 bin（預測機率, 實際正類比例）：{points_str}"
+            )
+
+        if tab == "perClass":
+            pcm = result.get("per_class_metrics")
+            if not pcm:
+                return None
+            labels = pcm.get("labels", [])
+            precision = pcm.get("precision", [])
+            recall = pcm.get("recall", [])
+            f1 = pcm.get("f1", [])
+            support = pcm.get("support", [])
+            rows = []
+            for i, label in enumerate(labels):
+                p = precision[i] if i < len(precision) else None
+                r = recall[i] if i < len(recall) else None
+                f = f1[i] if i < len(f1) else None
+                s = support[i] if i < len(support) else None
+                p_str = f"{p:.4f}" if isinstance(p, (int, float)) else "N/A"
+                r_str = f"{r:.4f}" if isinstance(r, (int, float)) else "N/A"
+                f_str = f"{f:.4f}" if isinstance(f, (int, float)) else "N/A"
+                rows.append(f"{label}：precision={p_str}, recall={r_str}, f1={f_str}, 樣本數={s}")
+            return "【各類別指標】\n" + "\n".join(rows)
+
+        return None
+
+    def generate_tab_insight(
+        self, mining_results: dict, tab: str, model_name: str, split_name: str
+    ) -> str:
+        """針對 workflow 結果裡某個 (model × fold) 的單一分頁資料，生成一段繁體中文解讀。"""
+        result = self._find_tab_result(mining_results, model_name, split_name)
+        if result is None:
+            return "找不到對應的結果資料。"
+
+        tab_text = self._format_tab_data(result, tab)
+        if tab_text is None:
+            return "此分頁沒有可供解讀的資料。"
+
+        if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
+            tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
+
+        hint = self._TAB_PROMPT_HINTS.get(tab, "")
+        prompt = (
+            "你是資料科學顧問，正在協助解讀一份醫學研究的機器學習分類結果。\n"
+            f"以下是模型「{model_name}」在「{split_name}」這筆結果的資料：\n\n"
+            f"{tab_text}\n\n"
+            f"請用繁體中文寫 2 到 4 句話的解讀。{hint}\n"
+            "請「只」輸出解讀本身，不要加上任何標題、條列符號或多餘說明文字。"
+        )
+        usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        text = self._call_gemini(prompt, usage_total)
+        if text.startswith("（生成失敗："):
+            raise RuntimeError(text)
+        return text.strip()
+
     def score_paper(self, paper_text: str) -> dict:
         """依 _JOURNAL_RUBRICS 對論文全文逐期刊評分，各期刊各一次獨立的 Gemini JSON 呼叫。
 
