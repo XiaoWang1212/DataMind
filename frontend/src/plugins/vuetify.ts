@@ -51,7 +51,7 @@ export default createVuetify({
           'success-text': '#1D6151',
           'warning-text': '#78530F',
           'error-text': '#A22F43',
-          // 期刊評分「低分」進度條填色專用，選色中（見 /style-guide 的候選比較區），
+          // 期刊評分「低分」進度條填色專用。疊白底/軌道對比不足 3:1，
           // 只能用在圖形填色（進度條），不可當文字色——文字一律走上面的 warning-text
           'score-low': '#FFD000',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
