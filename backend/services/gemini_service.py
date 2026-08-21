@@ -33,6 +33,7 @@ _AVAILABLE_MODELS = (
 )
 
 _WORKFLOW_EXAMPLE = """{
+  "process_narrative": "本研究使用某醫學中心之電子病歷資料，先以平均值填補缺失值並進行標準化。\n\n接著透過特徵選擇篩選出與壓瘡風險最相關的 10 個變數，再分別以邏輯迴歸、隨機森林與 XGBoost 建立分類模型。\n\n訓練採 10 折分層交叉驗證，並以 SMOTE 處理類別不平衡問題，最終以 balanced accuracy、AUC 等指標評估各模型表現並比較優劣。",
   "target_col": "pressure_injury",
   "models": [
     {"name": "Logistic Regression", "type": "Classification", "purpose_zh": "建立基線分類模型"},
@@ -75,7 +76,7 @@ _WORKFLOW_SYSTEM_PROMPT = f"""你是醫學研究自動化 ML workflow 設計助�
 請根據論文內容輸出一份 workflow JSON 設定檔。輸出格式為純 JSON 物件，不得包含任何 markdown、程式碼區塊、說明文字或其他非 JSON 內容。
 
 【重要】輸出必須包含以下所有 key，一個都不能少：
-target_col, models, preprocessing, featureEngineering, validation, metrics, resampling, tuning, compute_ci, features
+process_narrative, target_col, models, preprocessing, featureEngineering, validation, metrics, resampling, tuning, compute_ci, features
 
 論文有提到某個設定 → 依論文填入。
 論文沒提到 → 使用下方完整範例的預設值，不可省略任何 key。
@@ -94,6 +95,7 @@ target_col, models, preprocessing, featureEngineering, validation, metrics, resa
 {_WORKFLOW_EXAMPLE}
 
 填寫原則：
+- process_narrative：依論文方法論章節，拆成 2–4 個小段落，段落之間用 \n\n 分隔（例如：第一段資料來源與前處理、第二段特徵工程與建模、第三段驗證與評估），每段 1–3 句，具體描述「這篇論文」的實際做法，不要寫空泛通用句、不要擠成一整段；論文方法論資訊不足時才依上方範例改寫
 - models：依論文列出的模型，name 必須完全符合可用模型名稱清單
 - preprocessing：依論文資料處理方式，若未提及則用 fill_na+standardize
 - featureEngineering：依論文特徵選擇方式，若未提及則用 select_relevant_features k=10
@@ -163,8 +165,8 @@ class GeminiService:
             "規則：\n"
             "1. 若某個陣列欄位無法確認內容，請用空陣列 [] 代替，絕不使用 unknown 或任何猜測值。\n"
             "2. 必須包含以下所有 key（缺少者補預設值）：\n"
-            "   target_col（string）, models（array）, preprocessing（array）, "
-            "featureEngineering（array）, features（array）,\n"
+            "   process_narrative（string）, target_col（string）, models（array）, "
+            "preprocessing（array）, featureEngineering（array）, features（array）,\n"
             "   validation（object）, metrics（array）, resampling（object）, "
             "tuning（object）, compute_ci（boolean）\n"
             "3. preprocessing 的 type 只能是：fill_na, knn_impute, iterative_impute, "
@@ -205,6 +207,7 @@ class GeminiService:
         backend always has valid params to run.
         """
         defaults: dict = {
+            "process_narrative": "",
             "target_col": None,
             "models": [],
             "preprocessing": [],       # no node if paper didn't mention it
