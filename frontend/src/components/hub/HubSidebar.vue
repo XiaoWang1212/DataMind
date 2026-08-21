@@ -184,25 +184,26 @@
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(38px);
+  filter: blur(70px);
 }
 
+/* top/left 往回退，抵銷放大後中心的位移 */
 .orb-2 {
-  top: 260px;
-  left: 40px;
-  width: 130px;
-  height: 130px;
+  top: 225px;
+  left: 5px;
+  width: 200px;
+  height: 200px;
   background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, white) 0%, transparent 70%);
-  opacity: 0.5;
+  opacity: 0.42;
 }
 
 .orb-3 {
-  top: 480px;
-  left: -20px;
-  width: 110px;
-  height: 110px;
+  top: 445px;
+  left: -55px;
+  width: 180px;
+  height: 180px;
   background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 85%, black) 0%, transparent 70%);
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .hub-sidebar-header {
