@@ -51,7 +51,10 @@
             @click="selectOption(opt)"
             @mouseenter="activeIndex = i"
           >
-            <span class="cs-option-label">{{ opt.label }}</span>
+            <span class="cs-option-row">
+              <span class="cs-option-label">{{ opt.label }}</span>
+              <svg v-if="opt.value === modelValue" class="cs-option-check" height="14" viewBox="0 0 24 24" width="14"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z" fill="currentColor" /></svg>
+            </span>
             <span v-if="opt.hint" class="cs-option-hint">{{ opt.hint }}</span>
           </li>
         </ul>
@@ -386,10 +389,23 @@
     cursor: pointer;
   }
 
+  .cs-option-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .cs-option-label {
+    flex: 1;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .cs-option-check {
+    flex-shrink: 0;
+    color: var(--color-ink);
   }
 
   .cs-option-hint {
