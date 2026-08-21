@@ -129,9 +129,14 @@
   const activeCitationId = ref<string | null>(null)
   const popoverTarget = ref<HTMLElement | null>(null)
 
-  const popoverCitation = computed(() =>
-    report.value.citations.find(c => c.id === activeCitationId.value) ?? null,
-  )
+  const popoverCitation = computed(() => {
+    const base = report.value.citations.find(c => c.id === activeCitationId.value) ?? null
+    if (!base) return null
+    // 同一篇論文在不同段落被引用時，優先顯示「被點擊的那一次引用」實際依據的片段，
+    // 找不到（mock 資料、非 arXiv 生成的內容）才退回這篇論文的預設摘錄
+    const relevantChunk = popoverTarget.value?.dataset.relevantChunk
+    return relevantChunk ? { ...base, snippet: relevantChunk } : base
+  })
   const popoverIndex = computed(() =>
     report.value.citations.findIndex(c => c.id === activeCitationId.value) + 1,
   )
