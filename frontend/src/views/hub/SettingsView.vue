@@ -2,74 +2,76 @@
   <div class="settings">
     <PageHeader subtitle="設定您的研究環境" title="設定" />
 
-    <!-- General Settings -->
-    <div class="settings-card">
-      <div class="card-title">一般設定</div>
+    <div class="settings-body enter-stagger">
+      <!-- General Settings -->
+      <div class="settings-card">
+        <div class="card-title">一般設定</div>
 
-      <div class="setting-row">
-        <div class="setting-info">
-          <div class="setting-name">預設分析逾時</div>
-          <div class="setting-desc">分析執行的最長時間</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">預設分析逾時</div>
+            <div class="setting-desc">分析執行的最長時間</div>
+          </div>
+          <select v-model="timeout" class="timeout-select">
+            <option value="5">5 分鐘</option>
+            <option value="10">10 分鐘</option>
+            <option value="15">15 分鐘</option>
+            <option value="30">30 分鐘</option>
+            <option value="60">60 分鐘</option>
+          </select>
         </div>
-        <select v-model="timeout" class="timeout-select">
-          <option value="5">5 分鐘</option>
-          <option value="10">10 分鐘</option>
-          <option value="15">15 分鐘</option>
-          <option value="30">30 分鐘</option>
-          <option value="60">60 分鐘</option>
-        </select>
-      </div>
 
-      <div class="setting-divider" />
+        <div class="setting-divider" />
 
-      <div class="setting-row">
-        <div class="setting-info">
-          <div class="setting-name">自動儲存提取</div>
-          <div class="setting-desc">自動儲存框架提取結果</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">自動儲存提取</div>
+            <div class="setting-desc">自動儲存框架提取結果</div>
+          </div>
+          <button
+            :aria-checked="autoSave"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--on': autoSave }"
+            role="switch"
+            @click="autoSave = !autoSave"
+          >
+            <span class="toggle-thumb" />
+          </button>
         </div>
-        <button
-          :aria-checked="autoSave"
-          class="toggle-btn"
-          :class="{ 'toggle-btn--on': autoSave }"
-          role="switch"
-          @click="autoSave = !autoSave"
-        >
-          <span class="toggle-thumb" />
-        </button>
-      </div>
-    </div>
-
-    <!-- API Configuration -->
-    <div class="settings-card">
-      <div class="card-title">API 設定</div>
-
-      <div class="api-field">
-        <label class="api-label">NLP 服務端點</label>
-        <input
-          v-model="nlpEndpoint"
-          class="api-input"
-          placeholder="https://api.your-service.internal"
-        >
       </div>
 
-      <div class="api-field">
-        <label class="api-label">API 金鑰</label>
-        <input
-          v-model="apiKey"
-          class="api-input"
-          placeholder="••••••••••••••••"
-          type="password"
-        >
-      </div>
-    </div>
+      <!-- API Configuration -->
+      <div class="settings-card">
+        <div class="card-title">API 設定</div>
 
-    <!-- Save button -->
-    <div class="save-row">
-      <AppButton variant="primary" @click="saveSettings">儲存設定</AppButton>
-      <StatusBadge v-if="saved" status="success">
-        <v-icon icon="mdi-check-circle-outline" size="14" />
-        設定已儲存
-      </StatusBadge>
+        <div class="api-field">
+          <label class="api-label">NLP 服務端點</label>
+          <input
+            v-model="nlpEndpoint"
+            class="api-input"
+            placeholder="https://api.your-service.internal"
+          >
+        </div>
+
+        <div class="api-field">
+          <label class="api-label">API 金鑰</label>
+          <input
+            v-model="apiKey"
+            class="api-input"
+            placeholder="••••••••••••••••"
+            type="password"
+          >
+        </div>
+      </div>
+
+      <!-- Save button -->
+      <div class="save-row">
+        <AppButton variant="primary" @click="saveSettings">儲存設定</AppButton>
+        <span v-if="saved" class="save-hint">
+          <v-icon icon="mdi-check-circle-outline" size="14" />
+          設定已儲存
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -78,7 +80,6 @@
   import { ref } from 'vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
-  import StatusBadge from '@/components/ui/StatusBadge.vue'
 
   const timeout = ref('10')
   const autoSave = ref(true)
@@ -247,5 +248,13 @@
     display: flex;
     align-items: center;
     gap: 14px;
+  }
+
+  .save-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--color-success-text);
   }
 </style>
