@@ -71,18 +71,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in summary" :key="row.model_name" :class="{ 'row-best': row.model_name === bestModelName }">
-                <td class="model-name">
-                  {{ row.model_name }}
-                  <span v-if="row.model_name === bestModelName" class="best-badge">
-                    <v-icon icon="mdi-trophy-outline" size="12" />
-                    最佳
-                  </span>
-                </td>
+              <tr v-for="row in summary" :key="row.model_name">
+                <td class="model-name">{{ row.model_name }}</td>
                 <td
                   v-for="metric in metricNames"
                   :key="metric"
-                  :class="{ 'score-best': row.model_name === bestModelName }"
                 >{{ metricValue(row, metric) }}</td>
               </tr>
             </tbody>
@@ -250,11 +243,6 @@
     }
     return best ? { model_name: best.model_name, valueFormatted: best.valueFormatted } : null
   }
-
-  const bestModelName = computed(() => {
-    if (metricNames.value.length === 0) return null
-    return bestModelFor(metricNames.value[0]!)?.model_name ?? null
-  })
 
   const metricCards = computed<MetricCard[]>(() => {
     if (metricNames.value.length === 0) return []
@@ -528,30 +516,6 @@
 
 .model-name {
   color: var(--color-text);
-}
-
-/* 整列標示比單一儲存格變色好掃 */
-.row-best {
-  background: var(--color-success-bg);
-}
-
-.best-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 8px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-success-text);
-  font-size: 11px;
-  font-weight: 500;
-  vertical-align: middle;
-}
-
-.score-best {
-  color: var(--color-success-text);
-  font-weight: 500;
 }
 
 /* .chat-card 的底色、邊框、圓角、陰影由 .glass-panel 提供。scoped 樣式不在 CSS layer 內、
