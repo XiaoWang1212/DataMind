@@ -27,9 +27,10 @@
         <AppButton
           v-if="selectedFile && !extracting"
           class="extract-btn"
+          :variant="extractedData ? 'secondary' : 'primary'"
           @click="startExtract"
         >
-          開始提取
+          {{ extractedData ? '重新提取' : '開始提取' }}
         </AppButton>
       </div>
 
@@ -74,7 +75,7 @@
                 <span v-for="m in extractedData.metrics" :key="m" class="result-tag result-tag--indigo">{{ m }}</span>
               </div>
             </div>
-            <AppButton class="save-btn" variant="secondary" @click="saveFramework">儲存框架</AppButton>
+            <AppButton class="save-btn" variant="primary" @click="saveFramework">儲存框架</AppButton>
           </template>
         </div>
       </div>

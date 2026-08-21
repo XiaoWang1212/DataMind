@@ -123,7 +123,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { RouterLink, useRouter } from 'vue-router'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
   import FileDropZone from '@/components/common/FileDropZone.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
@@ -131,11 +131,16 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
+  const route = useRoute()
   const router = useRouter()
   const frameworkStore = useFrameworkStore()
   const projectStore = useProjectStore()
   const currentStep = ref(0)
   const submitting = ref(false)
+
+  // 從框架庫「用於專案」帶入時，query 裡會有選好的框架 id
+  const rawFrameworkId = Number(route.query.frameworkId)
+  const preselectedFrameworkId = Number.isFinite(rawFrameworkId) ? rawFrameworkId : null
 
   const steps = [
     { title: '專案設定', sub: '基本資訊' },
@@ -147,7 +152,7 @@
   const form = ref({
     name: '',
     description: '',
-    frameworkId: null as number | null,
+    frameworkId: preselectedFrameworkId,
     datasetFile: null as File | null,
   })
 

@@ -159,7 +159,7 @@
       <div class="panel-action">
         <RouterLink
           class="use-btn"
-          :to="`/hub/projects/new`"
+          :to="{ path: '/hub/projects/new', query: { frameworkId: selectedFramework.id } }"
         >
           用於專案
         </RouterLink>
