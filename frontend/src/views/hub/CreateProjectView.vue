@@ -387,22 +387,26 @@
     gap: 12px;
   }
 
+  /* hover/selected 跟框架庫的 .fw-card 同一套（見 FrameworkLibraryView.vue），
+     兩個地方都是「框架卡片」，互動語言要一致 */
   .fw-select-card {
     padding: 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease-out),
-      background-color var(--dur-fast) var(--ease-out);
+    transition: transform var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
   }
 
   .fw-select-card:hover {
+    transform: translateY(-2px);
     border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    box-shadow: var(--shadow-card);
   }
 
   .fw-select-card--selected {
-    border-color: var(--color-ink);
-    background: color-mix(in oklab, var(--color-ink) 6%, white);
+    border: 1.5px solid var(--color-ink);
   }
 
   .fw-select-icon {
