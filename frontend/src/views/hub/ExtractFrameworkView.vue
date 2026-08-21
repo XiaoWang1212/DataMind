@@ -14,38 +14,16 @@
       <!-- Upload panel -->
       <div class="panel">
         <div class="panel-label">上傳論文</div>
-        <div
-          class="drop-zone"
-          :class="{ 'drop-zone--over': isDragOver }"
-          @click="fileInput?.click()"
-          @dragleave="isDragOver = false"
-          @dragover.prevent="isDragOver = true"
-          @drop.prevent="handleDrop"
-        >
-          <v-icon class="drop-icon" icon="mdi-upload-outline" size="48" />
-          <div class="drop-text">點擊上傳或拖放檔案</div>
-          <div class="drop-hint">僅限 PDF 檔案（最大 10MB）</div>
-          <input
-            ref="fileInput"
-            accept=".pdf"
-            hidden
-            type="file"
-            @change="handleFileChange"
-          >
-        </div>
-        <div v-if="selectedFile" class="file-info">
-          <v-icon class="file-icon" icon="mdi-file-pdf-box" size="18" />
-          <span class="file-name">{{ selectedFile.name }}</span>
-          <AppButton
-            aria-label="移除檔案"
-            class="file-remove"
-            icon-only
-            variant="ghost"
-            @click="removeFile"
-          >
-            <v-icon icon="mdi-close" size="15" />
-          </AppButton>
-        </div>
+        <FileDropZone
+          accept=".pdf"
+          accept-label="PDF"
+          file-icon="mdi-file-pdf-box"
+          hint="僅限 PDF 檔案（最大 10MB）"
+          icon="mdi-upload-outline"
+          :model-value="selectedFile"
+          text="點擊上傳或拖放檔案"
+          @update:model-value="onFileChange"
+        />
         <AppButton
           v-if="selectedFile && !extracting"
           class="extract-btn"
@@ -120,6 +98,7 @@
   import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
+  import FileDropZone from '@/components/common/FileDropZone.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
@@ -135,9 +114,7 @@
 
   const router = useRouter()
   const store = useFrameworkStore()
-  const fileInput = ref<HTMLInputElement | null>(null)
   const selectedFile = ref<File | null>(null)
-  const isDragOver = ref(false)
   const extracting = ref(false)
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
@@ -150,20 +127,10 @@
     return text.replace(/\*\*?/g, '')
   }
 
-  function handleFileChange (e: Event): void {
-    const input = e.target as HTMLInputElement
-    if (input.files?.[0]) selectedFile.value = input.files[0]
-  }
-
-  function handleDrop (e: DragEvent): void {
-    isDragOver.value = false
-    const file = e.dataTransfer?.files[0]
-    if (file && file.type === 'application/pdf') selectedFile.value = file
-  }
-
-  function removeFile (): void {
-    if (extracting.value) abortController?.abort()
-    selectedFile.value = null
+  function onFileChange (file: File | null): void {
+    // 移除檔案時要一併中止進行中的提取，維持原本 removeFile 的行為
+    if (!file && extracting.value) abortController?.abort()
+    selectedFile.value = file
   }
 
   async function startExtract (): Promise<void> {
@@ -277,81 +244,6 @@
   font-weight: 500;
   color: var(--color-text);
   margin-bottom: 12px;
-}
-
-/* ── Drop zone ── */
-.drop-zone {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  padding: 48px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  background: var(--color-surface-alt);
-  transition: border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
-}
-
-.drop-zone:hover,
-.drop-zone--over {
-  border-color: var(--color-ink);
-  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
-}
-
-.drop-icon {
-  color: var(--color-ink-soft);
-  margin-bottom: 4px;
-}
-
-.drop-text {
-  font-size: 14px;
-  color: var(--color-ink-soft);
-  font-weight: 500;
-}
-
-.drop-hint {
-  font-size: 12px;
-  color: var(--color-ink-soft);
-}
-
-/* ── File info ── */
-/* 右側留窄 padding 讓 28px 的移除鈕塞得進去，整列高度維持原樣 */
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 6px 8px 6px 12px;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.file-icon {
-  color: var(--color-error);
-}
-
-.file-name {
-  flex: 1;
-  font-size: 13px;
-  color: var(--color-ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 縮小 AppButton 的 icon-only 尺寸，選一組壓得過元件內部規則的選擇器 */
-.file-info .file-remove {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.file-info .file-remove:hover:not(:disabled) {
-  color: var(--color-error);
 }
 
 .extract-btn {

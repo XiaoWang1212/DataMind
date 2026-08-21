@@ -69,27 +69,15 @@
 
       <!-- Step 3: Upload Dataset -->
       <template v-if="currentStep === 2">
-        <div
-          class="drop-zone"
-          @click="datasetInput?.click()"
-          @dragover.prevent
-          @drop.prevent="handleDatasetDrop"
-        >
-          <v-icon class="drop-icon" icon="mdi-table-arrow-up" size="48" />
-          <div class="drop-text">點擊或拖放資料集檔案</div>
-          <div class="drop-hint">支援 CSV、Excel（最大 50MB）</div>
-          <input
-            ref="datasetInput"
-            accept=".csv,.xlsx,.xls"
-            hidden
-            type="file"
-            @change="handleDatasetChange"
-          >
-        </div>
-        <div v-if="form.datasetFile" class="file-info">
-          <v-icon icon="mdi-file-table-outline" size="18" />
-          <span class="file-name">{{ form.datasetFile.name }}</span>
-        </div>
+        <FileDropZone
+          v-model="form.datasetFile"
+          accept=".csv,.xlsx,.xls"
+          accept-label="CSV、Excel"
+          file-icon="mdi-file-table-outline"
+          hint="支援 CSV、Excel（最大 50MB）"
+          icon="mdi-table-arrow-up"
+          text="點擊或拖放資料集檔案"
+        />
       </template>
 
       <!-- Step 4: Review & Execute -->
@@ -136,6 +124,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
+  import FileDropZone from '@/components/common/FileDropZone.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { saveWorkflowDataFileToStorage } from '@/composables/workflow/useWorkflowStorage'
@@ -145,7 +134,6 @@
   const router = useRouter()
   const frameworkStore = useFrameworkStore()
   const projectStore = useProjectStore()
-  const datasetInput = ref<HTMLInputElement | null>(null)
   const currentStep = ref(0)
   const submitting = ref(false)
 
@@ -171,16 +159,6 @@
     if (i < currentStep.value) return 'step-circle--done'
     if (i === currentStep.value) return 'step-circle--active'
     return 'step-circle--inactive'
-  }
-
-  function handleDatasetChange (e: Event): void {
-    const input = e.target as HTMLInputElement
-    if (input.files?.[0]) form.value.datasetFile = input.files[0]
-  }
-
-  function handleDatasetDrop (e: DragEvent): void {
-    const file = e.dataTransfer?.files[0]
-    if (file) form.value.datasetFile = file
   }
 
   async function executeProject (): Promise<void> {
@@ -430,59 +408,6 @@
   .fw-select-tag {
     font-size: 12px;
     color: var(--color-ink-soft);
-  }
-
-  /* ── Drop zone ── */
-  .drop-zone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 48px 24px;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-alt);
-    cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease-out),
-      background-color var(--dur-fast) var(--ease-out);
-  }
-
-  .drop-zone:hover {
-    border-color: var(--color-ink);
-    background: color-mix(in oklab, var(--color-ink) 6%, white);
-  }
-
-  .drop-icon {
-    margin-bottom: 4px;
-    color: var(--color-ink-soft);
-  }
-
-  .drop-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text);
-  }
-
-  .drop-hint {
-    font-size: 12px;
-    color: var(--color-ink-soft);
-  }
-
-  .file-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-alt);
-    color: var(--color-ink);
-  }
-
-  .file-name {
-    font-size: 13px;
-    color: var(--color-text);
   }
 
   /* ── Review ── */
