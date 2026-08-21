@@ -42,6 +42,10 @@ _SECTION_TOP_K: Dict[str, int] = {
 
 _DEFAULT_TOP_K = 5
 
+# 引用標記的正則，[n] 或 [n, m, ...] 組合格式都要比對到。
+# _localref_to_global 跟 _build_citation_map 共用同一份，避免兩處各寫一份、之後改一邊忘記改另一邊。
+_CITATION_PATTERN = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
+
 # 每章節的 RAG 搜尋 query 模板
 _SECTION_QUERIES: Dict[str, str] = {
     "摘要": "{topic} 研究目的 方法概述 主要發現",
@@ -261,14 +265,15 @@ class PaperRAGService:
             )
             section_text = self._call_gemini(prompt, usage_total)
 
-            # 4. 本地 [n] → 全域 [n]
+            # 4. 建立引用地圖（逐段）—— 要在轉換全域編號之前做，
+            # 這樣才能用本地編號精準查表，不是用全域編號反查猜測
+            self._build_citation_map(
+                section_name, section_text, local_refs, global_ref_list, citation_map
+            )
+
+            # 5. 本地 [n] → 全域 [n]
             section_text_global = self._localref_to_global(section_text, local_refs)
             sections_text[section_name] = section_text_global
-
-            # 5. 建立引用地圖（逐段）
-            self._build_citation_map(
-                section_name, section_text_global, local_refs, global_ref_list, citation_map
-            )
 
         # 6. 過濾未被實際引用的參考文獻，並重新連續編號
         cited_old_ids = sorted({rid for entry in citation_map for rid in entry["cited_ref_ids"]})
@@ -900,7 +905,7 @@ class PaperRAGService:
                 global_ids.append(str(info["global_ref_id"]) if info else str(local_id))
             return "".join(f"[{gid}]" for gid in global_ids)
 
-        text = re.sub(r"\[(\d+(?:\s*,\s*\d+)*)\]", replace, text)
+        text = re.sub(_CITATION_PATTERN, replace, text)
         # 去除相鄰重複引用，如 [1][1] → [1]
         return re.sub(r"(\[\d+\])(?:\1)+", r"\1", text)
 
@@ -915,40 +920,56 @@ class PaperRAGService:
         """
         逐段解析引用標記，填入 citation_map。
 
+        section_text 是**尚未**把本地編號轉成全域編號的原始章節文字——
+        必須用本地編號直接查 local_refs，才知道這段話實際引用的是哪個 chunk
+        （同一篇論文在候選池裡可能有好幾個不同的 chunk，各自對應不同的 local_id）。
+
         citation_map 的每一筆結構：
         {
             section        : 章節名稱
             paragraph_index: 該段在章節中的位置（0-indexed）
-            text           : 段落文字（含 [n] 標記）
-            cited_ref_ids  : 該段引用的全域 ref_id 列表
+            text           : 段落文字（含 [n] 標記，本地編號）
+            cited_ref_ids  : 該段引用的全域 ref_id 列表（去重、由小到大）
             sources        : 每個引用的詳細資訊（供前端展示）
         }
         """
         paragraphs = [p.strip() for p in section_text.split("\n\n") if p.strip()]
         for para_idx, para in enumerate(paragraphs):
-            cited_gids = sorted({int(m) for m in re.findall(r"\[(\d+)\]", para)})
-            if not cited_gids:
+            local_ids_in_para: List[int] = []
+            for m in _CITATION_PATTERN.finditer(para):
+                local_ids_in_para.extend(int(n) for n in re.findall(r"\d+", m.group(1)))
+            if not local_ids_in_para:
                 continue
 
+            # 同一篇論文（同一個 global_ref_id）被段落內多個不同 local_id 重複引用時，
+            # 取文字裡先出現的那個（閱讀順序），不做進一步仲裁
+            first_local_id_for_gid: Dict[int, int] = {}
+            for local_id in local_ids_in_para:
+                info = local_refs.get(local_id)
+                if not info:
+                    continue
+                gid = info["global_ref_id"]
+                first_local_id_for_gid.setdefault(gid, local_id)
+
+            if not first_local_id_for_gid:
+                continue
+
+            cited_gids = sorted(first_local_id_for_gid)
             sources: List[dict] = []
             for gid in cited_gids:
-                # 找對應的 local_ref（可能多個 local_id → 同一 global_id）
-                chunk_info = next(
-                    (info for info in local_refs.values() if info["global_ref_id"] == gid),
-                    None,
-                )
-                ref_meta = next(
-                    (r for r in global_ref_list if r["ref_id"] == gid), {}
-                )
+                info = local_refs[first_local_id_for_gid[gid]]
+                ref_meta = next((r for r in global_ref_list if r["ref_id"] == gid), {})
                 sources.append({
                     "ref_id": gid,
-                    "paper_id": chunk_info["chunk"].paper_id if chunk_info else "",
+                    "paper_id": info["chunk"].paper_id,
                     "title": ref_meta.get("title", ""),
                     "author": ref_meta.get("author", ""),
                     "year": ref_meta.get("year", ""),
                     # 提供被引用的原始 chunk 內容，方便前端顯示引用依據
-                    "relevant_chunk": chunk_info["chunk"].content[:400] if chunk_info else "",
-                    "similarity_score": round(chunk_info["score"], 4) if chunk_info else None,
+                    "relevant_chunk": info["chunk"].content[:400],
+                    # rerank_score 是 Task 2 才會補上的欄位，這裡先用 .get() 讀，
+                    # Task 1 完成時還沒有這個 key，會自然 fall back 到 score
+                    "similarity_score": round(info.get("rerank_score") or info["score"], 4),
                 })
 
             citation_map.append({
