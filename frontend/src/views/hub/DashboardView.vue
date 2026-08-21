@@ -173,9 +173,9 @@
   }
 
   /* ── 最近活動 ── */
-  /* 下緣留 6px，跟最後一項自己的 14px padding 合起來等於上緣的 20px */
+  /* 下緣留白，讓最後一項 hover 的底色下方還看得到卡片白底 */
   .activity-card {
-    padding: 20px 24px 6px;
+    padding: 20px 24px 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
