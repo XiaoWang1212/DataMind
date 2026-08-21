@@ -436,8 +436,9 @@
     align-items: center;
     gap: 8px;
     padding: 48px 24px;
-    border: 2px dashed var(--color-border-strong);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
     cursor: pointer;
     transition: border-color var(--dur-fast) var(--ease-out),
       background-color var(--dur-fast) var(--ease-out);

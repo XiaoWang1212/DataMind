@@ -591,7 +591,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
   }
 
   .item-params .param-select {

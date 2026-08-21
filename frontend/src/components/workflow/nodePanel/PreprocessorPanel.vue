@@ -134,7 +134,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed var(--color-border);
+    border-top: 1px solid var(--color-border);
   }
 
   .param-row {

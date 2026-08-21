@@ -281,7 +281,7 @@
 
 /* ── Drop zone ── */
 .drop-zone {
-  border: 2px dashed var(--color-border-strong);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   padding: 48px 24px;
   display: flex;
@@ -289,7 +289,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out);
 }

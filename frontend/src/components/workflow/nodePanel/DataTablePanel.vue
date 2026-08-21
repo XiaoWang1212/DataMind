@@ -437,7 +437,7 @@
     gap: 12px;
     padding: 24px;
     border-radius: var(--radius-lg);
-    border: 1px dashed rgba(96, 165, 250, 0.7);
+    border: 1px solid var(--color-border-strong);
     background: rgba(255, 255, 255, 0.88);
     color: var(--color-accent);
     font-size: 14px;

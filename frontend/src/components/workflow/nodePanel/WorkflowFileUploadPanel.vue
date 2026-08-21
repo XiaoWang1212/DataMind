@@ -108,7 +108,7 @@
   }
 
   .upload-modal-dropzone {
-    border: 2px dashed rgba(148, 163, 184, 0.9);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-lg);
     min-height: 220px;
     padding: 28px;
@@ -116,6 +116,7 @@
     place-items: center;
     text-align: center;
     gap: 14px;
+    background: var(--color-surface-alt);
     transition:
       border-color var(--dur-base) ease,
       background var(--dur-base) ease;
