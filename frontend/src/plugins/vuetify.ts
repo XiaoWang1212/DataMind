@@ -51,8 +51,7 @@ export default createVuetify({
           'success-text': '#1D6151',
           'warning-text': '#78530F',
           'error-text': '#A22F43',
-          // 期刊評分「低分」進度條填色專用。疊白底/軌道對比不足 3:1，
-          // 只能用在圖形填色（進度條），不可當文字色——文字一律走上面的 warning-text
+          // 期刊評分低分的進度條填色。對比不足 4.5:1，不可當文字色
           'score-low': '#FFD000',
           // workflow 節點分類色（docs/DESIGN_SYSTEM.md §2.3）。依 pipeline 角色分五類，
           // 依 Orange Data Mining 的六類配色大致順序（橘/藍/紫/綠/紅）指派，OKLCH 明度/彩度

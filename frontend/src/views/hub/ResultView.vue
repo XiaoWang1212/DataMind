@@ -469,8 +469,7 @@
   box-shadow: var(--shadow-card);
 }
 
-/* 24px 展示型數字算 WCAG 的大字，只要過 3:1；--color-success-text 是給小字徽章用的深色，
-   疊在這種大尺寸上看起來幾乎是黑的，這裡改用飽和度較高的 --color-success 本色 */
+/* success-text 是給小字用的深色，放到 24px 大字幾乎變黑 */
 .metric-card--accent .metric-value {
   color: var(--color-success);
 }
@@ -531,7 +530,7 @@
   color: var(--color-text);
 }
 
-/* 最佳模型：整列淡色底 + 名稱旁徽章，比單一儲存格變色更容易一眼掃到 */
+/* 整列標示比單一儲存格變色好掃 */
 .row-best {
   background: var(--color-success-bg);
 }

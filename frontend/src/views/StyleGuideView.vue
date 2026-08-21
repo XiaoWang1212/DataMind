@@ -218,7 +218,7 @@
     { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#EFE7D7' },
     { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
-    // 期刊評分「低分」進度條填色專用，只能當圖形填色不能當文字（見 utils/scoreColor.ts）
+    // 只能當圖形填色，不能當文字（見 utils/scoreColor.ts）
     { name: 'score-low（評分填色）', varRef: 'var(--color-score-low)', hex: '#FFD000' },
   ]
 

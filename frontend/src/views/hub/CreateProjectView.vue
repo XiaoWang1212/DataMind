@@ -387,8 +387,7 @@
     gap: 12px;
   }
 
-  /* hover/selected 跟框架庫的 .fw-card 同一套（見 FrameworkLibraryView.vue），
-     兩個地方都是「框架卡片」，互動語言要一致 */
+  /* 跟框架庫的 .fw-card 同一套 */
   .fw-select-card {
     padding: 16px;
     border: 1px solid var(--color-border);
