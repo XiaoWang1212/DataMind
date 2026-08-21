@@ -469,8 +469,10 @@
   box-shadow: var(--shadow-card);
 }
 
+/* 24px 展示型數字算 WCAG 的大字，只要過 3:1；--color-success-text 是給小字徽章用的深色，
+   疊在這種大尺寸上看起來幾乎是黑的，這裡改用飽和度較高的 --color-success 本色 */
 .metric-card--accent .metric-value {
-  color: var(--color-success-text);
+  color: var(--color-success);
 }
 
 .metric-title {
