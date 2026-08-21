@@ -173,8 +173,9 @@
   }
 
   /* ── 最近活動 ── */
+  /* 下緣留 6px，跟最後一項自己的 14px padding 合起來等於上緣的 20px */
   .activity-card {
-    padding: 20px 24px;
+    padding: 20px 24px 6px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
@@ -211,7 +212,6 @@
 
   .activity-item--last {
     border-bottom: none;
-    padding-bottom: 0;
   }
 
   .activity-name {
