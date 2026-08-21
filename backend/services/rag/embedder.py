@@ -26,10 +26,17 @@ class Embedder:
             self._model = SentenceTransformer(self.model_name)
             self.backend = "transformers"
             logger.info("Embedder: sentence-transformers loaded (%s)", self.model_name)
-        except ImportError:
+        except Exception:
+            # Broad catch (not just ImportError): now that sentence-transformers is a
+            # real dependency, failures here can also come from a broken/unavailable
+            # torch backend (e.g. a DLL load failure), not just "package not installed".
+            # Either way we must degrade to TF-IDF instead of letting PaperRAGService
+            # crash on construction.
             logger.warning(
-                "sentence-transformers not installed — using TF-IDF fallback. "
-                "For better retrieval quality: pip install sentence-transformers"
+                "Embedder: sentence-transformers unavailable — using TF-IDF fallback. "
+                "For better retrieval quality, ensure sentence-transformers/torch are "
+                "installed and working.",
+                exc_info=True,
             )
 
     def encode(self, texts: List[str]) -> np.ndarray:
