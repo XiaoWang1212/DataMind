@@ -66,11 +66,9 @@
       Math.max(8, window.innerHeight - cardHeight - 8),
     )
 
-    const spaceRight = window.innerWidth - rect.right - 8
-    const placeLeft = spaceRight < cardWidth && rect.left - 8 - cardWidth > 0
-    const left = placeLeft
-      ? Math.max(8, rect.left - 8 - cardWidth)
-      : Math.min(rect.right + 8, Math.max(8, window.innerWidth - cardWidth - 8))
+    // 停在視窗右緣而不是貼著引用標記，才不會蓋住正在讀的正文；
+    // 右側是 .paper-citations 那一欄，被蓋住無妨
+    const left = Math.max(8, window.innerWidth - cardWidth - 8)
 
     cardStyle.value = {
       position: 'fixed',
