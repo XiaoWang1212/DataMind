@@ -72,14 +72,24 @@
   margin: 0 0 0 auto;
 }
 
+/* 底色從 ink-vivid 推導而不是 ink：深藏青調淡會變灰，亮一階的藍才看得出是藍色 */
 .citation-mark {
-  background: color-mix(in oklab, var(--color-ink) 14%, white);
-  padding: 1px 2px;
+  background: color-mix(in oklab, var(--color-ink-vivid) 15%, white);
+  padding: 1px 3px;
   border-radius: 3px;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .citation-mark::after {
   content: '[' attr(data-citation-number) ']';
-  font-size: 0.85em;
   margin-left: 1px;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--color-ink-vivid);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .citation-mark:hover {
+    background: color-mix(in oklab, var(--color-ink-vivid) 26%, white);
+  }
 }
