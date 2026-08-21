@@ -80,7 +80,7 @@
                   :style="{ width: `${criterion.score}%`, background: getScoreColor(criterion.score) }"
                 />
               </div>
-              <span class="journal-score-criterion__score" :style="{ color: getScoreColor(criterion.score) }">
+              <span class="journal-score-criterion__score" :style="{ color: getScoreTextColor(criterion.score) }">
                 {{ criterion.score }}
               </span>
             </div>
@@ -110,7 +110,7 @@
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
   import AppButton from '@/components/ui/AppButton.vue'
-  import { getScoreColor } from '@/utils/scoreColor'
+  import { getScoreColor, getScoreTextColor } from '@/utils/scoreColor'
 
   const props = defineProps<{
     visible: boolean
