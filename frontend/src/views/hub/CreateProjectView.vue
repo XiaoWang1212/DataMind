@@ -121,7 +121,7 @@
       <AppButton :disabled="currentStep === 0" variant="ghost" @click="currentStep--">
         上一步
       </AppButton>
-      <AppButton v-if="currentStep < 3" variant="secondary" @click="currentStep++">
+      <AppButton v-if="currentStep < 3" variant="primary" @click="currentStep++">
         下一步
         <v-icon icon="mdi-chevron-right" size="17" />
       </AppButton>
