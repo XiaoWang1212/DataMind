@@ -220,7 +220,7 @@
     { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
     // 只能當圖形填色，不能當文字（見 utils/scoreColor.ts）
-    { name: 'score-low（評分填色）', varRef: 'var(--color-score-low)', hex: '#FFD000' },
+    { name: 'score-low（評分填色）', varRef: 'var(--color-score-low)', hex: '#E6B800' },
   ]
 
   // §2.3：依 pipeline 角色分五類，比照 Orange 的六類配色大致順序（橘/藍/紫/綠/紅）指派
