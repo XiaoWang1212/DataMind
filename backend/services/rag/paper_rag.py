@@ -21,6 +21,7 @@ import google.generativeai as genai
 from . import arxiv_source
 from .chunker import Chunk, TextChunker
 from .embedder import Embedder
+from .reranker import Reranker
 from .vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,9 @@ class PaperRAGService:
         self._embedder = Embedder(model_name=embed_model)
         self._store = VectorStore(index_dir=index_dir, embedder=self._embedder)
 
+        rerank_model = os.getenv("RAG_RERANK_MODEL", "BAAI/bge-reranker-base")
+        self._reranker = Reranker(model_name=rerank_model)
+
     # ── Public API ─────────────────────────────────────────────────────────────
 
     def add_paper(self, title: str, content: str, metadata: dict | None = None) -> dict:
@@ -169,8 +173,19 @@ class PaperRAGService:
         }
 
     def search(self, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
-        raw = self._store.search(query, top_k=top_k)
-        return [SearchResult(chunk=c, score=s) for c, s in raw]
+        should_rerank = use_rerank and self._reranker.available
+        overfetch_k = top_k * 4 if should_rerank else top_k
+
+        raw = self._store.search(query, top_k=overfetch_k)
+
+        if should_rerank and raw:
+            reranked = self._reranker.rerank(query, raw)
+            return [
+                SearchResult(chunk=c, score=orig_score, rerank_score=rerank_score)
+                for c, orig_score, rerank_score in reranked[:top_k]
+            ]
+
+        return [SearchResult(chunk=c, score=s) for c, s in raw[:top_k]]
 
     def generate_citation(self, query: str, top_k: int = 3, citation_style: str = "apa") -> dict:
         results = self.search(query, top_k=top_k)
@@ -257,6 +272,7 @@ class PaperRAGService:
                     "global_ref_id": global_ref_map[pid],
                     "chunk": sr.chunk,
                     "score": sr.score,
+                    "rerank_score": sr.rerank_score,
                 }
 
             # 3. Gemini 生成章節
@@ -967,9 +983,14 @@ class PaperRAGService:
                     "year": ref_meta.get("year", ""),
                     # 提供被引用的原始 chunk 內容，方便前端顯示引用依據
                     "relevant_chunk": info["chunk"].content[:400],
-                    # rerank_score 是 Task 2 才會補上的欄位，這裡先用 .get() 讀，
-                    # Task 1 完成時還沒有這個 key，會自然 fall back 到 score
-                    "similarity_score": round(info.get("rerank_score") or info["score"], 4),
+                    # 用 is not None 明確判斷，而不是靠 truthiness——rerank_score
+                    # 合法值為 0.0 時，用 `or` 會被誤判成「沒有值」而錯誤 fall back 到 score
+                    "similarity_score": round(
+                        info.get("rerank_score")
+                        if info.get("rerank_score") is not None
+                        else info["score"],
+                        4,
+                    ),
                 })
 
             citation_map.append({
