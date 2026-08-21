@@ -67,16 +67,22 @@
             <thead>
               <tr>
                 <th>模型</th>
-                <th v-for="metric in metricNames" :key="metric" class="ds-identifier">{{ metric }}</th>
+                <th v-for="metric in metricNames" :key="metric">{{ metric }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in summary" :key="row.model_name">
-                <td class="model-name ds-identifier">{{ row.model_name }}</td>
+              <tr v-for="row in summary" :key="row.model_name" :class="{ 'row-best': row.model_name === bestModelName }">
+                <td class="model-name">
+                  {{ row.model_name }}
+                  <span v-if="row.model_name === bestModelName" class="best-badge">
+                    <v-icon icon="mdi-trophy-outline" size="12" />
+                    最佳
+                  </span>
+                </td>
                 <td
                   v-for="metric in metricNames"
                   :key="metric"
-                  :class="{ 'score-best': row.model_name === bestModelName && metric === metricNames[0] }"
+                  :class="{ 'score-best': row.model_name === bestModelName }"
                 >{{ metricValue(row, metric) }}</td>
               </tr>
             </tbody>
@@ -521,6 +527,25 @@
 
 .model-name {
   color: var(--color-text);
+}
+
+/* 最佳模型：整列淡色底 + 名稱旁徽章，比單一儲存格變色更容易一眼掃到 */
+.row-best {
+  background: var(--color-success-bg);
+}
+
+.best-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-success-text);
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: middle;
 }
 
 .score-best {
