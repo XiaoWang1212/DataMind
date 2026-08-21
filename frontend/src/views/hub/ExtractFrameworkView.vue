@@ -263,17 +263,19 @@
   min-height: 3.4em;
 }
 
+/* 兩端淡、中段濃的藍色漸層，掃動時濃淡差夠大才看得出在動，
+   原本用近黑色調兩端太接近，動畫等於沒動 */
 .thinking-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 1.5px;
+  padding: 2px;
   border-radius: var(--radius-md);
   background: linear-gradient(
     120deg,
-    var(--color-ink),
-    color-mix(in oklab, var(--color-ink) 55%, var(--color-text)),
-    var(--color-ink)
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 75%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent)
   );
   background-size: 300% 300%;
   -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);

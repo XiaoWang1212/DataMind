@@ -152,6 +152,17 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">AI 思考框（提取框架頁）</h2>
+      <div class="sg-thinking-card">
+        <div class="sg-thinking-header">
+          <span class="sg-thinking-dot" />
+          AI 正在思考
+        </div>
+        <p class="sg-thinking-line">正在比對論文中的模型描述與已知方法…</p>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">資料表格（§7.4）</h2>
       <TableShell>
         <table class="ds-table">
@@ -442,6 +453,78 @@
   margin-bottom: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+/* 跟 ExtractFrameworkView.vue 的 .thinking-card 同一套，維持展示用 */
+.sg-thinking-card {
+  position: relative;
+  max-width: 420px;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-surface));
+  overflow: hidden;
+  min-height: 3.4em;
+}
+
+.sg-thinking-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    120deg,
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 75%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent)
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: sg-thinking-gradient-move 3s ease infinite;
+}
+
+@keyframes sg-thinking-gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-thinking-card::before {
+    animation: none;
+  }
+}
+
+.sg-thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin-bottom: 8px;
+}
+
+.sg-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  animation: sg-thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sg-thinking-pulse {
+  0%, 100% { opacity: .3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.sg-thinking-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--color-ink-soft);
 }
 </style>
