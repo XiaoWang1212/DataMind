@@ -32,7 +32,7 @@
       color-mix(in oklab, var(--color-ink) 10%, white) 100%
     );
     background-size: 200% 100%;
-    animation: skeleton-sweep 1.2s linear infinite;
+    animation: skeleton-sweep 2.2s linear infinite;
   }
 
   @keyframes skeleton-sweep {
