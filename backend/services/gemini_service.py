@@ -194,7 +194,7 @@ class GeminiService:
 
     def _generation_config(self) -> genai.GenerationConfig:
         return genai.GenerationConfig(
-            temperature=0.2,
+            temperature=0,
             max_output_tokens=8192,
             response_mime_type="application/json",
         )
@@ -573,7 +573,7 @@ class GeminiService:
                 model=self.model_name,
                 contents=[prompt, pdf_part],
                 config=genai_types.GenerateContentConfig(
-                    temperature=0.2,
+                    temperature=0,
                     response_mime_type="application/json",
                     thinking_config=genai_types.ThinkingConfig(
                         include_thoughts=True,
