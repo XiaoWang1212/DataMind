@@ -13,10 +13,14 @@ from sklearn.metrics import (
     confusion_matrix,
     f1_score,
     matthews_corrcoef,
+    precision_recall_curve,
+    precision_recall_fscore_support,
     precision_score,
     recall_score,
     roc_auc_score,
+    roc_curve,
 )
+from sklearn.calibration import calibration_curve
 from sklearn.preprocessing import LabelBinarizer
 
 SUPPORTED_METRICS = {
@@ -202,6 +206,80 @@ def _bootstrap_ci(
 # Public evaluation function
 # ---------------------------------------------------------------------------
 
+def build_roc_pr_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, Any]]:
+    """算 ROC / PR 曲線座標點，只支援二元分類（y_score 為 None 或多分類時回傳 None）"""
+    if y_score is None:
+        return None
+    score_vec = _get_score_vector(y_score)
+    if score_vec is None:
+        return None
+    unique_labels = pd.unique(y_true.dropna())
+    if len(unique_labels) != 2:
+        return None
+
+    try:
+        pos_label = _infer_positive_label(y_true)
+        binary = _to_binary_array(y_true, pos_label)
+        # _to_binary_array 對數值 dtype 是原值透傳（不處理 pos_label），這裡補正成真正的 0/1
+        if not np.array_equal(np.unique(binary), np.array([0, 1])):
+            binary = (y_true == pos_label).to_numpy(dtype=int)
+
+        fpr, tpr, _ = roc_curve(binary, score_vec)
+        precision, recall, _ = precision_recall_curve(binary, score_vec, drop_intermediate=True)
+    except Exception:
+        return None
+
+    return {
+        "pos_label": str(pos_label),
+        "roc": {"fpr": [round(v, 6) for v in fpr.tolist()], "tpr": [round(v, 6) for v in tpr.tolist()]},
+        "pr": {"precision": [round(v, 6) for v in precision.tolist()], "recall": [round(v, 6) for v in recall.tolist()]},
+    }
+
+
+def build_calibration_curve(y_true: pd.Series, y_score: Any) -> Optional[Dict[str, Any]]:
+    """算校準曲線（reliability diagram），只支援二元分類。任何失敗都回傳 None，絕不讓例外往外傳。"""
+    if y_score is None:
+        return None
+    score_vec = _get_score_vector(y_score)
+    if score_vec is None:
+        return None
+    unique_labels = pd.unique(y_true.dropna())
+    if len(unique_labels) != 2:
+        return None
+
+    try:
+        pos_label = _infer_positive_label(y_true)
+        binary = _to_binary_array(y_true, pos_label)
+        # _to_binary_array 對數值 dtype 是原值透傳（不處理 pos_label），這裡補正成真正的 0/1
+        if not np.array_equal(np.unique(binary), np.array([0, 1])):
+            binary = (y_true == pos_label).to_numpy(dtype=int)
+
+        prob_true, prob_pred = calibration_curve(binary, score_vec, n_bins=10, strategy="uniform")
+    except Exception:
+        return None
+
+    return {
+        "pos_label": str(pos_label),
+        "prob_true": [round(v, 6) for v in prob_true.tolist()],
+        "prob_pred": [round(v, 6) for v in prob_pred.tolist()],
+    }
+
+
+def build_per_class_metrics(y_true: pd.Series, y_pred: pd.Series) -> Dict[str, Any]:
+    """算每個類別各自的 precision/recall/f1/support，二元、多分類皆適用，永遠有值。"""
+    labels = sorted(pd.unique(pd.concat([y_true, y_pred]).dropna()), key=str)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, average=None, zero_division=0
+    )
+    return {
+        "labels": [str(label) for label in labels],
+        "precision": [round(v, 6) for v in precision.tolist()],
+        "recall": [round(v, 6) for v in recall.tolist()],
+        "f1": [round(v, 6) for v in f1.tolist()],
+        "support": [int(v) for v in support.tolist()],
+    }
+
+
 def evaluate_metrics(
     y_true: pd.Series,
     y_pred: pd.Series,
@@ -323,8 +401,17 @@ def _compute_metric(
     elif metric in {"precision", "recall", "f1"}:
         kwargs: Dict[str, Any] = {"zero_division": 0}
         effective_pos = pos_label or _infer_positive_label(y_true, labels)
-        if effective_pos is not None:
+        # sklearn 判定 binary/multiclass 用的是 y_true ∪ y_pred，不是只看 y_true，
+        # 這裡要對齊，否則某些 fold 的 y_true 類別數矇混過關、實際上還是多分類
+        is_multiclass = len(pd.unique(pd.concat([y_true, y_pred]).dropna())) > 2
+        if effective_pos is not None and not is_multiclass:
             kwargs["pos_label"] = effective_pos
+        elif is_multiclass:
+            # 多分類：sklearn 預設 average='binary' 對多分類會拋例外，
+            # 改用 macro，讓少數類別的表現不被多數類別稀釋掉
+            kwargs["average"] = "macro"
+        # else: effective_pos is None 且非多分類（退化的單一類別 fold，例如 LOOCV）——
+        # 維持 sklearn 預設行為，不加 pos_label 也不加 average，行為跟這個 feature 之前完全一樣
         if labels is not None:
             kwargs["labels"] = labels
 

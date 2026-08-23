@@ -47,6 +47,10 @@
               <div class="result-field-label">框架名稱</div>
               <div class="result-field-value">{{ extractedData.name }}</div>
             </div>
+            <div v-if="extractedData.processNarrative" class="result-field">
+              <div class="result-field-label">研究流程</div>
+              <p class="result-field-narrative">{{ extractedData.processNarrative }}</p>
+            </div>
             <div v-if="extractedData.targetCol" class="result-field">
               <div class="result-field-label">目標欄位</div>
               <div class="result-field-value">{{ extractedData.targetCol }}</div>
@@ -106,6 +110,7 @@
 
   interface ExtractedFramework {
     name: string
+    processNarrative: string
     models: string[]
     preprocessing: string[]
     featureEngineering: string[]
@@ -168,6 +173,7 @@
             rawWorkflowJson.value = result
             extractedData.value = {
               name: baseName,
+              processNarrative: String(result.process_narrative ?? ''),
               models,
               preprocessing,
               featureEngineering,
@@ -201,7 +207,7 @@
       tag: d.models[0] ?? 'AI 提取',
       variables: d.preprocessing.length + d.featureEngineering.length,
       paperTitle: d.name,
-      description: `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
+      description: d.processNarrative || `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
       independentVars: [...d.preprocessing, ...d.featureEngineering],
       dependentVars: d.targetCol ? [d.targetCol] : [],
       hypotheses: [],
@@ -377,6 +383,14 @@
   font-size: 14px;
   color: var(--color-text);
   font-weight: 500;
+}
+
+.result-field-narrative {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text);
+  white-space: pre-wrap;
 }
 
 /* ── Tags ── */

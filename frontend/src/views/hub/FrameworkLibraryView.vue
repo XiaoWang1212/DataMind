@@ -98,7 +98,7 @@
 
         <!-- Description -->
         <div class="panel-section">
-          <div class="panel-section-label-plain">描述</div>
+          <div class="panel-section-label-plain">研究流程</div>
           <div class="panel-text-muted">{{ selectedFramework.description }}</div>
         </div>
 
@@ -595,6 +595,7 @@
     font-size: 13px;
     line-height: 1.55;
     color: var(--color-ink-soft);
+    white-space: pre-wrap;
   }
 
   /* ── Variables ── */

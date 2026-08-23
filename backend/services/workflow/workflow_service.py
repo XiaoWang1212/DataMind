@@ -6,6 +6,7 @@ from typing import Any, Dict, Generator, List, Optional
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import confusion_matrix as sk_confusion_matrix
 from sklearn.model_selection import (
     GridSearchCV,
     GroupKFold,
@@ -23,7 +24,13 @@ from services.model.registry import ModelRegistry
 from .feature_engineering_service import apply_feature_engineering_pipeline_for_split
 from .preprocess_service import apply_preprocess_pipeline_for_split, generate_preprocess_variants
 from .resampling_service import apply_resampling, describe_class_distribution
-from .test_score_service import evaluate_metrics, generate_score_variants
+from .test_score_service import (
+    build_calibration_curve,
+    build_per_class_metrics,
+    build_roc_pr_curve,
+    evaluate_metrics,
+    generate_score_variants,
+)
 
 
 class WorkflowService:
@@ -149,6 +156,16 @@ class WorkflowService:
             key=lambda x: x["importance"],
             reverse=True,
         )
+
+    @staticmethod
+    def _build_confusion_matrix(y_true: pd.Series, y_pred: pd.Series) -> Dict[str, Any]:
+        """算 NxN 混淆矩陣，不寫死二分類——sklearn 本來就支援任意類別數。"""
+        labels = sorted(pd.unique(pd.concat([y_true, y_pred]).dropna()), key=str)
+        matrix = sk_confusion_matrix(y_true, y_pred, labels=labels)
+        return {
+            "labels": [str(label) for label in labels],
+            "matrix": matrix.tolist(),
+        }
 
     @classmethod
     def _generate_resampling_splits(
@@ -472,6 +489,10 @@ class WorkflowService:
                             "feature_importance": cls._extract_feature_importance(
                                 estimator, list(X_train.columns)
                             ),
+                            "confusion_matrix": cls._build_confusion_matrix(y_test, y_pred),
+                            "per_class_metrics": build_per_class_metrics(y_test, y_pred),
+                            "roc_pr_curve": build_roc_pr_curve(y_test, y_score),
+                            "calibration_curve": build_calibration_curve(y_test, y_score),
                             "feature_count": int(X_train.shape[1]),
                             "row_count": int(X_train.shape[0]),
                         }
@@ -673,6 +694,10 @@ class WorkflowService:
                         "feature_importance": cls._extract_feature_importance(
                             estimator, list(X_train.columns)
                         ),
+                        "confusion_matrix": cls._build_confusion_matrix(y_test, y_pred),
+                        "per_class_metrics": build_per_class_metrics(y_test, y_pred),
+                        "roc_pr_curve": build_roc_pr_curve(y_test, y_score),
+                        "calibration_curve": build_calibration_curve(y_test, y_score),
                         "feature_count": int(X_train.shape[1]),
                         "row_count": int(X_train.shape[0]),
                     })
