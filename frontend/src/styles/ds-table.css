@@ -47,9 +47,4 @@
   .ds-table--dense tbody td {
     padding: 8px 10px;
   }
-
-  /* 欄位名、type、class 等 identifier 用等寬字（§3） */
-  .ds-table .ds-identifier {
-    font-family: var(--font-mono);
-  }
 }

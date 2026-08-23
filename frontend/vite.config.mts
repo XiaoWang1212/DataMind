@@ -23,10 +23,6 @@ export default defineConfig({
       fontsource: {
         families: [
           {
-            name: "Roboto Mono",
-            weights: [400, 700],
-          },
-          {
             name: "Roboto",
             weights: [100, 300, 400, 500, 700, 900],
             styles: ["normal", "italic"],

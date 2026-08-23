@@ -172,13 +172,13 @@
           </thead>
           <tbody>
             <tr>
-              <td class="ds-identifier">age</td>
-              <td class="ds-identifier">int64</td>
+              <td>age</td>
+              <td>int64</td>
               <td><StatusBadge status="success">已對應</StatusBadge></td>
             </tr>
             <tr>
-              <td class="ds-identifier">bmi_score</td>
-              <td class="ds-identifier">float64</td>
+              <td>bmi_score</td>
+              <td>float64</td>
               <td><StatusBadge status="warning">待確認</StatusBadge></td>
             </tr>
           </tbody>
@@ -301,7 +301,6 @@
 
 .sg-swatch-var,
 .sg-swatch-hex {
-  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-ink-soft);
 }
@@ -455,7 +454,6 @@
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   margin-bottom: 8px;
-  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--color-ink-soft);
 }

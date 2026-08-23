@@ -6,7 +6,6 @@
 @theme static {
   --font-heading: "Roboto", sans-serif;
   --font-body: "Roboto", sans-serif;
-  --font-mono: "Roboto Mono", monospace;
 
   /* docs/DESIGN_SYSTEM.md §4.2。pill 用 Tailwind 內建的 rounded-full(9999px)，不另外造 token */
   --radius-sm: 8px;

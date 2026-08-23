@@ -229,7 +229,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background-color: var(--color-surface-alt);
-    font-family: var(--font-mono);
     font-size: 14px;
     color: var(--color-text);
     outline: none;

@@ -610,7 +610,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
-    font-family: var(--font-mono);
     font-size: 12px;
     color: var(--color-ink-soft);
   }

@@ -115,8 +115,9 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 
 ## 3. 字體
 
-- 介面字型:Roboto(延續現有 `unfonts.css`);中文採系統思源/Noto Sans TC fallback。
-- 等寬:Roboto Mono(程式碼、欄位名 `age`、`bmi_score` 等 identifier)。
+- 介面字型:Roboto(透過 `unfonts.css` 載入),對應 token `--font-body` / `--font-heading`。
+- **Roboto 只覆蓋英數字元。** 它沒有中文字形,瀏覽器逐字元 fallback,所有中文字實際上是由系統 CJK 字型畫的(各作業系統不同)。畫面上九成是中文,所以整體觀感由系統字型決定,不要以為調 Roboto 就能改變中文的樣子。
+- **不使用等寬字型。** 欄位名、type、class 等 identifier 一律用一般內文字型,靠位置與標籤區隔,不靠字型。曾經有過 `--font-mono`(Roboto Mono)並用在表格 identifier、變數清單、設定輸入框,已於 2026-08 全數移除 —— 等寬字在以中文為主的介面裡只會讓英數突兀,中文本來就沒有等寬版本,兩種字型混排反而更亂。
 - 只用兩種字重:**Regular 400** 與 **Medium 500**。不用 600/700 — 過重會與安靜的整體調性衝突。
   - **例外:AI 對話氣泡裡 `**粗體**` 標記轉出的 `<strong>`。** user 實際比對 400/500/700 三版後,700 才看得出「這裡在強調」,500 太接近內文分辨不出來。這是唯一允許 700 的地方,僅限對話氣泡文字內的強調,不要擴大套用到其他元件。
 
@@ -132,7 +133,7 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 
 - **展示型數字**專指儀表板統計數字這類「一眼要看到的單一數值」,用 `--color-ink` 藏青讓它成為畫面錨點。它不是標題,不要拿來放文字。
 - 一律**句首大寫(sentence case)**,不用 Title Case、不用全大寫。
-- 欄位名、type、class 等 identifier 用 mono 字體,不用粗體強調。
+- 欄位名、type、class 等 identifier 不用粗體強調,也不用等寬字型(見上)。
 
 ---
 
