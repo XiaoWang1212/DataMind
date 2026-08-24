@@ -750,12 +750,23 @@
   .validation-methods {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
   }
 
   .validation-method {
     padding: 8px 10px;
     border-radius: var(--radius-sm);
+    transition: background var(--dur-fast);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .validation-method:hover {
+      background: var(--color-surface-alt);
+    }
   }
 
   .validation-method__radio {
@@ -767,9 +778,35 @@
     cursor: pointer;
   }
 
+  .validation-method__radio input[type="radio"] {
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-border-strong);
+    position: relative;
+    cursor: pointer;
+    transition: border-color var(--dur-fast);
+  }
+
+  .validation-method__radio input[type="radio"]:checked {
+    border-color: var(--step-color);
+  }
+
+  .validation-method__radio input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--step-color);
+  }
+
   .validation-method__params {
-    margin-top: 8px;
-    margin-left: 24px;
+    margin: 8px 0 4px 33px;
+    padding-left: 16px;
+    border-left: 1.5px solid color-mix(in oklab, var(--step-color) 35%, transparent);
     display: flex;
     flex-direction: column;
     gap: 8px;
