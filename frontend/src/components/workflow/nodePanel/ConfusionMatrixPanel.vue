@@ -781,6 +781,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 10px;
     padding: 14px 16px;
     border: 1px solid var(--color-border-strong);

@@ -152,6 +152,10 @@
     overflow: hidden;
   }
 
+  .app-btn--ai-loading:disabled {
+    opacity: 1;
+  }
+
   .app-btn--ai-loading::after {
     content: "";
     position: absolute;

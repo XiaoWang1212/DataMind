@@ -788,7 +788,7 @@
   }
 
   .validation-method__radio input[type="radio"]:checked {
-    border-color: var(--step-color);
+    border-color: var(--step-color, var(--color-ink));
   }
 
   .validation-method__radio input[type="radio"]:checked::after {
@@ -796,13 +796,13 @@
     position: absolute;
     inset: 3px;
     border-radius: 50%;
-    background: var(--step-color);
+    background: var(--step-color, var(--color-ink));
   }
 
   .validation-method__params {
     margin: 8px 0 4px 33px;
     padding-left: 16px;
-    border-left: 1.5px solid color-mix(in oklab, var(--step-color) 35%, transparent);
+    border-left: 1.5px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 35%, transparent);
     display: flex;
     flex-direction: column;
     gap: 8px;
