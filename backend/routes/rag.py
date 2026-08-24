@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
+from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ def extract_text_from_file(file_path: Path) -> str:
 
 
 @rag_bp.route("/upload", methods=["POST"])
+@login_required
 def upload_paper():
     """上傳論文
 
@@ -172,6 +174,7 @@ def upload_paper():
 
 
 @rag_bp.route("/search", methods=["POST"])
+@login_required
 def search_papers():
     """搜尋論文
 
@@ -218,6 +221,7 @@ def search_papers():
 
 
 @rag_bp.route("/cite", methods=["POST"])
+@login_required
 def generate_citation():
     """生成論文引用
 
@@ -249,6 +253,7 @@ def generate_citation():
 
 
 @rag_bp.route("/status", methods=["GET"])
+@login_required
 def get_status():
     """獲取 RAG 服務狀態"""
     from services.rag.paper_rag import get_paper_rag_service
@@ -265,6 +270,7 @@ def get_status():
 
 
 @rag_bp.route("/clear", methods=["POST"])
+@login_required
 def clear_index():
     """清空所有索引"""
     from services.rag.paper_rag import get_paper_rag_service
@@ -281,6 +287,7 @@ def clear_index():
 
 
 @rag_bp.route("/paper/<paper_id>", methods=["DELETE"])
+@login_required
 def delete_paper(paper_id: str):
     """刪除指定論文"""
     from services.rag.paper_rag import get_paper_rag_service
@@ -299,6 +306,7 @@ def delete_paper(paper_id: str):
 
 
 @rag_bp.route("/generate-paper", methods=["POST"])
+@login_required
 def generate_paper():
     """利用 DataMind 資料探勘結果 + 參考論文庫，生成學術論文
 
@@ -349,6 +357,7 @@ def generate_paper():
 
 
 @rag_bp.route("/arxiv/search", methods=["POST"])
+@login_required
 def arxiv_search():
     """分類 DataMind 探勘結果並查詢 arXiv 候選論文（不寫入向量庫）
 
@@ -380,6 +389,7 @@ def arxiv_search():
 
 
 @rag_bp.route("/arxiv/generate", methods=["POST"])
+@login_required
 def arxiv_generate():
     """下載選中的 arXiv 論文、建立索引，並生成論文
 
@@ -428,6 +438,7 @@ def arxiv_generate():
 
 
 @rag_bp.route("/insight", methods=["POST"])
+@login_required
 def generate_insight():
     """根據 DataMind 探勘結果，用 Gemini 生成一段洞察摘要
 
@@ -455,6 +466,7 @@ def generate_insight():
 
 
 @rag_bp.route("/tab-insight", methods=["POST"])
+@login_required
 def generate_tab_insight():
     """針對 workflow 結果裡某個分頁（混淆矩陣/ROC/PR/校準曲線/各類別指標）生成 AI 解讀文字
 
@@ -490,6 +502,7 @@ def generate_tab_insight():
 
 
 @rag_bp.route("/score-paper", methods=["POST"])
+@login_required
 def score_paper():
     """對論文全文，依固定的期刊評分準則逐一評分
 
@@ -521,6 +534,7 @@ def score_paper():
 
 
 @rag_bp.route("/structured-analysis", methods=["POST"])
+@login_required
 def structured_analysis():
     """根據 DataMind 探勘結果，用 Gemini 生成結構化分析（模型比較、資料洞察、風險、建議）
 
@@ -548,6 +562,7 @@ def structured_analysis():
 
 
 @rag_bp.route("/chat", methods=["POST"])
+@login_required
 def chat():
     """跟 AI 對話，針對 mining_results 提問，AI 可自主查詢 arXiv 論文
 

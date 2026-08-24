@@ -3,6 +3,9 @@
 import logging
 
 from flask import Blueprint, jsonify, request
+from flask_login import current_user, login_required
+
+from models.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +14,16 @@ report_bp = Blueprint("report", __name__)
 VALID_CITATION_STYLES = {"apa", "ieee", "mla"}
 
 
-@report_bp.route("/<project_id>", methods=["POST"])
-def save_report(project_id: str):
+def _get_owned_project(project_id: int) -> Project | None:
+    project = Project.query.get(project_id)
+    if not project or project.user_id != current_user.id:
+        return None
+    return project
+
+
+@report_bp.route("/<int:project_id>", methods=["POST"])
+@login_required
+def save_report(project_id: int):
     """儲存論文編輯內容
 
     JSON body:
@@ -22,6 +33,9 @@ def save_report(project_id: str):
         - citationStyle: 參考文獻格式，'apa'/'ieee'/'mla'（選填，預設 'apa'）
     """
     from services.report.report_store import get_report_store
+
+    if not _get_owned_project(project_id):
+        return jsonify({"success": False, "error": "找不到專案"}), 404
 
     data = request.get_json()
     if not data:
@@ -40,22 +54,26 @@ def save_report(project_id: str):
     store = get_report_store()
 
     try:
-        result = store.save(project_id, title, content, citations, citation_style)
+        result = store.save(str(project_id), title, content, citations, citation_style)
         return jsonify({"success": True, "result": result})
     except Exception as e:
         logger.exception("儲存論文失敗")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@report_bp.route("/<project_id>", methods=["GET"])
-def get_report(project_id: str):
+@report_bp.route("/<int:project_id>", methods=["GET"])
+@login_required
+def get_report(project_id: int):
     """讀取論文編輯內容，查無資料回 404"""
     from services.report.report_store import get_report_store
+
+    if not _get_owned_project(project_id):
+        return jsonify({"success": False, "error": "not found"}), 404
 
     store = get_report_store()
 
     try:
-        result = store.load(project_id)
+        result = store.load(str(project_id))
         if result is None:
             return jsonify({"success": False, "error": "not found"}), 404
         return jsonify({"success": True, "result": result})

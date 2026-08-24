@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, request, stream_with_context
+from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 from services.gemini_service import AnalysisInput, GeminiService, truncate_content
@@ -43,6 +44,7 @@ def _save_result(title: str, result: dict, filename: str | None) -> Path:
 
 
 @gemini_bp.post("/ai-analyze")
+@login_required
 def ai_analyze_paper():
     """論文 → Workflow JSON 生成
 
@@ -161,6 +163,7 @@ def ai_analyze_paper():
 
 
 @gemini_bp.post("/ai-analyze/stream")
+@login_required
 def ai_analyze_paper_stream():
     """論文 PDF → 即時思考串流 + 最終 Workflow JSON（SSE）
 

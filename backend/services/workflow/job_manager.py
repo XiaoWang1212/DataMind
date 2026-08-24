@@ -11,8 +11,9 @@ _JOB_TTL_SECONDS = 60 * 60  # 已結束的 job 保留 1 小時後清掉，避免
 
 
 class WorkflowJob:
-    def __init__(self, job_id: str, total_models: int) -> None:
+    def __init__(self, job_id: str, total_models: int, user_id: int) -> None:
         self.job_id = job_id
+        self.user_id = user_id
         self.status = "running"  # running | done | error
         self.total_models = total_models
         self.completed: List[Dict[str, Any]] = []
@@ -37,13 +38,13 @@ def _purge_old_jobs() -> None:
         del _jobs[job_id]
 
 
-def start_job(data_path: str, **kwargs: Any) -> str:
+def start_job(data_path: str, user_id: int, **kwargs: Any) -> str:
     model_names = kwargs.get("model_names") or []
     preprocess_pipelines = kwargs.get("preprocess_pipelines") or [[]]
     total_models = max(1, len(model_names)) * max(1, len(preprocess_pipelines))
 
     job_id = uuid.uuid4().hex
-    job = WorkflowJob(job_id, total_models)
+    job = WorkflowJob(job_id, total_models, user_id)
 
     with _lock:
         _purge_old_jobs()
