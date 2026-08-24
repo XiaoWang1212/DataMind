@@ -98,8 +98,6 @@ def upload_paper():
     """
     from services.rag.paper_rag import get_paper_rag_service
 
-    service = get_paper_rag_service()
-
     # 處理文件上傳
     if "file" in request.files:
         project_id = _parse_project_id(request.form.get("project_id"))
@@ -107,6 +105,8 @@ def upload_paper():
             return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
         if _get_owned_project(project_id) is None:
             return jsonify({"success": False, "error": "找不到專案"}), 404
+
+        service = get_paper_rag_service()
 
         file = request.files["file"]
 
@@ -190,6 +190,8 @@ def upload_paper():
         metadata["author"] = data["author"]
     if data.get("year"):
         metadata["year"] = data["year"]
+
+    service = get_paper_rag_service()
 
     try:
         result = service.add_paper(

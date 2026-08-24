@@ -50,3 +50,12 @@ class TestRowToChunk:
     def test_no_journal_key_when_arxiv_id_missing(self):
         chunk = DbVectorStore._row_to_chunk(_fake_chunk_row(), _fake_paper_row(arxiv_id=None))
         assert "journal" not in chunk.metadata
+
+    def test_metadata_omits_keys_when_author_year_arxiv_id_all_none(self):
+        chunk = DbVectorStore._row_to_chunk(
+            _fake_chunk_row(), _fake_paper_row(author=None, year=None, arxiv_id=None),
+        )
+        assert "author" not in chunk.metadata
+        assert "year" not in chunk.metadata
+        assert "arxiv_id" not in chunk.metadata
+        assert "journal" not in chunk.metadata

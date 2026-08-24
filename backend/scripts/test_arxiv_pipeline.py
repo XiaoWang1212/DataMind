@@ -1,7 +1,11 @@
 """arXiv 分類/查詢/入庫 pipeline 手動驗證腳本
 
-用法（在 backend/ 目錄下執行）：
-    python scripts/test_arxiv_pipeline.py
+用法（docker-compose 要先啟動，需要 GEMINI_API_KEY）：
+    MSYS_NO_PATHCONV=1 docker exec -w /app datamind-backend /app/.venv/bin/python scripts/test_arxiv_pipeline.py
+
+會借用資料庫裡第一個既有的 user 建立一個測試用 project，跑完自動清理（連帶刪除
+建立的論文，靠 migration 加的 ON DELETE CASCADE）。如果資料庫完全沒有 user，
+先跑過 backend/scripts/seed_admin.py 建一個。
 """
 
 import os
@@ -74,35 +78,50 @@ def main():
     print("arXiv Pipeline 測試")
     print("=" * 60)
 
+    from apps import create_app
+    from extensions import db
+    from models.project import Project
+    from models.user import User
     from services.rag.paper_rag import PaperRAGService
 
-    test_index_dir = BACKEND_DIR / "artifacts" / "test_arxiv_index"
-    test_index_dir.mkdir(parents=True, exist_ok=True)
-    os.environ["RAG_INDEX_DIR"] = str(test_index_dir)
+    app = create_app()
+    with app.app_context():
+        user = User.query.first()
+        if user is None:
+            raise SystemExit("資料庫沒有任何 user，先跑 backend/scripts/seed_admin.py")
 
-    service = PaperRAGService()
+        project = Project(user_id=user.id, name="test_arxiv_pipeline")
+        db.session.add(project)
+        db.session.commit()
+        project_id = project.id
 
-    print("\n[Step 1] 分類 mining_results 並查詢 arXiv 候選論文...")
-    search_result = service.search_arxiv_candidates(MOCK_DATAMIND_OUTPUT)
-    print(f"  研究主題：{search_result['topic']}")
-    print(f"  arXiv 查詢字串：{search_result['arxiv_query']}")
-    print(f"  候選論文數：{len(search_result['candidates'])}")
-    assert len(search_result["candidates"]) > 0, "應該至少查到一篇候選論文"
+        try:
+            service = PaperRAGService()
 
-    for c in search_result["candidates"][:3]:
-        print(f"    - [{c['arxiv_id']}] {c['title']}")
+            print("\n[Step 1] 分類 mining_results 並查詢 arXiv 候選論文...")
+            search_result = service.search_arxiv_candidates(MOCK_DATAMIND_OUTPUT)
+            print(f"  研究主題：{search_result['topic']}")
+            print(f"  arXiv 查詢字串：{search_result['arxiv_query']}")
+            print(f"  候選論文數：{len(search_result['candidates'])}")
+            assert len(search_result["candidates"]) > 0, "應該至少查到一篇候選論文"
 
-    print("\n[Step 2] 選前 2 篇候選論文，下載全文入庫...")
-    selected = search_result["candidates"][:2]
-    ingest_result = service.ingest_arxiv_selection(selected)
-    print(f"  入庫成功：{ingest_result['ingested']}")
-    print(f"  入庫失敗：{ingest_result['failed']}")
-    assert ingest_result["success"], f"入庫應該至少成功一篇：{ingest_result}"
+            for c in search_result["candidates"][:3]:
+                print(f"    - [{c['arxiv_id']}] {c['title']}")
 
-    status = service.get_status()
-    print(f"  向量庫狀態：{status['total_papers']} 篇論文，{status['total_chunks']} 個 chunks")
+            print("\n[Step 2] 選前 2 篇候選論文，下載全文入庫...")
+            selected = search_result["candidates"][:2]
+            ingest_result = service.ingest_arxiv_selection(project_id, selected)
+            print(f"  入庫成功：{ingest_result['ingested']}")
+            print(f"  入庫失敗：{ingest_result['failed']}")
+            assert ingest_result["success"], f"入庫應該至少成功一篇：{ingest_result}"
 
-    print("\n測試完成！")
+            status = service.get_status(project_id)
+            print(f"  向量庫狀態：{status['total_papers']} 篇論文，{status['total_chunks']} 個 chunks")
+
+            print("\n測試完成！")
+        finally:
+            db.session.delete(Project.query.get(project_id))
+            db.session.commit()
 
 
 if __name__ == "__main__":

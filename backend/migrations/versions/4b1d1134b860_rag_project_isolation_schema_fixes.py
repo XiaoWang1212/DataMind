@@ -20,6 +20,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    count = op.get_bind().execute(sa.text("SELECT count(*) FROM rag_chunks")).scalar()
+    if count:
+        raise RuntimeError(
+            f"rag_chunks has {count} rows; this migration drops and recreates the "
+            "embedding column, which would destroy existing embeddings. Write a "
+            "backfill plan before running this migration on non-empty data."
+        )
     op.drop_constraint("rag_chunks_paper_id_fkey", "rag_chunks", type_="foreignkey")
     op.create_foreign_key(
         "rag_chunks_paper_id_fkey", "rag_chunks", "rag_papers",

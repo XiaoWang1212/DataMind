@@ -1,14 +1,16 @@
 """
 RAG 論文生成系統測試腳本
 
-用法（在 backend/ 目錄下執行）：
-    python scripts/test_paper_gen.py
+用法（docker-compose 要先啟動，需要 GEMINI_API_KEY）：
+    MSYS_NO_PATHCONV=1 docker exec -w /app datamind-backend /app/.venv/bin/python scripts/test_paper_gen.py
 
 測試流程：
-  1. 用虛擬論文文字建立論文庫（不需要上傳真實 PDF）
-  2. 用 DataMind 格式的模擬輸出呼叫 generate_paper()
-  3. 將結果輸出至 artifacts/test_output/
+  1. 借用資料庫裡第一個既有的 user 建立一個測試用 project
+  2. 用虛擬論文文字建立論文庫（不需要上傳真實 PDF）
+  3. 用 DataMind 格式的模擬輸出呼叫 generate_paper()
+  4. 將結果輸出至 artifacts/test_output/，跑完清理測試用的 project
 
+如果資料庫完全沒有 user，先跑過 backend/scripts/seed_admin.py 建一個。
 若要使用真實 Flask server 測試 HTTP 端點，可改用 curl 範例（檔案末尾）。
 """
 
@@ -201,101 +203,115 @@ def main():
     print("RAG 論文生成系統測試")
     print("=" * 60)
 
+    from apps import create_app
+    from extensions import db
+    from models.project import Project
+    from models.user import User
     from services.rag.paper_rag import PaperRAGService
 
-    # 使用測試專用的 index 目錄（避免污染正式資料）
-    test_index_dir = BACKEND_DIR / "artifacts" / "test_rag_index"
-    test_index_dir.mkdir(parents=True, exist_ok=True)
+    app = create_app()
+    with app.app_context():
+        user = User.query.first()
+        if user is None:
+            raise SystemExit("資料庫沒有任何 user，先跑 backend/scripts/seed_admin.py")
 
-    # 覆寫環境變數，使用測試目錄
-    os.environ["RAG_INDEX_DIR"] = str(test_index_dir)
+        project = Project(user_id=user.id, name="test_paper_gen")
+        db.session.add(project)
+        db.session.commit()
+        project_id = project.id
 
-    service = PaperRAGService()
+        try:
+            service = PaperRAGService()
 
-    # ── Step 1：清空並重建測試論文庫 ────────────────────────────────────────
-    print("\n[Step 1] 清空測試論文庫...")
-    service.clear()
+            # ── Step 1：清空並重建測試論文庫 ────────────────────────────────────
+            print("\n[Step 1] 清空測試論文庫...")
+            service.clear(project_id)
 
-    print("\n[Step 2] 加入模擬參考論文...")
-    for paper in MOCK_PAPERS:
-        result = service.add_paper(
-            title=paper["title"],
-            content=paper["content"],
-            metadata={"author": paper["author"], "year": paper["year"]},
-        )
-        status = "✓" if result.get("success") else "✗"
-        print(f"  {status} {paper['title']} → {result.get('chunks_added', 0)} chunks")
+            print("\n[Step 2] 加入模擬參考論文...")
+            for paper in MOCK_PAPERS:
+                result = service.add_paper(
+                    project_id,
+                    title=paper["title"],
+                    content=paper["content"],
+                    metadata={"author": paper["author"], "year": paper["year"]},
+                )
+                status = "✓" if result.get("success") else "✗"
+                print(f"  {status} {paper['title']} → {result.get('chunks_added', 0)} chunks")
 
-    # ── Step 2：確認論文庫狀態 ──────────────────────────────────────────────
-    status = service.get_status()
-    print(f"\n[論文庫狀態] {status['total_papers']} 篇論文，{status['total_chunks']} 個 chunks")
-    print(f"  Embedding 後端：{status['embedding_backend']}")
+            # ── Step 2：確認論文庫狀態 ──────────────────────────────────────────
+            status = service.get_status(project_id)
+            print(f"\n[論文庫狀態] {status['total_papers']} 篇論文，{status['total_chunks']} 個 chunks")
+            print(f"  Embedding 後端：{status['embedding_backend']}")
 
-    # ── Step 3：生成論文（僅生成研究方法和實驗結果，聚焦於 DataMind 探勘結果）──
-    print("\n[Step 3] 開始生成論文...")
-    print("  研究主題：以機器學習預測 ICU 病患院內死亡率")
-    print("  生成章節：研究方法、實驗結果（完整測試請移除 structure 參數）")
+            # ── Step 3：生成論文（僅生成研究方法和實驗結果，聚焦於 DataMind 探勘結果）──
+            print("\n[Step 3] 開始生成論文...")
+            print("  研究主題：以機器學習預測 ICU 病患院內死亡率")
+            print("  生成章節：研究方法、實驗結果（完整測試請移除 structure 參數）")
 
-    result = service.generate_paper(
-        topic="以機器學習預測加護病房病患院內死亡率：比較研究",
-        mining_results=MOCK_DATAMIND_OUTPUT,
-        structure=["研究方法", "實驗結果"],  # 完整版：移除此行使用預設六章
-        language="zh-TW",
-    )
+            result = service.generate_paper(
+                project_id,
+                topic="以機器學習預測加護病房病患院內死亡率：比較研究",
+                mining_results=MOCK_DATAMIND_OUTPUT,
+                structure=["研究方法", "實驗結果"],  # 完整版：移除此行使用預設六章
+                language="zh-TW",
+            )
 
-    # ── Step 4：輸出結果 ─────────────────────────────────────────────────────
-    output_dir = BACKEND_DIR / "artifacts" / "test_output"
-    output_dir.mkdir(parents=True, exist_ok=True)
+            # ── Step 4：輸出結果 ─────────────────────────────────────────────────
+            output_dir = BACKEND_DIR / "artifacts" / "test_output"
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 論文 Markdown
-    paper_path = output_dir / "generated_paper.md"
-    paper_path.write_text(result["paper_markdown"], encoding="utf-8")
-    print(f"\n[Step 4] 論文已儲存：{paper_path}")
+            # 論文 Markdown
+            paper_path = output_dir / "generated_paper.md"
+            paper_path.write_text(result["paper_markdown"], encoding="utf-8")
+            print(f"\n[Step 4] 論文已儲存：{paper_path}")
 
-    # 引用地圖 JSON
-    citation_map_path = output_dir / "citation_map.json"
-    citation_map_path.write_text(
-        json.dumps(result["citation_map"], ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    print(f"  引用地圖：{citation_map_path}")
+            # 引用地圖 JSON
+            citation_map_path = output_dir / "citation_map.json"
+            citation_map_path.write_text(
+                json.dumps(result["citation_map"], ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            print(f"  引用地圖：{citation_map_path}")
 
-    # 參考文獻清單（僅含實際被引用的文獻）
-    refs_path = output_dir / "references.json"
-    refs_path.write_text(
-        json.dumps(result["references"], ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    print(f"  引用清單：{refs_path}")
+            # 參考文獻清單（僅含實際被引用的文獻）
+            refs_path = output_dir / "references.json"
+            refs_path.write_text(
+                json.dumps(result["references"], ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            print(f"  引用清單：{refs_path}")
 
-    # 引用對照報告（記錄文章內文對應到參考論文的哪一部分）
-    citation_report_path = output_dir / "citation_report.md"
-    citation_report_path.write_text(result["citation_report"], encoding="utf-8")
-    print(f"  引用對照報告：{citation_report_path}")
+            # 引用對照報告（記錄文章內文對應到參考論文的哪一部分）
+            citation_report_path = output_dir / "citation_report.md"
+            citation_report_path.write_text(result["citation_report"], encoding="utf-8")
+            print(f"  引用對照報告：{citation_report_path}")
 
-    # ── 摘要輸出 ─────────────────────────────────────────────────────────────
-    print("\n" + "=" * 60)
-    print("【生成結果摘要】")
-    print("=" * 60)
-    print(f"  生成章節：{result['sections_generated']}")
-    print(f"  全域引用數：{len(result['references'])} 篇")
-    print(f"  引用地圖條目數：{len(result['citation_map'])} 段")
-    print(f"  Token 用量：{result['usage']}")
+            # ── 摘要輸出 ─────────────────────────────────────────────────────────
+            print("\n" + "=" * 60)
+            print("【生成結果摘要】")
+            print("=" * 60)
+            print(f"  生成章節：{result['sections_generated']}")
+            print(f"  全域引用數：{len(result['references'])} 篇")
+            print(f"  引用地圖條目數：{len(result['citation_map'])} 段")
+            print(f"  Token 用量：{result['usage']}")
 
-    print("\n【引用地圖預覽（前 3 條）】")
-    for entry in result["citation_map"][:3]:
-        print(f"\n  章節：{entry['section']}（段落 {entry['paragraph_index']}）")
-        print(f"  引用 ref_id：{entry['cited_ref_ids']}")
-        print(f"  文字片段：{entry['text'][:100]}...")
-        for src in entry["sources"]:
-            print(f"    → [{src['ref_id']}] {src['title']} ({src['year']}) "
-                  f"相似度 {src['similarity_score']}")
+            print("\n【引用地圖預覽（前 3 條）】")
+            for entry in result["citation_map"][:3]:
+                print(f"\n  章節：{entry['section']}（段落 {entry['paragraph_index']}）")
+                print(f"  引用 ref_id：{entry['cited_ref_ids']}")
+                print(f"  文字片段：{entry['text'][:100]}...")
+                for src in entry["sources"]:
+                    print(f"    → [{src['ref_id']}] {src['title']} ({src['year']}) "
+                          f"相似度 {src['similarity_score']}")
 
-    print("\n【論文前 500 字預覽】")
-    print("-" * 40)
-    print(result["paper_markdown"][:500])
-    print("...")
-    print("\n測試完成！")
+            print("\n【論文前 500 字預覽】")
+            print("-" * 40)
+            print(result["paper_markdown"][:500])
+            print("...")
+            print("\n測試完成！")
+        finally:
+            db.session.delete(Project.query.get(project_id))
+            db.session.commit()
 
 
 if __name__ == "__main__":

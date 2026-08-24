@@ -1,9 +1,13 @@
 """取代 services/rag/vector_store.py 的資料庫版本，依 project_id 隔離。"""
 
+import logging
+
 from extensions import db
 from models.rag_paper import RagChunk, RagPaper
 from services.rag.chunker import Chunk
 from services.rag.embedder import Embedder
+
+logger = logging.getLogger(__name__)
 
 
 class DbVectorStore:
@@ -58,6 +62,19 @@ class DbVectorStore:
             .limit(top_k)
             .all()
         )
+
+        missing_count = (
+            db.session.query(RagChunk)
+            .join(RagPaper, RagChunk.paper_id == RagPaper.id)
+            .filter(RagPaper.project_id == project_id, RagChunk.embedding.is_(None))
+            .count()
+        )
+        if missing_count:
+            logger.warning(
+                "search: %d chunk(s) in project %s have no embedding and were excluded from transformer search",
+                missing_count, project_id,
+            )
+
         return [
             (self._row_to_chunk(chunk, paper), 1.0 - float(distance))
             for chunk, paper, distance in rows
@@ -98,9 +115,16 @@ class DbVectorStore:
             .filter(RagPaper.project_id == project_id)
             .count()
         )
+        chunks_missing_embedding = (
+            db.session.query(RagChunk)
+            .join(RagPaper, RagChunk.paper_id == RagPaper.id)
+            .filter(RagPaper.project_id == project_id, RagChunk.embedding.is_(None))
+            .count()
+        )
         return {
             "total_papers": len(papers),
             "total_chunks": total_chunks,
+            "chunks_missing_embedding": chunks_missing_embedding,
             "embedding_backend": self.embedder.backend,
             "embedding_model": self.embedder.model_name,
             "papers": [
@@ -145,12 +169,13 @@ class DbVectorStore:
 
     @staticmethod
     def _row_to_chunk(chunk_row, paper_row) -> Chunk:
-        metadata = {
-            "author": paper_row.author,
-            "year": paper_row.year,
-            "arxiv_id": paper_row.arxiv_id,
-        }
+        metadata = {}
+        if paper_row.author:
+            metadata["author"] = paper_row.author
+        if paper_row.year:
+            metadata["year"] = paper_row.year
         if paper_row.arxiv_id:
+            metadata["arxiv_id"] = paper_row.arxiv_id
             metadata["journal"] = f"arXiv:{paper_row.arxiv_id}"
         return Chunk(
             chunk_id=str(chunk_row.id),
