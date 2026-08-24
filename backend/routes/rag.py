@@ -8,8 +8,10 @@ import os
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
-from flask_login import login_required
+from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
+
+from models.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,22 @@ UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "rag"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"txt", "md", "pdf"}
+
+
+def _get_owned_project(project_id: int) -> Project | None:
+    project = Project.query.get(project_id)
+    if not project or project.user_id != current_user.id:
+        return None
+    return project
+
+
+def _parse_project_id(raw) -> int | None:
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def extract_text_from_file(file_path: Path) -> str:
@@ -84,6 +102,12 @@ def upload_paper():
 
     # 處理文件上傳
     if "file" in request.files:
+        project_id = _parse_project_id(request.form.get("project_id"))
+        if project_id is None:
+            return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+        if _get_owned_project(project_id) is None:
+            return jsonify({"success": False, "error": "找不到專案"}), 404
+
         file = request.files["file"]
 
         if file.filename == "":
@@ -121,6 +145,7 @@ def upload_paper():
                 metadata["year"] = year
 
             result = service.add_paper(
+                project_id,
                 title=title,
                 content=content,
                 metadata=metadata,
@@ -145,6 +170,12 @@ def upload_paper():
             400,
         )
 
+    project_id = _parse_project_id(data.get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     title = data.get("title")
     content = data.get("content")
 
@@ -162,6 +193,7 @@ def upload_paper():
 
     try:
         result = service.add_paper(
+            project_id,
             title=title,
             content=content,
             metadata=metadata,
@@ -186,6 +218,12 @@ def search_papers():
     from services.rag.paper_rag import get_paper_rag_service
 
     data = request.get_json()
+    project_id = _parse_project_id((data or {}).get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     if not data or not data.get("query"):
         return jsonify({"success": False, "error": "query is required"}), 400
 
@@ -193,6 +231,7 @@ def search_papers():
 
     try:
         results = service.search(
+            project_id,
             query=data["query"],
             top_k=data.get("top_k", 5),
             use_rerank=data.get("use_rerank", True),
@@ -233,6 +272,12 @@ def generate_citation():
     from services.rag.paper_rag import get_paper_rag_service
 
     data = request.get_json()
+    project_id = _parse_project_id((data or {}).get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     if not data or not data.get("query"):
         return jsonify({"success": False, "error": "query is required"}), 400
 
@@ -240,6 +285,7 @@ def generate_citation():
 
     try:
         result = service.generate_citation(
+            project_id,
             query=data["query"],
             top_k=data.get("top_k", 3),
             citation_style=data.get("style", "apa"),
@@ -258,10 +304,16 @@ def get_status():
     """獲取 RAG 服務狀態"""
     from services.rag.paper_rag import get_paper_rag_service
 
+    project_id = _parse_project_id(request.args.get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     service = get_paper_rag_service()
 
     try:
-        status = service.get_status()
+        status = service.get_status(project_id)
         return jsonify({"success": True, "status": status})
 
     except Exception as e:
@@ -275,10 +327,17 @@ def clear_index():
     """清空所有索引"""
     from services.rag.paper_rag import get_paper_rag_service
 
+    data = request.get_json(silent=True)
+    project_id = _parse_project_id((data or {}).get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     service = get_paper_rag_service()
 
     try:
-        result = service.clear()
+        result = service.clear(project_id)
         return jsonify({"success": True, "result": result})
 
     except Exception as e:
@@ -292,10 +351,16 @@ def delete_paper(paper_id: str):
     """刪除指定論文"""
     from services.rag.paper_rag import get_paper_rag_service
 
+    project_id = _parse_project_id(request.args.get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     service = get_paper_rag_service()
 
     try:
-        result = service.delete_paper(paper_id)
+        result = service.delete_paper(project_id, paper_id)
         if not result.get("success"):
             return jsonify(result), 404
         return jsonify(result)
@@ -329,6 +394,12 @@ def generate_paper():
     if not data:
         return jsonify({"success": False, "error": "需要 JSON body"}), 400
 
+    project_id = _parse_project_id(data.get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     topic = data.get("topic", "").strip()
     if not topic:
         return jsonify({"success": False, "error": "topic 為必填欄位"}), 400
@@ -344,6 +415,7 @@ def generate_paper():
 
     try:
         result = service.generate_paper(
+            project_id,
             topic=topic,
             mining_results=mining_results,
             structure=structure,
@@ -406,6 +478,12 @@ def arxiv_generate():
     if not data:
         return jsonify({"success": False, "error": "需要 JSON body"}), 400
 
+    project_id = _parse_project_id(data.get("project_id"))
+    if project_id is None:
+        return jsonify({"success": False, "error": "project_id 為必填欄位，且必須是整數"}), 400
+    if _get_owned_project(project_id) is None:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
     topic = data.get("topic", "").strip()
     mining_results = data.get("mining_results")
     selected_candidates = data.get("selected_candidates")
@@ -420,11 +498,11 @@ def arxiv_generate():
     service = get_paper_rag_service()
 
     try:
-        ingest_result = service.ingest_arxiv_selection(selected_candidates)
+        ingest_result = service.ingest_arxiv_selection(project_id, selected_candidates)
         if not ingest_result.get("success"):
             return jsonify(ingest_result), 422
 
-        result = service.generate_paper(topic=topic, mining_results=mining_results)
+        result = service.generate_paper(project_id, topic=topic, mining_results=mining_results)
         return jsonify({
             "success": True,
             "result": result,
