@@ -11,9 +11,7 @@ import logging
 import os
 import re
 import time
-import uuid
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import google.generativeai as genai
@@ -22,7 +20,7 @@ from . import arxiv_source
 from .chunker import Chunk, TextChunker
 from .embedder import Embedder
 from .reranker import Reranker
-from .vector_store import VectorStore
+from .db_vector_store import DbVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -136,17 +134,13 @@ class PaperRAGService:
         )
 
         embed_model = os.getenv("RAG_EMBED_MODEL", "BAAI/bge-small-zh-v1.5")
-        index_dir = (
-            Path(__file__).parent.parent.parent
-            / os.getenv("RAG_INDEX_DIR", "artifacts/rag_index")
-        )
 
         self._chunker = TextChunker(
             chunk_size=int(os.getenv("RAG_CHUNK_SIZE", 500)),
             overlap=int(os.getenv("RAG_CHUNK_OVERLAP", 50)),
         )
         self._embedder = Embedder(model_name=embed_model)
-        self._store = VectorStore(index_dir=index_dir, embedder=self._embedder)
+        self._store = DbVectorStore(embedder=self._embedder)
 
         rerank_model = os.getenv("RAG_RERANK_MODEL", "BAAI/bge-reranker-base")
         rerank_enabled = os.getenv("RAG_RERANK_ENABLED", "true").strip().lower() not in ("false", "0")
@@ -154,16 +148,16 @@ class PaperRAGService:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def add_paper(self, title: str, content: str, metadata: dict | None = None) -> dict:
+    def add_paper(self, project_id: int, title: str, content: str, metadata: dict | None = None) -> dict:
         if metadata is None:
             metadata = {}
-        paper_id = str(uuid.uuid4())
+        paper_id = self._store.create_paper(project_id, title, metadata)
         chunks = self._chunker.chunk(content, paper_id=paper_id, title=title, metadata=metadata)
         if not chunks:
+            self._store.delete_paper(project_id, paper_id)
             return {"success": False, "error": "未能從文件中提取內容"}
 
-        self._store.add(chunks)
-        self._store.register_paper(paper_id, {"paper_id": paper_id, "title": title, **metadata})
+        self._store.add_chunks(chunks)
 
         logger.info("add_paper: %s (%d chunks)", title, len(chunks))
         return {
@@ -173,11 +167,11 @@ class PaperRAGService:
             "chunks_added": len(chunks),
         }
 
-    def search(self, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
+    def search(self, project_id: int, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
         should_rerank = use_rerank and self._reranker is not None and self._reranker.available
         overfetch_k = top_k * 4 if should_rerank else top_k
 
-        raw = self._store.search(query, top_k=overfetch_k)
+        raw = self._store.search(project_id, query, top_k=overfetch_k)
 
         if should_rerank and raw:
             reranked = self._reranker.rerank(query, raw)
@@ -188,8 +182,8 @@ class PaperRAGService:
 
         return [SearchResult(chunk=c, score=s) for c, s in raw[:top_k]]
 
-    def generate_citation(self, query: str, top_k: int = 3, citation_style: str = "apa") -> dict:
-        results = self.search(query, top_k=top_k)
+    def generate_citation(self, project_id: int, query: str, top_k: int = 3, citation_style: str = "apa") -> dict:
+        results = self.search(project_id, query, top_k=top_k)
         if not results:
             return {"citations": [], "sources": []}
 
@@ -219,6 +213,7 @@ class PaperRAGService:
 
     def generate_paper(
         self,
+        project_id: int,
         topic: str,
         mining_results: dict,
         structure: List[str] | None = None,
@@ -255,7 +250,7 @@ class PaperRAGService:
             top_k = _SECTION_TOP_K.get(section_name, _DEFAULT_TOP_K)
             query_tmpl = _SECTION_QUERIES.get(section_name, "{topic}")
             query = query_tmpl.format(topic=topic)
-            search_results = self.search(query, top_k=top_k)
+            search_results = self.search(project_id, query, top_k=top_k)
 
             # 2. 建立本章節的本地 ref map（local_id → chunk + global_ref_id）
             local_refs: Dict[int, dict] = {}
@@ -388,19 +383,25 @@ class PaperRAGService:
             "candidates": candidates,
         }
 
-    def ingest_arxiv_selection(self, candidates: List[dict]) -> dict:
-        """清空向量庫，下載選中的 arXiv 論文全文並加入索引。
+    def ingest_arxiv_selection(self, project_id: int, candidates: List[dict]) -> dict:
+        """下載選中的 arXiv 論文全文並加入索引。
 
         單篇下載/解析失敗時跳過並記錄，不中斷整體流程；若全部失敗則回傳錯誤。
+        同一個 project 裡，arxiv_id 已經存在就跳過，不重複塞進索引。
         """
-        self.clear()
-
         ingested: List[str] = []
         failed: List[str] = []
 
         for candidate in candidates:
             title = candidate.get("title", "")
             pdf_url = candidate.get("pdf_url", "")
+            arxiv_id = candidate.get("arxiv_id", "")
+
+            if arxiv_id and self._store.find_by_arxiv_id(project_id, arxiv_id) is not None:
+                logger.info("跳過已存在的 arXiv 論文：%s (%s)", title, arxiv_id)
+                ingested.append(title)
+                continue
+
             try:
                 content = arxiv_source.fetch_pdf_text(pdf_url)
                 if not content.strip():
@@ -411,13 +412,14 @@ class PaperRAGService:
                 continue
 
             result = self.add_paper(
+                project_id=project_id,
                 title=title,
                 content=content,
                 metadata={
                     "author": candidate.get("authors", ""),
                     "year": candidate.get("year", ""),
                     "journal": f"arXiv:{candidate.get('arxiv_id', '')}",
-                    "arxiv_id": candidate.get("arxiv_id", ""),
+                    "arxiv_id": arxiv_id,
                 },
             )
             if result.get("success"):
@@ -783,17 +785,17 @@ class PaperRAGService:
 
         return {"reply": reply_text, "papers": papers}
 
-    def get_status(self) -> dict:
-        return self._store.get_status()
+    def get_status(self, project_id: int) -> dict:
+        return self._store.get_status(project_id)
 
-    def delete_paper(self, paper_id: str) -> dict:
-        ok = self._store.delete_paper(paper_id)
+    def delete_paper(self, project_id: int, paper_id: str) -> dict:
+        ok = self._store.delete_paper(project_id, paper_id)
         if ok:
             return {"success": True, "message": f"已刪除論文 {paper_id}"}
         return {"success": False, "message": f"找不到論文 {paper_id}"}
 
-    def clear(self) -> dict:
-        self._store.clear()
+    def clear(self, project_id: int) -> dict:
+        self._store.clear(project_id)
         return {"success": True, "message": "已清空論文庫"}
 
     # ── DataMind 輸出格式化 ───────────────────────────────────────────────────
