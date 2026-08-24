@@ -751,10 +751,6 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
   }
 
   .validation-method {
@@ -765,7 +761,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .validation-method:hover {
-      background: var(--color-surface-alt);
+      background: color-mix(in oklab, var(--color-ink) 8%, transparent);
     }
   }
 
