@@ -144,6 +144,10 @@
 
   async function handleGenerate (): Promise<void> {
     if (!miningResults.value) return
+    if (!projectId.value) {
+      generateError.value = '缺少 project 資訊，請從專案頁面重新進入'
+      return
+    }
     generating.value = true
     generateError.value = null
     try {
@@ -152,6 +156,7 @@
         topic: topic.value,
         miningResults: miningResults.value,
         selectedCandidates,
+        projectId: projectId.value,
       })
       const report = transformArxivResultToPaperReport(result, topic.value)
       paperStore.setGeneratedReport(report)
