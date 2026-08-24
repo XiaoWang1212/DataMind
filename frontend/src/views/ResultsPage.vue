@@ -493,7 +493,7 @@
   .metric-title {
     margin: 0;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -538,7 +538,7 @@
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text-secondary);
     background: var(--brand-soft);
   }

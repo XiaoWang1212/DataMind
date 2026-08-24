@@ -635,7 +635,7 @@
   .cm-header {
     padding: 10px 14px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-ink-soft);
     white-space: nowrap;
     text-align: left;
@@ -780,7 +780,7 @@
 
   .cm-insight-header {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-ink-soft);
   }
 
