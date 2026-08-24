@@ -1516,8 +1516,10 @@ git commit -m "feat: send project_id when generating a paper from arXiv sources"
 - [ ] **Step 1: 確認沒有其他地方還在 import 舊的 `VectorStore`**
 
 ```bash
-cd backend && grep -rn "from services.rag.vector_store\|import vector_store\|VectorStore(" --include="*.py" . | grep -v ".venv"
+cd backend && grep -rn "from services.rag.vector_store\|import vector_store\|VectorStore(" --include="*.py" . | grep -v ".venv" | grep -v "services/rag/vector_store.py" | grep -v "tests/test_vector_store_self_heal.py"
 ```
+
+（排除 `services/rag/vector_store.py` 自己跟 `tests/test_vector_store_self_heal.py`——這兩個檔案本來就會 import 舊的 `VectorStore`，它們是 Step 2 要刪除的對象，不算「其他地方」。）
 
 Expected: 沒有任何輸出（如果有，代表 Task 3 沒改乾淨，要先回頭處理，不能進到下一步）。
 
