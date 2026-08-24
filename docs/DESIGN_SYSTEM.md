@@ -351,12 +351,14 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 | secondary | `--color-surface` + `--color-border` inset 邊 | `--color-ink` | 次要動作 |
 | ghost | 透明 | `--color-ink-soft` | 輕量動作(略過、取消) |
 | danger | `--color-error-bg` | `--color-error-text` | 破壞性動作(移除對應) |
+| ai | `linear-gradient(100deg, --color-ink-vivid, --color-ink-strong)` | `--color-inverted` | 觸發 AI 運算的動作,固定帶 `mdi-shimmer` 圖示。只用在明確的 AI 觸發點,不要為了好看套用在一般按鈕上 |
 
 - 形狀:pill(999px)。
 - `:active` 一律 `scale(0.96)`。
 - 每個畫面最多一個 primary,其餘用 secondary/ghost。
 - secondary 的邊界用 `inset box-shadow` 而不是 `border`,免得邊框佔掉尺寸讓它跟其他變體對不齊。
 - **主次關係會隨流程階段改變。** 同一顆按鈕在不同狀態下可能該換變體——例如提取框架頁,提取完成後主要動作就從「開始提取」變成「儲存框架」,前者降為 secondary。判準是「使用者此刻最該做什麼」,不是按鈕固定屬於哪一階。
+- **`ai` 變體的 loading 不隱藏內容。** 其餘變體 loading 時內容 `visibility: hidden`、置中疊一個圓圈 spinner；`ai` 變體反過來，圖示跟文字維持可見，改成一道低透明度（16%）的光帶斜向掃過底色（2.4s，寬版、慢速）——AI 按鈕的圖示本身是「這是 AI 操作」的語意信號，loading 時蓋掉會失去意義。這個決定是反覆比較過旋轉邊框、公轉光點、脈動光暈、色輪旋轉等做法後定案的,不要回頭嘗試那些方向（見對應 spec 的完整比較過程）。
 
 ### 7.2 側邊欄
 
