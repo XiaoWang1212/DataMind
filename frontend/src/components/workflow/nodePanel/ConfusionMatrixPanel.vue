@@ -170,17 +170,26 @@
 
         <template v-else-if="tabInsightError">
           <p class="cm-insight-error">{{ tabInsightError }}</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重試</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            重試
+          </AppButton>
         </template>
 
         <template v-else-if="currentTabInsight">
           <p class="cm-insight-text">{{ currentTabInsight }}</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重新生成</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            重新生成
+          </AppButton>
         </template>
 
         <template v-else>
           <p class="cm-insight-empty">點擊下方按鈕，讓 AI 針對目前的圖表/表格生成一段解讀。</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">AI 解讀</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            AI 解讀
+          </AppButton>
         </template>
       </div>
     </div>
@@ -195,6 +204,7 @@
   import { computed, ref, watch } from 'vue'
   import { fetchTabInsight } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { loadTabInsightFromStorage, saveTabInsightToStorage } from '@/composables/workflow/useWorkflowStorage.ts'
 
   interface ConfusionMatrixData {
@@ -797,17 +807,6 @@
     margin: 0;
     font-size: 13px;
     color: var(--color-error-text);
-  }
-
-  .cm-insight-btn {
-    align-self: flex-start;
-    padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    border: 1px solid color-mix(in oklab, var(--color-ink) 35%, transparent);
-    background: var(--color-ink);
-    color: var(--color-inverted);
-    font-size: 13px;
-    cursor: pointer;
   }
 
   .summary-empty {
