@@ -13,16 +13,16 @@
       </template>
       <template v-if="summary.length > 0 && hasPaper !== null" #actions>
         <template v-if="hasPaper">
-          <RouterLink class="generate-paper-btn generate-paper-btn--secondary" :to="`/paper/sources?project=${projectId}`">
-            重新生成論文
-          </RouterLink>
-          <RouterLink class="generate-paper-btn" :to="`/paper?project=${projectId}`">
-            查看論文
-          </RouterLink>
+          <AppButton :to="`/paper/sources?project=${projectId}`" variant="secondary">
+            重新生成技術報告
+          </AppButton>
+          <AppButton :to="`/paper?project=${projectId}`" variant="primary">
+            查看技術報告
+          </AppButton>
         </template>
-        <RouterLink v-else class="generate-paper-btn" :to="`/paper/sources?project=${projectId}`">
-          生成論文
-        </RouterLink>
+        <AppButton v-else :to="`/paper/sources?project=${projectId}`" variant="primary">
+          生成技術報告
+        </AppButton>
       </template>
     </PageHeader>
     <RouterLink v-else class="back-link back-link--standalone" :to="`/hub/projects/${projectId}`">
@@ -35,10 +35,10 @@
     <template v-else-if="summary.length === 0">
       <div class="empty-state">
         <p class="empty-text">尚未有可用結果</p>
-        <RouterLink class="open-workflow-btn" :to="`/workflow?project=${projectId}`">
+        <AppButton :to="`/workflow?project=${projectId}`" variant="primary">
           <v-icon icon="mdi-sitemap-outline" size="16" />
           在 Workflow 中開啟
-        </RouterLink>
+        </AppButton>
       </div>
     </template>
 
@@ -91,7 +91,15 @@
           <h2 class="analysis-title">AI 結構化分析</h2>
         </div>
 
-        <p v-if="analysisLoading" class="analysis-loading">正在生成分析...</p>
+        <div v-if="analysisLoading" aria-label="正在生成分析" class="analysis-grid" role="status">
+          <!-- 骨架沿用真實內容的 grid，讓載入完換上真值時兩者欄寬一致 -->
+          <div v-for="n in 4" :key="n" class="analysis-block analysis-block--skeleton">
+            <div class="skeleton-line skeleton-heading" />
+            <div class="skeleton-line" style="width: 100%" />
+            <div class="skeleton-line" style="width: 92%" />
+            <div class="skeleton-line" style="width: 68%" />
+          </div>
+        </div>
         <template v-else-if="analysisError">
           <p class="analysis-error">分析生成失敗：{{ analysisError }}</p>
           <AppButton variant="ghost" @click="loadAnalysis">重試</AppButton>
@@ -188,7 +196,7 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import { renderChatText } from '@/utils/formatChatText'
-  import { type ModelMetricSummary, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
+  import { findBestModel, type ModelMetricSummary, pickPrimaryMetric, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
   interface MetricCard {
     key: string
@@ -231,42 +239,29 @@
     return names
   })
 
-  function bestModelFor (metric: string): { model_name: string, valueFormatted: string } | null {
-    let best: { model_name: string, valueFormatted: string, value: number } | null = null
-    for (const row of summary.value) {
-      const entry = row.metrics.find(m => m.metric === metric)
-      if (!entry) continue
-      const value = Number(entry.valueFormatted)
-      if (Number.isNaN(value)) continue
-      if (!best || value > best.value) {
-        best = { model_name: row.model_name, valueFormatted: entry.valueFormatted, value }
-      }
-    }
-    return best ? { model_name: best.model_name, valueFormatted: best.valueFormatted } : null
-  }
-
   const metricCards = computed<MetricCard[]>(() => {
-    if (metricNames.value.length === 0) return []
-    const primaryMetric = metricNames.value[0]!
-    const best = bestModelFor(primaryMetric)
+    const primaryMetric = pickPrimaryMetric(summary.value)
+    if (!primaryMetric) return []
+    const best = findBestModel(summary.value, primaryMetric)
 
     const cards: MetricCard[] = [
       {
         key: 'best-model',
         title: '最佳模型',
-        value: best?.model_name ?? '—',
+        value: best?.modelName ?? '—',
         hint: best ? `${primaryMetric}: ${best.valueFormatted}` : '',
         accent: true,
       },
     ]
 
-    for (const metric of metricNames.value.slice(1, 4)) {
-      const metricBest = bestModelFor(metric)
+    // 主指標不再必然是清單第一個，要排除掉才不會出現兩張同指標的卡
+    for (const metric of metricNames.value.filter(m => m !== primaryMetric).slice(0, 3)) {
+      const metricBest = findBestModel(summary.value, metric)
       cards.push({
         key: metric,
         title: metric,
         value: metricBest?.valueFormatted ?? '—',
-        hint: metricBest?.model_name ?? '',
+        hint: metricBest?.modelName ?? '',
       })
     }
 
@@ -383,40 +378,6 @@
 .back-link--standalone {
   margin-top: 0;
   margin-bottom: 20px;
-}
-
-.generate-paper-btn,
-.open-workflow-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: var(--color-ink);
-  color: var(--color-surface);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-out);
-}
-
-.generate-paper-btn:hover,
-.open-workflow-btn:hover {
-  background: var(--color-ink-strong);
-}
-
-/* 重新生成是次要動作，查看論文才是主要路徑，用 outline 拉開層級 */
-.generate-paper-btn--secondary {
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: inset 0 0 0 1px var(--color-border);
-}
-
-.generate-paper-btn--secondary:hover {
-  background: var(--color-surface);
-  box-shadow: inset 0 0 0 1px var(--color-ink);
 }
 
 .not-found {
@@ -560,12 +521,6 @@
   color: var(--color-text);
 }
 
-.analysis-loading {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-ink-soft);
-}
-
 .analysis-error {
   margin: 0 0 8px;
   font-size: 13px;
@@ -590,6 +545,22 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--color-ink-soft);
+}
+
+.analysis-block--skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analysis-block--skeleton .skeleton-heading {
+  width: 42%;
+  height: 13px;
+  margin-bottom: 2px;
+}
+
+.analysis-block--skeleton .skeleton-line:not(.skeleton-heading) {
+  height: 11px;
 }
 
 .chat-messages {

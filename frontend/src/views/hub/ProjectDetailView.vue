@@ -23,33 +23,47 @@
 
           <!-- Completed -->
           <template v-if="project.status === 'completed'">
-            <div class="result-row">
-              <div class="result-label">模型準確率</div>
-              <div class="result-value large">{{ project.accuracy }}</div>
-            </div>
-            <div class="result-divider" />
-            <div class="result-row">
-              <div class="result-label">關鍵發現</div>
-              <div class="result-value">{{ project.keyFinding }}</div>
-            </div>
-            <div class="result-divider" />
-            <RouterLink class="view-result-btn" :to="`/hub/projects/${project.id}/result`">
-              查看完整結果
-              <v-icon icon="mdi-arrow-right" size="14" />
-            </RouterLink>
+            <template v-if="bestModel || pipelineRows.length > 0">
+              <div class="result-row">
+                <div class="result-label">最佳模型</div>
+                <div class="result-value result-value--model">{{ bestModel?.modelName ?? '—' }}</div>
+                <div v-if="bestModel && primaryMetric" class="result-metric-hint">
+                  {{ primaryMetric }}: {{ bestModel.valueFormatted }}
+                </div>
+              </div>
+              <div class="result-divider" />
 
-            <div v-if="hasPaper !== null" class="paper-actions">
-              <template v-if="hasPaper">
-                <RouterLink class="paper-btn paper-btn--secondary" :to="`/paper/sources?project=${project.id}`">
-                  重新生成論文
-                </RouterLink>
-                <RouterLink class="paper-btn" :to="`/paper?project=${project.id}`">
-                  查看論文
-                </RouterLink>
+              <template v-if="pipelineRows.length > 0">
+                <div v-for="row in pipelineRows" :key="row.label" class="result-row result-row--compact">
+                  <div class="result-label">{{ row.label }}</div>
+                  <div class="result-value">{{ row.value }}</div>
+                </div>
               </template>
-              <RouterLink v-else class="paper-btn" :to="`/paper/sources?project=${project.id}`">
-                生成論文
-              </RouterLink>
+              <div v-else class="result-empty">找不到此專案的執行紀錄</div>
+            </template>
+            <div v-else class="result-empty">找不到此專案的執行紀錄</div>
+
+            <div class="result-divider" />
+
+            <!-- 一主一次一輕：這張卡的主題是結果，所以「查看完整結果」才是主要動作 -->
+            <div class="result-actions">
+              <AppButton :to="`/hub/projects/${project.id}/result`" variant="primary">
+                查看完整結果
+                <v-icon icon="mdi-arrow-right" size="14" />
+              </AppButton>
+              <template v-if="hasPaper !== null">
+                <template v-if="hasPaper">
+                  <AppButton :to="`/paper?project=${project.id}`" variant="secondary">
+                    查看技術報告
+                  </AppButton>
+                  <RouterLink class="action-quiet" :to="`/paper/sources?project=${project.id}`">
+                    重新生成技術報告
+                  </RouterLink>
+                </template>
+                <AppButton v-else :to="`/paper/sources?project=${project.id}`" variant="secondary">
+                  生成技術報告
+                </AppButton>
+              </template>
             </div>
           </template>
 
@@ -73,7 +87,10 @@
 
           <!-- Open in Workflow button -->
           <div class="open-workflow-wrap">
-            <AppButton variant="primary" @click="openInWorkflow">
+            <AppButton
+              :variant="project.status === 'completed' && !needsMapping ? 'secondary' : 'primary'"
+              @click="openInWorkflow"
+            >
               <v-icon :icon="needsMapping ? 'mdi-table-arrow-right' : 'mdi-sitemap-outline'" size="16" />
               {{ needsMapping ? '繼續欄位對齊' : '在 Workflow 中開啟' }}
             </AppButton>
@@ -117,8 +134,11 @@
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import { usePaperExists } from '@/composables/paper/usePaperExists'
+  import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { type Project, useProjectStore } from '@/store/projectStore'
+  import { summarizeWorkflowPipeline } from '@/utils/workflow/summarizeWorkflowPipeline'
+  import { findBestModel, pickPrimaryMetric, summarizeWorkflowResult } from '@/utils/workflow/summarizeWorkflowResult'
 
   const route = useRoute()
   const router = useRouter()
@@ -145,6 +165,31 @@
   const frameworkTitle = computed(() =>
     frameworkStore.frameworks.find(fw => fw.id === project.value?.frameworkId)?.title ?? '（未選擇）',
   )
+
+  // nodes 與 workflowResult 存在同一份 localStorage 記錄裡，一次讀出來給兩個摘要用
+  const workflowState = computed(() => loadWorkflowStateFromStorage(String(route.params.id)))
+
+  const summary = computed(() => summarizeWorkflowResult(workflowState.value?.workflowResult ?? null))
+
+  const primaryMetric = computed(() => pickPrimaryMetric(summary.value))
+
+  const bestModel = computed(() =>
+    primaryMetric.value ? findBestModel(summary.value, primaryMetric.value) : null,
+  )
+
+  const pipeline = computed(() => summarizeWorkflowPipeline(workflowState.value?.nodes))
+
+  // 全空代表沒有可用的執行紀錄
+  const pipelineRows = computed(() => {
+    const p = pipeline.value
+    const rows: Array<{ label: string, value: string }> = []
+    if (p.preprocess.length > 0) rows.push({ label: '前處理', value: p.preprocess.join('、') })
+    if (p.featureEngineering.length > 0) rows.push({ label: '特徵工程', value: p.featureEngineering.join('、') })
+    if (p.resampling) rows.push({ label: '重採樣', value: p.resampling })
+    if (p.validation) rows.push({ label: '驗證', value: p.validation })
+    if (p.models.length > 0) rows.push({ label: '模型', value: `${p.models.length} 個：${p.models.join('、')}` })
+    return rows
+  })
 
   const { hasPaper } = usePaperExists(computed(() => project.value?.id))
 
@@ -215,7 +260,7 @@
 
   .card-title {
     margin-bottom: 20px;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 500;
     color: var(--color-text);
   }
@@ -231,7 +276,7 @@
   }
 
   .result-label {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     font-size: 13px;
     color: var(--color-ink-soft);
   }
@@ -241,100 +286,62 @@
     color: var(--color-text);
   }
 
-  /* 準確率是這頁唯一的展示型數字，用藏青當視覺錨點 */
-  .result-value.large {
-    font-size: 32px;
+  /* 與流程各列同字級，只用藏青色標示「這一列是答案」 */
+  .result-value--model {
     font-weight: 500;
-    line-height: 1;
     color: var(--color-ink);
+    word-break: break-word;
   }
 
-  .view-result-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding-top: 14px;
+  .result-metric-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
+
+  /* 分組靠間距不靠線：列內 4px、列間 20px，差距夠大就讀得出邊界，
+     一張卡裡不需要再多五條橫線 */
+  .result-row--compact {
+    padding: 10px 0;
+  }
+
+  .result-row--compact .result-value {
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .result-empty {
+    padding: 10px 0;
     font-size: 13px;
-    font-weight: 500;
-    color: var(--color-ink);
+    color: var(--color-ink-soft);
+  }
+
+  .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  /* 重新生成會覆蓋既有報告，是低頻動作。與兩顆膠囊同排但不給外框，
+     靠「沒有形狀」而不是靠更淡的顏色降聲量——太淡會被誤認成停用 */
+  .action-quiet {
+    margin-left: 4px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
     text-decoration: none;
     transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .view-result-btn:hover {
-    color: var(--color-ink-strong);
-  }
-
-  .paper-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-top: 14px;
-  }
-
-  /* 樣式比照 ResultView 的論文按鈕，同一個功能在兩處要長得一樣 */
-  .paper-btn {
-    display: inline-flex;
-    align-items: center;
-    height: 34px;
-    padding: 0 16px;
-    border-radius: 999px;
-    background: var(--color-ink);
-    color: var(--color-surface);
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background var(--dur-fast) var(--ease-out);
-  }
-
-  .paper-btn:hover {
-    background: var(--color-ink-strong);
-  }
-
-  .paper-btn--secondary {
-    background: var(--color-surface);
+  .action-quiet:hover {
     color: var(--color-ink);
-    box-shadow: inset 0 0 0 1px var(--color-border);
-  }
-
-  .paper-btn--secondary:hover {
-    background: var(--color-surface);
-    box-shadow: inset 0 0 0 1px var(--color-ink);
-  }
-
-  /* ── Running state ── */
-  .running-state {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 24px 0;
-  }
-
-  .detail-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .running-text {
-    font-size: 14px;
-    color: var(--color-ink-soft);
-  }
-
-  /* ── Draft state ── */
-  .draft-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 120px;
-    font-size: 14px;
-    color: var(--color-ink-soft);
+    text-decoration: underline;
   }
 
   /* ── Open workflow button ── */
   .open-workflow-wrap {
-    margin-top: 4px;
     padding-top: 20px;
     border-top: 1px solid var(--color-border);
   }
