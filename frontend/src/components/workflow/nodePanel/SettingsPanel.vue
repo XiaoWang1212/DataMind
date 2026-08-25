@@ -207,6 +207,7 @@
           v-for="method in VALIDATION_METHODS"
           :key="method.value"
           class="validation-method"
+          :class="{ 'validation-method--active': localValidation.method === method.value }"
         >
           <label class="validation-method__radio">
             <input
@@ -750,12 +751,20 @@
   .validation-methods {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
 
   .validation-method {
-    padding: 8px 10px;
-    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition: border-color var(--dur-base), background var(--dur-base);
+  }
+
+  .validation-method--active {
+    border-color: color-mix(in oklab, var(--step-color, var(--color-accent)) 45%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 8%, transparent);
   }
 
   .validation-method__radio {
@@ -763,16 +772,27 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .validation-method__radio input[type="radio"] {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    accent-color: var(--step-color, var(--color-accent));
     cursor: pointer;
   }
 
   .validation-method__params {
-    margin-top: 8px;
-    margin-left: 24px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
   }
 
   .param-checkbox {
