@@ -19,8 +19,8 @@ class DbVectorStore:
     def create_paper(self, project_id: int, title: str, metadata: dict) -> str:
         paper = RagPaper(
             project_id=project_id,
-            title=title,
-            author=metadata.get("author") or None,
+            title=self._sanitize_text(title),
+            author=self._sanitize_text(metadata.get("author")) or None,
             year=self._parse_year(metadata.get("year")),
             arxiv_id=metadata.get("arxiv_id") or None,
         )
@@ -38,7 +38,7 @@ class DbVectorStore:
         for chunk, vector in zip(chunks, vectors):
             db.session.add(RagChunk(
                 paper_id=int(chunk.paper_id),
-                content=chunk.content,
+                content=self._sanitize_text(chunk.content),
                 embedding=vector,
                 chunk_index=chunk.chunk_index,
             ))
@@ -159,6 +159,14 @@ class DbVectorStore:
         db.session.commit()
 
     # ── 內部工具 ──────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _sanitize_text(value: str | None) -> str | None:
+        """PDF/arXiv 抽字有時會殘留 NUL byte（\x00），Postgres 的 text 欄位不接受，
+        插入時整批 insertmany 會因為一筆髒資料而全部失敗，這裡直接濾掉。"""
+        if value is None:
+            return None
+        return value.replace("\x00", "")
 
     @staticmethod
     def _parse_year(value) -> int | None:

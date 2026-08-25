@@ -134,14 +134,15 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { RouterLink, useRouter } from 'vue-router'
+  import { computed, ref, watch } from 'vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { saveWorkflowDataFileToStorage } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
+  const route = useRoute()
   const router = useRouter()
   const frameworkStore = useFrameworkStore()
   const projectStore = useProjectStore()
@@ -162,6 +163,29 @@
     frameworkId: null as number | null,
     datasetFile: null as File | null,
   })
+
+  // 從框架庫「用於專案」帶 query 進來時，預選同一個框架（使用者仍可在步驟 2 改選）。
+  // frameworks 通常在導覽進來前就載入了，但用 watch + immediate 一併涵蓋直接用網址進入、
+  // 這個 view 比 loadFrameworks() 先掛載完成的情況。
+  const requestedFrameworkId = (() => {
+    const raw = route.query.framework
+    const parsed = Number(Array.isArray(raw) ? raw[0] : raw)
+    return Number.isFinite(parsed) ? parsed : null
+  })()
+
+  watch(
+    () => frameworkStore.frameworks,
+    frameworks => {
+      if (
+        requestedFrameworkId !== null
+        && form.value.frameworkId === null
+        && frameworks.some(f => f.id === requestedFrameworkId)
+      ) {
+        form.value.frameworkId = requestedFrameworkId
+      }
+    },
+    { immediate: true },
+  )
 
   const selectedFramework = computed(() =>
     frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,

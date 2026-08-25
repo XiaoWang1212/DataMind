@@ -99,7 +99,7 @@ process_narrative, target_col, models, preprocessing, featureEngineering, valida
 填寫原則：
 - process_narrative：依論文方法論章節，拆成 2–4 個小段落，段落之間用 \n\n 分隔（例如：第一段資料來源與前處理、第二段特徵工程與建模、第三段驗證與評估），每段 1–3 句，具體描述「這篇論文」的實際做法，不要寫空泛通用句、不要擠成一整段；論文方法論資訊不足時才依上方範例改寫
 - models：依論文列出的模型，name 必須完全符合可用模型名稱清單
-- preprocessing：依論文資料處理方式，若未提及則用 fill_na+standardize
+- preprocessing：依論文資料處理方式，若未提及則用 fill_na+standardize；fill_na 的 strategy 可用 mean/median/mode/auto，論文若說「數值型用平均值、類別型用眾數」這類依欄位型別分開處理的填補方式，用一筆 strategy="auto" 表示即可（不必依欄位型別拆成兩筆 fill_na）
 - featureEngineering：依論文特徵選擇方式，若未提及則用 select_relevant_features k=10
 - validation：依論文驗證方式，若未提及則用 k_fold n_splits=10；method 為 random_sampling 時 n_repeats 填重複抽樣次數，method 為 group_k_fold 時 group_column 填分組依據的欄位名稱，其餘情況這兩個欄位可省略或填 null
 - metrics：依論文評估指標，至少包含 balanced_accuracy 和 auc

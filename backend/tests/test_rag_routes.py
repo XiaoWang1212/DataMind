@@ -3,6 +3,7 @@
 """
 
 import os
+from urllib.error import URLError
 
 import pytest
 
@@ -73,6 +74,23 @@ class FakeService:
         self.calls.append(("ingest_arxiv_selection", project_id))
         return {"success": True, "ingested": [], "failed": []}
 
+    def search_arxiv_candidates(self, mining_results, user_title):
+        self.calls.append(("search_arxiv_candidates", user_title))
+        return {"topic": "t", "arxiv_query": "q", "candidates": []}
+
+
+class FakeServiceRaising:
+    """search_arxiv_candidates / ingest_arxiv_selection 拋出指定例外，模擬 arXiv 逾時/連線失敗。"""
+
+    def __init__(self, error):
+        self._error = error
+
+    def search_arxiv_candidates(self, mining_results, user_title):
+        raise self._error
+
+    def ingest_arxiv_selection(self, project_id, candidates):
+        raise self._error
+
 
 MISSING_PROJECT_ID_CASES = [
     ("post", "/api/rag/upload", {"json": {"title": "t", "content": "c"}}),
@@ -141,3 +159,34 @@ def test_search_requires_login(client_with_login_required):
         "/api/rag/search", json={"project_id": 1, "query": "q"}
     )
     assert response.status_code == 401
+
+
+# search_arxiv_candidates/ingest_arxiv_selection 逾時或連線失敗時，路由層要換成
+# 好懂的中文訊息，不能把 Python 原始例外字串（例如 "The read operation timed
+# out"）直接丟給前端 —— 那看起來像系統壞掉而不是「網路慢，可以重試」。
+ARXIV_TIMEOUT_CASES = [
+    (
+        "/api/rag/arxiv/search",
+        {"mining_results": {}},
+    ),
+    (
+        "/api/rag/arxiv/generate",
+        {"project_id": 7, "topic": "t", "mining_results": {}, "selected_candidates": [{}]},
+    ),
+]
+
+
+@pytest.mark.parametrize("path,payload", ARXIV_TIMEOUT_CASES)
+@pytest.mark.parametrize("error", [TimeoutError("The read operation timed out"), URLError("timed out")])
+def test_arxiv_route_returns_friendly_message_on_network_timeout(client, monkeypatch, path, payload, error):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeServiceRaising(error)
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post(path, json=payload)
+
+    assert response.status_code == 504
+    body = response.get_json()
+    assert body["success"] is False
+    assert "逾時" in body["error"]
+    assert "read operation timed out" not in body["error"]

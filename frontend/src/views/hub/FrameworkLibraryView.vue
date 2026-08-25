@@ -88,7 +88,7 @@
       <!-- Panel body (scrollable) -->
       <div class="panel-body">
         <!-- Paper title -->
-        <div class="panel-section">
+        <div v-if="selectedFramework.paperTitle" class="panel-section">
           <div class="panel-section-head">
             <v-icon class="section-icon" icon="mdi-file-document-outline" size="16" />
             <span class="panel-section-label">論文標題</span>
@@ -97,13 +97,55 @@
         </div>
 
         <!-- Description -->
-        <div class="panel-section">
+        <div v-if="selectedFramework.description" class="panel-section">
           <div class="panel-section-label-plain">研究流程</div>
           <div class="panel-text-muted">{{ selectedFramework.description }}</div>
         </div>
 
+        <!-- Models used -->
+        <div v-if="frameworkModels.length > 0" class="panel-section">
+          <div class="panel-section-head">
+            <v-icon class="section-icon" icon="mdi-chart-box-outline" size="15" />
+            <span class="panel-section-label">使用模型</span>
+          </div>
+          <div class="tag-list">
+            <span v-for="m in frameworkModels" :key="m" class="tag-pill">{{ m }}</span>
+          </div>
+        </div>
+
+        <!-- Preprocessing -->
+        <div v-if="frameworkPreprocessing.length > 0" class="panel-section">
+          <div class="panel-section-head">
+            <v-icon class="section-icon" icon="mdi-filter-cog-outline" size="15" />
+            <span class="panel-section-label">前處理</span>
+          </div>
+          <div class="tag-list">
+            <span v-for="(s, i) in frameworkPreprocessing" :key="i" class="tag-pill">{{ s }}</span>
+          </div>
+        </div>
+
+        <!-- Feature engineering -->
+        <div v-if="frameworkFeatureEngineering.length > 0" class="panel-section">
+          <div class="panel-section-head">
+            <v-icon class="section-icon" icon="mdi-chart-scatter-plot" size="15" />
+            <span class="panel-section-label">特徵工程</span>
+          </div>
+          <div class="tag-list">
+            <span v-for="(s, i) in frameworkFeatureEngineering" :key="i" class="tag-pill">{{ s }}</span>
+          </div>
+        </div>
+
+        <!-- Target column & metrics -->
+        <div v-if="frameworkTargetCol || frameworkMetrics.length > 0" class="panel-section">
+          <div class="panel-section-label-plain">目標欄位與評估指標</div>
+          <div v-if="frameworkTargetCol" class="panel-text-muted">目標欄位：{{ frameworkTargetCol }}</div>
+          <div v-if="frameworkMetrics.length > 0" class="tag-list">
+            <span v-for="m in frameworkMetrics" :key="m" class="tag-pill">{{ m }}</span>
+          </div>
+        </div>
+
         <!-- Independent variables -->
-        <div class="panel-section">
+        <div v-if="selectedFramework.independentVars.length > 0" class="panel-section">
           <div class="panel-section-head">
             <v-icon class="section-icon" icon="mdi-account-multiple-outline" size="15" />
             <span class="panel-section-label">自變數</span>
@@ -116,7 +158,7 @@
         </div>
 
         <!-- Dependent variables -->
-        <div class="panel-section">
+        <div v-if="selectedFramework.dependentVars.length > 0" class="panel-section">
           <div class="panel-section-head">
             <v-icon class="section-icon" icon="mdi-target" size="15" />
             <span class="panel-section-label">因變數</span>
@@ -129,7 +171,7 @@
         </div>
 
         <!-- Research hypotheses -->
-        <div class="panel-section">
+        <div v-if="selectedFramework.hypotheses.length > 0" class="panel-section">
           <div class="panel-section-label-plain">研究假設</div>
           <div class="hypothesis-list">
             <div
@@ -159,7 +201,7 @@
       <div class="panel-action">
         <RouterLink
           class="use-btn"
-          :to="`/hub/projects/new`"
+          :to="{ path: '/hub/projects/new', query: { framework: selectedFramework.id } }"
         >
           用於專案
         </RouterLink>
@@ -190,6 +232,81 @@
   const selectedFramework = computed(() =>
     selectedId.value === null ? null : store.frameworks.find(f => f.id === selectedId.value) ?? null,
   )
+
+  const PREPROCESS_LABELS: Record<string, string> = {
+    fill_na: '缺值填補',
+    knn_impute: 'KNN 缺值填補',
+    iterative_impute: 'MICE 多重插補',
+    normalize: 'Min-Max 正規化',
+    standardize: 'Z-score 標準化',
+    one_hot: 'One-Hot 編碼',
+    label_encode: 'Label 編碼',
+    drop_columns: '移除欄位',
+    remove_outliers_iqr: 'IQR 異常值處理',
+    remove_outliers_zscore: 'Z-score 異常值處理',
+  }
+
+  const FEATURE_LABELS: Record<string, string> = {
+    select_relevant_features: '特徵選擇',
+    pca: 'PCA 降維',
+    discretize_continuous: '連續→離散',
+    continuize_discrete: '離散→連續',
+    normalize_features: '特徵正規化',
+    remove_sparse_features: '移除稀疏特徵',
+  }
+
+  const METRIC_LABELS: Record<string, string> = {
+    accuracy: '準確率',
+    balanced_accuracy: '平衡準確率',
+    precision: '精準度',
+    recall: '召回率',
+    specificity: '特異度',
+    f1: 'F1 分數',
+    auc: 'AUC_ROC',
+    auprc: 'AUPRC',
+    mcc: 'MCC',
+    kappa: 'Kappa',
+  }
+
+  const frameworkModels = computed(() => {
+    const models = selectedFramework.value?.workflowJson?.models
+    if (!Array.isArray(models)) return []
+    return models
+      .map(m => String((m as Record<string, unknown>)?.name ?? ''))
+      .filter(Boolean)
+  })
+
+  const frameworkPreprocessing = computed(() => {
+    const steps = selectedFramework.value?.workflowJson?.preprocessing
+    if (!Array.isArray(steps)) return []
+    return steps
+      .map(s => String((s as Record<string, unknown>)?.type ?? ''))
+      .filter(Boolean)
+      .map(type => PREPROCESS_LABELS[type] ?? type)
+  })
+
+  const frameworkFeatureEngineering = computed(() => {
+    const steps = selectedFramework.value?.workflowJson?.featureEngineering
+    if (!Array.isArray(steps)) return []
+    return steps
+      .map(s => String((s as Record<string, unknown>)?.type ?? ''))
+      .filter(Boolean)
+      .map(type => FEATURE_LABELS[type] ?? type)
+  })
+
+  const frameworkTargetCol = computed(() => {
+    const value = selectedFramework.value?.workflowJson?.target_col
+    return typeof value === 'string' ? value : ''
+  })
+
+  const frameworkMetrics = computed(() => {
+    const metrics = selectedFramework.value?.workflowJson?.metrics
+    if (!Array.isArray(metrics)) return []
+    return metrics
+      .map(m => String(m ?? ''))
+      .filter(Boolean)
+      .map(code => METRIC_LABELS[code] ?? code)
+  })
 
   const isEditingTitle = ref(false)
   const isSavingTitle = ref(false)
@@ -452,7 +569,7 @@
     z-index: 200;
     display: flex;
     flex-direction: column;
-    width: 380px;
+    width: 520px;
     border-left: 1px solid var(--color-border);
     background: var(--color-surface);
     box-shadow: var(--shadow-float);
@@ -613,6 +730,23 @@
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--color-ink-soft);
+  }
+
+  /* ── Tags (models / preprocessing / feature engineering / metrics) ── */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .tag-pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    color: var(--color-ink-strong);
   }
 
   /* ── Hypotheses ── */

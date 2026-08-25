@@ -29,6 +29,10 @@
             <v-icon icon="mdi-star-outline" size="16" />
             {{ scoreButtonLabel }}
           </AppButton>
+          <AppButton v-if="mode === 'view'" :loading="downloadingPdf" variant="secondary" @click="downloadPdf">
+            <v-icon icon="mdi-download-outline" size="16" />
+            下載 PDF
+          </AppButton>
         </div>
       </header>
 
@@ -40,6 +44,7 @@
         此論文尚未關聯專案,無法儲存
       </p>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
+      <p v-if="pdfError" class="save-error">{{ pdfError }}</p>
 
       <div v-if="loading" aria-label="載入中" class="paper-skeleton" role="status">
         <div class="skeleton-line" style="width: 45%" />
@@ -51,6 +56,7 @@
       <div v-else class="paper-body enter-rise">
         <article v-if="mode === 'view'" class="paper-sheet paper-sheet--paginated">
           <PaginatedPaperView
+            ref="paginatedViewRef"
             :citation-style="report.citationStyle"
             :citations="report.citations"
             :content="report.content"
@@ -99,10 +105,11 @@
   import { computed, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { type JournalScore, scorePaper } from '@/api/arxiv'
-  import { getReport, saveReport } from '@/api/report'
+  import { downloadReportPdf, getReport, saveReport } from '@/api/report'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import CitationPopover from '@/components/paper/CitationPopover.vue'
+  import { buildPaperExportHtml } from '@/components/paper/exportPaperHtml'
   import JournalScoreDialog from '@/components/paper/JournalScoreDialog.vue'
   import JournalScorePanel from '@/components/paper/JournalScorePanel.vue'
   import ModeSwitch from '@/components/paper/ModeSwitch.vue'
@@ -128,6 +135,9 @@
   const saveError = ref<string | null>(null)
   const activeCitationId = ref<string | null>(null)
   const popoverTarget = ref<HTMLElement | null>(null)
+  const paginatedViewRef = ref<InstanceType<typeof PaginatedPaperView> | null>(null)
+  const downloadingPdf = ref(false)
+  const pdfError = ref<string | null>(null)
 
   const popoverCitation = computed(() => {
     const base = report.value.citations.find(c => c.id === activeCitationId.value) ?? null
@@ -248,6 +258,32 @@
     }
   }
 
+  async function downloadPdf (): Promise<void> {
+    if (!projectId.value || downloadingPdf.value) return
+    const root = paginatedViewRef.value?.$el as HTMLElement | undefined
+    if (!root) return
+
+    // 關掉可能開著的引用彈窗，避免它被一起複製進匯出的 HTML
+    activeCitationId.value = null
+    downloadingPdf.value = true
+    pdfError.value = null
+    try {
+      const html = buildPaperExportHtml(root)
+      const blob = await downloadReportPdf(projectId.value, html, report.value.title || 'paper')
+
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${report.value.title || 'paper'}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      pdfError.value = error instanceof Error ? error.message : 'PDF 下載失敗'
+    } finally {
+      downloadingPdf.value = false
+    }
+  }
+
   async function handleScorePaper (): Promise<void> {
     scoring.value = true
     scoreError.value = null
@@ -290,7 +326,8 @@
 
   .paper-toolbar {
     display: flex;
-    align-items: center;
+    /* 標題太長換行時用頂對齊，兩側的按鈕才不會被拉去跟著整段標題垂直置中 */
+    align-items: flex-start;
     gap: 10px;
     width: 100%;
     max-width: var(--paper-column);
@@ -300,15 +337,24 @@
   }
 
   .paper-title {
-    margin: 0;
+    /* min-width:0 才能讓標題在空間不夠時換行/縮小，而不是撐開整列、
+       把 .toolbar-actions 擠到變形（flex item 預設 min-width:auto 不會自己讓步） */
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 4px 0 0;
     font-size: 15px;
     font-weight: 500;
+    line-height: 1.4;
     color: var(--color-text);
   }
 
   .toolbar-actions {
     display: flex;
+    flex-wrap: wrap;
+    /* 不管標題多長都不能被壓縮，按鈕才不會變形 */
+    flex-shrink: 0;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
     margin-left: auto;
   }

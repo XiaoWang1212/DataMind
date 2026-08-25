@@ -40,7 +40,7 @@
         <div v-for="(step, i) in localPreprocessing" :key="i" class="item-row">
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
-            <span class="item-name">{{ PREPROCESS_LABELS[step.type as string] ?? step.type }}</span>
+            <span class="item-name">{{ preprocessStepLabel(step) }}</span>
             <AppButton
               aria-label="移除"
               icon-only
@@ -56,16 +56,26 @@
             class="item-params"
           >
             <template v-if="step.type === 'fill_na'">
-              <div class="param-pair">
+              <div v-if="fillNaColumnKind(step, datasetColumns) === 'nominal'" class="param-pair">
+                <span class="param-key">strategy</span>
+                <span class="param-fixed">眾數（類別型欄位固定使用）</span>
+              </div>
+              <div v-else class="param-pair">
                 <span class="param-key">strategy</span>
                 <CustomSelect
                   class="param-select"
                   :model-value="String(step.strategy ?? 'mean')"
-                  :options="[
-                    { value: 'mean', label: '均值' },
-                    { value: 'median', label: '中位數' },
-                    { value: 'mode', label: '眾數' },
-                  ]"
+                  :options="fillNaColumnKind(step, datasetColumns) === 'numeric'
+                    ? [
+                      { value: 'mean', label: '均值' },
+                      { value: 'median', label: '中位數' },
+                    ]
+                    : [
+                      { value: 'auto', label: '自動（數值用均值／類別用眾數）' },
+                      { value: 'mean', label: '均值' },
+                      { value: 'median', label: '中位數' },
+                      { value: 'mode', label: '眾數' },
+                    ]"
                   @update:model-value="patchPreprocessStep(i, 'strategy', $event)"
                 />
               </div>
@@ -351,6 +361,7 @@
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { expandAutoFillNaSteps, fillNaColumnKind, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -428,19 +439,43 @@
     { value: 'test_on_test', label: 'Test on test data' },
   ]
 
+  function preprocessStepLabel (step: Record<string, unknown>): string {
+    const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
+    if (step.type !== 'fill_na') return base
+    const kind = fillNaColumnKind(step, props.datasetColumns)
+    if (kind === 'numeric') return `${base}（數值型）`
+    if (kind === 'nominal') return `${base}（類別型）`
+    return base
+  }
+
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))
 
-  const localPreprocessing = ref<Array<Record<string, unknown>>>([...props.preprocessing])
+  // 沒有指定 columns 的 fill_na 步驟（框架匯入的 strategy:"auto"，或使用者手動新增的）
+  // 一律依 datasetColumns 的真實型別拆成「數值型補均值／類別型補眾數」兩筆；
+  // 已經拆過的步驟因為已有 columns 不會再被動到，函式本身是冪等的。
+  function syncPreprocessing (steps: Array<Record<string, unknown>>): void {
+    const normalized = expandAutoFillNaSteps(steps, props.datasetColumns)
+    localPreprocessing.value = normalized
+    if (normalized.length !== steps.length) {
+      emit('update-preprocessing', normalized)
+    }
+  }
+
+  const localPreprocessing = ref<Array<Record<string, unknown>>>([])
   const localFE = ref<Array<Record<string, unknown>>>([...props.featureEngineering])
   const localValidation = ref<Record<string, unknown>>({ ...props.validation })
 
   watch(
     () => props.preprocessing,
-    v => {
-      localPreprocessing.value = [...v]
-    },
-    { deep: true },
+    v => syncPreprocessing(v),
+    { deep: true, immediate: true },
+  )
+  // datasetColumns 通常在進到這個 step 前就確定了，但保留這個 watch
+  // 是為了涵蓋「進來時欄位型別還沒就緒」的邊界情況
+  watch(
+    () => props.datasetColumns,
+    () => syncPreprocessing(localPreprocessing.value),
   )
   watch(
     () => props.featureEngineering,
@@ -478,12 +513,17 @@
   // ── 前處理 ──
   function addPreprocessStep (): void {
     if (!newPreprocessType.value) return
+
+    if (newPreprocessType.value === 'fill_na') {
+      const split = splitAutoFillNaStep({ type: 'fill_na' }, props.datasetColumns)
+      localPreprocessing.value = [...localPreprocessing.value, ...(split ?? [{ type: 'fill_na', strategy: 'mean' }])]
+      emit('update-preprocessing', localPreprocessing.value)
+      newPreprocessType.value = ''
+      return
+    }
+
     const step: Record<string, unknown> = { type: newPreprocessType.value }
     switch (newPreprocessType.value) {
-      case 'fill_na': {
-        step.strategy = 'mean'
-        break
-      }
       case 'knn_impute': {
         step.n_neighbors = 5
         break
@@ -732,6 +772,12 @@
     font-size: 12px;
     color: var(--color-secondary);
     white-space: nowrap;
+  }
+
+  .param-fixed {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .param-num {

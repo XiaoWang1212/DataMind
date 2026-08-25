@@ -4,6 +4,8 @@
 """
 
 import tempfile
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -13,6 +15,28 @@ from typing import List, Optional
 _ATOM_NS = "{http://www.w3.org/2005/Atom}"
 _ARXIV_API_URL = "http://export.arxiv.org/api/query"
 _ALLOWED_PDF_HOST_SUFFIX = "arxiv.org"
+
+# arXiv 的 Export API 從這個環境常常要嘗試幾次才會成功；30 秒逾時 + 重試 3 次，
+# 比一次 15 秒就放棄對使用者友善很多
+_ARXIV_TIMEOUT_SECONDS = 30
+_ARXIV_MAX_ATTEMPTS = 3
+_ARXIV_RETRY_DELAY_SECONDS = 1.5
+
+
+def _fetch_with_retry(url: str) -> bytes:
+    """對逾時／連線失敗重試；HTTPError（真的收到錯誤狀態碼）重試沒有意義，直接往外拋。"""
+    last_error: Exception = TimeoutError("arXiv API 逾時")
+    for attempt in range(_ARXIV_MAX_ATTEMPTS):
+        try:
+            with urllib.request.urlopen(url, timeout=_ARXIV_TIMEOUT_SECONDS) as resp:
+                return resp.read()
+        except urllib.error.HTTPError:
+            raise
+        except (TimeoutError, urllib.error.URLError) as exc:
+            last_error = exc
+            if attempt < _ARXIV_MAX_ATTEMPTS - 1:
+                time.sleep(_ARXIV_RETRY_DELAY_SECONDS)
+    raise last_error
 
 
 def search_arxiv(query: str, max_results: int = 8) -> List[dict]:
@@ -27,8 +51,7 @@ def search_arxiv(query: str, max_results: int = 8) -> List[dict]:
     })
     url = f"{_ARXIV_API_URL}?{params}"
 
-    with urllib.request.urlopen(url, timeout=15) as resp:
-        raw = resp.read()
+    raw = _fetch_with_retry(url)
 
     root = ET.fromstring(raw)
     candidates: List[dict] = []

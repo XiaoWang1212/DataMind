@@ -233,14 +233,22 @@
   async function saveFramework (): Promise<void> {
     if (!extractedData.value) return
     const d = extractedData.value
+
+    const rawFeatures = rawWorkflowJson.value?.features
+    const featureNames = Array.isArray(rawFeatures)
+      ? rawFeatures
+        .map(f => String((f as Record<string, unknown>)?.name ?? ''))
+        .filter(name => name && name !== d.targetCol)
+      : []
+
     await store.addFramework({
       title: d.name,
       subtitle: d.models.join('、') || '未命名方法',
       tag: d.models[0] ?? 'AI 提取',
-      variables: d.preprocessing.length + d.featureEngineering.length,
+      variables: featureNames.length,
       paperTitle: d.name,
       description: d.processNarrative || `目標欄位：${d.targetCol || '未知'}。評估指標：${d.metrics.join(', ') || '未知'}。`,
-      independentVars: [...d.preprocessing, ...d.featureEngineering],
+      independentVars: featureNames,
       dependentVars: d.targetCol ? [d.targetCol] : [],
       hypotheses: [],
       workflowJson: rawWorkflowJson.value ?? undefined,

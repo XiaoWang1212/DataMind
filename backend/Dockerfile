@@ -15,6 +15,13 @@ RUN apt-get update \
        ffmpeg \
        ca-certificates \
        curl \
+       libpango-1.0-0 \
+       libpangocairo-1.0-0 \
+       libpangoft2-1.0-0 \
+       libgdk-pixbuf-2.0-0 \
+       libcairo2 \
+       shared-mime-info \
+       fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv

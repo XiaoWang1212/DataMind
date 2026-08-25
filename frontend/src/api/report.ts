@@ -30,7 +30,9 @@ export async function saveReport (
 export async function getReport (projectId: string): Promise<SavedReport | null> {
   const response = await fetch(`/api/report/${encodeURIComponent(projectId)}`)
 
-  if (response.status === 404) return null
+  if (response.status === 404) {
+    return null
+  }
 
   const result = (await response.json()) as Record<string, unknown>
   if (!response.ok || !result.success) {
@@ -38,4 +40,19 @@ export async function getReport (projectId: string): Promise<SavedReport | null>
   }
 
   return result.result as SavedReport
+}
+
+export async function downloadReportPdf (projectId: string, html: string, filename: string): Promise<Blob> {
+  const response = await fetch(`/api/report/${encodeURIComponent(projectId)}/pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ html, filename }),
+  })
+
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(result?.error ?? `HTTP ${response.status}`)
+  }
+
+  return response.blob()
 }

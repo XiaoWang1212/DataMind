@@ -98,6 +98,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
+  import { saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
@@ -159,6 +160,15 @@
         projectId: projectId.value,
       })
       const report = transformArxivResultToPaperReport(result, topic.value)
+      // 生成很花時間（要跑後端 RAG/AI），使用者看到結果就會當作「完成了」，
+      // 不會直覺想到還要手動切去編輯模式按儲存——生成完直接存檔，
+      // 離開這頁或忘記按儲存都不會把剛跑出來的結果弄丟
+      await saveReport(projectId.value, {
+        title: report.title,
+        content: report.content,
+        citations: report.citations,
+        citationStyle: report.citationStyle,
+      })
       paperStore.setGeneratedReport(report)
       router.push(`/paper?project=${projectId.value}`)
     } catch (error) {

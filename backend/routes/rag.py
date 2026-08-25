@@ -6,6 +6,7 @@
 import logging
 import os
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
@@ -16,6 +17,8 @@ from models.project import Project
 logger = logging.getLogger(__name__)
 
 rag_bp = Blueprint("rag", __name__)
+
+_ARXIV_TIMEOUT_ERROR_MESSAGE = "查詢 arXiv 逾時，請稍後再試"
 
 # 上傳目錄
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "rag"
@@ -457,6 +460,12 @@ def arxiv_search():
         result = service.search_arxiv_candidates(data["mining_results"], user_title)
         return jsonify({"success": True, **result})
 
+    except HTTPError as e:
+        logger.exception("arXiv 查詢失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+    except (TimeoutError, URLError):
+        logger.exception("arXiv 查詢逾時")
+        return jsonify({"success": False, "error": _ARXIV_TIMEOUT_ERROR_MESSAGE}), 504
     except Exception as e:
         logger.exception("arXiv 查詢失敗")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -512,6 +521,12 @@ def arxiv_generate():
             "failed": ingest_result["failed"],
         })
 
+    except HTTPError as e:
+        logger.exception("arXiv 論文生成失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+    except (TimeoutError, URLError):
+        logger.exception("arXiv 論文生成逾時")
+        return jsonify({"success": False, "error": _ARXIV_TIMEOUT_ERROR_MESSAGE}), 504
     except Exception as e:
         logger.exception("arXiv 論文生成失敗")
         return jsonify({"success": False, "error": str(e)}), 500

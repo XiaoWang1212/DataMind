@@ -194,4 +194,37 @@
   line-height: 1.7;
   color: var(--color-text);
 }
+
+/* 下載 PDF：畫面上的卡片裝飾（邊框/陰影/圓角/頁間留白）在紙上沒有意義，拿掉；
+   每頁之間強制分頁，最後一頁後面不留空白頁。
+   .a4-page 平常用 display:flex + 固定 height 撐出畫面上的卡片高度、把頁碼推到底部，
+   但 WeasyPrint 的 flexbox 支援對「固定高度 + flex-direction:column」這種組合算不準，
+   會導致內容被裁切、padding 跑掉（右側幾乎貼邊、上方留白過大）；PDF 分頁本來就是
+   WeasyPrint 用 break-after 處理，不需要固定高度去撐版面，這裡改回單純的 block、
+   高度隨內容自然展開，讓 96px 的 padding 在四邊都正確生效 */
+@media print {
+  .paginated-paper {
+    gap: 0;
+    padding: 0;
+  }
+
+  .a4-page {
+    display: block;
+    width: auto;
+    height: auto;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .a4-page:last-child {
+    break-after: auto;
+  }
+
+  .measure-container {
+    display: none;
+  }
+}
 </style>
