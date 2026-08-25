@@ -42,8 +42,8 @@
         <template v-if="hasSearched">
           <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
 
-          <div v-if="loadingSearch" class="sources-status">
-            正在分析資料並查詢 arXiv...
+          <div v-if="loadingSearch" class="sources-status" role="status">
+            正在分析資料並查詢 arXiv<span aria-hidden="true" class="loading-dots"><i /><i /><i /></span>
           </div>
 
           <div v-else-if="searchError" class="sources-status sources-status--error">

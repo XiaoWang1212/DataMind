@@ -41,4 +41,29 @@
     from { background-position: 200% 0; }
     to { background-position: -200% 0; }
   }
+
+  /* 載入中的三點脈動，接在說明文字後面。只是要證明還活著，
+     所以刻意做得小又安靜，不跟頁面上其他東西搶注意力 */
+  .loading-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 3px;
+  }
+
+  .loading-dots i {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentcolor;
+    opacity: 0.25;
+    animation: loading-dot 1.2s var(--ease-in-out) infinite;
+  }
+
+  .loading-dots i:nth-child(2) { animation-delay: 160ms; }
+  .loading-dots i:nth-child(3) { animation-delay: 320ms; }
+
+  @keyframes loading-dot {
+    0%, 60%, 100% { opacity: 0.25; }
+    30% { opacity: 1; }
+  }
 }
