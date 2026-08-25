@@ -59,11 +59,11 @@
             <ul class="candidate-list">
               <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
                 <label class="candidate-select">
-                  <input
-                    v-model="selectedIds"
-                    type="checkbox"
-                    :value="candidate.arxiv_id"
-                  >
+                  <AppCheckbox
+                    :aria-label="`選擇 ${candidate.title}`"
+                    :model-value="selectedIds.includes(candidate.arxiv_id)"
+                    @update:model-value="toggleCandidate(candidate.arxiv_id, $event)"
+                  />
                   <div class="candidate-body">
                     <p class="candidate-title">{{ candidate.title }}</p>
                     <p class="candidate-meta">
@@ -103,6 +103,7 @@
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import AppCheckbox from '@/components/ui/AppCheckbox.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { usePaperStore } from '@/store/paperStore'
@@ -121,6 +122,12 @@
   const hasSearched = ref(false)
   const candidates = ref<ArxivCandidate[]>([])
   const selectedIds = ref<string[]>([])
+
+  function toggleCandidate (arxivId: string, checked: boolean): void {
+    selectedIds.value = checked
+      ? [...selectedIds.value, arxivId]
+      : selectedIds.value.filter(id => id !== arxivId)
+  }
 
   const loadingSearch = ref(false)
   const searchError = ref<string | null>(null)
@@ -293,6 +300,11 @@
     gap: 12px;
     padding: 14px 16px;
     cursor: pointer;
+  }
+
+  /* checkbox 是固定 18px，標題行高比它高，往下推齊視覺基線 */
+  .candidate-select :deep(.app-checkbox) {
+    margin-top: 2px;
   }
 
   .candidate-body {
