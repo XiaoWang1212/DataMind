@@ -351,6 +351,7 @@
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { FEATURE_LABELS, PREPROCESS_LABELS, VALIDATION_LABELS } from '@/constants/workflowLabels'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -397,36 +398,8 @@
 
   watch(currentStep, step => emit('step-change', step), { immediate: true })
 
-  const PREPROCESS_LABELS: Record<string, string> = {
-    fill_na: '缺值填補',
-    knn_impute: 'KNN 缺值填補',
-    iterative_impute: 'MICE 多重插補',
-    normalize: 'Min-Max 正規化',
-    standardize: 'Z-score 標準化',
-    one_hot: 'One-Hot 編碼',
-    label_encode: 'Label 編碼',
-    drop_columns: '移除欄位',
-    remove_outliers_iqr: 'IQR 異常值處理',
-    remove_outliers_zscore: 'Z-score 異常值處理',
-  }
-
-  const FEATURE_LABELS: Record<string, string> = {
-    select_relevant_features: '特徵選擇',
-    pca: 'PCA 降維',
-    discretize_continuous: '連續→離散',
-    continuize_discrete: '離散→連續',
-    normalize_features: '特徵正規化',
-    remove_sparse_features: '移除稀疏特徵',
-  }
-
-  const VALIDATION_METHODS: Array<{ value: string, label: string }> = [
-    { value: 'k_fold', label: 'Cross validation' },
-    { value: 'group_k_fold', label: 'Cross validation by feature' },
-    { value: 'random_sampling', label: 'Random sampling' },
-    { value: 'leave_one_out', label: 'Leave one out' },
-    { value: 'test_on_train', label: 'Test on train data' },
-    { value: 'test_on_test', label: 'Test on test data' },
-  ]
+  const VALIDATION_METHODS = Object.entries(VALIDATION_LABELS)
+    .map(([value, label]) => ({ value, label }))
 
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))

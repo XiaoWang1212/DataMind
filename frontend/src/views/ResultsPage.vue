@@ -137,6 +137,7 @@
     loadWorkflowStateFromStorage,
     saveResultInsightToStorage,
   } from '@/composables/workflow/useWorkflowStorage'
+  import { pickPrimaryMetricOf } from '@/utils/workflow/summarizeWorkflowResult'
 
   const route = useRoute()
   const router = useRouter()
@@ -213,8 +214,6 @@
     'balanced_accuracy', 'accuracy', 'f1', 'auc', 'auprc', 'precision', 'recall', 'specificity', 'mcc', 'kappa',
   ]
 
-  const RANKING_PRIORITY = ['balanced_accuracy', 'accuracy', 'auc']
-
   function metricLabel (metric: string): string {
     return METRIC_LABELS[metric] ?? metric.toUpperCase()
   }
@@ -223,14 +222,10 @@
     return result.metrics.find(m => m.metric === metric)?.value ?? null
   }
 
-  const rankingMetric = computed<string | null>(() => {
-    const results = modelResults.value
-    if (results.length === 0) return null
-    for (const candidate of RANKING_PRIORITY) {
-      if (results.every(r => metricValueOf(r, candidate) !== null)) return candidate
-    }
-    return results[0]?.metrics[0]?.metric ?? null
-  })
+  // 只把「真的有算出值」的指標名交出去，沒有值的不該成為排名依據
+  const rankingMetric = computed<string | null>(() => pickPrimaryMetricOf(
+    modelResults.value.map(r => r.metrics.filter(m => m.value != null).map(m => m.metric)),
+  ))
 
   const bestResult = computed<ModelResult | null>(() => {
     const metric = rankingMetric.value
