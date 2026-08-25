@@ -91,6 +91,8 @@
         </template>
       </template>
     </main>
+
+    <PaperGeneratingOverlay :visible="generating" @abandon="handleAbandon" />
   </section>
 </template>
 
@@ -99,6 +101,7 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
+  import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
@@ -142,8 +145,13 @@
     }
   }
 
+  // 生成的請求不會因為離開而中斷。放棄之後這個編號會變，回來的結果就不再套用 ——
+  // 否則幾分鐘後的 router.push 會把使用者從當時在看的頁面硬拉走
+  let generationToken = 0
+
   async function handleGenerate (): Promise<void> {
     if (!miningResults.value) return
+    const token = ++generationToken
     generating.value = true
     generateError.value = null
     try {
@@ -153,14 +161,22 @@
         miningResults: miningResults.value,
         selectedCandidates,
       })
+      if (token !== generationToken) return
       const report = transformArxivResultToPaperReport(result, topic.value)
       paperStore.setGeneratedReport(report)
       router.push(`/paper?project=${projectId.value}`)
     } catch (error) {
+      if (token !== generationToken) return
       generateError.value = error instanceof Error ? error.message : String(error)
     } finally {
-      generating.value = false
+      if (token === generationToken) generating.value = false
     }
+  }
+
+  function handleAbandon (): void {
+    generationToken++
+    generating.value = false
+    generateError.value = '已放棄這次生成。勾選的文獻還在，可以重新送出。'
   }
 
   onMounted(() => {
