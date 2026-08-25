@@ -1,5 +1,6 @@
 <template>
-  <button
+  <component
+    :is="to ? RouterLink : 'button'"
     ref="root"
     class="app-btn"
     :class="[
@@ -9,26 +10,31 @@
         'app-btn--ai-loading': loading && variant === 'ai',
       },
     ]"
-    :disabled="disabled || loading"
-    :type="type"
+    v-bind="to ? { to } : { disabled: disabled || loading, type }"
   >
     <span v-if="loading && variant !== 'ai'" aria-hidden="true" class="app-btn-spinner" />
     <span class="app-btn-body" :class="{ 'app-btn-body--loading': loading && variant !== 'ai' }">
       <slot />
     </span>
-  </button>
+  </component>
 </template>
 
 <script setup lang="ts">
+  import { RouterLink } from 'vue-router'
+
+  // 給了 to 就渲染成 RouterLink，讓「長得像按鈕的連結」不必各頁再刻一份樣式。
+  // disabled / type 只對 button 有意義，不會掛到連結上
   withDefaults(defineProps<{
     variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'ai'
     type?: 'button' | 'submit' | 'reset'
+    to?: string
     disabled?: boolean
     loading?: boolean
     iconOnly?: boolean
   }>(), {
     variant: 'primary',
     type: 'button',
+    to: undefined,
     disabled: false,
     loading: false,
     iconOnly: false,
@@ -50,6 +56,7 @@
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
+    text-decoration: none;
     transition: background-color var(--dur-fast) var(--ease-out),
       box-shadow var(--dur-fast) var(--ease-out),
       color var(--dur-fast) var(--ease-out),
