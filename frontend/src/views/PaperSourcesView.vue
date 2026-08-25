@@ -25,7 +25,7 @@
 
       <template v-else>
         <div class="sources-title-input">
-          <label class="sources-title-label" for="user-title-input">論文標題（選填）</label>
+          <label class="sources-title-label" for="user-title-input">技術報告標題（選填）</label>
           <input
             id="user-title-input"
             v-model="userTitle"
@@ -83,7 +83,7 @@
                 variant="primary"
                 @click="handleGenerate"
               >
-                確認並生成論文 ({{ selectedIds.length }})
+                確認並生成技術報告 ({{ selectedIds.length }})
               </AppButton>
               <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
             </div>

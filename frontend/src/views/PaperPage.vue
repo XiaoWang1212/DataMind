@@ -37,7 +37,7 @@
         <AppButton variant="ghost" @click="handleScorePaper">重試</AppButton>
       </p>
       <p v-if="mode === 'edit' && !projectId" class="save-hint">
-        此論文尚未關聯專案,無法儲存
+        此技術報告尚未關聯專案,無法儲存
       </p>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
@@ -348,7 +348,7 @@
     color: var(--color-error-text);
   }
 
-  /* 骨架屏跟論文紙張同一個外框，載入完換上內容時版面不跳 */
+  /* 骨架屏跟技術報告紙張同一個外框，載入完換上內容時版面不跳 */
   .paper-skeleton {
     display: flex;
     flex-direction: column;
