@@ -57,9 +57,25 @@
           <div>© 2026 研究中心</div>
         </div>
 
-        <button v-if="isDev" class="hub-glass-toggle" @click="toggleGlassVariant">
-          玻璃：{{ glassVariant === 'light' ? '淺' : '深' }}
-        </button>
+        <div v-if="isDev" class="hub-glass-row">
+          <span id="hub-glass-label" class="hub-glass-label">側邊欄顏色模式</span>
+          <button
+            :aria-checked="glassVariant === 'dark'"
+            aria-labelledby="hub-glass-label"
+            class="hub-glass-switch"
+            :class="{ 'is-dark': glassVariant === 'dark' }"
+            role="switch"
+            type="button"
+            @click="toggleGlassVariant"
+          >
+            <span class="hub-glass-knob">
+              <v-icon
+                :icon="glassVariant === 'dark' ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
+                size="12"
+              />
+            </span>
+          </button>
+        </div>
       </div>
     </Transition>
   </aside>
@@ -184,25 +200,26 @@
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(38px);
+  filter: blur(70px);
 }
 
+/* top/left 往回退，抵銷放大後中心的位移 */
 .orb-2 {
-  top: 260px;
-  left: 40px;
-  width: 130px;
-  height: 130px;
+  top: 225px;
+  left: 5px;
+  width: 200px;
+  height: 200px;
   background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, white) 0%, transparent 70%);
-  opacity: 0.5;
+  opacity: 0.42;
 }
 
 .orb-3 {
-  top: 480px;
-  left: -20px;
-  width: 110px;
-  height: 110px;
+  top: 445px;
+  left: -55px;
+  width: 180px;
+  height: 180px;
   background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 85%, black) 0%, transparent 70%);
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .hub-sidebar-header {
@@ -453,7 +470,7 @@
   position: relative;
   z-index: 2;
   overflow: hidden;
-  padding: 12px 14px;
+  padding: 12px 14px 4px;
   border-top: 1px solid var(--nav-border);
   font-size: 10.5px;
   line-height: 1.7;
@@ -461,20 +478,74 @@
   white-space: nowrap;
 }
 
-.hub-glass-toggle {
+/* 放在最下面，跟上面的版本資訊算同一塊，不另外劃線。
+   靠 gap 讓 label 跟 toggle 貼在一起，不用 space-between 推到兩端 */
+.hub-glass-row {
   position: relative;
   z-index: 2;
-  display: block;
+  display: flex;
   overflow: hidden;
-  margin: 0 14px 12px;
-  padding: 4px 10px;
-  white-space: nowrap;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: transparent;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 12px;
+}
+
+.hub-glass-label {
   font-size: 11px;
   color: var(--nav-fg);
+  white-space: nowrap;
+}
+
+.hub-glass-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--nav-surface-hover);
   cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.hub-glass-switch.is-dark {
+  background: color-mix(in oklab, var(--color-ink) 55%, transparent);
+}
+
+.hub-glass-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(14, 30, 66, 0.24);
+  /* 位移用 ease-in-out（§6.1），圖示跟著滑塊一起走 */
+  transition: transform var(--dur-base) var(--ease-in-out);
+}
+
+.hub-glass-switch.is-dark .hub-glass-knob {
+  transform: translateX(18px);
+}
+
+.hub-glass-switch:active .hub-glass-knob {
+  transform: scale(0.9);
+}
+
+.hub-glass-switch.is-dark:active .hub-glass-knob {
+  transform: translateX(18px) scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-glass-knob {
+    transition: none;
+  }
 }
 
 /* hover 用白色半透明而不是不透明的灰混色：這是玻璃面板，蓋一層實色會讓它變濁。

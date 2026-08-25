@@ -361,6 +361,7 @@
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { FEATURE_LABELS, PREPROCESS_LABELS, VALIDATION_LABELS } from '@/constants/workflowLabels'
   import { expandAutoFillNaSteps, fillNaColumnKind, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
@@ -408,36 +409,8 @@
 
   watch(currentStep, step => emit('step-change', step), { immediate: true })
 
-  const PREPROCESS_LABELS: Record<string, string> = {
-    fill_na: '缺值填補',
-    knn_impute: 'KNN 缺值填補',
-    iterative_impute: 'MICE 多重插補',
-    normalize: 'Min-Max 正規化',
-    standardize: 'Z-score 標準化',
-    one_hot: 'One-Hot 編碼',
-    label_encode: 'Label 編碼',
-    drop_columns: '移除欄位',
-    remove_outliers_iqr: 'IQR 異常值處理',
-    remove_outliers_zscore: 'Z-score 異常值處理',
-  }
-
-  const FEATURE_LABELS: Record<string, string> = {
-    select_relevant_features: '特徵選擇',
-    pca: 'PCA 降維',
-    discretize_continuous: '連續→離散',
-    continuize_discrete: '離散→連續',
-    normalize_features: '特徵正規化',
-    remove_sparse_features: '移除稀疏特徵',
-  }
-
-  const VALIDATION_METHODS: Array<{ value: string, label: string }> = [
-    { value: 'k_fold', label: 'Cross validation' },
-    { value: 'group_k_fold', label: 'Cross validation by feature' },
-    { value: 'random_sampling', label: 'Random sampling' },
-    { value: 'leave_one_out', label: 'Leave one out' },
-    { value: 'test_on_train', label: 'Test on train data' },
-    { value: 'test_on_test', label: 'Test on test data' },
-  ]
+  const VALIDATION_METHODS = Object.entries(VALIDATION_LABELS)
+    .map(([value, label]) => ({ value, label }))
 
   function preprocessStepLabel (step: Record<string, unknown>): string {
     const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
@@ -613,7 +586,7 @@
     display: flex;
     gap: 4px;
     padding: 4px;
-    background: color-mix(in oklab, var(--color-accent) 5%, transparent);
+    background: color-mix(in oklab, var(--color-ink) 5%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -627,7 +600,7 @@
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -636,9 +609,9 @@
 
   .wizard-tab--active {
     background: var(--color-surface);
-    color: var(--tab-color, var(--color-accent));
+    color: var(--tab-color, var(--color-ink));
     font-weight: 500;
-    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-accent)) 20%, transparent);
+    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -651,14 +624,14 @@
     font-size: 11px;
     font-weight: 500;
     flex-shrink: 0;
-    background: color-mix(in oklab, var(--color-secondary) 14%, transparent);
-    color: var(--color-secondary);
+    background: color-mix(in oklab, var(--color-ink-soft) 14%, transparent);
+    color: var(--color-ink-soft);
     transition: background var(--dur-fast), color var(--dur-fast);
   }
 
   .wizard-tab--active .wizard-tab__num {
-    background: var(--tab-color, var(--color-accent));
-    color: #fff;
+    background: var(--tab-color, var(--color-ink));
+    color: var(--color-inverted);
   }
 
   .wizard-tab__text {
@@ -707,8 +680,8 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
     border-radius: var(--radius-md);
     font-size: 13px;
   }
@@ -723,8 +696,8 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 30%, transparent);
-    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 30%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-ink)) 65%, var(--color-ink-strong));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -734,7 +707,7 @@
   }
 
   .item-idx--dot {
-    background: var(--step-color, var(--color-accent));
+    background: var(--step-color, var(--color-ink));
   }
 
   .item-name {
@@ -754,7 +727,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 24%, transparent);
   }
 
   .item-params .param-select {
@@ -770,7 +743,7 @@
 
   .param-key {
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     white-space: nowrap;
   }
 
@@ -783,7 +756,7 @@
   .param-num {
     width: 68px;
     height: 30px;
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 24%, transparent);
     border-radius: var(--radius-sm);
     padding: 0 8px;
     font-size: 13px;
@@ -796,12 +769,19 @@
   .validation-methods {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
   }
 
   .validation-method {
     padding: 8px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
+    transition: background var(--dur-fast);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .validation-method:hover {
+      background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+    }
   }
 
   .validation-method__radio {
@@ -813,9 +793,35 @@
     cursor: pointer;
   }
 
+  .validation-method__radio input[type="radio"] {
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-border-strong);
+    position: relative;
+    cursor: pointer;
+    transition: border-color var(--dur-fast);
+  }
+
+  .validation-method__radio input[type="radio"]:checked {
+    border-color: var(--step-color, var(--color-ink));
+  }
+
+  .validation-method__radio input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--step-color, var(--color-ink));
+  }
+
   .validation-method__params {
-    margin-top: 8px;
-    margin-left: 24px;
+    margin: 8px 0 4px 33px;
+    padding-left: 16px;
+    border-left: 1.5px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 35%, transparent);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -826,7 +832,7 @@
     align-items: center;
     gap: 6px;
     font-size: 12.5px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     cursor: pointer;
   }
 
@@ -836,7 +842,7 @@
     border-radius: 50%;
     border: none;
     background: none;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     cursor: pointer;
     font-size: 11px;
     display: flex;
@@ -847,8 +853,8 @@
   }
 
   .del-btn:hover {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.08);
+    color: var(--color-error);
+    background: color-mix(in oklab, var(--color-error) 10%, transparent);
   }
 
   .empty-hint {
@@ -864,8 +870,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -890,12 +896,12 @@
 
   .ci-card__sub {
     font-size: 11px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .ci-card__desc {
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     line-height: 1.55;
   }
 
@@ -920,13 +926,13 @@
   }
 
   .ci-card__status--on {
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
-    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-ink)) 65%, var(--color-ink-strong));
   }
 
   .ci-card__status--off {
-    background: color-mix(in oklab, var(--color-secondary) 10%, transparent);
-    color: var(--color-secondary);
+    background: color-mix(in oklab, var(--color-ink-soft) 10%, transparent);
+    color: var(--color-ink-soft);
   }
 
   .ci-toggle {
@@ -943,7 +949,7 @@
   }
 
   .ci-toggle--on {
-    background: var(--step-color, var(--color-accent));
+    background: var(--step-color, var(--color-ink));
   }
 
   .ci-toggle__thumb {
@@ -968,7 +974,7 @@
     justify-content: space-between;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--color-ink) 10%, transparent);
   }
 
   .settings-footer__right {

@@ -15,9 +15,11 @@
 - Vuetify 4 負責元件與互動邏輯,`vuetify.ts` 定義 light theme 色票與 breakpoints,關閉內建 utilities(`utilities: false`)
 - Tailwind 4 負責 utility(版面/間距),CSS-first config,用 `@theme` 把 Vuetify 的 CSS 變數橋接成 Tailwind `--color-*` token → **色彩與圓角是單一 source of truth**
 - Layer 排序:`vuetify-core → vuetify-components → vuetify-overrides → vuetify-utilities → tailwind → vuetify-final`
-- 字型 Roboto / Roboto Mono,圖標 `@mdi/font`
+- 字型 Roboto(僅覆蓋英數,中文走系統 CJK fallback,見 §3);圖示見 §3.5
 
-> 本次改版會大幅調整視覺層。是否重寫 Vuetify 主題、token 如何落地,交由實作者判斷,但**必須維持「色彩/圓角單一 source of truth」這個原則**,不要退化成兩套各自維護的色票。
+> **色彩/圓角維持單一 source of truth。** 色值只定義在 `plugins/vuetify.ts` 的 theme,`styles/tailwind.css` 的 `@theme` 把它們橋接成 `--color-*` 供 CSS 使用。不要在 Tailwind 那邊另外寫死 hex,也不要在元件裡硬寫色值——那會退化成兩套各自維護的色票。
+>
+> **想看所有 token 實際長什麼樣,開 `/style-guide`**(只在 dev 模式掛路由)。色票、圓角、陰影、按鈕四變體、狀態徽章、對話氣泡、表格、骨架、AI 思考框都在上面,改 token 之後先去那頁確認。
 
 ---
 
@@ -50,35 +52,57 @@
 | `--color-ink` | `#1A3159` | 主品牌藏青。主要按鈕、選中、重點 |
 | `--color-ink-strong` | `#12244A` | 深一階,hover/按下、標題強調 |
 | `--color-ink-soft` | `#626B7E` | 次要文字、說明、icon |
+| `--color-ink-vivid` | `#2B5CA8` | 藏青亮一階。`ink` 疊在深色內文旁分不出來時用(選單已選項、參考文獻標記、AI 思考框邊框) |
 | `--color-text` | `#1C2130` | 主要內文 |
 | `--color-surface` | `#FFFFFF` | 卡片、面板底 |
-| `--color-surface-alt` | `#F6F5F2` | 次級底(表頭、hover 背景、工具列) |
+| `--color-surface-alt` | `#F1F4F8` | 次級底(表頭、hover 背景、工具列)。偏冷的淺灰藍,跟頁面漸層同色溫 |
 | `--color-page` | `#E4E9ED` | 頁面底(玻璃漸層的基底,見 §5) |
 | `--color-border` | `#E4E6E8` | 一般分隔線(hairline) |
 | `--color-border-strong` | `#D3D8DC` | 強調分隔、輸入框邊界 |
-| `--color-success` | `#2A7A63` | 已對應/成功(圓點);文字用 `#1D6151` |
+| `--color-success` | `#3B9A7F` | 已對應/成功(圓點);文字用 `#1D6151` |
 | `--color-success-bg` | `#DCEAE5` | 成功徽章底 |
-| `--color-warning` | `#BC8836` | 待確認/警示(圓點);文字用 `#78530F` |
-| `--color-warning-bg` | `#EFE7D7` | 警示徽章底 |
-| `--color-danger` | `#BC3B50` | 未對應/錯誤(圓點);文字用 `#A22F43` |
+| `--color-warning` | `#C88819` | 待確認/警示(圓點);文字用 `#835A07` |
+| `--color-warning-bg` | `#F7EECF` | 警示徽章底 |
+| `--color-danger` | `#D7445C` | 未對應/錯誤(圓點);文字用 `#A22F43` |
 | `--color-danger-bg` | `#F2DEE2` | 錯誤徽章底 |
+| `--color-score-low` | `#E6B800` | 期刊評分低分的進度條**填色**。對白底只有 1.87:1,**絕不可當文字色**(見 `utils/scoreColor.ts`) |
+| `--color-inverted` | `#F1F5F9` | 深底上的反白文字(藏青按鈕、使用者氣泡) |
+
+> **命名對照:本文件寫 `danger`,程式碼是 `error`。** Vuetify 主題有固定的 `error` 插槽名,為了不另立撞名的 key,實作沿用 `error`——`--color-danger` / `--color-danger-bg` 在程式碼裡實際叫 `--color-error` / `--color-error-bg`,文字色是 `--color-error-text`。語意完全相同,寫 code 時用 `error`。
 
 **對話氣泡**(AI 助理、結果分析跟談)也由藏青推導,不另立色系:
 
 | 角色 token | 建議色值 | 用途 |
 |---|---|---|
 | `--color-chat-user` | `#1A3159` | 使用者氣泡,實色藏青配 `--color-inverted` 白字(11.78:1) |
-| `--color-chat-system` | `#DCE6F5` | AI 氣泡,藏青極淡 tint 配 `--color-text`(12.74:1) |
+| `--color-chat-system` | `#FFFFFF` | AI 氣泡,純白配 `--color-text` |
 
-> AI 氣泡疊在玻璃面板上時,tint 與玻璃底的明度差只有 1.09–1.20:1,**必須加一道 `--color-ink` 22% 的描邊**才看得出邊界;使用者氣泡是實色不需要。氣泡內的弱化文字(「思考中…」、開場白)不能直接用 `--color-ink-soft`,那在 tint 上只有 4.26:1,要往 `ink-strong` 調深。
+> **AI 氣泡靠高度而不是明度差浮起來。** 曾經用藏青極淡 tint(`#DCE6F5`),但它跟玻璃面板底的明度差只有 1.09–1.20:1,得再補一道描邊才看得出邊界,疊起來很濁。現行做法改成純白 + 兩層投影(`0 1px 2px` 貼地 + `0 6px 16px` 擴散),讓氣泡像浮在玻璃上的紙片,不需要描邊。使用者氣泡是實色藏青,本來就不需要。
+>
+> 氣泡內的弱化文字(「思考中…」、開場白)用 `--color-ink-soft`。
+
+> **`**粗體**` 標記會被渲染成真的粗體。** AI 回覆常帶 markdown 粗體標記,由 `utils/formatChatText.ts` 轉成 `<strong>`(只處理這一種標記,不做完整 markdown 解析,且會先跳脫 HTML)。字重是 700,屬於 §3 的唯一例外。
 
 > **重要:金色已淘汰。** 早期版本曾用亮金色當強調色,已確認不採用。琥珀(`--color-warning`)只作狀態色,不當品牌強調。
 >
 > **圓點色跟文字色刻意不同一個值。** 圓點是實色小面積,直接用 `--color-success`/`--color-warning`/`--color-danger` 沒問題;但文字疊在對應的 `-bg` 淺色徽章底上時,同一個值對比不夠(量過只有 4:1 上下),所以文字一律用表中標的更深值,確保跟徽章底過 §2.4 的 WCAG AA 4.5:1。之後要調任何狀態色,記得兩個值一起檢查對比,不要只改圓點色。
 >
-> **三組狀態色已往冷調、低飽和重新調配**(2026-08),原本偏暖高飽和的一組(綠 `#1F7A44`、琥珀 `#C9822E`、紅 `#C7392E`)疊在冷色藏青主題與頁面漸層上顯得突兀。調整方向:綠的色相由 144° 推到 163° 轉成青綠、紅由 4° 推到 350° 轉成玫瑰紅,兩者都往冷側靠;三色飽和度一律降約一成(59→49、63→55、62→52)。琥珀刻意只降飽和不轉色相(33°→37°),飽和度守在 55%,再低就會讀成灰色而失去警示語意。徽章底同步抽掉暖黃、補一點冷灰。
+> **三組狀態色往冷調重新調配過**(2026-08)。原本偏暖高飽和的一組(綠 `#1F7A44`、琥珀 `#C9822E`、紅 `#C7392E`)疊在冷色藏青主題與頁面漸層上顯得突兀,綠的色相推到青綠(163°)、紅推到玫瑰紅(350°),兩者都往冷側靠;徽章底同步抽掉暖黃、補一點冷灰。
 >
-> 量到的文字/徽章底對比:成功 `#1D6151` on `#DCEAE5` = **5.88:1**、警示 `#78530F` on `#EFE7D7` = **5.61:1**、錯誤 `#A22F43` on `#F2DEE2` = **5.40:1**,皆過 §2.4 的 WCAG AA 4.5:1。
+> **琥珀後來又往回調了兩次。** 跟著上面一起降飽和之後,它疊在白底表格上彩度太低、幾乎讀不出是有顏色的——暖黃色系在高亮度下本來就比冷色系更容易被看成灰或米色,這是綠、紅不會遇到的問題。先拉高飽和度並讓色相略偏橙,看過畫面後覺得偏橙不如偏黃,再把色相調回更黃的 38–46°、徽章底提亮。結論記在這裡:**調狀態色時不要三色套用同一組飽和度規則**,琥珀需要比另外兩色更高的飽和度才讀得出來。
+
+**量到的對比**(調整任何狀態色時三組都要重驗):
+
+| 檢查項 | 值 | 門檻 |
+|---|---|---|
+| `#1D6151` on `#DCEAE5`(成功徽章文字) | 5.88:1 | AA 文字 4.5:1 ✅ |
+| `#835A07` on `#F7EECF`(警示徽章文字) | 5.27:1 | AA 文字 4.5:1 ✅ |
+| `#A22F43` on `#F2DEE2`(錯誤徽章文字) | 5.40:1 | AA 文字 4.5:1 ✅ |
+| `#3B9A7F` on 白(成功圓點) | 3.43:1 | 圖形 3:1 ✅ |
+| `#C88819` on 白(警示圓點/星號) | 3.00:1 | 圖形 3:1 ⚠️ 剛好貼線 |
+| `#D7445C` on 白(錯誤圓點) | 4.31:1 | 圖形 3:1 ✅ |
+
+> 警示圓點只有 3.00:1,**剛好卡在門檻上,不要再提亮**。它同時用在 [MappingTable.vue](../frontend/src/components/hub/fieldMapping/MappingTable.vue) 的預測目標星號上,那是純圖形沒有文字輔助,再淡就不合格了。徽章底(`-bg`)不受圖形門檻限制,所以可以做得比圓點淺得多。
 
 ### 2.3 Workflow 節點配色(分類色,非深淺)
 
@@ -113,23 +137,28 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 
 ## 3. 字體
 
-- 介面字型:Roboto(延續現有 `unfonts.css`);中文採系統思源/Noto Sans TC fallback。
-- 等寬:Roboto Mono(程式碼、欄位名 `age`、`bmi_score` 等 identifier)。
+- 介面字型:Roboto(透過 `unfonts.css` 載入),對應 token `--font-body` / `--font-heading`。
+- **Roboto 只覆蓋英數字元。** 它沒有中文字形,瀏覽器逐字元 fallback,所有中文字實際上是由系統 CJK 字型畫的(各作業系統不同)。畫面上九成是中文,所以整體觀感由系統字型決定,不要以為調 Roboto 就能改變中文的樣子。
+- **不使用等寬字型。** 欄位名、type、class 等 identifier 一律用一般內文字型,靠位置與標籤區隔,不靠字型。曾經有過 `--font-mono`(Roboto Mono)並用在表格 identifier、變數清單、設定輸入框,已於 2026-08 全數移除 —— 等寬字在以中文為主的介面裡只會讓英數突兀,中文本來就沒有等寬版本,兩種字型混排反而更亂。
 - 只用兩種字重:**Regular 400** 與 **Medium 500**。不用 600/700 — 過重會與安靜的整體調性衝突。
+  - **例外:AI 對話氣泡裡 `**粗體**` 標記轉出的 `<strong>`。** user 實際比對 400/500/700 三版後,700 才看得出「這裡在強調」,500 太接近內文分辨不出來。這是唯一允許 700 的地方,僅限對話氣泡文字內的強調,不要擴大套用到其他元件。
+  - **700 是第二個合法的字重例外，限定「資料強調」**：展示型數字、資料表格裡的最佳值/重點結果、資料表格表頭。跟 AI 對話氣泡的 700 例外互相獨立——一個標示「這是重點數據」，一個標示「AI 在強調語氣」，不要合併成同一條規則。除了這兩處，字重維持 400/500。
 
 | 角色 | 大小 | 字重 |
 |---|---|---|
-| 展示型數字 | 32px | 500 |
+| 展示型數字 | 32px | 700 |
 | 頁面標題 h1 | 22px | 500 |
 | 區塊標題 h2 | 18px | 500 |
 | 小標 h3 | 15–16px | 500 |
 | 內文 | 14px | 400 |
 | 次要/說明 | 13px | 400 |
 | 標籤/徽章 | 11–12px | 400–500 |
+| 表格最佳值/重點結果 | 隨內文 | 700 |
+| 資料表格表頭 | 12px | 700 |
 
 - **展示型數字**專指儀表板統計數字這類「一眼要看到的單一數值」,用 `--color-ink` 藏青讓它成為畫面錨點。它不是標題,不要拿來放文字。
 - 一律**句首大寫(sentence case)**,不用 Title Case、不用全大寫。
-- 欄位名、type、class 等 identifier 用 mono 字體,不用粗體強調。
+- 欄位名、type、class 等 identifier 不用粗體強調,也不用等寬字型(見上)。
 
 ---
 
@@ -219,22 +248,28 @@ Workflow 節點依**在 pipeline 裡扮演的角色**分五類,每一類一個�
 
 ### 5.4 背景漸層(讓玻璃可見的關鍵)
 
-頁面底建議鋪多點徑向漸層,提供玻璃透光的顏色來源。範例(可調):
+頁面底鋪多點徑向漸層,提供玻璃透光的顏色來源。現行實作在 [main.scss](../frontend/src/styles/main.scss):
 
 ```css
-body {
+.v-application {
   background:
-    radial-gradient(720px circle at 8% 30%,  rgba(90,130,190,0.45), transparent 55%),
-    radial-gradient(560px circle at 88% 18%, rgba(110,143,178,0.20), transparent 55%),
-    /* 純裝飾暖色點,刻意不借用 --color-warning 的值 — 狀態色不進背景,避免語意混淆,
-       也避免之後調整狀態色時背景跟著意外變色 */
-    radial-gradient(520px circle at 25% 92%, rgba(196,150,130,0.10), transparent 55%),
-    linear-gradient(175deg, #EEF2F5 0%, #DCE3E9 100%);
+    /* 主色塊:窄而高的橢圓貼齊左緣，縱向蓋滿側邊欄供其透光，
+       橫向在側邊欄右緣外就衰減完，讓頁面上方的標題帶落在近乎純底色的區域 */
+    radial-gradient(520px 900px ellipse at 4% 60%, rgba(90, 130, 190, 0.50), transparent 70%),
+    /* 右側色塊下移到視窗中段，同樣避開標題帶，留在浮動面板常駐的高度 */
+    radial-gradient(640px circle at 92% 58%, rgba(110, 143, 178, 0.22), transparent 60%),
+    /* 純裝飾暖色點，刻意不借用 --color-warning 的值 */
+    radial-gradient(520px circle at 25% 92%, rgba(196, 150, 130, 0.10), transparent 55%),
+    linear-gradient(175deg, #F4F7F9 0%, #E4EAEF 55%, #DCE3E9 100%);
   background-attachment: fixed;
 }
 ```
 
-> 側邊欄若要有明顯玻璃感,把其中一個徑向漸層的亮色塊「放在側邊欄後方」的位置(如左側 `8% 30%`),讓顏色從玻璃透出來。
+> **蓋在 `.v-application` 而不是 `body`。** VApp 元件本身有不透明的 background,蓋在 body 上的話漸層完全看不到。
+>
+> **色塊位置是為了標題可讀性算過的,不要隨意搬動。** 頁面標題與副標沒有卡片墊底,直接疊在漸層上,所以兩個主色塊都刻意避開畫面上方的標題帶——左側那塊做成窄橢圓在側邊欄右緣外就衰減完,右側那塊下移到視窗中段。動到位置或濃度時要回頭確認標題還讀得清楚(§2.4 禁用深色 text-shadow 救對比)。
+>
+> 側邊欄要有明顯玻璃感,靠的就是左側那塊亮色落在它後方。
 >
 > **暖色點的色值跟狀態色系無關**,不要為了方便直接借用 `--color-warning` 或其他語意色的 hex——那樣一旦之後改狀態色,背景會跟著意外變色,也違反 §2.1「狀態色只表達語意,不作裝飾」的原則。
 
@@ -265,10 +300,11 @@ body {
 - 統一原則:同類元件用同一種回饋,不要一個按鈕上浮、另一個變色。
 
 **按鈕 hover**
-- 全系統按鈕共用同一套 hover:**底色加深一階 + 抬起 1px**,四個變體只差加深後的顏色。
-- 這是「一致的互動語言」— 不論按鈕底色,回饋的「行為」都一樣。
-- `:active` 的 `scale(0.96)` 要寫在 hover 規則之後,否則抬升會蓋掉壓下感。
+- 全系統按鈕共用同一套 hover:**底色位移 + 陰影**,四個變體只差位移後的顏色。按鈕本身**不做上浮**(卡片才上浮,見上一條)。
+- 位移方向依底色決定,不是一律加深:primary 的藏青已經很暗,要往**亮**的方向走(`ink 88% + white`)才看得出變化;ghost/danger 這種淺底或透明底才是加深。判準是「看得出來變了」,不是「一律加深」。
+- `:active` 一律 `scale(0.96)`,寫在 hover 規則之後。
 - hover 規則整組包在 `@media (hover: hover) and (pointer: fine)` 內:觸控裝置點一下會觸發 hover 並卡在 hover 態。
+- 實作在 [AppButton.vue](../frontend/src/components/ui/AppButton.vue),不要在個別頁面另外寫按鈕 hover。
 
 > **邊緣反光(specular hover)已放棄。** 早期版本規定反光沿邊框細線跟隨滑鼠、用 mask-composite + `pointermove` 實作。實測結論:效果做在 1px 邊框上,不論光斑或角度掃描都太細微,使用者根本注意不到;把光帶加寬只會讓它更淡。那套做法適合大顆、深底的單一 CTA,不適合當成六十幾顆按鈕共用的互動語言。不要再回頭做這個。
 
@@ -307,25 +343,29 @@ body {
 
 ### 7.1 按鈕
 
-四種變體,**共用同一套邊緣反光 hover**(見 §6.2),差異只在底色:
+四種變體,**共用同一套 hover**(見 §6.2),差異只在底色:
 
 | 變體 | 底色 | 文字 | 用途 |
 |---|---|---|---|
 | primary | `--color-ink` | 白 | 主要動作(每個畫面最多一個) |
-| secondary | `--color-surface` | `--color-ink` | 次要動作 |
+| secondary | `--color-surface` + `--color-border` inset 邊 | `--color-ink` | 次要動作 |
 | ghost | 透明 | `--color-ink-soft` | 輕量動作(略過、取消) |
-| danger | `--color-danger-bg` | `--color-danger` | 破壞性動作(移除對應) |
+| danger | `--color-error-bg` | `--color-error-text` | 破壞性動作(移除對應) |
+| ai | `linear-gradient(100deg, --color-ink-vivid, --color-ink-strong)` | `--color-inverted` | 觸發 AI 運算的動作,固定帶 `mdi-shimmer` 圖示。只用在明確的 AI 觸發點,不要為了好看套用在一般按鈕上 |
 
 - 形狀:pill(999px)。
 - `:active` 一律 `scale(0.96)`。
 - 每個畫面最多一個 primary,其餘用 secondary/ghost。
-- secondary/ghost 在白底上若邊界不清,可加一條極淡的**非彩色** hairline 界定範圍(不是彩色圈)。
+- secondary 的邊界用 `inset box-shadow` 而不是 `border`,免得邊框佔掉尺寸讓它跟其他變體對不齊。
+- **主次關係會隨流程階段改變。** 同一顆按鈕在不同狀態下可能該換變體——例如提取框架頁,提取完成後主要動作就從「開始提取」變成「儲存框架」,前者降為 secondary。判準是「使用者此刻最該做什麼」,不是按鈕固定屬於哪一階。
+- **`ai` 變體的 loading 不隱藏內容。** 其餘變體 loading 時內容 `visibility: hidden`、置中疊一個圓圈 spinner；`ai` 變體反過來，圖示跟文字維持可見，改成一道低透明度（16%）的光帶斜向掃過底色（2.4s，寬版、慢速）——AI 按鈕的圖示本身是「這是 AI 操作」的語意信號，loading 時蓋掉會失去意義。這個決定是反覆比較過旋轉邊框、公轉光點、脈動光暈、色輪旋轉等做法後定案的,不要回頭嘗試那些方向（見對應 spec 的完整比較過程）。
 
 ### 7.2 側邊欄
 
 - 可收合/展開(寬 220px ↔ 72px),收合動畫見 §6.2。
-- 深色玻璃(見 §5.2),浮在漸層背景上。
-- **可讀性優先**:靠底色不透明度(0.5~0.7)保證對比,**不用文字陰影**。
+- 玻璃面板浮在漸層背景上(見 §5.2)。**預設是淺色玻璃**(白色半透明 tint);深色玻璃保留成可切換的選項,切換開關只在 dev 模式顯示,選擇存在 localStorage。
+- 兩種變體靠一組語意變數(`--nav-fg`、`--nav-surface-hover`、`--nav-surface-active`、`--nav-border` 等)切換,只換這組值,文字色/hover 底/選中滑塊/分隔線就會一起走。新增側邊欄元素時要用這組變數,不要硬寫顏色,否則深色模式會漏掉。
+- **可讀性優先**:靠底色不透明度保證對比,**不用文字陰影**。
 - 側邊欄是浮動卡片(`--radius-lg` + `--shadow-float`),上下左三邊留白、不貼齊視窗邊緣;右邊不留,否則會跟主內容自己的 padding 疊成不對稱的留白。
 - 選中項:**凹陷**效果 + Medium 字重。帶藏青的淺色底,上緣 inset 陰影、下緣 inset 亮線,光源方向比照 §4.3 由上往下,看起來像刻進玻璃面板裡。
 - hover:輕微變亮的半透明白底,`--dur-fast`。**選中與 hover 互為反向**——hover 浮起、選中壓下去,同一套物理語言。
@@ -344,12 +384,14 @@ body {
 DataMind 有大量表格,規範:
 
 - 容器:`--color-surface` + `--radius-md` + `--shadow-card`,`overflow: hidden` 讓圓角吃到邊。
-- 表頭:`--color-surface-alt` 底,`--color-ink-soft` 文字,12px,Medium。
+- 表頭:`--color-surface-alt` 底,`--color-ink-soft` 文字,12px,Bold(700,見 §3 資料強調例外)。
 - 儲存格:14px,`--color-text`,底線 `--color-border`。
-- row hover:`--color-surface-alt`。
+- row hover:比表頭**更淡**的一層(`ink 3% + white`),列才會往前浮而不是沉下去。直接用 `--color-surface-alt` 會跟表頭同色、看起來像沉下去。
 - 狀態欄用徽章(見 §7.5)。
-- 欄位名等 identifier 用 mono 字體。
+- 欄位名等 identifier **不用**等寬字型(見 §3)。
+- 欄多、需要一眼掃完的表格加 `.ds-table--dense`(13px、padding 收窄)。§7.4 的 14px 是給一般表格的,套在欄位密集的畫面會把列高撐開。
 - 欄多時考慮 `table-layout: fixed` + 明確欄寬,或允許水平捲動。
+- 共用樣式在 [ds-table.css](../frontend/src/styles/ds-table.css),掛在 `vuetify-final` layer(套進 Vuetify 元件內的表格才不會被蓋掉);外框用 [TableShell.vue](../frontend/src/components/ui/TableShell.vue)。
 
 ### 7.5 狀態顯示(徽章 / 圓點)
 
@@ -379,6 +421,43 @@ DataMind 有大量表格,規範:
 
 - 列表形式,每筆:`[index]` + 作者 + venue。
 - index、venue 用 `--color-ink-soft`,作者用 `--color-text`。
+- 內文裡的引用標記(`[1]`)用 `--color-ink-vivid` 推導的淺色 highlight 底 + 同色數字,讓它讀起來是「可點的引用」而不是灰字。滑過時底色再深一階,整組 gate 在 `@media (hover: hover) and (pointer: fine)` 內。
+- 點開的來源 popup **靠右對齊**,不遮擋內文;從引用標記拉一條直線連到 popup,線有一次性的描繪動畫(`--dur-slow`,`prefers-reduced-motion` 時關掉)。popup 位置要跟著捲動更新(`scroll` 事件用 capture 監聽,巢狀捲動容器才抓得到),並用 `requestAnimationFrame` 節流。
+- 算右緣位置用 `document.documentElement.clientWidth`,**不要用 `window.innerWidth`**——後者含捲軸寬度,會把 popup 推出畫面。
+
+### 7.9 檔案上傳區
+
+共用元件 [FileDropZone.vue](../frontend/src/components/common/FileDropZone.vue),上傳論文與上傳資料集都用它,不要各頁另刻。
+
+- **空狀態與已選檔共用同一個尺寸**(固定 `min-height`),切換時版面不跳。
+- 已選檔時整個框變成檔案卡片(圖示 + 檔名 + 大小 + 更換提示),讓「已經有檔案了,再放會覆蓋」一眼看得出來。移除鈕釘在右上角(`position: absolute`),不參與置中排版——否則它會把中間那疊內容拉偏。
+- 移除鈕視覺 32px,用透明的 `::after`(`inset: -6px`)把可點範圍撐到 44×44,兼顧觸控尺寸與視覺份量。
+- 拖曳中要有明確回饋(邊框與底色加深、文字換成「放開以…」)。`dragenter`/`dragleave` 在滑鼠移到子元素時也會觸發,**用進出計數**才不會誤關。
+- 拖入不接受的檔型時顯示提示,並**保留原本已選的檔案**——拖錯一個檔不該把先前選好的弄丟。
+- `<input type="file">` 讀完要把 `value` 清掉,否則再選同一個檔案不會觸發 `change`。
+- **注意 `--filled` 與 `--over` 的 CSS 權重**:兩者都是單一 class,同權重時後寫的贏,已選檔狀態會蓋掉拖曳中狀態。用 `.drop-zone.drop-zone--over` 疊權重解決。
+
+### 7.10 下拉選單
+
+自刻元件 [CustomSelect.vue](../frontend/src/components/common/CustomSelect.vue),`Teleport` 到 body,套 `.glass-menu`(玻璃的折衷做法見 §5.3)。
+
+- **已選項只用兩個訊號**:`--color-ink-vivid` 文字色 + Medium 字重,再加一個勾勾圖示。曾經試過再疊左側色條,三個訊號一起上會過度設計,拿掉了——一個狀態不需要三種標示。
+- hover(鍵盤 active)用**中性**的 `ink 12%` 淡底,跟已選項的藍色系刻意不同調,兩種狀態才分得開。
+- 選項可以被標成 muted(已被其他欄位占用)但仍可點,弱化的文字色仍要過 AA——那是可互動文字,不能用純提示用的淺灰。
+
+### 7.11 捲軸
+
+自訂捲軸樣式時,**`scrollbar-color` 與 `::-webkit-scrollbar` 必須同步修改**。
+
+現代 Chrome 支援標準的 `scrollbar-color`,而且它的優先權**高於** `::-webkit-scrollbar` 偽元素——只改後者完全不會生效。這個坑實際踩過:改了 `::-webkit-scrollbar-thumb` 但捲軸還是原本的顏色,查了兩輪才發現真正生效的是上面那行。兩邊都要寫,而且值要一致。
+
+另外:CSS 規範裡設了 `overflow-x: auto` 會讓 `overflow-y` 隱含變成 `auto`。只想要橫向捲動的容器,要明確寫 `overflow-y: hidden`,否則會多出一條沒用的縱向捲軸。
+
+### 7.12 AI 進行中狀態
+
+- 思考中的區塊用**跑動的漸層邊框**(`::before` + `mask-composite: exclude` 做出只有邊框的漸層),不要用實線 border。
+- 漸層的兩端與中段要有**足夠的濃淡差**才看得出在動。曾經用兩端都接近 `--color-ink` 的近黑漸層,色相變化太小,動畫等於沒跑、讀起來就是一條實線。現行用 `--color-ink-vivid` 藍,兩端透明度 20%、中段 75%。
+- 逐段思考文字用淡入切換,上一段保留成更小更淡的一行,讓使用者感覺到進度。
 
 ---
 
@@ -406,7 +485,7 @@ DataMind 有大量表格,規範:
 | token | 建議值 | 用途 |
 |---|---|---|
 | `--content-measure` | 760px | 純文字閱讀區(論文內文、長文說明)。控制單行字數,過寬會難讀 |
-| `--content-max-width` | 1280–1440px | 一般頁面容器(表單、Hub 詳情頁、設定) |
+| `--content-max-width` | 1280px | 一般頁面容器(表單、Hub 詳情頁、設定)。原訂範圍 1280–1440px,取下限 |
 | `--content-max-width-wide` | 1680px | 資料密集頁(大型表格、多欄卡片、workflow 外框) |
 
 > workflow 畫布本身如果是可縮放/可捲動的無限畫布,不受此限——這裡限制的是畫布「外面」的頁面殼(頂部工具列、side panel 等容器)。
@@ -421,16 +500,46 @@ DataMind 有大量表格,規範:
 
 ## 9. 使用這份文件
 
-- **新增/修改任何 UI 前**,先確認符合 §1 原則與相關元件規格。
-- **色彩、圓角維持單一 source of truth** — 不要在個別元件硬寫色值,一律引用 token。
-- **新增顏色/元件**時,回來更新這份文件(尤其 §2.3 節點色表),讓它持續是唯一真相。
+### 9.1 我要做 X,該看哪裡
+
+| 要做的事 | 看這幾節 |
+|---|---|
+| 加一個新頁面 | §8.2 寬度上限 → §7.3 卡片 → §6.2 進場動畫 |
+| 加按鈕 | §7.1 四變體(注意主次會隨流程階段改變) |
+| 加表格 | §7.4,直接用 `.ds-table` + `TableShell`,不要自刻 |
+| 顯示狀態(成功/待確認/錯誤) | §7.5 + §2.2 狀態色。用 `StatusBadge`,不要自己上色 |
+| 加檔案上傳 | §7.9,用 `FileDropZone`,不要自刻 |
+| 加下拉選單 | §7.10,用 `CustomSelect` |
+| 想用玻璃效果 | §5.3 先確認這個元件該不該用玻璃(多數情況答案是不該) |
+| 加動畫 | §6.1 用 token,§6.3 記得 `prefers-reduced-motion` |
+| 自訂捲軸 | §7.11(有個很容易踩的優先權坑) |
+| 選圖示 | §3.5 |
+| 調任何顏色 | §2.2,改完要重驗對比表 |
+
+### 9.2 改動時的檢查清單
+
+- **色值一律引用 token**,不要在元件裡硬寫 hex。需要變化用 `color-mix(in oklab, var(--color-x) N%, ...)`。
+- **改狀態色**:圓點色與文字色是兩個值,要一起改、一起量對比(§2.2 的對比表)。
+- **加 hover**:整組包在 `@media (hover: hover) and (pointer: fine)` 內。
+- **加動畫**:用 §6.1 的 token,不要自己寫時長與緩動。注意 `animation-fill-mode` 用 `both`/`forwards` 會把結束時的 `transform` 永久鎖在元素上,後續的 `:hover` 位移就失效了——進場動畫要用 `backwards`。
+- **字重只有 400/500**(唯一例外見 §3)。
+- **改完開 `/style-guide` 看一遍**,再看實際頁面。
+
+### 9.3 維護這份文件
+
+- **新增顏色 / 新增共用元件 / 改掉既有規範時,回來更新這裡**,尤其 §2.2 色票表與 §2.3 節點色表。文件跟程式碼對不上的時候,它就從「唯一真相」退化成「誤導來源」。
+- **記錄「為什麼」,不只記「是什麼」。** 這份文件裡最有價值的部分是那些「曾經試過 X,因為 Y 所以改成 Z」的段落——它們阻止後人重蹈覆轍。色值本身看程式碼就有了,判斷過程只有寫下來才留得住。
 - 規範沒寫到的臨場狀況,用 §1 的五個原則判斷,選更安靜、更一致、更可讀的那個做法。
 
 ---
 
 ## 附錄:待驗證 / 未定案項目
 
-- [ ] 深色模式:目前規範以淺色為主,深色模式的玻璃/對比需另外定義(玻璃在深色模式要換較暗 tint、較柔的邊,不用純白邊)。
-- [ ] 是否重寫 Vuetify light theme 色票 — 由實作階段決定。
-- [x] ~~specular 按鈕的 proximity 感應距離、反光強度~~ — 實測後放棄整個做法,改用底色加深 + 抬起 1px,見 §6.2。
+- [ ] 深色模式:目前規範以淺色為主,深色模式的玻璃/對比需另外定義(玻璃在深色模式要換較暗 tint、較柔的邊,不用純白邊)。側邊欄已經有深色玻璃變體可切換(§7.2),那組語意變數的做法可以當成整體深色模式的起點。
+- [ ] `--color-accent` 待淘汰:數值已經跟 `--color-ink` 相同(都是 `#1A3159`),留著只是為了不動到既有的約 78 處引用。之後遷移到的頁面應改成直接用 `ink`,全部清完就可以拿掉這個 key。
+- [ ] `--color-info` 有橋接但全專案沒有任何地方使用,確認不需要就拿掉。
+- [ ] `InsertChartDialog.vue` 仍是 `.glass-panel`,背後是深色遮罩,推測會有跟 `JournalScoreDialog` 一樣的濁白問題(見 §5.3),尚未處理。
+- [ ] 論文編輯器工具列的圖示仍是 MDI,尚未跟著遷移(見 §3.5)。
+- [x] ~~specular 按鈕的 proximity 感應距離、反光強度~~ — 實測後放棄整個做法,見 §6.2。
+- [x] ~~是否重寫 Vuetify light theme 色票~~ — 已重寫,現行色票見 §2.2。
 - [ ] 主藏青確切色值 — `#1A3159` 為目前基準,可能再微調飽和度/明度。

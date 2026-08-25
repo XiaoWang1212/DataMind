@@ -17,29 +17,26 @@
         class="project-card"
         :to="projectLink(project)"
       >
-        <div class="project-main">
-          <div class="project-title-row">
-            <span class="project-name">{{ project.name }}</span>
-            <StatusBadge :status="statusTone[project.status]">
-              {{ statusLabel[project.status] }}
-            </StatusBadge>
+        <div class="project-title-row">
+          <span class="project-name">{{ project.name }}</span>
+          <StatusBadge :status="statusTone[project.status]">
+            {{ statusLabel[project.status] }}
+          </StatusBadge>
+        </div>
+        <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
+        <div class="project-date">
+          <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
+          {{ project.date }}
+        </div>
+        <div v-if="project.status === 'running'" class="progress-wrap">
+          <div class="progress-label-row">
+            <span class="progress-label">分析進度</span>
+            <span class="progress-pct">{{ project.progress }}%</span>
           </div>
-          <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
-          <div class="project-date">
-            <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
-            {{ project.date }}
-          </div>
-          <div v-if="project.status === 'running'" class="progress-wrap">
-            <div class="progress-label-row">
-              <span class="progress-label">分析進度</span>
-              <span class="progress-pct">{{ project.progress }}%</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
-            </div>
+          <div class="progress-track">
+            <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
           </div>
         </div>
-        <v-icon class="project-arrow" icon="mdi-chevron-right" size="18" />
       </RouterLink>
     </div>
   </div>
@@ -101,34 +98,31 @@
     margin-inline: auto;
   }
 
-  /* ── Project list ── */
+  /* ── Project grid ── */
   .project-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
   }
 
+  /* hover 跟框架庫的 .fw-card 同一套 */
   .project-card {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 22px;
+    flex-direction: column;
+    padding: 18px 20px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
     text-decoration: none;
-    transition: border-color var(--dur-fast) var(--ease-out),
-      background-color var(--dur-fast) var(--ease-out);
+    transition: transform var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
   }
 
   .project-card:hover {
-    border-color: color-mix(in oklab, var(--color-ink) 16%, white);
-    background: var(--color-surface-alt);
-  }
-
-  .project-main {
-    flex: 1;
-    min-width: 0;
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    box-shadow: var(--shadow-card);
   }
 
   .project-title-row {
@@ -139,9 +133,14 @@
   }
 
   .project-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
     font-size: 15px;
     font-weight: 500;
     color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* ── Meta ── */
@@ -199,9 +198,4 @@
     transition: width var(--dur-base) var(--ease-in-out);
   }
 
-  .project-arrow {
-    flex-shrink: 0;
-    margin-left: 16px;
-    color: var(--color-border-strong);
-  }
 </style>

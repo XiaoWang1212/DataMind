@@ -1,28 +1,40 @@
 <template>
-  <button
+  <component
+    :is="to ? RouterLink : 'button'"
     ref="root"
     class="app-btn"
-    :class="[`app-btn--${variant}`, { 'app-btn--icon-only': iconOnly }]"
-    :disabled="disabled || loading"
-    :type="type"
+    :class="[
+      `app-btn--${variant}`,
+      {
+        'app-btn--icon-only': iconOnly,
+        'app-btn--ai-loading': loading && variant === 'ai',
+      },
+    ]"
+    v-bind="to ? { to } : { disabled: disabled || loading, type }"
   >
-    <span v-if="loading" aria-hidden="true" class="app-btn-spinner" />
-    <span class="app-btn-body" :class="{ 'app-btn-body--loading': loading }">
+    <span v-if="loading && variant !== 'ai'" aria-hidden="true" class="app-btn-spinner" />
+    <span class="app-btn-body" :class="{ 'app-btn-body--loading': loading && variant !== 'ai' }">
       <slot />
     </span>
-  </button>
+  </component>
 </template>
 
 <script setup lang="ts">
+  import { RouterLink } from 'vue-router'
+
+  // 給了 to 就渲染成 RouterLink，讓「長得像按鈕的連結」不必各頁再刻一份樣式。
+  // disabled / type 只對 button 有意義，不會掛到連結上
   withDefaults(defineProps<{
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'ai'
     type?: 'button' | 'submit' | 'reset'
+    to?: string
     disabled?: boolean
     loading?: boolean
     iconOnly?: boolean
   }>(), {
     variant: 'primary',
     type: 'button',
+    to: undefined,
     disabled: false,
     loading: false,
     iconOnly: false,
@@ -44,6 +56,7 @@
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
+    text-decoration: none;
     transition: background-color var(--dur-fast) var(--ease-out),
       box-shadow var(--dur-fast) var(--ease-out),
       color var(--dur-fast) var(--ease-out),
@@ -86,6 +99,11 @@
     color: var(--color-error-text);
   }
 
+  .app-btn--ai {
+    background: linear-gradient(100deg, var(--color-ink-vivid) 0%, var(--color-ink-strong) 100%);
+    color: var(--color-inverted);
+  }
+
   /* hover 是每天會看幾十次的互動，只做底色位移與陰影兩件事。
      觸控裝置點一下就會觸發 hover 並卡在 hover 態，所以整組 gate 起來 */
   @media (hover: hover) and (pointer: fine) {
@@ -107,6 +125,14 @@
     .app-btn--danger:hover:not(:disabled) {
       background: color-mix(in oklab, var(--color-error) 14%, white);
     }
+
+    .app-btn--ai:hover:not(:disabled) {
+      background: linear-gradient(
+        100deg,
+        color-mix(in oklab, var(--color-ink-vivid) 88%, white) 0%,
+        color-mix(in oklab, var(--color-ink-strong) 88%, white) 100%
+      );
+    }
   }
 
   /* loading 時內容留在原位只是隱形，避免按鈕寬度跳動 */
@@ -126,5 +152,33 @@
 
   @keyframes app-btn-spin {
     to { transform: rotate(360deg); }
+  }
+
+  .app-btn--ai-loading {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .app-btn--ai-loading:disabled {
+    opacity: 1;
+  }
+
+  .app-btn--ai-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in oklab, var(--color-inverted) 16%, transparent) 50%,
+      transparent 80%
+    );
+    background-size: 260% 100%;
+    animation: app-btn-ai-sweep 2.4s linear infinite;
+  }
+
+  @keyframes app-btn-ai-sweep {
+    from { background-position: 140% 0; }
+    to { background-position: -140% 0; }
   }
 </style>

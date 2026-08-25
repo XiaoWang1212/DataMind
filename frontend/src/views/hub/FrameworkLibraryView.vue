@@ -19,7 +19,7 @@
     </div>
 
     <!-- Framework cards -->
-    <div class="card-grid">
+    <div class="card-grid enter-stagger">
       <div
         v-for="fw in filteredFrameworks"
         :key="fw.id"
@@ -201,7 +201,7 @@
       <div class="panel-action">
         <RouterLink
           class="use-btn"
-          :to="{ path: '/hub/projects/new', query: { framework: selectedFramework.id } }"
+          :to="{ path: '/hub/projects/new', query: { frameworkId: selectedFramework.id } }"
         >
           用於專案
         </RouterLink>
@@ -727,7 +727,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
-    font-family: var(--font-mono);
     font-size: 12px;
     color: var(--color-ink-soft);
   }

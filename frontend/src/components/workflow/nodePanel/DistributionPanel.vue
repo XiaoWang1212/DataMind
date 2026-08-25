@@ -326,21 +326,18 @@
     font-size: 13px;
   }
 
+  /* 橫排時只走水平軸，overflow-x: auto 會讓 overflow-y 從 visible 變成 auto，
+     不寫死 hidden 就會多冒一條直向捲軸 */
   .distribution-chart-grid {
     display: flex;
     gap: 12px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 8px;
     scroll-snap-type: x proximity;
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar {
-    height: 10px;
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.7);
-    border-radius: 999px;
+    scrollbar-width: thin;
+    /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
+    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, white) var(--color-border);
   }
 
   .distribution-chart-grid--full {
@@ -352,6 +349,27 @@
     min-height: 380px;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  /* macOS 的 overlay 捲軸平常是透明的，要明確給樣式才看得見。
+     滑塊用不透明色：半透明疊在淺色軌道上會被洗成白的 */
+  .distribution-chart-grid::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  .distribution-chart-grid::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: var(--color-border);
+  }
+
+  .distribution-chart-grid::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-ink) 42%, white);
+  }
+
+  .distribution-chart-grid::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--color-ink) 62%, white);
   }
 
   .distribution-chart-grid--full .distribution-chart-card {

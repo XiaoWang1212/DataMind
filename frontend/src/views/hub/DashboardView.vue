@@ -126,13 +126,12 @@
     margin-bottom: 16px;
   }
 
-  /* 虛線邊框區分「這是動作」與統計卡的「這是資料」 */
   .action-card {
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 20px;
-    border: 1px dashed var(--color-border-strong);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
     text-decoration: none;
@@ -174,8 +173,9 @@
   }
 
   /* ── 最近活動 ── */
+  /* 下緣留白，讓最後一項 hover 的底色下方還看得到卡片白底 */
   .activity-card {
-    padding: 20px 24px;
+    padding: 20px 24px 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
@@ -212,7 +212,6 @@
 
   .activity-item--last {
     border-bottom: none;
-    padding-bottom: 0;
   }
 
   .activity-name {

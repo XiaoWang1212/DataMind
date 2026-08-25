@@ -137,6 +137,7 @@
     loadWorkflowStateFromStorage,
     saveResultInsightToStorage,
   } from '@/composables/workflow/useWorkflowStorage'
+  import { pickPrimaryMetricOf } from '@/utils/workflow/summarizeWorkflowResult'
 
   const route = useRoute()
   const router = useRouter()
@@ -213,8 +214,6 @@
     'balanced_accuracy', 'accuracy', 'f1', 'auc', 'auprc', 'precision', 'recall', 'specificity', 'mcc', 'kappa',
   ]
 
-  const RANKING_PRIORITY = ['balanced_accuracy', 'accuracy', 'auc']
-
   function metricLabel (metric: string): string {
     return METRIC_LABELS[metric] ?? metric.toUpperCase()
   }
@@ -223,14 +222,10 @@
     return result.metrics.find(m => m.metric === metric)?.value ?? null
   }
 
-  const rankingMetric = computed<string | null>(() => {
-    const results = modelResults.value
-    if (results.length === 0) return null
-    for (const candidate of RANKING_PRIORITY) {
-      if (results.every(r => metricValueOf(r, candidate) !== null)) return candidate
-    }
-    return results[0]?.metrics[0]?.metric ?? null
-  })
+  // 只把「真的有算出值」的指標名交出去，沒有值的不該成為排名依據
+  const rankingMetric = computed<string | null>(() => pickPrimaryMetricOf(
+    modelResults.value.map(r => r.metrics.filter(m => m.value != null).map(m => m.metric)),
+  ))
 
   const bestResult = computed<ModelResult | null>(() => {
     const metric = rankingMetric.value
@@ -386,23 +381,23 @@
 
 <style scoped>
   .results-page {
-    --page-bg: var(--color-primary);
+    --page-bg: var(--color-ink);
     --card-bg: var(--color-surface);
-    --line: #d8dbe3;
-    --line-soft: #e8ebf1;
+    --line: var(--color-border-strong);
+    --line-soft: var(--color-border);
     --text-main: var(--color-text);
-    --text-secondary: var(--color-secondary);
-    --brand: var(--color-accent);
-    --brand-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
-    --good: #16a34a;
+    --text-secondary: var(--color-ink-soft);
+    --brand: var(--color-ink);
+    --brand-soft: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+    --good: var(--color-success-text);
     min-height: calc(100vh - 64px);
     display: flex;
     gap: 0;
     padding: 16px;
     position: relative;
     background:
-      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 38%),
-      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-accent) 16%, transparent) 0%, transparent 30%),
+      radial-gradient(circle at 8% 12%, color-mix(in oklab, var(--color-ink) 18%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 91% 89%, color-mix(in oklab, var(--color-ink) 16%, transparent) 0%, transparent 30%),
       var(--page-bg);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-main);
@@ -412,7 +407,7 @@
     flex: 1;
     min-width: 0;
     border: 1px solid var(--line);
-    border-radius: 0 12px 12px 0;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     background: var(--card-bg);
     padding: 12px 20px 18px;
     overflow: auto;
@@ -432,9 +427,9 @@
   }
 
   .toolbar-tabs {
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 4px;
-    background: #e8ebf2;
+    background: var(--color-surface-alt);
     display: inline-flex;
     gap: 4px;
   }
@@ -442,12 +437,12 @@
   .toolbar-tab {
     border: none;
     padding: 6px 12px;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     cursor: pointer;
     background: transparent;
     transition: all 0.2s ease;
@@ -469,7 +464,7 @@
   .metric-card {
     background: var(--card-bg);
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     padding: 14px;
     animation: reveal-up 0.42s ease both;
   }
@@ -493,7 +488,7 @@
   .metric-title {
     margin: 0;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--color-text);
   }
 
@@ -513,7 +508,7 @@
   .distribution-card {
     margin-top: 12px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--card-bg);
     padding: 14px 16px;
     animation: reveal-up 0.46s ease both;
@@ -538,14 +533,14 @@
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text-secondary);
     background: var(--brand-soft);
   }
 
   .imbalance-badge--warn {
-    color: #b45309;
-    background: color-mix(in oklab, #f59e0b 18%, transparent);
+    color: var(--color-warning-text);
+    background: var(--color-warning-bg);
   }
 
   .distribution-bars {
@@ -593,10 +588,10 @@
 
   .insight-card {
     margin-top: 12px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     color: var(--color-inverted);
     padding: 14px 16px;
-    background: linear-gradient(102deg, var(--color-accent) 0%, color-mix(in oklab, var(--color-accent) 70%, var(--color-text)) 100%);
+    background: linear-gradient(102deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 70%, var(--color-text)) 100%);
     animation: reveal-up 0.5s ease both;
     animation-delay: 0.12s;
   }
@@ -610,7 +605,7 @@
   .insight-icon-wrap {
     width: 28px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -648,7 +643,7 @@
   .comparison-card {
     margin-top: 12px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--color-surface);
     overflow: hidden;
     animation: reveal-up 0.55s ease both;
@@ -748,7 +743,7 @@
 
     .results-main {
       margin-top: 10px;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       padding: 12px;
     }
 

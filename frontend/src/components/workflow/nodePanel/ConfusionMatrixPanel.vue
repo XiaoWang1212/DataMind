@@ -170,17 +170,26 @@
 
         <template v-else-if="tabInsightError">
           <p class="cm-insight-error">{{ tabInsightError }}</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重試</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            重試
+          </AppButton>
         </template>
 
         <template v-else-if="currentTabInsight">
           <p class="cm-insight-text">{{ currentTabInsight }}</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">重新生成</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            重新生成
+          </AppButton>
         </template>
 
         <template v-else>
           <p class="cm-insight-empty">點擊下方按鈕，讓 AI 針對目前的圖表/表格生成一段解讀。</p>
-          <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">AI 解讀</button>
+          <AppButton :disabled="!props.projectId" variant="ai" @click="generateTabInsight">
+            <v-icon icon="mdi-shimmer" size="14" />
+            AI 解讀
+          </AppButton>
         </template>
       </div>
     </div>
@@ -195,6 +204,7 @@
   import { computed, ref, watch } from 'vue'
   import { fetchTabInsight } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
   import { loadTabInsightFromStorage, saveTabInsightToStorage } from '@/composables/workflow/useWorkflowStorage.ts'
 
   interface ConfusionMatrixData {
@@ -607,7 +617,7 @@
 
   .cm-field__label {
     font-size: 13px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     white-space: nowrap;
   }
 
@@ -617,8 +627,8 @@
 
   .cm-table-wrap {
     overflow-x: auto;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
     background: var(--color-surface);
   }
 
@@ -635,16 +645,16 @@
   .cm-header {
     padding: 10px 14px;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--color-secondary);
+    font-weight: 700;
+    color: var(--color-ink-soft);
     white-space: nowrap;
     text-align: left;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .cm-header--row {
     border-bottom: none;
-    border-right: 1px solid rgba(148, 163, 184, 0.16);
+    border-right: 1px solid var(--color-border);
   }
 
   .cm-cell {
@@ -652,16 +662,16 @@
     text-align: center;
     color: var(--color-ink);
     font-variant-numeric: tabular-nums;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .cm-cell--diagonal {
-    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    background: color-mix(in oklab, var(--color-ink) 12%, transparent);
     font-weight: 700;
   }
 
   .cm-row--lowest .cm-cell {
-    background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    background: color-mix(in oklab, var(--color-ink) 12%, transparent);
     font-weight: 700;
   }
 
@@ -673,25 +683,25 @@
   .cm-tab {
     padding: 6px 14px;
     border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.28);
+    border: 1px solid var(--color-border-strong);
     background: transparent;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     font-size: 13px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .cm-tab--active {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: #fff;
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-inverted);
   }
 
   .cm-chart-wrap {
     position: relative;
     padding: 12px 16px 28px 34px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
     background: var(--color-surface);
   }
 
@@ -704,25 +714,25 @@
 
   .cm-chart-label {
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     margin-bottom: 4px;
   }
 
   .cm-chart-diagonal {
-    stroke: rgba(148, 163, 184, 0.5);
+    stroke: var(--color-border-strong);
     stroke-width: 0.6;
     stroke-dasharray: 2 2;
     vector-effect: non-scaling-stroke;
   }
 
   .cm-chart-line {
-    stroke: var(--color-accent);
+    stroke: var(--color-ink);
     stroke-width: 1.4;
     vector-effect: non-scaling-stroke;
   }
 
   .cm-chart-point {
-    fill: var(--color-accent);
+    fill: var(--color-ink);
     stroke: var(--color-surface);
     stroke-width: 0.5;
     vector-effect: non-scaling-stroke;
@@ -730,7 +740,7 @@
 
   .cm-chart-tick {
     font-size: 6px;
-    fill: var(--color-secondary);
+    fill: var(--color-ink-soft);
   }
 
   .cm-chart-axis-x {
@@ -739,7 +749,7 @@
     bottom: 6px;
     transform: translateX(-50%);
     font-size: 11px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .cm-chart-axis-y {
@@ -749,7 +759,7 @@
     transform: translateY(-50%) rotate(-90deg);
     transform-origin: left center;
     font-size: 11px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     white-space: nowrap;
   }
 
@@ -771,17 +781,18 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 10px;
     padding: 14px 16px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
     background: var(--color-surface);
   }
 
   .cm-insight-header {
     font-size: 12px;
-    font-weight: 600;
-    color: var(--color-secondary);
+    font-weight: 500;
+    color: var(--color-ink-soft);
   }
 
   .cm-insight-empty,
@@ -796,22 +807,11 @@
   .cm-insight-error {
     margin: 0;
     font-size: 13px;
-    color: #b91c1c;
-  }
-
-  .cm-insight-btn {
-    align-self: flex-start;
-    padding: 7px 14px;
-    border-radius: 8px;
-    border: 1px solid color-mix(in oklab, var(--color-accent) 35%, transparent);
-    background: var(--color-accent);
-    color: #fff;
-    font-size: 13px;
-    cursor: pointer;
+    color: var(--color-error-text);
   }
 
   .summary-empty {
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     font-size: 13px;
   }
 </style>

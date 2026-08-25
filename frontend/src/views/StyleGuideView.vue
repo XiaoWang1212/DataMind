@@ -138,6 +138,7 @@
         </div>
         <div class="sg-bubble sg-bubble--user">年齡對應到 pt_age</div>
         <div class="sg-bubble sg-bubble--assistant">好的，已將「年齡」對應到 pt_age。</div>
+        <div class="sg-bubble sg-bubble--assistant" v-html="renderChatText(boldSample)" />
         <div class="sg-bubble sg-bubble--assistant sg-bubble--muted">思考中…</div>
       </div>
     </section>
@@ -152,6 +153,17 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">AI 思考框（提取框架頁）</h2>
+      <div class="sg-thinking-card">
+        <div class="sg-thinking-header">
+          <span class="sg-thinking-dot" />
+          AI 正在思考
+        </div>
+        <p class="sg-thinking-line">正在比對論文中的模型描述與已知方法…</p>
+      </div>
+    </section>
+
+    <section>
       <h2 class="sg-h2">資料表格（§7.4）</h2>
       <TableShell>
         <table class="ds-table">
@@ -160,13 +172,13 @@
           </thead>
           <tbody>
             <tr>
-              <td class="ds-identifier">age</td>
-              <td class="ds-identifier">int64</td>
+              <td>age</td>
+              <td>int64</td>
               <td><StatusBadge status="success">已對應</StatusBadge></td>
             </tr>
             <tr>
-              <td class="ds-identifier">bmi_score</td>
-              <td class="ds-identifier">float64</td>
+              <td>bmi_score</td>
+              <td>float64</td>
               <td><StatusBadge status="warning">待確認</StatusBadge></td>
             </tr>
           </tbody>
@@ -190,6 +202,9 @@
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import { renderChatText } from '@/utils/formatChatText'
+
+  const boldSample = '建議把 **年齡** 對應到 pt_age，其餘欄位維持不變。'
 
   const selectValue = ref('')
   const selectOptions = [
@@ -205,6 +220,7 @@
   const swatches: Swatch[] = [
     { name: 'ink（品牌藏青）', varRef: 'var(--color-ink)', hex: '#1A3159' },
     { name: 'ink-strong', varRef: 'var(--color-ink-strong)', hex: '#12244A' },
+    { name: 'ink-vivid', varRef: 'var(--color-ink-vivid)', hex: '#2B5CA8' },
     { name: 'ink-soft', varRef: 'var(--color-ink-soft)', hex: '#626B7E' },
     { name: 'text', varRef: 'var(--color-text)', hex: '#1C2130' },
     { name: 'surface', varRef: 'var(--color-surface)', hex: '#FFFFFF' },
@@ -214,10 +230,12 @@
     { name: 'border-strong', varRef: 'var(--color-border-strong)', hex: '#D3D8DC' },
     { name: 'success', varRef: 'var(--color-success)', hex: '#3B9A7F' },
     { name: 'success-bg', varRef: 'var(--color-success-bg)', hex: '#DCEAE5' },
-    { name: 'warning', varRef: 'var(--color-warning)', hex: '#D89A1F' },
-    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#FDF4D3' },
+    { name: 'warning', varRef: 'var(--color-warning)', hex: '#C88819' },
+    { name: 'warning-bg', varRef: 'var(--color-warning-bg)', hex: '#F7EECF' },
     { name: 'error（danger）', varRef: 'var(--color-error)', hex: '#D7445C' },
     { name: 'error-bg', varRef: 'var(--color-error-bg)', hex: '#F2DEE2' },
+    // 只能當圖形填色，不能當文字（見 utils/scoreColor.ts）
+    { name: 'score-low（評分填色）', varRef: 'var(--color-score-low)', hex: '#E6B800' },
   ]
 
   // §2.3：依 pipeline 角色分五類，比照 Orange 的六類配色大致順序（橘/藍/紫/綠/紅）指派
@@ -283,7 +301,6 @@
 
 .sg-swatch-var,
 .sg-swatch-hex {
-  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-ink-soft);
 }
@@ -437,8 +454,79 @@
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   margin-bottom: 8px;
-  font-family: var(--font-mono);
   font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+/* 跟 ExtractFrameworkView.vue 的 .thinking-card 同一套，維持展示用 */
+.sg-thinking-card {
+  position: relative;
+  max-width: 420px;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  background: color-mix(in oklab, var(--color-ink) 4%, var(--color-surface));
+  overflow: hidden;
+  min-height: 3.4em;
+}
+
+.sg-thinking-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    120deg,
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 75%, transparent),
+    color-mix(in oklab, var(--color-ink-vivid) 20%, transparent)
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: sg-thinking-gradient-move 3s ease infinite;
+}
+
+@keyframes sg-thinking-gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-thinking-card::before {
+    animation: none;
+  }
+}
+
+.sg-thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin-bottom: 8px;
+}
+
+.sg-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  animation: sg-thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sg-thinking-pulse {
+  0%, 100% { opacity: .3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.sg-thinking-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--color-ink-soft);
 }
 </style>
