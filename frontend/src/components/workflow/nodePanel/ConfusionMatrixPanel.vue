@@ -743,8 +743,8 @@
     position: absolute;
     left: 4px;
     top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
-    transform-origin: left center;
+    transform: rotate(-90deg) translateX(-50%);
+    transform-origin: left top;
     font-size: 11px;
     color: var(--color-secondary);
     white-space: nowrap;
