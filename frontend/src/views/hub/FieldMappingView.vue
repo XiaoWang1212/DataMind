@@ -393,7 +393,8 @@
       datasetFile: datasetFile.value,
       frameworkId: project?.frameworkId ?? null,
     })
-    router.push(`/workflow?project=${projectId.value}`)
+    // 用 replace 而不是 push：離開欄位對齊頁後，瀏覽器上一頁不該再跳回這個中繼頁
+    router.replace(`/workflow?project=${projectId.value}`)
   }
 
   // 依對映改寫表頭後交給 workflow。
@@ -438,7 +439,9 @@
 
       // 已經寫進資料庫了，草稿不用留
       clearDraft()
-      router.push(`/workflow?project=${projectId.value}`)
+      // 用 replace 而不是 push：欄位對齊完成後這一步已經處理完（資料已存檔、草稿已清），
+      // 瀏覽器上一頁不該讓使用者跳回一個「已經對齊過」的頁面
+      router.replace(`/workflow?project=${projectId.value}`)
     } catch (error) {
       // 本地狀態雖已復原，仍要顯示錯誤，避免按鈕恢復可按卻沒有任何說明
       const detail = error instanceof Error ? error.message : ''
