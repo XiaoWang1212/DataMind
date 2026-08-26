@@ -757,10 +757,13 @@
   }
 
   .cm-tab-row > .cm-table-wrap,
-  .cm-tab-row > .cm-chart-wrap,
   .cm-tab-row > .summary-empty {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  .cm-tab-row > .cm-chart-wrap {
+    flex: 0 0 auto;
   }
 
   .cm-insight-panel {
