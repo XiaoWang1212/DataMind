@@ -72,14 +72,14 @@
       <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
         <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
           <path class="cm-chart-line" :d="rocPath" fill="none" />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">FPR (0 – 1)</div>
         <div class="cm-chart-axis-y">TPR (0 – 1)</div>
@@ -92,12 +92,12 @@
         <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
           <path class="cm-chart-line" :d="prPath" fill="none" />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">Recall (0 – 1)</div>
         <div class="cm-chart-axis-y">Precision (0 – 1)</div>
@@ -109,7 +109,7 @@
       <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
         <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
           <path class="cm-chart-line" :d="calibrationPath" fill="none" />
           <circle
             v-for="(point, index) in calibrationPoints"
@@ -119,12 +119,12 @@
             :cy="point.y"
             r="1.5"
           />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
         <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
@@ -517,7 +517,7 @@
   }, { immediate: true })
 
   const CHART_SIZE = 100
-  const CHART_PADDING = 4
+  const CHART_PADDING = 18
 
   function toChartX (value: number): number {
     return CHART_PADDING + value * (CHART_SIZE - CHART_PADDING * 2)
@@ -729,7 +729,7 @@
   }
 
   .cm-chart-tick {
-    font-size: 6px;
+    font-size: 7px;
     fill: var(--color-secondary);
   }
 
