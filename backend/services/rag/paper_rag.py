@@ -457,6 +457,14 @@ class PaperRAGService:
         "perClass": "請指出表現最差的類別，並簡述可能的原因或後續建議。",
     }
 
+    _TAB_LABELS: Dict[str, str] = {
+        "matrix": "混淆矩陣",
+        "roc": "ROC 曲線",
+        "pr": "PR 曲線",
+        "calibration": "校準曲線",
+        "perClass": "各類別指標",
+    }
+
     _MAX_TAB_TEXT_CHARS = 4000
 
     @staticmethod
@@ -592,6 +600,53 @@ class PaperRAGService:
         if text.startswith("（生成失敗："):
             raise RuntimeError(text)
         return text.strip()
+
+    def chat_about_tab(
+        self,
+        mining_results: dict,
+        tab: str,
+        model_name: str,
+        split_name: str,
+        history: List[dict],
+        message: str,
+    ) -> str:
+        """針對 workflow 結果裡某個 (model × fold) 的單一分頁資料，跟使用者進行範圍限定的多輪問答。
+
+        跟 chat_about_results() 不同：這裡不帶 arXiv 查詢工具（用不帶 tools 的 self._model，
+        不是 self._chat_model），範圍限定在這個分頁的資料，不做例外處理——Gemini 呼叫本身的
+        例外、resp.text 解析例外都直接往上拋，讓路由層統一接住、回傳 success:false。
+        """
+        result = self._find_tab_result(mining_results, model_name, split_name)
+        if result is None:
+            return "找不到對應的結果資料。"
+
+        tab_text = self._format_tab_data(result, tab)
+        if tab_text is None:
+            return "此分頁沒有可供解讀的資料。"
+
+        if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
+            tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
+
+        tab_label = self._TAB_LABELS.get(tab, tab)
+        context_turns = [
+            {
+                "role": "user",
+                "parts": [
+                    f"以下是這次機器學習實驗中「{tab_label}」的資料，請記住這些資訊，"
+                    "之後我會針對這個圖表/表格提問。"
+                    "你只能回答跟這個圖表或這次 workflow 執行結果直接相關的問題；"
+                    "如果我問到無關的話題（例如其他學術文獻查證、與此資料無關的閒聊），"
+                    "請禮貌地簡短說明你只能討論這個分頁的內容，不需要展開回答。\n\n"
+                    f"{tab_text}"
+                ],
+            },
+            {"role": "model", "parts": [f"好的，我已經了解「{tab_label}」這個分頁的資料，請問有什麼問題？"]},
+        ]
+        prior_turns = [{"role": h["role"], "parts": [h["text"]]} for h in history]
+
+        chat = self._model.start_chat(history=context_turns + prior_turns)
+        resp = chat.send_message(message)
+        return (getattr(resp, "text", "") or "").strip()
 
     def score_paper(self, paper_text: str) -> dict:
         """依 _JOURNAL_RUBRICS 對論文全文逐期刊評分，各期刊各一次獨立的 Gemini JSON 呼叫。

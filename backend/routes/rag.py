@@ -489,6 +489,47 @@ def generate_tab_insight():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@rag_bp.route("/tab-chat", methods=["POST"])
+def chat_about_tab():
+    """針對 workflow 結果裡某個分頁（混淆矩陣/ROC/PR/校準曲線/各類別指標），進行範圍限定的多輪問答
+
+    JSON body:
+        - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
+        - tab             : 'matrix' | 'roc' | 'pr' | 'calibration' | 'perClass'（必填）
+        - model_name      : 要問哪個模型的結果（必填）
+        - split_name      : 要問哪個 fold/split（必填）
+        - history         : 對話歷史 [{role: "user"|"model", text: str}]（選填，預設空陣列）
+        - message         : 本輪使用者輸入（必填）
+
+    回傳：
+        - reply : AI 回覆文字
+    """
+    from services.rag.paper_rag import get_paper_rag_service
+
+    data = request.get_json()
+    if not data or data.get("mining_results") is None:
+        return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
+    tab = data.get("tab")
+    model_name = data.get("model_name")
+    split_name = data.get("split_name")
+    message = (data.get("message") or "").strip()
+    if not tab or not model_name or not split_name:
+        return jsonify({"success": False, "error": "tab、model_name、split_name 為必填欄位"}), 400
+    if not message:
+        return jsonify({"success": False, "error": "message 為必填欄位"}), 400
+
+    history = data.get("history") or []
+    service = get_paper_rag_service()
+
+    try:
+        reply = service.chat_about_tab(data["mining_results"], tab, model_name, split_name, history, message)
+        return jsonify({"success": True, "reply": reply})
+
+    except Exception as e:
+        logger.exception("分頁問答失敗")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @rag_bp.route("/score-paper", methods=["POST"])
 def score_paper():
     """對論文全文，依固定的期刊評分準則逐一評分
