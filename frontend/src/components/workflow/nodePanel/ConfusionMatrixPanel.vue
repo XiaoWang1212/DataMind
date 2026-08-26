@@ -686,7 +686,7 @@
 
   .cm-chart-wrap {
     position: relative;
-    padding: 12px 16px 28px 34px;
+    padding: 12px 16px 28px 52px;
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 12px;
     background: var(--color-surface);
@@ -741,7 +741,7 @@
 
   .cm-chart-axis-y {
     position: absolute;
-    left: 6px;
+    left: 4px;
     top: 50%;
     transform: translateY(-50%) rotate(-90deg);
     transform-origin: left center;
