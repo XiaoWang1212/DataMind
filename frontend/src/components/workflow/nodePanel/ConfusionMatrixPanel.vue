@@ -77,8 +77,8 @@
           <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">FPR (0 – 1)</div>
         <div class="cm-chart-axis-y">TPR (0 – 1)</div>
@@ -94,8 +94,8 @@
           <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">Recall (0 – 1)</div>
         <div class="cm-chart-axis-y">Precision (0 – 1)</div>
@@ -120,8 +120,8 @@
           <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
         <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
