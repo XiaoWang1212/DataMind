@@ -195,8 +195,8 @@
             <p class="cm-chat-bubble-text">{{ msg.text }}</p>
           </div>
           <p v-if="isCurrentTabChatLoading" class="cm-insight-loading">AI 思考中...</p>
-          <template v-if="tabChatError">
-            <p class="cm-insight-error">{{ tabChatError }}</p>
+          <template v-if="currentTabChatError">
+            <p class="cm-insight-error">{{ currentTabChatError }}</p>
             <button
               class="cm-insight-btn"
               :disabled="!props.projectId || isCurrentTabChatLoading"
@@ -553,13 +553,17 @@
   const tabChatCache = ref<Map<string, TabChatMessage[]>>(new Map())
   const tabChatInput = ref('')
   const tabChatLoadingKey = ref<string | null>(null)
-  const tabChatError = ref<string | null>(null)
+  const tabChatError = ref<Map<string, string>>(new Map())
 
   const currentTabChatMessages = computed(() =>
     tabChatCache.value.get(currentTabInsightKey.value) ?? [],
   )
 
   const isCurrentTabChatLoading = computed(() => tabChatLoadingKey.value === currentTabInsightKey.value)
+
+  const currentTabChatError = computed(() =>
+    tabChatError.value.get(currentTabInsightKey.value) ?? null,
+  )
 
   // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
   // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
@@ -570,14 +574,20 @@
     const key = tabInsightCacheKey(tab, model, fold)
 
     tabChatLoadingKey.value = key
-    tabChatError.value = null
+    if (tabChatError.value.has(key)) {
+      const nextError = new Map(tabChatError.value)
+      nextError.delete(key)
+      tabChatError.value = nextError
+    }
     try {
       const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
       const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
       tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
       saveTabChatToStorage(props.projectId, model, fold, tab, messages)
     } catch (error) {
-      tabChatError.value = error instanceof Error ? error.message : String(error)
+      tabChatError.value = new Map(tabChatError.value).set(
+        key, error instanceof Error ? error.message : String(error),
+      )
     } finally {
       if (tabChatLoadingKey.value === key) {
         tabChatLoadingKey.value = null
@@ -618,7 +628,6 @@
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
   watch([activeTab, selectedModel, selectedFold], () => {
     tabInsightError.value = null
-    tabChatError.value = null
     tabChatInput.value = ''
     if (!props.projectId) return
     const tab = activeTab.value
