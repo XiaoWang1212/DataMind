@@ -179,6 +179,51 @@
           <p class="cm-insight-empty">點擊下方按鈕，讓 AI 針對目前的圖表/表格生成一段解讀。</p>
           <button class="cm-insight-btn" :disabled="!props.projectId" type="button" @click="generateTabInsight">AI 解讀</button>
         </template>
+
+        <div class="cm-chat-divider" />
+
+        <div class="cm-chat-thread">
+          <p v-if="currentTabChatMessages.length === 0" class="cm-chat-empty">
+            針對這個圖表/表格有任何問題，都可以在下方提問。
+          </p>
+          <div
+            v-for="(msg, index) in currentTabChatMessages"
+            :key="index"
+            class="cm-chat-bubble"
+            :class="`cm-chat-bubble--${msg.role}`"
+          >
+            <p class="cm-chat-bubble-text">{{ msg.text }}</p>
+          </div>
+          <p v-if="isCurrentTabChatLoading" class="cm-insight-loading">AI 思考中...</p>
+          <template v-if="tabChatError">
+            <p class="cm-insight-error">{{ tabChatError }}</p>
+            <button
+              class="cm-insight-btn"
+              :disabled="!props.projectId || isCurrentTabChatLoading"
+              type="button"
+              @click="retryTabChatMessage"
+            >
+              重試
+            </button>
+          </template>
+        </div>
+
+        <form class="cm-chat-input-row" @submit.prevent="sendTabChatMessage">
+          <input
+            v-model="tabChatInput"
+            class="cm-chat-input"
+            type="text"
+            placeholder="針對這個圖表提問..."
+            :disabled="!props.projectId || isCurrentTabChatLoading"
+          >
+          <button
+            class="cm-insight-btn"
+            type="submit"
+            :disabled="!props.projectId || isCurrentTabChatLoading || !tabChatInput.trim()"
+          >
+            送出
+          </button>
+        </form>
       </div>
     </div>
 
@@ -190,9 +235,14 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
-  import { fetchTabInsight } from '@/api/insight'
+  import { fetchTabChatReply, fetchTabInsight, type TabChatMessage } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
-  import { loadTabInsightFromStorage, saveTabInsightToStorage } from '@/composables/workflow/useWorkflowStorage.ts'
+  import {
+    loadTabChatFromStorage,
+    loadTabInsightFromStorage,
+    saveTabChatToStorage,
+    saveTabInsightToStorage,
+  } from '@/composables/workflow/useWorkflowStorage.ts'
 
   interface ConfusionMatrixData {
     labels: string[]
@@ -498,18 +548,94 @@
     }
   }
 
+  // 每個 (tab, model, fold) 組合各自獨立一串對話，key 格式跟 tabInsightCache 完全一樣，
+  // 直接共用 tabInsightCacheKey()/currentTabInsightKey，不需要另外一套 key 邏輯
+  const tabChatCache = ref<Map<string, TabChatMessage[]>>(new Map())
+  const tabChatInput = ref('')
+  const tabChatLoadingKey = ref<string | null>(null)
+  const tabChatError = ref<string | null>(null)
+
+  const currentTabChatMessages = computed(() =>
+    tabChatCache.value.get(currentTabInsightKey.value) ?? [],
+  )
+
+  const isCurrentTabChatLoading = computed(() => tabChatLoadingKey.value === currentTabInsightKey.value)
+
+  // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
+  // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
+  async function requestTabChatReply (
+    tab: TabKey, model: string, fold: string, history: TabChatMessage[], text: string,
+  ): Promise<void> {
+    if (!props.projectId || !props.workflowResult) return
+    const key = tabInsightCacheKey(tab, model, fold)
+
+    tabChatLoadingKey.value = key
+    tabChatError.value = null
+    try {
+      const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
+      const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
+      tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
+      saveTabChatToStorage(props.projectId, model, fold, tab, messages)
+    } catch (error) {
+      tabChatError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      if (tabChatLoadingKey.value === key) {
+        tabChatLoadingKey.value = null
+      }
+    }
+  }
+
+  async function sendTabChatMessage (): Promise<void> {
+    const text = tabChatInput.value.trim()
+    if (!text || !props.projectId || !props.workflowResult) return
+
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+    const history = tabChatCache.value.get(key) ?? []
+
+    tabChatInput.value = ''
+    tabChatCache.value = new Map(tabChatCache.value).set(key, [...history, { role: 'user' as const, text }])
+
+    await requestTabChatReply(tab, model, fold, history, text)
+  }
+
+  // 失敗時使用者的訊息還留在畫面上（陣列最後一筆是 role:'user'），重試就是拿掉那一筆當 history、
+  // 用同一則訊息內容再打一次 API，不會讓使用者的問題重複出現在 history 裡
+  function retryTabChatMessage (): void {
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+    const messages = tabChatCache.value.get(key) ?? []
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== 'user') return
+    const history = messages.slice(0, -1)
+    void requestTabChatReply(tab, model, fold, history, lastMessage.text)
+  }
+
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
   watch([activeTab, selectedModel, selectedFold], () => {
     tabInsightError.value = null
+    tabChatError.value = null
+    tabChatInput.value = ''
     if (!props.projectId) return
     const tab = activeTab.value
     const model = selectedModel.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
-    if (tabInsightCache.value.has(key)) return
-    const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
-    if (cached !== null) {
-      tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
+    if (!tabInsightCache.value.has(key)) {
+      const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
+      if (cached !== null) {
+        tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
+      }
+    }
+    if (!tabChatCache.value.has(key)) {
+      const cachedChat = loadTabChatFromStorage(props.projectId, model, fold, tab)
+      if (cachedChat.length > 0) {
+        tabChatCache.value = new Map(tabChatCache.value).set(key, cachedChat)
+      }
     }
   }, { immediate: true })
 
@@ -808,6 +934,67 @@
     color: #fff;
     font-size: 13px;
     cursor: pointer;
+  }
+
+  .cm-chat-divider {
+    height: 1px;
+    background: rgba(148, 163, 184, 0.22);
+  }
+
+  .cm-chat-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cm-chat-empty {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-secondary);
+  }
+
+  .cm-chat-bubble {
+    max-width: 90%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+  }
+
+  .cm-chat-bubble--user {
+    align-self: flex-end;
+    background: color-mix(in oklab, var(--color-accent) 16%, transparent);
+  }
+
+  .cm-chat-bubble--model {
+    align-self: flex-start;
+  }
+
+  .cm-chat-bubble-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-ink);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .cm-chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .cm-chat-input {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-size: 13px;
+  }
+
+  .cm-chat-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
   }
 
   .summary-empty {
