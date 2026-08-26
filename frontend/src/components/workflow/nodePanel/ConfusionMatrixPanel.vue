@@ -190,11 +190,14 @@
             v-for="(msg, index) in currentTabChatMessages"
             :key="index"
             class="cm-chat-bubble"
-            :class="`cm-chat-bubble--${msg.role}`"
+            :class="[`cm-chat-bubble--${msg.role}`, { 'cm-chat-bubble--typing': typingStates.has(chatMessageKey(index)) }]"
           >
-            <p class="cm-chat-bubble-text">{{ msg.text }}</p>
+            <p class="cm-chat-bubble-text">{{ typingStates.get(chatMessageKey(index)) ?? msg.text }}</p>
           </div>
-          <p v-if="isCurrentTabChatLoading" class="cm-insight-loading">AI 思考中...</p>
+          <p v-if="isCurrentTabChatLoading" class="cm-insight-loading cm-thinking">
+            AI 思考中
+            <span class="cm-thinking-dots"><span /><span /><span /></span>
+          </p>
           <template v-if="currentTabChatError">
             <p class="cm-insight-error">{{ currentTabChatError }}</p>
             <button
@@ -234,7 +237,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import { fetchTabChatReply, fetchTabInsight, type TabChatMessage } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import {
@@ -570,6 +573,42 @@
     tabChatError.value.get(currentTabInsightKey.value) ?? null,
   )
 
+  // 打字機效果：只有「剛收到的這一則」AI 回覆會逐字顯示，從 localStorage/快取讀回來的舊訊息
+  // 直接整段顯示，不會每次切回這個分頁又重播一次。key 是 `${組合key}::${訊息在陣列裡的 index}`，
+  // 播放中途切走分頁也沒關係——timer 還是會跑完，只是使用者當下看不到（chatMessageKey 是用
+  // 目前顯示中的組合算出來的，跟正在播放的訊息 key 對不上時，畫面就直接顯示完整文字）
+  const typingStates = ref<Map<string, string>>(new Map())
+  const typingTimers = new Map<string, ReturnType<typeof setInterval>>()
+  const TYPEWRITER_INTERVAL_MS = 18
+
+  function chatMessageKey (index: number): string {
+    return `${currentTabInsightKey.value}::${index}`
+  }
+
+  function startTypewriter (msgKey: string, fullText: string): void {
+    const existingTimer = typingTimers.get(msgKey)
+    if (existingTimer) clearInterval(existingTimer)
+
+    let shown = 0
+    const timer = setInterval(() => {
+      shown += 1
+      typingStates.value = new Map(typingStates.value).set(msgKey, fullText.slice(0, shown))
+      if (shown >= fullText.length) {
+        clearInterval(timer)
+        typingTimers.delete(msgKey)
+        const next = new Map(typingStates.value)
+        next.delete(msgKey)
+        typingStates.value = next
+      }
+    }, TYPEWRITER_INTERVAL_MS)
+    typingTimers.set(msgKey, timer)
+  }
+
+  onBeforeUnmount(() => {
+    for (const timer of typingTimers.values()) clearInterval(timer)
+    typingTimers.clear()
+  })
+
   // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
   // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
   async function requestTabChatReply (
@@ -589,6 +628,7 @@
       const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
       tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
       saveTabChatToStorage(props.projectId, model, fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES))
+      startTypewriter(`${key}::${messages.length - 1}`, reply)
     } catch (error) {
       tabChatError.value = new Map(tabChatError.value).set(
         key, error instanceof Error ? error.message : String(error),
@@ -945,6 +985,40 @@
     line-height: 1.6;
   }
 
+  .cm-thinking-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .cm-thinking-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: cm-thinking-bounce 1.2s infinite ease-in-out;
+  }
+
+  .cm-thinking-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .cm-thinking-dots span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes cm-thinking-bounce {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
   .cm-insight-error {
     margin: 0;
     font-size: 13px;
@@ -1001,6 +1075,19 @@
     color: var(--color-ink);
     line-height: 1.5;
     white-space: pre-wrap;
+  }
+
+  .cm-chat-bubble--typing .cm-chat-bubble-text::after {
+    content: '▍';
+    display: inline-block;
+    margin-left: 1px;
+    animation: cm-typing-cursor 0.8s steps(1) infinite;
+  }
+
+  @keyframes cm-typing-cursor {
+    50% {
+      opacity: 0;
+    }
   }
 
   .cm-chat-input-row {
