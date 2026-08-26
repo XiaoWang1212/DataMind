@@ -163,7 +163,10 @@
       <div v-if="hasCurrentTabData" class="cm-insight-panel">
         <div class="cm-insight-header">AI 解讀</div>
 
-        <p v-if="isCurrentTabInsightLoading" class="cm-insight-loading">生成中...</p>
+        <p v-if="isCurrentTabInsightLoading" class="cm-insight-loading cm-thinking">
+          生成中
+          <span class="cm-thinking-dots"><span /><span /><span /></span>
+        </p>
 
         <template v-else-if="tabInsightError">
           <p class="cm-insight-error">{{ tabInsightError }}</p>
