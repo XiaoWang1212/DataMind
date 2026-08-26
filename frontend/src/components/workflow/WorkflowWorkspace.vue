@@ -139,6 +139,7 @@
   import { useWorkflowImport } from '@/composables/workflow/useWorkflowImport.ts'
   import { useWorkflowNodes } from '@/composables/workflow/useWorkflowNodes.ts'
   import {
+    clearAllTabChatsFromStorage,
     clearAllTabInsightsFromStorage,
     clearResultInsightFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -335,6 +336,7 @@
     if (projectId.value) {
       clearResultInsightFromStorage(projectId.value)
       clearAllTabInsightsFromStorage(projectId.value)
+      clearAllTabChatsFromStorage(projectId.value)
     }
     dataTableApplied.value = true
     workflowError.value = null
@@ -347,6 +349,7 @@
     if (projectId.value) {
       clearResultInsightFromStorage(projectId.value)
       clearAllTabInsightsFromStorage(projectId.value)
+      clearAllTabChatsFromStorage(projectId.value)
     }
     markProjectRunning()
     continueWorkflow()
