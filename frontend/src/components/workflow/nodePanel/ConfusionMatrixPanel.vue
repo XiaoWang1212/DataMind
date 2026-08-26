@@ -552,14 +552,19 @@
   // 直接共用 tabInsightCacheKey()/currentTabInsightKey，不需要另外一套 key 邏輯
   const tabChatCache = ref<Map<string, TabChatMessage[]>>(new Map())
   const tabChatInput = ref('')
-  const tabChatLoadingKey = ref<string | null>(null)
+  // 用 Set 而非單一 ref，讓不同組合可以同時各自處於 loading 狀態，
+  // 避免在 A 送出後切到 B 又送出，B 把 A 的 loading 狀態蓋掉
+  const tabChatLoadingKeys = ref<Set<string>>(new Set())
   const tabChatError = ref<Map<string, string>>(new Map())
+  // 只保留最近 N 則訊息寫入 localStorage，避免單一組合的對話無上限成長撐爆 quota
+  // （purgeLegacyDataFileEntries() 的註解記錄過同類問題曾經因為 localStorage 爆量而讓其他地方存檔悄悄失敗）
+  const MAX_PERSISTED_MESSAGES = 40
 
   const currentTabChatMessages = computed(() =>
     tabChatCache.value.get(currentTabInsightKey.value) ?? [],
   )
 
-  const isCurrentTabChatLoading = computed(() => tabChatLoadingKey.value === currentTabInsightKey.value)
+  const isCurrentTabChatLoading = computed(() => tabChatLoadingKeys.value.has(currentTabInsightKey.value))
 
   const currentTabChatError = computed(() =>
     tabChatError.value.get(currentTabInsightKey.value) ?? null,
@@ -573,7 +578,7 @@
     if (!props.projectId || !props.workflowResult) return
     const key = tabInsightCacheKey(tab, model, fold)
 
-    tabChatLoadingKey.value = key
+    tabChatLoadingKeys.value = new Set(tabChatLoadingKeys.value).add(key)
     if (tabChatError.value.has(key)) {
       const nextError = new Map(tabChatError.value)
       nextError.delete(key)
@@ -583,15 +588,15 @@
       const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
       const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
       tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
-      saveTabChatToStorage(props.projectId, model, fold, tab, messages)
+      saveTabChatToStorage(props.projectId, model, fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES))
     } catch (error) {
       tabChatError.value = new Map(tabChatError.value).set(
         key, error instanceof Error ? error.message : String(error),
       )
     } finally {
-      if (tabChatLoadingKey.value === key) {
-        tabChatLoadingKey.value = null
-      }
+      const nextLoadingKeys = new Set(tabChatLoadingKeys.value)
+      nextLoadingKeys.delete(key)
+      tabChatLoadingKeys.value = nextLoadingKeys
     }
   }
 
@@ -603,10 +608,22 @@
     const model = selectedModel.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
-    const history = tabChatCache.value.get(key) ?? []
+    const cachedMessages = tabChatCache.value.get(key) ?? []
+    // 如果上一則還是「還沒被回覆的 user 訊息」（送出失敗留下的），視為使用者放棄那次嘗試，
+    // 把它從 history 跟畫面快取裡都拿掉，避免產生連續兩筆 user 訊息、破壞跟後端對話輪替的順序
+    const hasTrailingUnansweredUserMessage =
+      cachedMessages[cachedMessages.length - 1]?.role === 'user'
+    const history = hasTrailingUnansweredUserMessage
+      ? cachedMessages.slice(0, -1)
+      : cachedMessages
 
     tabChatInput.value = ''
     tabChatCache.value = new Map(tabChatCache.value).set(key, [...history, { role: 'user' as const, text }])
+    if (tabChatError.value.has(key)) {
+      const nextError = new Map(tabChatError.value)
+      nextError.delete(key)
+      tabChatError.value = nextError
+    }
 
     await requestTabChatReply(tab, model, fold, history, text)
   }
