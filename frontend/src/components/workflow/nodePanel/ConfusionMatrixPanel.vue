@@ -74,10 +74,9 @@
         <svg class="cm-chart" viewBox="0 0 100 100">
           <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
           <path class="cm-chart-line" :d="rocPath" fill="none" />
-          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
@@ -92,10 +91,9 @@
         <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
           <path class="cm-chart-line" :d="prPath" fill="none" />
-          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
@@ -119,10 +117,9 @@
             :cy="point.y"
             r="1.5"
           />
-          <text class="cm-chart-tick" x="18" y="90">0</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
           <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
           <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="82">0</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="50">0.5</text>
           <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="16" y="18">1</text>
         </svg>
