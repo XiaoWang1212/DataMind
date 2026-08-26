@@ -143,13 +143,13 @@
   .upload-dropzone {
     min-height: 210px;
     padding: 28px 20px;
-    border: 2px dashed rgba(148, 163, 184, 0.8);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-lg);
     display: grid;
     place-items: center;
     text-align: center;
     gap: 14px;
-    background: rgba(236, 246, 255, 0.68);
+    background: var(--color-surface-alt);
     transition: border-color var(--dur-base) ease, background var(--dur-base) ease;
   }
 

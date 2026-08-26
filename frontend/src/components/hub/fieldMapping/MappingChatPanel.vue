@@ -24,9 +24,8 @@
         :key="i"
         class="chat-bubble enter-rise"
         :class="`chat-bubble--${message.role}`"
-      >
-        {{ message.content }}
-      </div>
+        v-html="renderChatText(message.content)"
+      />
       <div v-if="pending" class="chat-bubble chat-bubble--assistant chat-bubble--pending enter-rise">
         思考中…
       </div>
@@ -58,6 +57,7 @@
   import type { ChatMessage } from '@/types/fieldMapping'
   import { nextTick, ref, watch } from 'vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { renderChatText } from '@/utils/formatChatText'
 
   const props = defineProps<{
     history: ChatMessage[]

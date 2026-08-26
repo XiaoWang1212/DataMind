@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
+from flask_login import login_required
 
 from services.whisper_service import WhisperSTTService
 
@@ -19,6 +20,7 @@ def _is_allowed_file(filename: str) -> bool:
 
 
 @stt_bp.post("/transcribe")
+@login_required
 def transcribe_audio():
     if "audio" not in request.files:
         return jsonify({"error": "Missing file field: audio"}), 400

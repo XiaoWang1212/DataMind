@@ -6,7 +6,6 @@
 @theme static {
   --font-heading: "Roboto", sans-serif;
   --font-body: "Roboto", sans-serif;
-  --font-mono: "Roboto Mono", monospace;
 
   /* docs/DESIGN_SYSTEM.md §4.2。pill 用 Tailwind 內建的 rounded-full(9999px)，不另外造 token */
   --radius-sm: 8px;
@@ -51,6 +50,7 @@
      （見 docs/superpowers/specs/2026-08-10-design-token-foundation-design.md） */
   --color-ink: rgb(var(--v-theme-primary));
   --color-ink-strong: rgb(var(--v-theme-ink-strong));
+  --color-ink-vivid: rgb(var(--v-theme-ink-vivid));
   --color-ink-soft: rgb(var(--v-theme-secondary));
   --color-surface-alt: rgb(var(--v-theme-surface-alt));
   --color-page: rgb(var(--v-theme-background));
@@ -62,6 +62,7 @@
   --color-success-text: rgb(var(--v-theme-success-text));
   --color-warning-text: rgb(var(--v-theme-warning-text));
   --color-error-text: rgb(var(--v-theme-error-text));
+  --color-score-low: rgb(var(--v-theme-score-low));
   --color-node-source: rgb(var(--v-theme-node-source));
   --color-node-transform: rgb(var(--v-theme-node-transform));
   --color-node-visualize: rgb(var(--v-theme-node-visualize));

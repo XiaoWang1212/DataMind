@@ -79,6 +79,7 @@ export async function generateFromArxiv (params: {
   topic: string
   miningResults: Record<string, unknown>
   selectedCandidates: ArxivCandidate[]
+  projectId: string
 }): Promise<ArxivGenerateResult> {
   const response = await fetch('/api/rag/arxiv/generate', {
     method: 'POST',
@@ -87,6 +88,7 @@ export async function generateFromArxiv (params: {
       topic: params.topic,
       mining_results: params.miningResults,
       selected_candidates: params.selectedCandidates,
+      project_id: params.projectId,
     }),
   })
 

@@ -1,9 +1,11 @@
 import json
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from werkzeug.utils import secure_filename
 
 from flask import Blueprint, jsonify, request
+from flask_login import current_user, login_required
 from services.model.registry import extract_model_components
 from services.workflow import WorkflowService
 from services.workflow.extraction_mapper import build_workflow_payload
@@ -13,6 +15,11 @@ model_bp = Blueprint("model", __name__)
 
 ALLOWED_DATA_EXTENSIONS = {"json"}
 ALLOWED_DATA_FILE_EXTENSIONS = {"csv", "xlsx", "xls"}
+
+# 上傳的訓練資料一律落在這個目錄內；data_path 不管是不是本次請求上傳產生的，
+# 使用前都要確認 resolve 後仍在這裡面，避免任意檔案讀取。
+UPLOAD_DATA_DIR = (Path(__file__).parent.parent / "uploads" / "workflow").resolve()
+UPLOAD_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _is_allowed_json_file(filename: str) -> bool:
@@ -31,12 +38,23 @@ def _save_uploaded_file(uploaded, upload_dir: Path) -> Path:
     raw_name = uploaded.filename or "data"
     ext = raw_name.rsplit(".", 1)[1].lower() if "." in raw_name else "csv"
     safe_stem = secure_filename(raw_name.rsplit(".", 1)[0]) or "data"
-    safe_name = f"{safe_stem}.{ext}"
+    # uuid 前綴避免兩個使用者同時上傳同名檔案時互相覆蓋
+    safe_name = f"{uuid.uuid4().hex[:8]}_{safe_stem}.{ext}"
 
     upload_dir.mkdir(parents=True, exist_ok=True)
     destination = upload_dir / safe_name
     uploaded.save(str(destination))
     return destination
+
+
+def _confine_data_path(data_path: str) -> str:
+    """驗證 data_path resolve 後仍落在 UPLOAD_DATA_DIR 內，避免任意檔案讀取。"""
+    resolved = Path(data_path).resolve()
+    try:
+        resolved.relative_to(UPLOAD_DATA_DIR)
+    except ValueError:
+        raise ValueError("data_path 必須位於允許的上傳目錄內")
+    return str(resolved)
 
 
 def _parse_json_field(value: Any) -> Any:
@@ -64,6 +82,7 @@ def _load_request_payload() -> Dict[str, Any]:
 
 
 @model_bp.post("/extract-components")
+@login_required
 def extract_components():
     payload: Optional[Dict[str, Any]] = None
     uploaded = request.files.get("file")
@@ -92,6 +111,7 @@ def extract_components():
 
 
 @model_bp.post("/preprocess/variants")
+@login_required
 def preprocess_variants():
     payload = request.get_json(silent=True) or {}
     step_groups = payload.get("step_groups", [])
@@ -104,6 +124,7 @@ def preprocess_variants():
 
 
 @model_bp.get("/available")
+@login_required
 def available_models():
     try:
         available = WorkflowService.list_registered_models()
@@ -113,6 +134,7 @@ def available_models():
 
 
 @model_bp.post("/score/variants")
+@login_required
 def score_variants():
     payload = request.get_json(silent=True) or {}
     score_groups = payload.get("score_groups", [])
@@ -216,7 +238,9 @@ def _parse_execute_params() -> Tuple[Optional[str], Dict[str, Any]]:
     if uploaded and uploaded.filename:
         if not _is_allowed_data_file(uploaded.filename):
             raise ValueError("Unsupported file format. Accepted: .csv, .xlsx, .xls")
-        data_path = str(_save_uploaded_file(uploaded, Path("uploads/workflow")))
+        data_path = str(_save_uploaded_file(uploaded, UPLOAD_DATA_DIR))
+    elif data_path:
+        data_path = _confine_data_path(data_path)
 
     kwargs: Dict[str, Any] = dict(
         target_col=target_col,
@@ -241,6 +265,7 @@ def _parse_execute_params() -> Tuple[Optional[str], Dict[str, Any]]:
 
 
 @model_bp.post("/workflow/execute")
+@login_required
 def execute_workflow():
     payload = _load_request_payload()
     uploaded = request.files.get("file")
@@ -344,7 +369,12 @@ def execute_workflow():
             return jsonify({
                 "error": "Unsupported file format. Accepted: .csv, .xlsx, .xls"
             }), 400
-        data_path = str(_save_uploaded_file(uploaded, Path("uploads/workflow")))
+        data_path = str(_save_uploaded_file(uploaded, UPLOAD_DATA_DIR))
+    elif data_path:
+        try:
+            data_path = _confine_data_path(data_path)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
 
     if not data_path:
         return jsonify({"error": "data_path or file upload is required."}), 400
@@ -380,6 +410,7 @@ def execute_workflow():
 
 
 @model_bp.post("/workflow/jobs")
+@login_required
 def create_workflow_job():
     """背景執行 workflow：立即回傳 job_id，模型訓練在獨立 thread 跑，不綁定這條 HTTP 連線。"""
     try:
@@ -390,15 +421,16 @@ def create_workflow_job():
     if not data_path:
         return jsonify({"error": "data_path or file upload is required."}), 400
 
-    job_id = start_job(data_path=data_path, **kwargs)
+    job_id = start_job(data_path=data_path, user_id=current_user.id, **kwargs)
     job = get_job(job_id)
     return jsonify({"job_id": job_id, "total_models": job.total_models if job else 0})
 
 
 @model_bp.get("/workflow/jobs/<job_id>")
+@login_required
 def get_workflow_job(job_id: str):
     job = get_job(job_id)
-    if job is None:
+    if job is None or job.user_id != current_user.id:
         return jsonify({"error": "Job not found"}), 404
 
     return jsonify({

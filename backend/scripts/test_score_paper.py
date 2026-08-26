@@ -48,10 +48,6 @@ def main():
 
     from services.rag.paper_rag import PaperRAGService
 
-    test_index_dir = BACKEND_DIR / "artifacts" / "test_score_index"
-    test_index_dir.mkdir(parents=True, exist_ok=True)
-    os.environ["RAG_INDEX_DIR"] = str(test_index_dir)
-
     service = PaperRAGService()
 
     result = service.score_paper(SAMPLE_PAPER_TEXT)

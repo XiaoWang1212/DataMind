@@ -249,8 +249,13 @@
     const allDatetime
       = trimmed.length > 0 && trimmed.every(value => isLikelyDate(value))
     const isCategorical = trimmed.length > 0 && uniqueValues.size <= 20
+    // 只有兩種不同數值的欄位（例如 0/1、1/2）幾乎都是二元類別旗標，不是要拿來算
+    // 平均值的連續量，候選順序把 categorial 排到 numeric 前面，讓它變成預設值；
+    // numeric 仍留在候選清單裡，使用者可以自己在 Type 下拉選單改回來
+    const isBinaryNumeric = allNumeric && uniqueValues.size === 2
 
     const candidates: ColumnType[] = []
+    if (isBinaryNumeric) candidates.push('categorial')
     if (allNumeric) candidates.push('numeric')
     if (allDatetime) candidates.push('datetime')
     if (isCategorical || (!allNumeric && !allDatetime))
@@ -470,7 +475,7 @@
     gap: 12px;
     padding: 24px;
     border-radius: var(--radius-lg);
-    border: 1px dashed rgba(96, 165, 250, 0.7);
+    border: 1px solid var(--color-border-strong);
     background: rgba(255, 255, 255, 0.88);
     color: var(--color-accent);
     font-size: 14px;

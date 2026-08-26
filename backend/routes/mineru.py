@@ -2,10 +2,12 @@ import logging
 import os
 import re
 import json
+import uuid
 from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
+from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 from services.mineru_service import AnalysisInput, MinerUService, truncate_content
@@ -20,6 +22,12 @@ OUTPUT_DIR = Path(__file__).parent.parent / "artifacts" / "mineru"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"txt", "md", "pdf"}
+
+
+def _unique_safe_name(original_name: str, fallback_ext: str) -> str:
+    """避免多人同時上傳同名檔案時互相覆蓋，檔名前綴一段短 uuid。"""
+    safe_name = secure_filename(original_name) or f"paper{fallback_ext}"
+    return f"{uuid.uuid4().hex[:8]}_{safe_name}"
 
 
 def parse_bool(value, default: bool = False) -> bool:
@@ -384,6 +392,7 @@ def extract_text_from_file(file_path: Path) -> str:
 
 
 @mineru_bp.route("/ai-analyze-simple", methods=["POST"])
+@login_required
 def ai_analyze_simple():
     """MinerU 簡化入口：只傳論文檔案即可返回分析結果"""
     try:
@@ -411,7 +420,7 @@ def ai_analyze_simple():
             400,
         )
 
-    safe_name = secure_filename(original_name) or f"paper{ext}"
+    safe_name = _unique_safe_name(original_name, ext)
     file_path = UPLOAD_DIR / safe_name
     file.save(file_path)
 
@@ -479,6 +488,7 @@ def ai_analyze_simple():
 
 
 @mineru_bp.route("/ai-analyze", methods=["POST"])
+@login_required
 def ai_analyze_paper():
     """MinerU 論文分析入口
 
@@ -524,7 +534,7 @@ def ai_analyze_paper():
                 400,
             )
 
-        safe_name = secure_filename(original_name) or f"paper{ext}"
+        safe_name = _unique_safe_name(original_name, ext)
         file_path = UPLOAD_DIR / safe_name
         file.save(file_path)
 

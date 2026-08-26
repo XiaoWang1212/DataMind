@@ -23,7 +23,7 @@
         <li v-for="js in journalScores" :key="js.journal" class="score-panel-summary__row">
           <div class="score-panel-summary__row-head">
             <span class="score-panel-summary__row-name">{{ js.journal }}</span>
-            <span class="score-panel-summary__row-score" :style="{ color: getScoreColor(js.overallScore) }">
+            <span class="score-panel-summary__row-score" :style="{ color: getScoreTextColor(js.overallScore) }">
               {{ js.overallScore }}
             </span>
           </div>
@@ -49,7 +49,7 @@
   import { computed } from 'vue'
   import ScoreRing from '@/components/paper/ScoreRing.vue'
   import AppButton from '@/components/ui/AppButton.vue'
-  import { getScoreColor } from '@/utils/scoreColor'
+  import { getScoreColor, getScoreTextColor } from '@/utils/scoreColor'
 
   const props = defineProps<{
     journalScores: JournalScore[]

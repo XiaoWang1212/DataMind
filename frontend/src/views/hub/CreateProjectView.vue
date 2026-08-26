@@ -69,27 +69,15 @@
 
       <!-- Step 3: Upload Dataset -->
       <template v-if="currentStep === 2">
-        <div
-          class="drop-zone"
-          @click="datasetInput?.click()"
-          @dragover.prevent
-          @drop.prevent="handleDatasetDrop"
-        >
-          <v-icon class="drop-icon" icon="mdi-table-arrow-up" size="48" />
-          <div class="drop-text">點擊或拖放資料集檔案</div>
-          <div class="drop-hint">支援 CSV、Excel（最大 50MB）</div>
-          <input
-            ref="datasetInput"
-            accept=".csv,.xlsx,.xls"
-            hidden
-            type="file"
-            @change="handleDatasetChange"
-          >
-        </div>
-        <div v-if="form.datasetFile" class="file-info">
-          <v-icon icon="mdi-file-table-outline" size="18" />
-          <span class="file-name">{{ form.datasetFile.name }}</span>
-        </div>
+        <FileDropZone
+          v-model="form.datasetFile"
+          accept=".csv,.xlsx,.xls"
+          accept-label="CSV、Excel"
+          file-icon="mdi-file-table-outline"
+          hint="支援 CSV、Excel（最大 50MB）"
+          icon="mdi-table-arrow-up"
+          text="點擊或拖放資料集檔案"
+        />
       </template>
 
       <!-- Step 4: Review & Execute -->
@@ -121,7 +109,7 @@
       <AppButton :disabled="currentStep === 0" variant="ghost" @click="currentStep--">
         上一步
       </AppButton>
-      <AppButton v-if="currentStep < 3" variant="secondary" @click="currentStep++">
+      <AppButton v-if="currentStep < 3" variant="primary" @click="currentStep++">
         下一步
         <v-icon icon="mdi-chevron-right" size="17" />
       </AppButton>
@@ -134,18 +122,19 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { RouterLink, useRouter } from 'vue-router'
+  import { computed, ref, watch } from 'vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import FileDropZone from '@/components/common/FileDropZone.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { saveWorkflowDataFileToStorage } from '@/composables/workflow/useWorkflowStorage'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
 
+  const route = useRoute()
   const router = useRouter()
   const frameworkStore = useFrameworkStore()
   const projectStore = useProjectStore()
-  const datasetInput = ref<HTMLInputElement | null>(null)
   const currentStep = ref(0)
   const submitting = ref(false)
 
@@ -163,6 +152,29 @@
     datasetFile: null as File | null,
   })
 
+  // 從框架庫「用於專案」帶 query 進來時，預選同一個框架（使用者仍可在步驟 2 改選）。
+  // frameworks 通常在導覽進來前就載入了，但用 watch + immediate 一併涵蓋直接用網址進入、
+  // 這個 view 比 loadFrameworks() 先掛載完成的情況。
+  const requestedFrameworkId = (() => {
+    const raw = route.query.frameworkId
+    const parsed = Number(Array.isArray(raw) ? raw[0] : raw)
+    return Number.isFinite(parsed) ? parsed : null
+  })()
+
+  watch(
+    () => frameworkStore.frameworks,
+    frameworks => {
+      if (
+        requestedFrameworkId !== null
+        && form.value.frameworkId === null
+        && frameworks.some(f => f.id === requestedFrameworkId)
+      ) {
+        form.value.frameworkId = requestedFrameworkId
+      }
+    },
+    { immediate: true },
+  )
+
   const selectedFramework = computed(() =>
     frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
   )
@@ -171,16 +183,6 @@
     if (i < currentStep.value) return 'step-circle--done'
     if (i === currentStep.value) return 'step-circle--active'
     return 'step-circle--inactive'
-  }
-
-  function handleDatasetChange (e: Event): void {
-    const input = e.target as HTMLInputElement
-    if (input.files?.[0]) form.value.datasetFile = input.files[0]
-  }
-
-  function handleDatasetDrop (e: DragEvent): void {
-    const file = e.dataTransfer?.files[0]
-    if (file) form.value.datasetFile = file
   }
 
   async function executeProject (): Promise<void> {
@@ -387,22 +389,25 @@
     gap: 12px;
   }
 
+  /* 跟框架庫的 .fw-card 同一套 */
   .fw-select-card {
     padding: 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease-out),
-      background-color var(--dur-fast) var(--ease-out);
+    transition: transform var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
   }
 
   .fw-select-card:hover {
+    transform: translateY(-2px);
     border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    box-shadow: var(--shadow-card);
   }
 
   .fw-select-card--selected {
-    border-color: var(--color-ink);
-    background: color-mix(in oklab, var(--color-ink) 6%, white);
+    border: 1.5px solid var(--color-ink);
   }
 
   .fw-select-icon {
@@ -427,58 +432,6 @@
   .fw-select-tag {
     font-size: 12px;
     color: var(--color-ink-soft);
-  }
-
-  /* ── Drop zone ── */
-  .drop-zone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 48px 24px;
-    border: 2px dashed var(--color-border-strong);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease-out),
-      background-color var(--dur-fast) var(--ease-out);
-  }
-
-  .drop-zone:hover {
-    border-color: var(--color-ink);
-    background: color-mix(in oklab, var(--color-ink) 6%, white);
-  }
-
-  .drop-icon {
-    margin-bottom: 4px;
-    color: var(--color-ink-soft);
-  }
-
-  .drop-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text);
-  }
-
-  .drop-hint {
-    font-size: 12px;
-    color: var(--color-ink-soft);
-  }
-
-  .file-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-alt);
-    color: var(--color-ink);
-  }
-
-  .file-name {
-    font-size: 13px;
-    color: var(--color-text);
   }
 
   /* ── Review ── */

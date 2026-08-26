@@ -8,26 +8,20 @@
       <h3>確定要中斷嗎？</h3>
       <p>{{ message }}</p>
       <div class="interrupt-confirm-actions">
-        <button
-          class="interrupt-confirm-btn interrupt-confirm-btn--secondary"
-          type="button"
-          @click="emit('cancel')"
-        >
+        <AppButton variant="secondary" @click="emit('cancel')">
           取消
-        </button>
-        <button
-          class="interrupt-confirm-btn interrupt-confirm-btn--primary"
-          type="button"
-          @click="emit('confirm')"
-        >
+        </AppButton>
+        <AppButton variant="danger" @click="emit('confirm')">
           確定中斷
-        </button>
+        </AppButton>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+  import AppButton from '@/components/ui/AppButton.vue'
+
   defineProps<{
     visible: boolean
     message: string
@@ -52,11 +46,11 @@
 
   .interrupt-confirm-card {
     background: var(--color-surface);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     padding: 24px;
     max-width: 380px;
     width: 90%;
-    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.24);
+    box-shadow: var(--shadow-float);
   }
 
   .interrupt-confirm-card h3 {
@@ -68,7 +62,7 @@
   .interrupt-confirm-card p {
     margin: 0 0 20px;
     font-size: 13px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     line-height: 1.5;
   }
 
@@ -76,24 +70,5 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-  }
-
-  .interrupt-confirm-btn {
-    padding: 9px 16px;
-    border-radius: 8px;
-    border: none;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .interrupt-confirm-btn--secondary {
-    background: var(--color-primary);
-    color: var(--color-ink);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 18%, transparent);
-  }
-
-  .interrupt-confirm-btn--primary {
-    background: var(--color-accent);
-    color: #fff;
   }
 </style>

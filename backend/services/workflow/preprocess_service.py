@@ -56,13 +56,16 @@ def _fill_na_fit(train: pd.DataFrame, step: Dict[str, Any]) -> Dict[str, Any]:
     target_cols = [c for c in (columns or train.columns) if c in train.columns]
     fill_values: Dict[str, Any] = {}
     for col in target_cols:
-        if strategy == "mean" and pd.api.types.is_numeric_dtype(train[col]):
+        is_numeric = pd.api.types.is_numeric_dtype(train[col])
+        if strategy == "mean" and is_numeric:
             fill_values[col] = train[col].mean()
-        elif strategy == "median" and pd.api.types.is_numeric_dtype(train[col]):
+        elif strategy == "median" and is_numeric:
             fill_values[col] = train[col].median()
-        elif strategy == "mode":
+        elif strategy == "mode" or (strategy == "auto" and not is_numeric):
             mode = train[col].mode()
             fill_values[col] = mode.iloc[0] if not mode.empty else value
+        elif strategy == "auto" and is_numeric:
+            fill_values[col] = train[col].mean()
         else:
             fill_values[col] = value
     return {"fill_values": fill_values}

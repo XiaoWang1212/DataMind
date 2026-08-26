@@ -11,9 +11,7 @@ import logging
 import os
 import re
 import time
-import uuid
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import google.generativeai as genai
@@ -22,7 +20,7 @@ from . import arxiv_source
 from .chunker import Chunk, TextChunker
 from .embedder import Embedder
 from .reranker import Reranker
-from .vector_store import VectorStore
+from .db_vector_store import DbVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +53,25 @@ _SECTION_QUERIES: Dict[str, str] = {
     "實驗結果": "{topic} 模型效能 AUC F1 準確率 特徵重要性 模型比較",
     "討論": "{topic} 結果解讀 與文獻比較 臨床意義 研究限制",
     "結論": "{topic} 研究貢獻 臨床應用價值 未來研究方向",
+}
+
+# 每章節各自的寫作重點：只給「查詢用的關鍵字」（_SECTION_QUERIES）沒辦法讓 Gemini
+# 知道「這段該寫什麼、不該重複別段已經寫過什麼」——尤其「討論」很容易變成把
+# 「實驗結果」的數字用不同措辭再講一次，明講不要重複、要解讀，內容才會真的往前走
+_SECTION_WRITING_FOCUS: Dict[str, str] = {
+    "摘要": "濃縮全文重點：研究目的、方法概述、關鍵發現，一段話講完，不需要細節數據。",
+    "前言": "鋪陳研究背景、臨床問題與現有方法的不足，帶出本研究的動機與目的，"
+            "不需要提前講實驗結果的數字。",
+    "研究方法": "客觀描述資料集、前處理、特徵工程、模型與驗證方式的實際作法，"
+              "說明「怎麼做」，不需要評論效果好壞。",
+    "實驗結果": "只客觀陳述各模型的量化指標、與彼此的比較、特徵重要性等實驗事實本身，"
+              "不要加入原因推測或臨床意義的解讀，解讀留給「討論」處理。",
+    "討論": "重點是解讀「實驗結果」數字背後的意義：為什麼會有這樣的結果、"
+            "這些發現跟引用文獻的異同、對臨床或實務的意義、本研究方法或資料的限制。"
+            "不要重複「實驗結果」已經列出的數字或比較，"
+            "除非是為了進一步解讀才需要點出某個數字。",
+    "結論": "扣回研究目的，總結本研究的貢獻、實務應用價值與未來研究方向，"
+            "簡短有力，不需要重述前面章節的細節論證。",
 }
 
 _DEFAULT_STRUCTURE = ["摘要", "前言", "研究方法", "實驗結果", "討論", "結論"]
@@ -136,17 +153,13 @@ class PaperRAGService:
         )
 
         embed_model = os.getenv("RAG_EMBED_MODEL", "BAAI/bge-small-zh-v1.5")
-        index_dir = (
-            Path(__file__).parent.parent.parent
-            / os.getenv("RAG_INDEX_DIR", "artifacts/rag_index")
-        )
 
         self._chunker = TextChunker(
             chunk_size=int(os.getenv("RAG_CHUNK_SIZE", 500)),
             overlap=int(os.getenv("RAG_CHUNK_OVERLAP", 50)),
         )
         self._embedder = Embedder(model_name=embed_model)
-        self._store = VectorStore(index_dir=index_dir, embedder=self._embedder)
+        self._store = DbVectorStore(embedder=self._embedder)
 
         rerank_model = os.getenv("RAG_RERANK_MODEL", "BAAI/bge-reranker-base")
         rerank_enabled = os.getenv("RAG_RERANK_ENABLED", "true").strip().lower() not in ("false", "0")
@@ -154,16 +167,16 @@ class PaperRAGService:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def add_paper(self, title: str, content: str, metadata: dict | None = None) -> dict:
+    def add_paper(self, project_id: int, title: str, content: str, metadata: dict | None = None) -> dict:
         if metadata is None:
             metadata = {}
-        paper_id = str(uuid.uuid4())
+        paper_id = self._store.create_paper(project_id, title, metadata)
         chunks = self._chunker.chunk(content, paper_id=paper_id, title=title, metadata=metadata)
         if not chunks:
+            self._store.delete_paper(project_id, paper_id)
             return {"success": False, "error": "未能從文件中提取內容"}
 
-        self._store.add(chunks)
-        self._store.register_paper(paper_id, {"paper_id": paper_id, "title": title, **metadata})
+        self._store.add_chunks(chunks)
 
         logger.info("add_paper: %s (%d chunks)", title, len(chunks))
         return {
@@ -173,11 +186,11 @@ class PaperRAGService:
             "chunks_added": len(chunks),
         }
 
-    def search(self, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
+    def search(self, project_id: int, query: str, top_k: int = 5, use_rerank: bool = True) -> List[SearchResult]:
         should_rerank = use_rerank and self._reranker is not None and self._reranker.available
         overfetch_k = top_k * 4 if should_rerank else top_k
 
-        raw = self._store.search(query, top_k=overfetch_k)
+        raw = self._store.search(project_id, query, top_k=overfetch_k)
 
         if should_rerank and raw:
             reranked = self._reranker.rerank(query, raw)
@@ -188,8 +201,8 @@ class PaperRAGService:
 
         return [SearchResult(chunk=c, score=s) for c, s in raw[:top_k]]
 
-    def generate_citation(self, query: str, top_k: int = 3, citation_style: str = "apa") -> dict:
-        results = self.search(query, top_k=top_k)
+    def generate_citation(self, project_id: int, query: str, top_k: int = 3, citation_style: str = "apa") -> dict:
+        results = self.search(project_id, query, top_k=top_k)
         if not results:
             return {"citations": [], "sources": []}
 
@@ -219,6 +232,7 @@ class PaperRAGService:
 
     def generate_paper(
         self,
+        project_id: int,
         topic: str,
         mining_results: dict,
         structure: List[str] | None = None,
@@ -255,7 +269,7 @@ class PaperRAGService:
             top_k = _SECTION_TOP_K.get(section_name, _DEFAULT_TOP_K)
             query_tmpl = _SECTION_QUERIES.get(section_name, "{topic}")
             query = query_tmpl.format(topic=topic)
-            search_results = self.search(query, top_k=top_k)
+            search_results = self.search(project_id, query, top_k=top_k)
 
             # 2. 建立本章節的本地 ref map（local_id → chunk + global_ref_id）
             local_refs: Dict[int, dict] = {}
@@ -388,19 +402,25 @@ class PaperRAGService:
             "candidates": candidates,
         }
 
-    def ingest_arxiv_selection(self, candidates: List[dict]) -> dict:
-        """清空向量庫，下載選中的 arXiv 論文全文並加入索引。
+    def ingest_arxiv_selection(self, project_id: int, candidates: List[dict]) -> dict:
+        """下載選中的 arXiv 論文全文並加入索引。
 
         單篇下載/解析失敗時跳過並記錄，不中斷整體流程；若全部失敗則回傳錯誤。
+        同一個 project 裡，arxiv_id 已經存在就跳過，不重複塞進索引。
         """
-        self.clear()
-
         ingested: List[str] = []
         failed: List[str] = []
 
         for candidate in candidates:
             title = candidate.get("title", "")
             pdf_url = candidate.get("pdf_url", "")
+            arxiv_id = candidate.get("arxiv_id", "")
+
+            if arxiv_id and self._store.find_by_arxiv_id(project_id, arxiv_id) is not None:
+                logger.info("跳過已存在的 arXiv 論文：%s (%s)", title, arxiv_id)
+                ingested.append(title)
+                continue
+
             try:
                 content = arxiv_source.fetch_pdf_text(pdf_url)
                 if not content.strip():
@@ -411,13 +431,14 @@ class PaperRAGService:
                 continue
 
             result = self.add_paper(
+                project_id=project_id,
                 title=title,
                 content=content,
                 metadata={
                     "author": candidate.get("authors", ""),
                     "year": candidate.get("year", ""),
                     "journal": f"arXiv:{candidate.get('arxiv_id', '')}",
-                    "arxiv_id": candidate.get("arxiv_id", ""),
+                    "arxiv_id": arxiv_id,
                 },
             )
             if result.get("success"):
@@ -838,17 +859,17 @@ class PaperRAGService:
 
         return {"reply": reply_text, "papers": papers}
 
-    def get_status(self) -> dict:
-        return self._store.get_status()
+    def get_status(self, project_id: int) -> dict:
+        return self._store.get_status(project_id)
 
-    def delete_paper(self, paper_id: str) -> dict:
-        ok = self._store.delete_paper(paper_id)
+    def delete_paper(self, project_id: int, paper_id: str) -> dict:
+        ok = self._store.delete_paper(project_id, paper_id)
         if ok:
             return {"success": True, "message": f"已刪除論文 {paper_id}"}
         return {"success": False, "message": f"找不到論文 {paper_id}"}
 
-    def clear(self) -> dict:
-        self._store.clear()
+    def clear(self, project_id: int) -> dict:
+        self._store.clear(project_id)
         return {"success": True, "message": "已清空論文庫"}
 
     # ── DataMind 輸出格式化 ───────────────────────────────────────────────────
@@ -1052,6 +1073,7 @@ class PaperRAGService:
         language: str,
     ) -> str:
         target = _SECTION_WORD_TARGETS.get(section_name, 600)
+        writing_focus = _SECTION_WRITING_FOCUS.get(section_name, "")
 
         ref_lines = [
             f"[{lid}] 論文：《{info['chunk'].title}》\n"
@@ -1068,6 +1090,7 @@ class PaperRAGService:
             f"你是醫學資料科學領域的學術論文撰寫助手。"
             f"請根據以下資料，以繁體中文撰寫論文的「{section_name}」章節。\n\n"
             f"【研究主題】\n{topic}\n\n"
+            f"【本章節寫作重點】\n{writing_focus}\n\n"
             f"【DataMind 資料探勘實驗結果】\n{results_text}\n\n"
             f"【可引用的參考文獻】\n"
             f"撰寫時，請在引用他人研究、方法或發現時，"
@@ -1082,8 +1105,10 @@ class PaperRAGService:
             f"- 禁止使用任何 Markdown 語法符號，包括 *、-、#、反引號、粗體標記；"
             f"提及資料前處理步驟或參數名稱時，請以中文敘述融入句子（例如「以平均值填補缺失值」），"
             f"不要直接照抄英文程式碼識別字或加上反引號\n"
-            f"- 引用規則：陳述現有方法、背景、比較結果時，須於句末加入 [n] 引用標記；"
-            f"如需引用多篇文獻，請以相鄰獨立括號表示（如 [1][2]），"
+            f"- 引用規則：每個引用標記只對應緊接在其前面的 1 到 2 句具體主張或數據，"
+            f"不可讓一個引用標記涵蓋整段文字；如果同一段落有多個由不同來源支持的主張，"
+            f"請在各自的主張後面分別標註引用，不要把整段的引用集中放在段落最後\n"
+            f"- 如需在同一個主張後引用多篇文獻，請以相鄰獨立括號表示（如 [1][2]），"
             f"禁止在同一括號內以逗號列出多個編號（如 [1, 2] 為不允許的格式）\n"
             f"- 僅輸出「{section_name}」的段落內文，不需要章節標題\n"
             f"- 段落間以空行分隔\n\n"

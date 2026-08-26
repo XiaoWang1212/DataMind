@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.9",
-    "@fontsource/roboto-mono": "^5.2.8",
     "@mdi/font": "7.4.47",
     "@tiptap/core": "^3.29.0",
     "@tiptap/extension-character-count": "^3.29.2",

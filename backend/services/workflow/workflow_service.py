@@ -117,16 +117,19 @@ class WorkflowService:
         }:
             method = "test_on_test"
 
+        def _default_if_none(value, default):
+            return default if value is None else value
+
         return {
             "method": method,
-            "n_splits": int(config.get("n_splits", 5)),
-            "n_repeats": int(config.get("n_repeats", 1)),
-            "train_size": float(config.get("train_size", 0.7)),
+            "n_splits": int(_default_if_none(config.get("n_splits"), 5)),
+            "n_repeats": int(_default_if_none(config.get("n_repeats"), 1)),
+            "train_size": float(_default_if_none(config.get("train_size"), 0.7)),
             "test_size": config.get("test_size"),
-            "stratified": bool(config.get("stratified", True)),
+            "stratified": bool(_default_if_none(config.get("stratified"), True)),
             "group_column": config.get("group_column"),
-            "shuffle": bool(config.get("shuffle", True)),
-            "random_state": int(config.get("random_state", 42)),
+            "shuffle": bool(_default_if_none(config.get("shuffle"), True)),
+            "random_state": int(_default_if_none(config.get("random_state"), 42)),
         }
 
     @staticmethod

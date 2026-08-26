@@ -40,7 +40,7 @@
         <div v-for="(step, i) in localPreprocessing" :key="i" class="item-row">
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
-            <span class="item-name">{{ PREPROCESS_LABELS[step.type as string] ?? step.type }}</span>
+            <span class="item-name">{{ preprocessStepLabel(step) }}</span>
             <AppButton
               aria-label="移除"
               icon-only
@@ -56,16 +56,26 @@
             class="item-params"
           >
             <template v-if="step.type === 'fill_na'">
-              <div class="param-pair">
+              <div v-if="fillNaColumnKind(step, datasetColumns) === 'nominal'" class="param-pair">
+                <span class="param-key">strategy</span>
+                <span class="param-fixed">眾數（類別型欄位固定使用）</span>
+              </div>
+              <div v-else class="param-pair">
                 <span class="param-key">strategy</span>
                 <CustomSelect
                   class="param-select"
                   :model-value="String(step.strategy ?? 'mean')"
-                  :options="[
-                    { value: 'mean', label: '均值' },
-                    { value: 'median', label: '中位數' },
-                    { value: 'mode', label: '眾數' },
-                  ]"
+                  :options="fillNaColumnKind(step, datasetColumns) === 'numeric'
+                    ? [
+                      { value: 'mean', label: '均值' },
+                      { value: 'median', label: '中位數' },
+                    ]
+                    : [
+                      { value: 'auto', label: '自動（數值用均值／類別用眾數）' },
+                      { value: 'mean', label: '均值' },
+                      { value: 'median', label: '中位數' },
+                      { value: 'mode', label: '眾數' },
+                    ]"
                   @update:model-value="patchPreprocessStep(i, 'strategy', $event)"
                 />
               </div>
@@ -207,7 +217,6 @@
           v-for="method in VALIDATION_METHODS"
           :key="method.value"
           class="validation-method"
-          :class="{ 'validation-method--active': localValidation.method === method.value }"
         >
           <label class="validation-method__radio">
             <input
@@ -352,6 +361,8 @@
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { FEATURE_LABELS, PREPROCESS_LABELS, VALIDATION_LABELS } from '@/constants/workflowLabels'
+  import { expandAutoFillNaSteps, fillNaColumnKind, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -398,50 +409,46 @@
 
   watch(currentStep, step => emit('step-change', step), { immediate: true })
 
-  const PREPROCESS_LABELS: Record<string, string> = {
-    fill_na: '缺值填補',
-    knn_impute: 'KNN 缺值填補',
-    iterative_impute: 'MICE 多重插補',
-    normalize: 'Min-Max 正規化',
-    standardize: 'Z-score 標準化',
-    one_hot: 'One-Hot 編碼',
-    label_encode: 'Label 編碼',
-    drop_columns: '移除欄位',
-    remove_outliers_iqr: 'IQR 異常值處理',
-    remove_outliers_zscore: 'Z-score 異常值處理',
-  }
+  const VALIDATION_METHODS = Object.entries(VALIDATION_LABELS)
+    .map(([value, label]) => ({ value, label }))
 
-  const FEATURE_LABELS: Record<string, string> = {
-    select_relevant_features: '特徵選擇',
-    pca: 'PCA 降維',
-    discretize_continuous: '連續→離散',
-    continuize_discrete: '離散→連續',
-    normalize_features: '特徵正規化',
-    remove_sparse_features: '移除稀疏特徵',
+  function preprocessStepLabel (step: Record<string, unknown>): string {
+    const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
+    if (step.type !== 'fill_na') return base
+    const kind = fillNaColumnKind(step, props.datasetColumns)
+    if (kind === 'numeric') return `${base}（數值型）`
+    if (kind === 'nominal') return `${base}（類別型）`
+    return base
   }
-
-  const VALIDATION_METHODS: Array<{ value: string, label: string }> = [
-    { value: 'k_fold', label: 'Cross validation' },
-    { value: 'group_k_fold', label: 'Cross validation by feature' },
-    { value: 'random_sampling', label: 'Random sampling' },
-    { value: 'leave_one_out', label: 'Leave one out' },
-    { value: 'test_on_train', label: 'Test on train data' },
-    { value: 'test_on_test', label: 'Test on test data' },
-  ]
 
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))
 
-  const localPreprocessing = ref<Array<Record<string, unknown>>>([...props.preprocessing])
+  // 沒有指定 columns 的 fill_na 步驟（框架匯入的 strategy:"auto"，或使用者手動新增的）
+  // 一律依 datasetColumns 的真實型別拆成「數值型補均值／類別型補眾數」兩筆；
+  // 已經拆過的步驟因為已有 columns 不會再被動到，函式本身是冪等的。
+  function syncPreprocessing (steps: Array<Record<string, unknown>>): void {
+    const normalized = expandAutoFillNaSteps(steps, props.datasetColumns)
+    localPreprocessing.value = normalized
+    if (normalized.length !== steps.length) {
+      emit('update-preprocessing', normalized)
+    }
+  }
+
+  const localPreprocessing = ref<Array<Record<string, unknown>>>([])
   const localFE = ref<Array<Record<string, unknown>>>([...props.featureEngineering])
   const localValidation = ref<Record<string, unknown>>({ ...props.validation })
 
   watch(
     () => props.preprocessing,
-    v => {
-      localPreprocessing.value = [...v]
-    },
-    { deep: true },
+    v => syncPreprocessing(v),
+    { deep: true, immediate: true },
+  )
+  // datasetColumns 通常在進到這個 step 前就確定了，但保留這個 watch
+  // 是為了涵蓋「進來時欄位型別還沒就緒」的邊界情況
+  watch(
+    () => props.datasetColumns,
+    () => syncPreprocessing(localPreprocessing.value),
   )
   watch(
     () => props.featureEngineering,
@@ -479,12 +486,17 @@
   // ── 前處理 ──
   function addPreprocessStep (): void {
     if (!newPreprocessType.value) return
+
+    if (newPreprocessType.value === 'fill_na') {
+      const split = splitAutoFillNaStep({ type: 'fill_na' }, props.datasetColumns)
+      localPreprocessing.value = [...localPreprocessing.value, ...(split ?? [{ type: 'fill_na', strategy: 'mean' }])]
+      emit('update-preprocessing', localPreprocessing.value)
+      newPreprocessType.value = ''
+      return
+    }
+
     const step: Record<string, unknown> = { type: newPreprocessType.value }
     switch (newPreprocessType.value) {
-      case 'fill_na': {
-        step.strategy = 'mean'
-        break
-      }
       case 'knn_impute': {
         step.n_neighbors = 5
         break
@@ -574,7 +586,7 @@
     display: flex;
     gap: 4px;
     padding: 4px;
-    background: color-mix(in oklab, var(--color-accent) 5%, transparent);
+    background: color-mix(in oklab, var(--color-ink) 5%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -588,7 +600,7 @@
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -597,9 +609,9 @@
 
   .wizard-tab--active {
     background: var(--color-surface);
-    color: var(--tab-color, var(--color-accent));
+    color: var(--tab-color, var(--color-ink));
     font-weight: 500;
-    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-accent)) 20%, transparent);
+    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -612,14 +624,14 @@
     font-size: 11px;
     font-weight: 500;
     flex-shrink: 0;
-    background: color-mix(in oklab, var(--color-secondary) 14%, transparent);
-    color: var(--color-secondary);
+    background: color-mix(in oklab, var(--color-ink-soft) 14%, transparent);
+    color: var(--color-ink-soft);
     transition: background var(--dur-fast), color var(--dur-fast);
   }
 
   .wizard-tab--active .wizard-tab__num {
-    background: var(--tab-color, var(--color-accent));
-    color: #fff;
+    background: var(--tab-color, var(--color-ink));
+    color: var(--color-inverted);
   }
 
   .wizard-tab__text {
@@ -668,8 +680,8 @@
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
     border-radius: var(--radius-md);
     font-size: 13px;
   }
@@ -684,8 +696,8 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 30%, transparent);
-    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 30%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-ink)) 65%, var(--color-ink-strong));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -695,7 +707,7 @@
   }
 
   .item-idx--dot {
-    background: var(--step-color, var(--color-accent));
+    background: var(--step-color, var(--color-ink));
   }
 
   .item-name {
@@ -715,7 +727,7 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 24%, transparent);
   }
 
   .item-params .param-select {
@@ -731,14 +743,20 @@
 
   .param-key {
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     white-space: nowrap;
+  }
+
+  .param-fixed {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
   }
 
   .param-num {
     width: 68px;
     height: 30px;
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 24%, transparent);
     border-radius: var(--radius-sm);
     padding: 0 8px;
     font-size: 13px;
@@ -751,20 +769,19 @@
   .validation-methods {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
   }
 
   .validation-method {
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    transition: border-color var(--dur-base), background var(--dur-base);
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    transition: background var(--dur-fast);
   }
 
-  .validation-method--active {
-    border-color: color-mix(in oklab, var(--step-color, var(--color-accent)) 45%, transparent);
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 8%, transparent);
+  @media (hover: hover) and (pointer: fine) {
+    .validation-method:hover {
+      background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+    }
   }
 
   .validation-method__radio {
@@ -772,27 +789,42 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 500;
-    color: var(--color-text);
+    color: var(--color-ink);
     cursor: pointer;
   }
 
   .validation-method__radio input[type="radio"] {
+    appearance: none;
     width: 15px;
     height: 15px;
+    margin: 0;
     flex-shrink: 0;
-    accent-color: var(--step-color, var(--color-accent));
+    border-radius: 50%;
+    border: 1.5px solid var(--color-border-strong);
+    position: relative;
     cursor: pointer;
+    transition: border-color var(--dur-fast);
+  }
+
+  .validation-method__radio input[type="radio"]:checked {
+    border-color: var(--step-color, var(--color-ink));
+  }
+
+  .validation-method__radio input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--step-color, var(--color-ink));
   }
 
   .validation-method__params {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed color-mix(in oklab, var(--step-color, var(--color-accent)) 24%, transparent);
+    margin: 8px 0 4px 33px;
+    padding-left: 16px;
+    border-left: 1.5px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 35%, transparent);
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .param-checkbox {
@@ -800,7 +832,7 @@
     align-items: center;
     gap: 6px;
     font-size: 12.5px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     cursor: pointer;
   }
 
@@ -810,7 +842,7 @@
     border-radius: 50%;
     border: none;
     background: none;
-    color: #94a3b8;
+    color: var(--color-ink-soft);
     cursor: pointer;
     font-size: 11px;
     display: flex;
@@ -821,8 +853,8 @@
   }
 
   .del-btn:hover {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.08);
+    color: var(--color-error);
+    background: color-mix(in oklab, var(--color-error) 10%, transparent);
   }
 
   .empty-hint {
@@ -838,8 +870,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 10%, transparent);
-    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -864,12 +896,12 @@
 
   .ci-card__sub {
     font-size: 11px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
   }
 
   .ci-card__desc {
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-ink-soft);
     line-height: 1.55;
   }
 
@@ -894,13 +926,13 @@
   }
 
   .ci-card__status--on {
-    background: color-mix(in oklab, var(--step-color, var(--color-accent)) 22%, transparent);
-    color: color-mix(in oklab, var(--step-color, var(--color-accent)) 65%, var(--color-ink-strong));
+    background: color-mix(in oklab, var(--step-color, var(--color-ink)) 22%, transparent);
+    color: color-mix(in oklab, var(--step-color, var(--color-ink)) 65%, var(--color-ink-strong));
   }
 
   .ci-card__status--off {
-    background: color-mix(in oklab, var(--color-secondary) 10%, transparent);
-    color: var(--color-secondary);
+    background: color-mix(in oklab, var(--color-ink-soft) 10%, transparent);
+    color: var(--color-ink-soft);
   }
 
   .ci-toggle {
@@ -917,7 +949,7 @@
   }
 
   .ci-toggle--on {
-    background: var(--step-color, var(--color-accent));
+    background: var(--step-color, var(--color-ink));
   }
 
   .ci-toggle__thumb {
@@ -942,7 +974,7 @@
     justify-content: space-between;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--color-ink) 10%, transparent);
   }
 
   .settings-footer__right {

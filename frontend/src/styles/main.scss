@@ -1,8 +1,4 @@
 @layer vuetify-overrides {
-  code, pre, .v-code {
-    font-family: var(--font-mono);
-  }
-
   // docs/DESIGN_SYSTEM.md §5.4：頁面底鋪柔和漸層，讓玻璃效果（之後階段套用）有東西可以透出來。
   // 蓋在 .v-application 而不是 body，因為 VApp 元件本身有不透明的 background
   // （node_modules/vuetify/lib/components/VApp/VApp.css），蓋在 body 上的話漸層完全看不到。

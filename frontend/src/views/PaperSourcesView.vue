@@ -25,7 +25,7 @@
 
       <template v-else>
         <div class="sources-title-input">
-          <label class="sources-title-label" for="user-title-input">論文標題（選填）</label>
+          <label class="sources-title-label" for="user-title-input">技術報告標題（選填）</label>
           <input
             id="user-title-input"
             v-model="userTitle"
@@ -42,8 +42,8 @@
         <template v-if="hasSearched">
           <p v-if="topic" class="sources-topic">研究主題:{{ topic }}</p>
 
-          <div v-if="loadingSearch" class="sources-status">
-            正在分析資料並查詢 arXiv...
+          <div v-if="loadingSearch" class="sources-status" role="status">
+            正在分析資料並查詢 arXiv<span aria-hidden="true" class="loading-dots"><i /><i /><i /></span>
           </div>
 
           <div v-else-if="searchError" class="sources-status sources-status--error">
@@ -59,11 +59,11 @@
             <ul class="candidate-list">
               <li v-for="candidate in candidates" :key="candidate.arxiv_id" class="candidate-card">
                 <label class="candidate-select">
-                  <input
-                    v-model="selectedIds"
-                    type="checkbox"
-                    :value="candidate.arxiv_id"
-                  >
+                  <AppCheckbox
+                    :aria-label="`選擇 ${candidate.title}`"
+                    :model-value="selectedIds.includes(candidate.arxiv_id)"
+                    @update:model-value="toggleCandidate(candidate.arxiv_id, $event)"
+                  />
                   <div class="candidate-body">
                     <p class="candidate-title">{{ candidate.title }}</p>
                     <p class="candidate-meta">
@@ -83,7 +83,7 @@
                 variant="primary"
                 @click="handleGenerate"
               >
-                確認並生成論文 ({{ selectedIds.length }})
+                確認並生成技術報告 ({{ selectedIds.length }})
               </AppButton>
               <p v-if="generateError" class="sources-status sources-status--error">{{ generateError }}</p>
             </div>
@@ -91,6 +91,8 @@
         </template>
       </template>
     </main>
+
+    <PaperGeneratingOverlay :visible="generating" @abandon="handleAbandon" />
   </section>
 </template>
 
@@ -98,8 +100,11 @@
   import { computed, onMounted, ref } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
+  import { saveReport } from '@/api/report'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
+  import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import AppCheckbox from '@/components/ui/AppCheckbox.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
   import { usePaperStore } from '@/store/paperStore'
@@ -118,6 +123,12 @@
   const hasSearched = ref(false)
   const candidates = ref<ArxivCandidate[]>([])
   const selectedIds = ref<string[]>([])
+
+  function toggleCandidate (arxivId: string, checked: boolean): void {
+    selectedIds.value = checked
+      ? [...selectedIds.value, arxivId]
+      : selectedIds.value.filter(id => id !== arxivId)
+  }
 
   const loadingSearch = ref(false)
   const searchError = ref<string | null>(null)
@@ -142,8 +153,17 @@
     }
   }
 
+  // 生成的請求不會因為離開而中斷。放棄之後這個編號會變，回來的結果就不再套用 ——
+  // 否則幾分鐘後的 router.push 會把使用者從當時在看的頁面硬拉走
+  let generationToken = 0
+
   async function handleGenerate (): Promise<void> {
     if (!miningResults.value) return
+    if (!projectId.value) {
+      generateError.value = '缺少 project 資訊，請從專案頁面重新進入'
+      return
+    }
+    const token = ++generationToken
     generating.value = true
     generateError.value = null
     try {
@@ -152,15 +172,33 @@
         topic: topic.value,
         miningResults: miningResults.value,
         selectedCandidates,
+        projectId: projectId.value,
       })
+      if (token !== generationToken) return
       const report = transformArxivResultToPaperReport(result, topic.value)
+      // 生成很花時間（要跑後端 RAG/AI），使用者看到結果就會當作「完成了」，
+      // 不會直覺想到還要手動切去編輯模式按儲存——生成完直接存檔，
+      // 離開這頁或忘記按儲存都不會把剛跑出來的結果弄丟
+      await saveReport(projectId.value, {
+        title: report.title,
+        content: report.content,
+        citations: report.citations,
+        citationStyle: report.citationStyle,
+      })
       paperStore.setGeneratedReport(report)
       router.push(`/paper?project=${projectId.value}`)
     } catch (error) {
+      if (token !== generationToken) return
       generateError.value = error instanceof Error ? error.message : String(error)
     } finally {
-      generating.value = false
+      if (token === generationToken) generating.value = false
     }
+  }
+
+  function handleAbandon (): void {
+    generationToken++
+    generating.value = false
+    generateError.value = '已放棄這次生成。勾選的文獻還在，可以重新送出。'
   }
 
   onMounted(() => {
@@ -277,6 +315,11 @@
     gap: 12px;
     padding: 14px 16px;
     cursor: pointer;
+  }
+
+  /* checkbox 是固定 18px，標題行高比它高，往下推齊視覺基線 */
+  .candidate-select :deep(.app-checkbox) {
+    margin-top: 2px;
   }
 
   .candidate-body {

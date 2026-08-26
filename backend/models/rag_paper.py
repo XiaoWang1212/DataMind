@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from extensions import db
 
-EMBEDDING_DIM = 384
+EMBEDDING_DIM = 512  # BAAI/bge-small-zh-v1.5 的實際輸出維度（hidden_size，無額外投影層）
 
 
 class RagPaper(db.Model):
@@ -29,5 +29,5 @@ class RagChunk(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     paper_id: Mapped[int] = mapped_column(ForeignKey("rag_papers.id"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM), nullable=False)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM), nullable=True)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
