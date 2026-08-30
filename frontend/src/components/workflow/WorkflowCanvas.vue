@@ -114,15 +114,22 @@
       })
       resizeObserver.observe(flowAreaRef.value)
     }
-
-    // 初始 fitView（由 fit-view-on-init 觸發）完成後鎖定視角；
-    // 之後新增/刪除節點不會因為 canvasMinWidth 改變而重置
-    nextTick(() => {
-      window.setTimeout(() => {
-        userHasPanned.value = true
-      }, 800)
-    })
   })
+
+  // 初始對齊完成後鎖定視角，之後新增/刪除節點不會因為 canvasMinWidth 改變而重置。
+  // 計時從「第一次真的對齊過」起算而不是從掛載起算：節點可能是從 localStorage 還原、
+  // 或等執行結果回來才有，掛載時 nodes 還是空的，那時候 fitView 沒有東西可以對
+  const VIEWPORT_LOCK_DELAY_MS = 800
+  let hasFitted = false
+
+  function fitOnce (): void {
+    if (hasFitted) return
+    hasFitted = true
+    refreshFitView(true)
+    window.setTimeout(() => {
+      userHasPanned.value = true
+    }, VIEWPORT_LOCK_DELAY_MS)
+  }
 
   onBeforeUnmount(() => {
     // 清理監聽，避免 memory leak
@@ -143,12 +150,11 @@
       setNodes(newNodes)
       const key = nodeStructureKey(newNodes)
       if (key !== prevStructureKey) {
-        const isFirstLoad = prevStructureKey === ''
         prevStructureKey = key
         nextTick(() => {
           setEdges(props.edges)
-          // 只有第一次載入才 fitView；後續新增/刪除節點不重置視角
-          if (isFirstLoad) refreshFitView()
+          // 只有第一次拿到節點才 fitView；後續新增/刪除不重置視角
+          if (newNodes.length > 0) fitOnce()
         })
       }
     },
