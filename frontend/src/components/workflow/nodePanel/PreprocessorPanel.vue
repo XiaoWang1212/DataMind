@@ -55,7 +55,8 @@
     return STEP_LABELS[type] ?? type
   }
 
-  const HIDDEN_KEYS = new Set(['type'])
+  // columns 常常是一長串欄位名稱，卡片裡放不下會跟其他卡片重疊，不顯示
+  const HIDDEN_KEYS = new Set(['type', 'columns'])
 
   function visibleParams (step: Record<string, unknown>): [string, string][] {
     return Object.entries(step)
