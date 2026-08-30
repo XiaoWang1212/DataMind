@@ -52,35 +52,15 @@
         <v-icon class="ci-info__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-info__title">Bootstrap 信賴區間</h4>
-          <p class="ci-info__sub">對每個評估指標計算 95% 信賴區間</p>
+          <p class="ci-info__sub">
+            用重抽樣方式估算每個評估指標的 95% 信賴區間，適合需要量化不確定性的學術場景。
+          </p>
         </div>
-      </div>
-
-      <div class="ci-info__section">
-        <h5 class="ci-info__section-title">這個節點做什麼？</h5>
-        <p class="ci-info__text">
-          使用 Bootstrap 重抽樣方法，對模型評估指標（AUC、F1、MCC 等）估算 95% 信賴區間，
-          讓結果更具統計嚴謹性，適合學術論文或需要量化不確定性的場景。
-        </p>
-      </div>
-
-      <div class="ci-info__section">
-        <h5 class="ci-info__section-title">運作方式</h5>
-        <ul class="ci-info__list">
-          <li>從測試集以重抽樣方式產生多組樣本</li>
-          <li>對每組樣本計算評估指標</li>
-          <li>取第 2.5 與 97.5 百分位數作為信賴區間上下界</li>
-        </ul>
       </div>
 
       <div class="ci-info__notice">
         <v-icon icon="mdi-alert-outline" size="16" />
-        <p>計算時間顯著增加，建議在模型確認後再開啟。</p>
-      </div>
-
-      <div class="ci-info__footer">
-        <v-icon icon="mdi-cog-outline" size="16" />
-        <p>若要啟用或停用 Compute CI，請至 <strong>Settings</strong> 節點調整。</p>
+        <p>計算時間會顯著增加，建議模型確認後再開啟；請至 <strong>Settings</strong> 節點啟用或停用。</p>
       </div>
     </template>
   </div>
@@ -307,39 +287,6 @@
     color: var(--color-secondary);
   }
 
-  .ci-info__section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .ci-info__section-title {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .ci-info__text {
-    margin: 0;
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.6;
-  }
-
-  .ci-info__list {
-    margin: 0;
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.5;
-  }
-
   .ci-info__notice {
     display: flex;
     align-items: flex-start;
@@ -353,25 +300,11 @@
     line-height: 1.5;
   }
 
-  .ci-info__notice p,
-  .ci-info__footer p {
+  .ci-info__notice p {
     margin: 0;
   }
 
-  .ci-info__footer {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 12px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.5;
-  }
-
-  .ci-info__footer strong {
-    color: var(--color-accent);
+  .ci-info__notice strong {
+    font-weight: 600;
   }
 </style>
