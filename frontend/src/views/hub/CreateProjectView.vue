@@ -209,7 +209,8 @@
         await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
       }
 
-      router.push(`/hub/projects/${project.id}/mapping`)
+      // 用 replace 而不是 push：專案已經建立成功，瀏覽器上一頁不該讓使用者跳回建立表單
+      router.replace(`/hub/projects/${project.id}/mapping`)
     } finally {
       submitting.value = false
     }
