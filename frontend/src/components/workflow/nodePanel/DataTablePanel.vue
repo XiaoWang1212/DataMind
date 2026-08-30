@@ -109,6 +109,12 @@
                         <span class="tap-hint__dot" />
                       </span>
                     </Transition>
+                    <p
+                      v-if="column.role === 'target' && columnLikelyIdFlags[index]"
+                      class="id-warning"
+                    >
+                      這個欄位的值幾乎都不重複，可能不適合當分類目標
+                    </p>
                   </div>
                 </td>
                 <td
@@ -222,6 +228,27 @@
     return !Number.isNaN(parsed)
   }
 
+  // 把欄名拆成單字：底線/連字號/空白當分隔符，另外在 camelCase 邊界（小寫或數字後接大寫）也拆開
+  // 例如 "patient_id" -> ["patient", "id"]、"caseID" -> ["case", "ID"]
+  function splitIntoWords (header: string): string[] {
+    return header
+      .split(/[_\-\s]+/)
+      .flatMap(part => part.split(/(?<=[a-z0-9])(?=[A-Z])/))
+      .filter(Boolean)
+  }
+
+  // 疑似 ID 欄位：欄名的某個單字剛好是 "id"（避免 "valid"/"avoid" 這種結尾剛好是 id 但不是獨立單字的誤判），
+  // 或是非空值幾乎全部不重複（唯一值比例 > 0.95，且非空筆數 >= 10，樣本太少時比例不可靠）
+  function isLikelyIdColumn (header: string, values: string[]): boolean {
+    const words = splitIntoWords(header)
+    if (words.some(word => word.toLowerCase() === 'id')) return true
+
+    const nonEmpty = values.map(value => value?.trim() ?? '').filter(Boolean)
+    if (nonEmpty.length < 10) return false
+    const uniqueCount = new Set(nonEmpty).size
+    return uniqueCount / nonEmpty.length > 0.95
+  }
+
   function getColumnTypeCandidates (values: string[]): ColumnType[] {
     const trimmed = values.map(value => value?.trim() ?? '').filter(Boolean)
     const uniqueValues = new Set(trimmed)
@@ -258,7 +285,7 @@
       // 用索引而非名稱對位：Column Name 可編輯，改過名字後就跟 CSV 表頭對不上了
       const existing = useExisting ? props.columnConfig?.[index] : undefined
       const selectedType = existing?.type ?? (availableTypes[0] ?? 'text')
-      const selectedRole = existing?.role ?? 'feature'
+      const selectedRole = existing?.role ?? (isLikelyIdColumn(header, columnValues) ? 'skip' : 'feature')
 
       return {
         name: existing?.name ?? header,
@@ -379,6 +406,12 @@
 
   const columnValueLabels = computed<string[]>(() =>
     columnSettings.value.map((column, index) => computeColumnValueLabel(column, index)),
+  )
+
+  // 用「目前的」column.name（使用者可能已經改過名字）跟原始數值重新判斷，
+  // 不是沿用初始化當下算好的結果，確保使用者改名後警告狀態也會跟著更新
+  const columnLikelyIdFlags = computed<boolean[]>(() =>
+    columnSettings.value.map((column, index) => isLikelyIdColumn(column.name, getColumnRawValues(index))),
   )
 
   watch(
@@ -754,6 +787,13 @@
       animation: none;
       opacity: 0.5;
     }
+  }
+
+  .id-warning {
+    margin: 4px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--color-warning-text);
   }
 
   .target-row td,

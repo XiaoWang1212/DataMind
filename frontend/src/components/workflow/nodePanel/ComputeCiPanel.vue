@@ -3,45 +3,48 @@
     <!-- 有執行結果：顯示 CI 數據 -->
     <template v-if="ciGroups.length > 0">
       <div class="ci-panel__header">
-        <span class="ci-panel__icon">📊</span>
+        <v-icon class="ci-panel__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
           <p class="ci-panel__sub">每個指標的 CI Lower / Value / CI Upper</p>
         </div>
       </div>
 
-      <div
-        v-for="group in ciGroups"
-        :key="group.model"
-        class="ci-model-block"
-      >
-        <div class="ci-model-block__name">{{ group.model }}</div>
+      <div class="ci-controls">
+        <div class="ci-field">
+          <span class="ci-field__label">模型</span>
+          <CustomSelect
+            v-model="selectedModel"
+            class="ci-select"
+            :options="modelOptions"
+          />
+        </div>
+        <div class="ci-field">
+          <span class="ci-field__label">fold</span>
+          <CustomSelect
+            v-model="selectedFold"
+            class="ci-select"
+            :options="foldOptions"
+          />
+        </div>
+      </div>
 
+      <div v-if="currentSplitMetrics.length > 0" class="ci-table">
+        <div class="ci-table__header">
+          <span>指標</span>
+          <span class="ci-table__num">CI Lower</span>
+          <span class="ci-table__num">Value</span>
+          <span class="ci-table__num">CI Upper</span>
+        </div>
         <div
-          v-for="split in group.splits"
-          :key="split.split_name"
-          class="ci-split"
+          v-for="m in currentSplitMetrics"
+          :key="m.metric"
+          class="ci-table__row"
         >
-          <div class="ci-split__label">{{ split.split_name }}</div>
-
-          <div class="ci-table">
-            <div class="ci-table__header">
-              <span>指標</span>
-              <span class="ci-table__num">CI Lower</span>
-              <span class="ci-table__num">Value</span>
-              <span class="ci-table__num">CI Upper</span>
-            </div>
-            <div
-              v-for="m in split.metrics"
-              :key="m.metric"
-              class="ci-table__row"
-            >
-              <span class="ci-table__metric">{{ m.metric }}</span>
-              <span class="ci-table__num ci-table__num--lo">{{ fmt(m.ci_lower) }}</span>
-              <span class="ci-table__num ci-table__num--val">{{ fmt(m.value) }}</span>
-              <span class="ci-table__num ci-table__num--hi">{{ fmt(m.ci_upper) }}</span>
-            </div>
-          </div>
+          <span class="ci-table__metric">{{ m.metric }}</span>
+          <span class="ci-table__num ci-table__num--lo">{{ fmt(m.ci_lower) }}</span>
+          <span class="ci-table__num ci-table__num--val">{{ fmt(m.value) }}</span>
+          <span class="ci-table__num ci-table__num--hi">{{ fmt(m.ci_upper) }}</span>
         </div>
       </div>
     </template>
@@ -49,45 +52,26 @@
     <!-- 尚無結果：顯示靜態介紹 -->
     <template v-else>
       <div class="ci-info__header">
-        <span class="ci-info__icon">📊</span>
+        <v-icon class="ci-info__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-info__title">Bootstrap 信賴區間</h4>
-          <p class="ci-info__sub">對每個評估指標計算 95% 信賴區間</p>
+          <p class="ci-info__sub">
+            用重抽樣方式估算每個評估指標的 95% 信賴區間，適合需要量化不確定性的學術場景。
+          </p>
         </div>
       </div>
 
-      <div class="ci-info__section">
-        <h5 class="ci-info__section-title">這個節點做什麼？</h5>
-        <p class="ci-info__text">
-          使用 Bootstrap 重抽樣方法，對模型評估指標（AUC、F1、MCC 等）估算 95% 信賴區間，
-          讓結果更具統計嚴謹性，適合學術論文或需要量化不確定性的場景。
-        </p>
-      </div>
-
-      <div class="ci-info__section">
-        <h5 class="ci-info__section-title">運作方式</h5>
-        <ul class="ci-info__list">
-          <li>從測試集以重抽樣方式產生多組樣本</li>
-          <li>對每組樣本計算評估指標</li>
-          <li>取第 2.5 與 97.5 百分位數作為信賴區間上下界</li>
-        </ul>
-      </div>
-
       <div class="ci-info__notice">
-        <span>⚠️</span>
-        <p>計算時間顯著增加，建議在模型確認後再開啟。</p>
-      </div>
-
-      <div class="ci-info__footer">
-        <span>⚙️</span>
-        <p>若要啟用或停用 Compute CI，請至 <strong>Settings</strong> 節點調整。</p>
+        <v-icon icon="mdi-alert-outline" size="16" />
+        <p>計算時間會顯著增加，建議模型確認後再開啟；請至 <strong>Settings</strong> 節點啟用或停用。</p>
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   const props = defineProps<{
     workflowResult?: Record<string, unknown> | null
@@ -155,6 +139,44 @@
       })),
     }))
   })
+
+  // 每個模型每個 fold 都是一張獨立的表，一次全部攤開會變成長到滑不完的清單，
+  // 改成跟 ConfusionMatrixPanel 一樣的模型/fold 下拉選單，一次只顯示一張表
+  const selectedModel = ref('')
+  const selectedFold = ref('')
+
+  const modelOptions = computed(() =>
+    ciGroups.value.map(g => ({ value: g.model, label: g.model })),
+  )
+
+  const currentModelGroup = computed(() =>
+    ciGroups.value.find(g => g.model === selectedModel.value) ?? null,
+  )
+
+  const foldOptions = computed(() =>
+    (currentModelGroup.value?.splits ?? []).map(s => ({ value: s.split_name, label: s.split_name })),
+  )
+
+  const currentSplitMetrics = computed(() =>
+    currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
+  )
+
+  // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
+  watch(ciGroups, groups => {
+    if (groups.length === 0) {
+      selectedModel.value = ''
+      return
+    }
+    if (!groups.some(g => g.model === selectedModel.value)) {
+      selectedModel.value = groups[0]!.model
+    }
+  }, { immediate: true })
+
+  // 換模型（或結果載入）時，fold 一律重置為該模型的第一個
+  watch(currentModelGroup, group => {
+    const splits = group?.splits ?? []
+    selectedFold.value = splits[0]?.split_name ?? ''
+  }, { immediate: true })
 </script>
 
 <style scoped>
@@ -172,9 +194,8 @@
   }
 
   .ci-panel__icon {
-    font-size: 22px;
-    line-height: 1;
     flex-shrink: 0;
+    color: var(--color-accent);
   }
 
   .ci-panel__title {
@@ -190,36 +211,28 @@
     color: var(--color-secondary);
   }
 
-  /* ── 模型區塊 ── */
-  .ci-model-block {
+  /* ── 模型／fold 選擇 ── */
+  .ci-controls {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .ci-field {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    padding: 10px;
-    background: color-mix(in oklab, var(--color-accent) 3%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
-    border-radius: var(--radius-md);
   }
 
-  .ci-model-block__name {
+  .ci-field__label {
     font-size: 13px;
-    font-weight: 500;
-    color: var(--color-accent);
+    color: var(--color-ink-soft);
+    white-space: nowrap;
   }
 
-  /* ── Split ── */
-  .ci-split {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .ci-split__label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--color-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+  .ci-select {
+    width: 160px;
   }
 
   /* ── 表格 ── */
@@ -291,9 +304,8 @@
   }
 
   .ci-info__icon {
-    font-size: 22px;
-    line-height: 1;
     flex-shrink: 0;
+    color: var(--color-accent);
   }
 
   .ci-info__title {
@@ -309,39 +321,6 @@
     color: var(--color-secondary);
   }
 
-  .ci-info__section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .ci-info__section-title {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .ci-info__text {
-    margin: 0;
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.6;
-  }
-
-  .ci-info__list {
-    margin: 0;
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.5;
-  }
-
   .ci-info__notice {
     display: flex;
     align-items: flex-start;
@@ -355,25 +334,11 @@
     line-height: 1.5;
   }
 
-  .ci-info__notice p,
-  .ci-info__footer p {
+  .ci-info__notice p {
     margin: 0;
   }
 
-  .ci-info__footer {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 12px;
-    background: color-mix(in oklab, var(--color-accent) 4%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 12%, transparent);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    color: var(--color-secondary);
-    line-height: 1.5;
-  }
-
-  .ci-info__footer strong {
-    color: var(--color-accent);
+  .ci-info__notice strong {
+    font-weight: 600;
   }
 </style>

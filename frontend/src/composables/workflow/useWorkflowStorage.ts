@@ -1,4 +1,5 @@
 import type { EdgeBase, FlowNode } from '@/types/workflow'
+import type { TabChatMessage } from '@/api/insight'
 import type { ChatMessage, StructuredAnalysis } from '@/api/resultAnalysis'
 
 const WORKFLOW_DATA_FILE_KEY = 'workflowDataFile'
@@ -208,6 +209,59 @@ export function loadTabInsightFromStorage (
 // 要掃描 localStorage 找出屬於這個 projectId 的全部分頁解讀 key 再逐一移除
 export function clearAllTabInsightsFromStorage (projectId: string): void {
   const prefix = `${TAB_INSIGHT_KEY}_`
+  const suffix = `_${projectId}`
+  const staleKeys: string[] = []
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith(prefix) && key.endsWith(suffix)) {
+      staleKeys.push(key)
+    }
+  }
+  for (const key of staleKeys) {
+    localStorage.removeItem(key)
+  }
+}
+
+const TAB_CHAT_KEY = 'tabChat'
+
+function tabChatStorageKey (
+  projectId: string, modelName: string, splitName: string, tab: string,
+): string {
+  return k(`${TAB_CHAT_KEY}_${tab}_${modelName}_${splitName}`, projectId)
+}
+
+export function saveTabChatToStorage (
+  projectId: string, modelName: string, splitName: string, tab: string, messages: TabChatMessage[],
+): void {
+  const key = tabChatStorageKey(projectId, modelName, splitName, tab)
+  try {
+    localStorage.setItem(key, JSON.stringify(messages))
+  } catch (error) {
+    console.error('[WF-SAVE] 無法儲存分頁問答紀錄:', error)
+  }
+}
+
+export function loadTabChatFromStorage (
+  projectId: string, modelName: string, splitName: string, tab: string,
+): TabChatMessage[] {
+  const key = tabChatStorageKey(projectId, modelName, splitName, tab)
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return []
+  }
+  try {
+    return JSON.parse(raw) as TabChatMessage[]
+  } catch (error) {
+    console.error('[WF-LOAD] 分頁問答紀錄 JSON.parse FAILED:', error)
+    localStorage.removeItem(key)
+    return []
+  }
+}
+
+// 分頁問答是組合鍵（tab/model/fold 各自獨立一個 key），沒辦法像單一 key 那樣直接刪，
+// 要掃描 localStorage 找出屬於這個 projectId 的全部分頁問答 key 再逐一移除
+export function clearAllTabChatsFromStorage (projectId: string): void {
+  const prefix = `${TAB_CHAT_KEY}_`
   const suffix = `_${projectId}`
   const staleKeys: string[] = []
   for (let i = 0; i < localStorage.length; i += 1) {

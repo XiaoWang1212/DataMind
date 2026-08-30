@@ -72,14 +72,13 @@
       <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
         <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
           <path class="cm-chart-line" :d="rocPath" fill="none" />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">FPR (0 – 1)</div>
         <div class="cm-chart-axis-y">TPR (0 – 1)</div>
@@ -92,12 +91,11 @@
         <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
           <path class="cm-chart-line" :d="prPath" fill="none" />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">Recall (0 – 1)</div>
         <div class="cm-chart-axis-y">Precision (0 – 1)</div>
@@ -109,7 +107,7 @@
       <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
         <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
         <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="4" y1="96" x2="96" y2="4" />
+          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
           <path class="cm-chart-line" :d="calibrationPath" fill="none" />
           <circle
             v-for="(point, index) in calibrationPoints"
@@ -119,12 +117,11 @@
             :cy="point.y"
             r="1.5"
           />
-          <text class="cm-chart-tick" x="4" y="100">0</text>
-          <text class="cm-chart-tick" x="50" y="100" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="96" y="100" text-anchor="end">1</text>
-          <text class="cm-chart-tick" x="0" y="96">0</text>
-          <text class="cm-chart-tick" x="0" y="50">0.5</text>
-          <text class="cm-chart-tick" x="0" y="4">1</text>
+          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
         </svg>
         <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
         <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
@@ -166,7 +163,10 @@
       <div v-if="hasCurrentTabData" class="cm-insight-panel">
         <div class="cm-insight-header">AI 解讀</div>
 
-        <p v-if="isCurrentTabInsightLoading" class="cm-insight-loading">生成中...</p>
+        <p v-if="isCurrentTabInsightLoading" class="cm-insight-loading cm-thinking">
+          生成中
+          <span class="cm-thinking-dots"><span /><span /><span /></span>
+        </p>
 
         <template v-else-if="tabInsightError">
           <p class="cm-insight-error">{{ tabInsightError }}</p>
@@ -191,6 +191,55 @@
             AI 解讀
           </AppButton>
         </template>
+
+        <div class="cm-chat-divider" />
+
+        <div class="cm-chat-thread">
+          <p v-if="currentTabChatMessages.length === 0" class="cm-chat-empty">
+            針對這個圖表/表格有任何問題，都可以在下方提問。
+          </p>
+          <div
+            v-for="(msg, index) in currentTabChatMessages"
+            :key="index"
+            class="cm-chat-bubble"
+            :class="[`cm-chat-bubble--${msg.role}`, { 'cm-chat-bubble--typing': typingStates.has(chatMessageKey(index)) }]"
+          >
+            <p class="cm-chat-bubble-text">{{ typingStates.get(chatMessageKey(index)) ?? msg.text }}</p>
+          </div>
+          <p v-if="isCurrentTabChatLoading" class="cm-insight-loading cm-thinking">
+            AI 思考中
+            <span class="cm-thinking-dots"><span /><span /><span /></span>
+          </p>
+          <template v-if="currentTabChatError">
+            <p class="cm-insight-error">{{ currentTabChatError }}</p>
+            <AppButton
+              :disabled="!props.projectId || isCurrentTabChatLoading"
+              variant="ai"
+              @click="retryTabChatMessage"
+            >
+              <v-icon icon="mdi-shimmer" size="14" />
+              重試
+            </AppButton>
+          </template>
+        </div>
+
+        <form class="cm-chat-input-row" @submit.prevent="sendTabChatMessage">
+          <input
+            v-model="tabChatInput"
+            class="cm-chat-input"
+            type="text"
+            placeholder="針對這個圖表提問..."
+            :disabled="!props.projectId || isCurrentTabChatLoading"
+          >
+          <AppButton
+            :disabled="!props.projectId || isCurrentTabChatLoading || !tabChatInput.trim()"
+            :loading="isCurrentTabChatLoading"
+            type="submit"
+            variant="primary"
+          >
+            送出
+          </AppButton>
+        </form>
       </div>
     </div>
 
@@ -201,11 +250,16 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
-  import { fetchTabInsight } from '@/api/insight'
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { fetchTabChatReply, fetchTabInsight, type TabChatMessage } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
-  import { loadTabInsightFromStorage, saveTabInsightToStorage } from '@/composables/workflow/useWorkflowStorage.ts'
+  import {
+    loadTabChatFromStorage,
+    loadTabInsightFromStorage,
+    saveTabChatToStorage,
+    saveTabInsightToStorage,
+  } from '@/composables/workflow/useWorkflowStorage.ts'
 
   interface ConfusionMatrixData {
     labels: string[]
@@ -511,23 +565,162 @@
     }
   }
 
+  // 每個 (tab, model, fold) 組合各自獨立一串對話，key 格式跟 tabInsightCache 完全一樣，
+  // 直接共用 tabInsightCacheKey()/currentTabInsightKey，不需要另外一套 key 邏輯
+  const tabChatCache = ref<Map<string, TabChatMessage[]>>(new Map())
+  const tabChatInput = ref('')
+  // 用 Set 而非單一 ref，讓不同組合可以同時各自處於 loading 狀態，
+  // 避免在 A 送出後切到 B 又送出，B 把 A 的 loading 狀態蓋掉
+  const tabChatLoadingKeys = ref<Set<string>>(new Set())
+  const tabChatError = ref<Map<string, string>>(new Map())
+  // 只保留最近 N 則訊息寫入 localStorage，避免單一組合的對話無上限成長撐爆 quota
+  // （purgeLegacyDataFileEntries() 的註解記錄過同類問題曾經因為 localStorage 爆量而讓其他地方存檔悄悄失敗）
+  const MAX_PERSISTED_MESSAGES = 40
+
+  const currentTabChatMessages = computed(() =>
+    tabChatCache.value.get(currentTabInsightKey.value) ?? [],
+  )
+
+  const isCurrentTabChatLoading = computed(() => tabChatLoadingKeys.value.has(currentTabInsightKey.value))
+
+  const currentTabChatError = computed(() =>
+    tabChatError.value.get(currentTabInsightKey.value) ?? null,
+  )
+
+  // 打字機效果：只有「剛收到的這一則」AI 回覆會逐字顯示，從 localStorage/快取讀回來的舊訊息
+  // 直接整段顯示，不會每次切回這個分頁又重播一次。key 是 `${組合key}::${訊息在陣列裡的 index}`，
+  // 播放中途切走分頁也沒關係——timer 還是會跑完，只是使用者當下看不到（chatMessageKey 是用
+  // 目前顯示中的組合算出來的，跟正在播放的訊息 key 對不上時，畫面就直接顯示完整文字）
+  const typingStates = ref<Map<string, string>>(new Map())
+  const typingTimers = new Map<string, ReturnType<typeof setInterval>>()
+  const TYPEWRITER_INTERVAL_MS = 18
+
+  function chatMessageKey (index: number): string {
+    return `${currentTabInsightKey.value}::${index}`
+  }
+
+  function startTypewriter (msgKey: string, fullText: string): void {
+    const existingTimer = typingTimers.get(msgKey)
+    if (existingTimer) clearInterval(existingTimer)
+
+    let shown = 0
+    const timer = setInterval(() => {
+      shown += 1
+      typingStates.value = new Map(typingStates.value).set(msgKey, fullText.slice(0, shown))
+      if (shown >= fullText.length) {
+        clearInterval(timer)
+        typingTimers.delete(msgKey)
+        const next = new Map(typingStates.value)
+        next.delete(msgKey)
+        typingStates.value = next
+      }
+    }, TYPEWRITER_INTERVAL_MS)
+    typingTimers.set(msgKey, timer)
+  }
+
+  onBeforeUnmount(() => {
+    for (const timer of typingTimers.values()) clearInterval(timer)
+    typingTimers.clear()
+  })
+
+  // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
+  // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
+  async function requestTabChatReply (
+    tab: TabKey, model: string, fold: string, history: TabChatMessage[], text: string,
+  ): Promise<void> {
+    if (!props.projectId || !props.workflowResult) return
+    const key = tabInsightCacheKey(tab, model, fold)
+
+    tabChatLoadingKeys.value = new Set(tabChatLoadingKeys.value).add(key)
+    if (tabChatError.value.has(key)) {
+      const nextError = new Map(tabChatError.value)
+      nextError.delete(key)
+      tabChatError.value = nextError
+    }
+    try {
+      const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
+      const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
+      tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
+      saveTabChatToStorage(props.projectId, model, fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES))
+      startTypewriter(`${key}::${messages.length - 1}`, reply)
+    } catch (error) {
+      tabChatError.value = new Map(tabChatError.value).set(
+        key, error instanceof Error ? error.message : String(error),
+      )
+    } finally {
+      const nextLoadingKeys = new Set(tabChatLoadingKeys.value)
+      nextLoadingKeys.delete(key)
+      tabChatLoadingKeys.value = nextLoadingKeys
+    }
+  }
+
+  async function sendTabChatMessage (): Promise<void> {
+    const text = tabChatInput.value.trim()
+    if (!text || !props.projectId || !props.workflowResult) return
+
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+    const cachedMessages = tabChatCache.value.get(key) ?? []
+    // 如果上一則還是「還沒被回覆的 user 訊息」（送出失敗留下的），視為使用者放棄那次嘗試，
+    // 把它從 history 跟畫面快取裡都拿掉，避免產生連續兩筆 user 訊息、破壞跟後端對話輪替的順序
+    const hasTrailingUnansweredUserMessage =
+      cachedMessages[cachedMessages.length - 1]?.role === 'user'
+    const history = hasTrailingUnansweredUserMessage
+      ? cachedMessages.slice(0, -1)
+      : cachedMessages
+
+    tabChatInput.value = ''
+    tabChatCache.value = new Map(tabChatCache.value).set(key, [...history, { role: 'user' as const, text }])
+    if (tabChatError.value.has(key)) {
+      const nextError = new Map(tabChatError.value)
+      nextError.delete(key)
+      tabChatError.value = nextError
+    }
+
+    await requestTabChatReply(tab, model, fold, history, text)
+  }
+
+  // 失敗時使用者的訊息還留在畫面上（陣列最後一筆是 role:'user'），重試就是拿掉那一筆當 history、
+  // 用同一則訊息內容再打一次 API，不會讓使用者的問題重複出現在 history 裡
+  function retryTabChatMessage (): void {
+    const tab = activeTab.value
+    const model = selectedModel.value
+    const fold = selectedFold.value
+    const key = tabInsightCacheKey(tab, model, fold)
+    const messages = tabChatCache.value.get(key) ?? []
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== 'user') return
+    const history = messages.slice(0, -1)
+    void requestTabChatReply(tab, model, fold, history, lastMessage.text)
+  }
+
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
   watch([activeTab, selectedModel, selectedFold], () => {
     tabInsightError.value = null
+    tabChatInput.value = ''
     if (!props.projectId) return
     const tab = activeTab.value
     const model = selectedModel.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
-    if (tabInsightCache.value.has(key)) return
-    const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
-    if (cached !== null) {
-      tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
+    if (!tabInsightCache.value.has(key)) {
+      const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
+      if (cached !== null) {
+        tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
+      }
+    }
+    if (!tabChatCache.value.has(key)) {
+      const cachedChat = loadTabChatFromStorage(props.projectId, model, fold, tab)
+      if (cachedChat.length > 0) {
+        tabChatCache.value = new Map(tabChatCache.value).set(key, cachedChat)
+      }
     }
   }, { immediate: true })
 
   const CHART_SIZE = 100
-  const CHART_PADDING = 4
+  const CHART_PADDING = 18
 
   function toChartX (value: number): number {
     return CHART_PADDING + value * (CHART_SIZE - CHART_PADDING * 2)
@@ -699,7 +892,7 @@
 
   .cm-chart-wrap {
     position: relative;
-    padding: 12px 16px 28px 34px;
+    padding: 12px 16px 28px 52px;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     background: var(--color-surface);
@@ -739,7 +932,7 @@
   }
 
   .cm-chart-tick {
-    font-size: 6px;
+    font-size: 7px;
     fill: var(--color-ink-soft);
   }
 
@@ -754,10 +947,10 @@
 
   .cm-chart-axis-y {
     position: absolute;
-    left: 6px;
+    left: 4px;
     top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
-    transform-origin: left center;
+    transform: rotate(-90deg) translateX(-50%);
+    transform-origin: left top;
     font-size: 11px;
     color: var(--color-ink-soft);
     white-space: nowrap;
@@ -770,10 +963,13 @@
   }
 
   .cm-tab-row > .cm-table-wrap,
-  .cm-tab-row > .cm-chart-wrap,
   .cm-tab-row > .summary-empty {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  .cm-tab-row > .cm-chart-wrap {
+    flex: 0 0 auto;
   }
 
   .cm-insight-panel {
@@ -804,10 +1000,118 @@
     line-height: 1.6;
   }
 
+  .cm-thinking-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .cm-thinking-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: cm-thinking-bounce 1.2s infinite ease-in-out;
+  }
+
+  .cm-thinking-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .cm-thinking-dots span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes cm-thinking-bounce {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
   .cm-insight-error {
     margin: 0;
     font-size: 13px;
     color: var(--color-error-text);
+  }
+
+  .cm-chat-divider {
+    height: 1px;
+    background: rgba(148, 163, 184, 0.22);
+  }
+
+  .cm-chat-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cm-chat-empty {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-secondary);
+  }
+
+  .cm-chat-bubble {
+    max-width: 90%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+  }
+
+  .cm-chat-bubble--user {
+    align-self: flex-end;
+    background: color-mix(in oklab, var(--color-accent) 16%, transparent);
+  }
+
+  .cm-chat-bubble--model {
+    align-self: flex-start;
+  }
+
+  .cm-chat-bubble-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-ink);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .cm-chat-bubble--typing .cm-chat-bubble-text::after {
+    content: '▍';
+    display: inline-block;
+    margin-left: 1px;
+    animation: cm-typing-cursor 0.8s steps(1) infinite;
+  }
+
+  @keyframes cm-typing-cursor {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .cm-chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .cm-chat-input {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-size: 13px;
+  }
+
+  .cm-chat-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
   }
 
   .summary-empty {

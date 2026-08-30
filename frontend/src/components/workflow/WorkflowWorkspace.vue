@@ -140,6 +140,7 @@
   import { useWorkflowImport } from '@/composables/workflow/useWorkflowImport.ts'
   import { useWorkflowNodes } from '@/composables/workflow/useWorkflowNodes.ts'
   import {
+    clearAllTabChatsFromStorage,
     clearAllTabInsightsFromStorage,
     clearResultInsightFromStorage,
     loadWorkflowDataFileFromStorage,
@@ -151,6 +152,7 @@
   import { INITIAL_EDGES, INITIAL_NODES } from '@/constants/workflowData'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
+  import { expandAutoFillNaSteps } from '@/utils/workflow/fillNaColumnSplit'
   import IconNode from './IconNode.vue'
   import InterruptConfirmDialog from './InterruptConfirmDialog.vue'
   import UploadDialog from './UploadDialog.vue'
@@ -342,6 +344,7 @@
     if (projectId.value) {
       clearResultInsightFromStorage(projectId.value)
       clearAllTabInsightsFromStorage(projectId.value)
+      clearAllTabChatsFromStorage(projectId.value)
     }
     dataTableApplied.value = true
     workflowError.value = null
@@ -354,6 +357,7 @@
     if (projectId.value) {
       clearResultInsightFromStorage(projectId.value)
       clearAllTabInsightsFromStorage(projectId.value)
+      clearAllTabChatsFromStorage(projectId.value)
     }
     markProjectRunning()
     continueWorkflow()
@@ -441,7 +445,23 @@
 
   function configChangeIsNoOp (nodeId: string, config: Record<string, ConfigValue>): boolean {
     const current = nodes.value.find(n => n.id === nodeId)?.data.config ?? {}
-    return Object.keys(config).every(key => configValuesEqual(current[key], config[key]))
+    return Object.keys(config).every(key => {
+      // SettingsPanel 一開啟就會把「沒指定 columns 的 fill_na」步驟自動展開成明確欄位版本
+      // （expandAutoFillNaSteps，冪等操作，純粹是格式正規化，不是使用者真的動了設定）。
+      // 兩邊都展開後再比較，才不會把這個自動展開誤判成「有變更」而跳出中斷確認、
+      // 而且因為底下實際設定從未真的更新，取消後一重新掛載又會展開一次，變成無限彈窗
+      if (key === 'preprocessing' && Array.isArray(config[key])) {
+        const currentSteps = Array.isArray(current[key])
+          ? current[key] as Array<Record<string, unknown>>
+          : []
+        const newSteps = config[key] as Array<Record<string, unknown>>
+        return configValuesEqual(
+          expandAutoFillNaSteps(currentSteps, dataTableColumns.value),
+          expandAutoFillNaSteps(newSteps, dataTableColumns.value),
+        )
+      }
+      return configValuesEqual(current[key], config[key])
+    })
   }
 
   function handleUpdateConfig (payload: { nodeId: string, config: Record<string, ConfigValue> }): void {
