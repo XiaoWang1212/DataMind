@@ -2,50 +2,52 @@
   <div class="dashboard">
     <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="主頁" />
 
-    <div class="action-grid enter-stagger">
-      <RouterLink class="action-card" to="/hub/library/extract">
-        <div class="action-icon-wrap">
-          <v-icon icon="mdi-file-document-plus-outline" size="22" />
-        </div>
-        <div class="action-text">
-          <div class="action-title">提取新框架</div>
-          <div class="action-desc">上傳研究論文以提取方法論和變數</div>
-        </div>
-      </RouterLink>
+    <div class="dashboard-grid">
+      <div class="action-col enter-stagger">
+        <RouterLink class="action-card" to="/hub/library/extract">
+          <div class="action-icon-wrap">
+            <v-icon icon="mdi-file-document-plus-outline" size="22" />
+          </div>
+          <div class="action-text">
+            <div class="action-title">提取新框架</div>
+            <div class="action-desc">上傳研究論文以提取方法論和變數</div>
+          </div>
+        </RouterLink>
 
-      <RouterLink class="action-card" to="/hub/projects/new">
-        <div class="action-icon-wrap">
-          <v-icon icon="mdi-folder-plus-outline" size="22" />
-        </div>
-        <div class="action-text">
-          <div class="action-title">建立新專案</div>
-          <div class="action-desc">將框架套用至您的資料集並執行分析</div>
-        </div>
-      </RouterLink>
-    </div>
-
-    <div class="activity-card">
-      <div class="activity-header">
-        <v-icon icon="mdi-clock-outline" size="18" />
-        <span class="activity-title">最近活動</span>
+        <RouterLink class="action-card" to="/hub/projects/new">
+          <div class="action-icon-wrap">
+            <v-icon icon="mdi-folder-plus-outline" size="22" />
+          </div>
+          <div class="action-text">
+            <div class="action-title">建立新專案</div>
+            <div class="action-desc">將框架套用至您的資料集並執行分析</div>
+          </div>
+        </RouterLink>
       </div>
-      <p v-if="activities.length === 0" class="activity-empty">
-        還沒有任何活動，建立專案或提取框架後會顯示在這裡。
-      </p>
-      <component
-        :is="item.link ? RouterLink : 'div'"
-        v-for="(item, i) in activities"
-        :key="`${item.name}-${item.date}-${i}`"
-        class="activity-item"
-        :class="{ 'activity-item--last': i === activities.length - 1, 'activity-item--link': item.link }"
-        :to="item.link ?? undefined"
-      >
-        <div class="activity-info">
-          <div class="activity-name">{{ item.name }}</div>
-          <div class="activity-status">{{ item.status }}</div>
+
+      <div class="activity-card">
+        <div class="activity-header">
+          <v-icon icon="mdi-clock-outline" size="18" />
+          <span class="activity-title">最近活動</span>
         </div>
-        <div class="activity-time">{{ item.time }}</div>
-      </component>
+        <p v-if="activities.length === 0" class="activity-empty">
+          還沒有任何活動，建立專案或提取框架後會顯示在這裡。
+        </p>
+        <component
+          :is="item.link ? RouterLink : 'div'"
+          v-for="(item, i) in activities"
+          :key="`${item.name}-${item.date}-${i}`"
+          class="activity-item"
+          :class="{ 'activity-item--last': i === activities.length - 1, 'activity-item--link': item.link }"
+          :to="item.link ?? undefined"
+        >
+          <div class="activity-info">
+            <div class="activity-name">{{ item.name }}</div>
+            <div class="activity-status">{{ item.status }}</div>
+          </div>
+          <div class="activity-time">{{ item.time }}</div>
+        </component>
+      </div>
     </div>
   </div>
 </template>
@@ -120,16 +122,30 @@
     margin-inline: auto;
   }
 
-  /* ── 行動 ── */
-  .action-grid {
+  /* ── 主頁面版面：左邊行動卡片、右邊最近活動並排，避免行動卡片下方留一大片空白 ── */
+  .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 300px 1fr;
+    align-items: stretch;
     gap: 16px;
-    margin-bottom: 16px;
+  }
+
+  @media (max-width: 860px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ── 行動 ── */
+  .action-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .action-card {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: 16px;
     padding: 20px;
