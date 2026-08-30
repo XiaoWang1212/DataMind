@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createProject, type CreateProjectPayload, listProjects, updateProject } from '@/api/project'
+import { createProject, type CreateProjectPayload, deleteProject as deleteProjectApi, listProjects, updateProject } from '@/api/project'
 import { fetchWorkflowJob, WorkflowJobNotFoundError } from '@/api/workflow'
 import { clearActiveJobIdFromStorage, loadWorkflowStateFromStorage } from '@/composables/workflow/useWorkflowStorage'
 
@@ -58,6 +58,12 @@ export const useProjectStore = defineStore('project', () => {
     const created = await createProject(p)
     projects.value = [created, ...projects.value]
     return created
+  }
+
+  async function deleteProject (projectId: number): Promise<void> {
+    await deleteProjectApi(projectId)
+    stopProjectJobPolling(projectId)
+    projects.value = projects.value.filter(p => p.id !== projectId)
   }
 
   async function updateProjectStatus (projectId: number, status: Project['status']): Promise<void> {
@@ -181,5 +187,5 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  return { projects, activeContext, loadProjects, addProject, updateProjectStatus, setProjectProgress, pollProjectJob, stopProjectJobPolling, setActiveContext, clearActiveContext, saveColumnMapping }
+  return { projects, activeContext, loadProjects, addProject, deleteProject, updateProjectStatus, setProjectProgress, pollProjectJob, stopProjectJobPolling, setActiveContext, clearActiveContext, saveColumnMapping }
 })

@@ -9,6 +9,9 @@
         <span v-if="hasTarget">
           已選定目標變數「{{ targetColumnName }}」，按右下角「繼續」即可進入下一步。
         </span>
+        <span v-else-if="props.targetColumnHint">
+          根據框架建議，目標欄位應該對應「{{ props.targetColumnHint }}」，請在下方「Role」欄位選擇對應的欄位設為 <strong>Target</strong>，再按右下角「繼續」。
+        </span>
         <span v-else>
           請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
         </span>
@@ -16,7 +19,17 @@
       <div v-else-if="headerState === 'summary'" class="data-table-summary-inline">
         <span>{{ previewColumns.length }} 個欄位</span>
         <span>{{ previewDataRows.length }} 筆已讀取</span>
+        <span v-if="hasTarget">目標變數：{{ targetColumnName }}</span>
       </div>
+      <AppButton
+        v-if="headerState === 'guide' && !hasTarget && targetHintColumnIndex !== -1"
+        class="apply-target-hint-btn"
+        variant="secondary"
+        @click="applyTargetHint"
+      >
+        <v-icon icon="mdi-target" size="15" />
+        套用建議
+      </AppButton>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
       </div>
@@ -153,6 +166,7 @@
     fileName?: string | null
     columnConfig?: ColumnConfig[]
     loading?: boolean
+    targetColumnHint?: string
   }>()
 
   const emit = defineEmits<{
@@ -281,6 +295,25 @@
         col.role = 'feature'
       }
     })
+  }
+
+  // 框架建議的目標欄位名稱通常是對齊頁改名後的結果，會跟欄位名完全相符；
+  // 找不到就不顯示「套用建議」按鈕，避免使用者點了卻沒反應
+  const targetHintColumnIndex = computed(() => {
+    const hint = props.targetColumnHint?.trim()
+    if (!hint) return -1
+    return columnSettings.value.findIndex(
+      c => c.name.trim().toLowerCase() === hint.toLowerCase(),
+    )
+  })
+
+  function applyTargetHint (): void {
+    const index = targetHintColumnIndex.value
+    if (index === -1) return
+    columnSettings.value[index]!.role = 'target'
+    onRoleChange(index)
+    // 等同使用者自己動過 Role 欄，關掉左上角那個引導用的脈動提示
+    roleSelectTouched.value = true
   }
 
   function getColumnRawValues (index: number): string[] {
@@ -462,6 +495,13 @@
     gap: 12px;
   }
 
+  /* 跟旁邊的提示文字同高，比預設的 app-btn 稍窄一點 */
+  .apply-target-hint-btn {
+    flex-shrink: 0;
+    padding: 6px 14px 6px 12px;
+    font-size: 13px;
+  }
+
   .data-table-file {
     flex-shrink: 0;
     margin-left: auto;
@@ -495,7 +535,8 @@
   }
 
   .data-table-guide {
-    flex: 1 1 auto;
+    /* grow:0，讓「套用建議」按鈕緊貼在文字後面，不要被撐開的空間推到最右邊 */
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

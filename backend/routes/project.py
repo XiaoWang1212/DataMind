@@ -4,7 +4,11 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from extensions import db
+from models.dataset import Dataset
 from models.project import Project, ProjectStatus
+from models.rag_paper import RagChunk, RagPaper
+from models.report import Citation, Report
+from models.workflow_state import WorkflowState
 
 project_bp = Blueprint("project", __name__)
 
@@ -105,3 +109,32 @@ def update_project(project_id):
 
     db.session.commit()
     return jsonify({"success": True, "result": _serialize_project(project)})
+
+
+@project_bp.route("/<int:project_id>", methods=["DELETE"])
+@login_required
+def delete_project(project_id):
+    project = Project.query.get(project_id)
+    if not project or project.user_id != current_user.id:
+        return jsonify({"success": False, "error": "找不到專案"}), 404
+
+    # projects.id 被多張表外鍵參照、且都沒有設 cascade，直接刪 project 會撞到
+    # 外鍵約束，所以要先手動清掉這些關聯列，最後才刪 project 本身
+    report = Report.query.filter_by(project_id=project_id).first()
+    if report:
+        Citation.query.filter_by(report_id=report.id).delete()
+        db.session.delete(report)
+
+    rag_paper_ids = [
+        p.id for p in RagPaper.query.filter_by(project_id=project_id).with_entities(RagPaper.id)
+    ]
+    if rag_paper_ids:
+        RagChunk.query.filter(RagChunk.paper_id.in_(rag_paper_ids)).delete(synchronize_session=False)
+        RagPaper.query.filter_by(project_id=project_id).delete()
+
+    WorkflowState.query.filter_by(project_id=project_id).delete()
+    Dataset.query.filter_by(project_id=project_id).delete()
+
+    db.session.delete(project)
+    db.session.commit()
+    return jsonify({"success": True, "result": None})
