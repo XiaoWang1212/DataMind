@@ -19,6 +19,7 @@
             :file="props.file"
             :file-name="fileName"
             :loading="props.pausedNodeId === 'dataTable'"
+            :target-column-hint="props.targetColHint"
             @apply-column-config="handleApplyColumnConfig"
             @update-column-config="handleColumnConfigChange"
           />
@@ -283,6 +284,7 @@
     modelOptionsLoading?: boolean
     validationConfig?: Record<string, unknown>
     datasetColumns?: Array<{ name: string, type: string, role: string }>
+    targetColHint?: string
     projectId?: string
   }>()
 

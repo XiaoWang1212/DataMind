@@ -325,6 +325,12 @@
   }
 
   .paper-toolbar {
+    /* .paper-page 只設 min-height，內容一長（尤其編輯模式沒有高度上限）就會撐開
+       整頁，變成瀏覽器視窗本身在捲動；工具列要 sticky 才不會跟著捲走，
+       backdrop-filter 讓底下捲過去的內容不會直接貼著文字 */
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
     /* 標題太長換行時用頂對齊，兩側的按鈕才不會被拉去跟著整段標題垂直置中 */
     align-items: flex-start;
@@ -334,6 +340,9 @@
     margin: 0 auto;
     padding: 0 2px 10px;
     border-bottom: 1px solid var(--color-border);
+    background: color-mix(in oklab, var(--color-surface) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .paper-title {

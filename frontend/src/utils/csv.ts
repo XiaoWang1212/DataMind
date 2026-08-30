@@ -4,8 +4,14 @@
  * DataTablePanel、DistributionPanel、欄位對齊頁三處共用，不要各自再抄一份。
  */
 
-/** 解析一行 CSV，處理雙引號包住的欄位與跳脫的雙引號。 */
-export function parseCsvLine (line: string): string[] {
+/**
+ * 解析一行 CSV，處理雙引號包住的欄位與跳脫的雙引號。
+ *
+ * 預設會 trim 每個儲存格，改寫資料列（刪欄位）時要保留原始空白，
+ * 這時傳 `{ trim: false }`。
+ */
+export function parseCsvLine (line: string, options?: { trim?: boolean }): string[] {
+  const trim = options?.trim ?? true
   const out: string[] = []
   let cur = ''
   let inQuotes = false
@@ -26,7 +32,7 @@ export function parseCsvLine (line: string): string[] {
     }
 
     if (ch === ',' && !inQuotes) {
-      out.push(cur.trim())
+      out.push(trim ? cur.trim() : cur)
       cur = ''
       continue
     }
@@ -34,7 +40,7 @@ export function parseCsvLine (line: string): string[] {
     cur += ch
   }
 
-  out.push(cur.trim())
+  out.push(trim ? cur.trim() : cur)
   return out
 }
 
@@ -72,4 +78,3 @@ export async function decodeFileText (file: File): Promise<string> {
 
   return big5Score > utf8Score ? big5Text : utf8Text
 }
-

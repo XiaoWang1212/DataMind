@@ -47,6 +47,7 @@
           />
         </div>
       </template>
+      <p v-if="currentStep === 0 && stepError" class="step-error">{{ stepError }}</p>
 
       <!-- Step 2: Select Framework -->
       <template v-if="currentStep === 1">
@@ -67,7 +68,19 @@
             <div class="fw-select-name">{{ fw.title }}</div>
             <div class="fw-select-tag">{{ fw.tag }}</div>
           </div>
+          <div
+            class="fw-select-card"
+            :class="{ 'fw-select-card--selected': form.frameworkId === NO_FRAMEWORK_ID }"
+            @click="form.frameworkId = NO_FRAMEWORK_ID"
+          >
+            <div class="fw-select-icon">
+              <v-icon icon="mdi-book-off-outline" size="20" />
+            </div>
+            <div class="fw-select-name">不使用框架</div>
+            <div class="fw-select-tag">跳過欄位對齊，直接進工作區</div>
+          </div>
         </div>
+        <p v-if="stepError" class="step-error">{{ stepError }}</p>
       </template>
 
       <!-- Step 3: Upload Dataset -->
@@ -81,6 +94,7 @@
           icon="mdi-table-arrow-up"
           text="點擊或拖放資料集檔案"
         />
+        <p v-if="stepError" class="step-error">{{ stepError }}</p>
       </template>
 
       <!-- Step 4: Review & Execute -->
@@ -97,7 +111,7 @@
           </div>
           <div class="review-row">
             <span class="review-key">選擇框架</span>
-            <span class="review-val">{{ selectedFramework?.title || '（未選擇）' }}</span>
+            <span class="review-val">{{ frameworkReviewLabel }}</span>
           </div>
           <div class="review-row">
             <span class="review-key">資料集</span>
@@ -109,10 +123,10 @@
 
     <!-- Footer buttons -->
     <div class="form-footer">
-      <AppButton :disabled="currentStep === 0" variant="ghost" @click="currentStep--">
+      <AppButton :disabled="currentStep === 0" variant="ghost" @click="goBack">
         上一步
       </AppButton>
-      <AppButton v-if="currentStep < 3" variant="primary" @click="currentStep++">
+      <AppButton v-if="currentStep < 3" variant="primary" @click="goNext">
         下一步
         <v-icon icon="mdi-chevron-right" size="17" />
       </AppButton>
@@ -140,6 +154,10 @@
   const projectStore = useProjectStore()
   const currentStep = ref(0)
   const submitting = ref(false)
+  const stepError = ref<string | null>(null)
+
+  // 跟「尚未選擇」的預設 null 區分開，選了才會跳過欄位對齊
+  const NO_FRAMEWORK_ID = -1
 
   const steps = [
     { title: '專案設定', sub: '基本資訊' },
@@ -182,19 +200,58 @@
     frameworkStore.frameworks.find(f => f.id === form.value.frameworkId) ?? null,
   )
 
+  const frameworkReviewLabel = computed(() => {
+    if (form.value.frameworkId === NO_FRAMEWORK_ID) return '不使用框架'
+    return selectedFramework.value?.title || '（未選擇）'
+  })
+
   function stepCircleClass (i: number): string {
     if (i < currentStep.value) return 'step-circle--done'
     if (i === currentStep.value) return 'step-circle--active'
     return 'step-circle--inactive'
   }
 
+  // 只驗證「往前走」會需要的那一步，回頭看已經填過的步驟不擋
+  function validateStep (i: number): string | null {
+    if (i === 0 && !form.value.name.trim()) return '請輸入專案名稱'
+    if (i === 1 && form.value.frameworkId === null) return '請選擇一個框架，或選擇不使用框架'
+    if (i === 2 && !form.value.datasetFile) return '請上傳資料集檔案'
+    return null
+  }
+
+  function goNext (): void {
+    const error = validateStep(currentStep.value)
+    if (error) {
+      stepError.value = error
+      return
+    }
+    stepError.value = null
+    currentStep.value++
+  }
+
+  function goBack (): void {
+    stepError.value = null
+    currentStep.value--
+  }
+
+  // 使用者補上欄位後，錯誤提示要立刻消失，不用等他再按一次下一步
+  watch(() => [form.value.name, form.value.frameworkId, form.value.datasetFile], () => {
+    if (stepError.value && !validateStep(currentStep.value)) {
+      stepError.value = null
+    }
+  })
+
   async function executeProject (): Promise<void> {
     submitting.value = true
     try {
+      // sentinel 只在這個 view 內部有意義，存進資料庫/activeContext 一律還原成 null
+      const noFramework = form.value.frameworkId === NO_FRAMEWORK_ID
+      const frameworkId = noFramework ? null : form.value.frameworkId
+
       const project = await projectStore.addProject({
         name: form.value.name || '未命名專案',
         description: form.value.description,
-        frameworkId: form.value.frameworkId,
+        frameworkId,
         datasetName: form.value.datasetFile?.name ?? '',
         variables: selectedFramework.value?.variables ?? 0,
       })
@@ -202,7 +259,7 @@
       projectStore.setActiveContext({
         projectId: project.id,
         datasetFile: form.value.datasetFile,
-        frameworkId: form.value.frameworkId,
+        frameworkId,
       })
 
       // 先寫進 IndexedDB：activeContext 只活在記憶體裡，
@@ -212,8 +269,13 @@
         await saveWorkflowDataFileToStorage(form.value.datasetFile, String(project.id))
       }
 
+      // 沒有框架就沒有變數清單可對，欄位對齊頁會直接報錯，所以整段跳過
       // 用 replace 而不是 push：專案已經建立成功，瀏覽器上一頁不該讓使用者跳回建立表單
-      router.replace(`/hub/projects/${project.id}/mapping`)
+      router.replace(
+        noFramework
+          ? `/workflow?project=${project.id}`
+          : `/hub/projects/${project.id}/mapping`,
+      )
     } finally {
       submitting.value = false
     }
@@ -329,6 +391,12 @@
 
   .form-field {
     margin-bottom: 20px;
+  }
+
+  .step-error {
+    margin: 14px 0 0;
+    font-size: 13px;
+    color: var(--color-error-text);
   }
 
   .form-label {

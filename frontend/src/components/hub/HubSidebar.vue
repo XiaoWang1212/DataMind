@@ -123,7 +123,7 @@
   }
 
   const navItems = [
-    { to: '/hub/dashboard', icon: 'mdi-home-outline', label: '儀表板' },
+    { to: '/hub/dashboard', icon: 'mdi-home-outline', label: '主頁' },
     { to: '/hub/library', icon: 'mdi-book-open-outline', label: '框架庫' },
     { to: '/hub/projects', icon: 'mdi-folder-outline', label: '專案' },
     { to: '/hub/settings', icon: 'mdi-cog-outline', label: '設定' },

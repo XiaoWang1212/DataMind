@@ -1,76 +1,119 @@
 <template>
   <div class="dashboard">
-    <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="儀表板" />
+    <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="主頁" />
 
-    <div class="stat-grid enter-stagger">
-      <div v-for="stat in stats" :key="stat.label" class="stat-card">
-        <div class="stat-label">{{ stat.label }}</div>
-        <div class="stat-number">{{ stat.value }}</div>
-        <div class="stat-trend">
-          <v-icon icon="mdi-trending-up" size="14" />
-          {{ stat.trend }}
-        </div>
+    <div class="dashboard-grid">
+      <div class="action-col enter-stagger">
+        <RouterLink class="action-card" to="/hub/library/extract">
+          <div class="action-icon-wrap">
+            <v-icon icon="mdi-file-document-plus-outline" size="22" />
+          </div>
+          <div class="action-text">
+            <div class="action-title">提取新框架</div>
+            <div class="action-desc">上傳研究論文以提取方法論和變數</div>
+          </div>
+        </RouterLink>
+
+        <RouterLink class="action-card" to="/hub/projects/new">
+          <div class="action-icon-wrap">
+            <v-icon icon="mdi-folder-plus-outline" size="22" />
+          </div>
+          <div class="action-text">
+            <div class="action-title">建立新專案</div>
+            <div class="action-desc">將框架套用至您的資料集並執行分析</div>
+          </div>
+        </RouterLink>
       </div>
-    </div>
 
-    <div class="action-grid enter-stagger">
-      <RouterLink class="action-card" to="/hub/library/extract">
-        <div class="action-icon-wrap">
-          <v-icon icon="mdi-file-document-plus-outline" size="22" />
+      <div class="activity-card">
+        <div class="activity-header">
+          <v-icon icon="mdi-clock-outline" size="18" />
+          <span class="activity-title">最近活動</span>
         </div>
-        <div class="action-text">
-          <div class="action-title">提取新框架</div>
-          <div class="action-desc">上傳研究論文以提取方法論和變數</div>
-        </div>
-      </RouterLink>
-
-      <RouterLink class="action-card" to="/hub/projects/new">
-        <div class="action-icon-wrap">
-          <v-icon icon="mdi-folder-plus-outline" size="22" />
-        </div>
-        <div class="action-text">
-          <div class="action-title">建立新專案</div>
-          <div class="action-desc">將框架套用至您的資料集並執行分析</div>
-        </div>
-      </RouterLink>
-    </div>
-
-    <div class="activity-card">
-      <div class="activity-header">
-        <v-icon icon="mdi-clock-outline" size="18" />
-        <span class="activity-title">最近活動</span>
-      </div>
-      <div
-        v-for="(item, i) in activities"
-        :key="i"
-        class="activity-item"
-        :class="{ 'activity-item--last': i === activities.length - 1 }"
-      >
-        <div class="activity-info">
-          <div class="activity-name">{{ item.name }}</div>
-          <div class="activity-status">{{ item.status }}</div>
-        </div>
-        <div class="activity-time">{{ item.time }}</div>
+        <p v-if="activities.length === 0" class="activity-empty">
+          還沒有任何活動，建立專案或提取框架後會顯示在這裡。
+        </p>
+        <component
+          :is="item.link ? RouterLink : 'div'"
+          v-for="(item, i) in activities"
+          :key="`${item.name}-${item.date}-${i}`"
+          class="activity-item"
+          :class="{ 'activity-item--last': i === activities.length - 1, 'activity-item--link': item.link }"
+          :to="item.link ?? undefined"
+        >
+          <div class="activity-info">
+            <div class="activity-name">{{ item.name }}</div>
+            <div class="activity-status">{{ item.status }}</div>
+          </div>
+          <div class="activity-time">{{ item.time }}</div>
+        </component>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { RouterLink } from 'vue-router'
   import PageHeader from '@/components/ui/PageHeader.vue'
+  import { useFrameworkStore } from '@/store/frameworkStore'
+  import { type Project, useProjectStore } from '@/store/projectStore'
+  import { projectLink } from '@/utils/projectLink'
 
-  const stats = [
-    { label: '框架總數', value: '24', trend: '本週新增 3 個' },
-    { label: '活躍專案', value: '8', trend: '2 個進行中' },
-    { label: '已完成分析', value: '156', trend: '本月新增 12 個' },
-  ]
+  const projectStore = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
-  const activities = [
-    { name: 'CNN 架構分析', status: '框架已提取', time: '2 小時前' },
-    { name: '市場情緒研究', status: '專案已完成', time: '5 小時前' },
-    { name: '回歸模型模板', status: '框架已儲存', time: '1 天前' },
-  ]
+  const PROJECT_STATUS_LABEL: Record<Project['status'], string> = {
+    draft: '專案草稿',
+    running: '專案進行中',
+    completed: '專案已完成',
+  }
+
+  // date 是後端 created_at 格式化成 YYYY-MM-DD 的日期字串（沒有時分秒），
+  // 所以只能做到「幾天前」這種天級的相對時間，不能像設計稿那樣精確到小時
+  function relativeDateLabel (dateStr: string): string {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86_400_000)
+
+    if (diffDays <= 0) return '今天'
+    if (diffDays === 1) return '昨天'
+    if (diffDays < 30) return `${diffDays} 天前`
+    return dateStr
+  }
+
+  interface ActivityItem {
+    name: string
+    status: string
+    date: string
+    time: string
+    /** 專案項目可以點進去繼續（跟專案列表同一套規則）；框架項目沒有對應頁面，維持不可點 */
+    link: string | null
+  }
+
+  // 合併專案跟框架的建立紀錄，依日期排序，只取最近幾筆
+  const activities = computed<ActivityItem[]>(() => {
+    const fromProjects: ActivityItem[] = projectStore.projects.map(p => ({
+      name: p.name,
+      status: PROJECT_STATUS_LABEL[p.status],
+      date: p.date,
+      time: relativeDateLabel(p.date),
+      link: projectLink(p),
+    }))
+    const fromFrameworks: ActivityItem[] = frameworkStore.frameworks.map(f => ({
+      name: f.title,
+      status: '框架已提取',
+      date: f.date,
+      time: relativeDateLabel(f.date),
+      link: null,
+    }))
+
+    return [...fromProjects, ...fromFrameworks]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+  })
 </script>
 
 <style scoped>
@@ -79,55 +122,34 @@
     margin-inline: auto;
   }
 
-  /* ── 統計 ── */
-  .stat-grid {
+  /* ── 主頁面版面：左邊行動卡片、右邊最近活動並排，並把整列撐到接近視窗剩餘高度，
+     避免內容量少時下面留一大片空白。activity-card 內容不多時保持自然高度就好
+     （硬撐高只會把空白搬到卡片內部），多出來的高度交給 action-col 的兩張卡片長大 ── */
+  .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 300px 1fr;
+    align-items: stretch;
     gap: 16px;
-    margin-bottom: 16px;
+    min-height: calc(100vh - 200px);
   }
 
-  .stat-card {
-    padding: 20px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .stat-label {
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: var(--color-ink-soft);
-  }
-
-  /* 用藏青讓三個數字成為畫面的視覺錨點 */
-  .stat-number {
-    margin-bottom: 10px;
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 1;
-    color: var(--color-ink);
-  }
-
-  .stat-trend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: var(--color-ink-soft);
+  @media (max-width: 860px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
   }
 
   /* ── 行動 ── */
-  .action-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+  .action-col {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
-    margin-bottom: 16px;
   }
 
   .action-card {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: 16px;
     padding: 20px;
@@ -175,6 +197,7 @@
   /* ── 最近活動 ── */
   /* 下緣留白，讓最後一項 hover 的底色下方還看得到卡片白底 */
   .activity-card {
+    align-self: start;
     padding: 20px 24px 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -195,6 +218,13 @@
     font-weight: 500;
   }
 
+  .activity-empty {
+    margin: 0;
+    padding: 14px 0;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
+
   /* 負邊距讓 hover 底色延伸到卡片邊緣 */
   .activity-item {
     display: flex;
@@ -203,10 +233,17 @@
     margin: 0 -24px;
     padding: 14px 24px;
     border-bottom: 1px solid var(--color-border);
+    color: inherit;
+    text-decoration: none;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
 
-  .activity-item:hover {
+  /* 只有專案項目可以點進去，只讓這種才有 hover 底色跟手指游標，避免框架項目看起來能點卻沒反應 */
+  .activity-item--link {
+    cursor: pointer;
+  }
+
+  .activity-item--link:hover {
     background: var(--color-surface-alt);
   }
 

@@ -2,6 +2,10 @@
   <div class="projects">
     <PageHeader subtitle="管理您的研究專案與分析" title="專案">
       <template #actions>
+        <AppButton variant="secondary" @click="isEditing = !isEditing">
+          <v-icon :icon="isEditing ? 'mdi-check' : 'mdi-pencil-outline'" size="17" />
+          {{ isEditing ? '完成' : '編輯' }}
+        </AppButton>
         <AppButton variant="primary" @click="goToCreate">
           <v-icon icon="mdi-folder-plus-outline" size="17" />
           新專案
@@ -11,12 +15,23 @@
 
     <!-- Project list -->
     <div class="project-list enter-stagger">
-      <RouterLink
+      <component
+        :is="isEditing ? 'div' : RouterLink"
         v-for="project in store.projects"
         :key="project.id"
         class="project-card"
-        :to="projectLink(project)"
+        :class="{ 'project-card--editing': isEditing }"
+        :to="isEditing ? undefined : projectLink(project)"
       >
+        <button
+          v-if="isEditing"
+          aria-label="刪除專案"
+          class="project-delete-btn"
+          type="button"
+          @click.stop="requestDelete(project)"
+        >
+          <v-icon icon="mdi-minus" size="14" />
+        </button>
         <div class="project-title-row">
           <div class="project-icon-wrap">
             <v-icon icon="mdi-folder-outline" size="19" />
@@ -43,23 +58,53 @@
             </div>
           </template>
         </div>
-      </RouterLink>
+      </component>
     </div>
+
+    <ConfirmDialog
+      confirm-text="刪除"
+      :message="`確定要刪除「${pendingDelete?.name}」嗎？此動作無法復原。`"
+      title="刪除專案"
+      :visible="pendingDelete !== null"
+      @cancel="pendingDelete = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
   import type { Project } from '@/store/projectStore'
+  import { ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
   import AppButton from '@/components/ui/AppButton.vue'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
+  import { projectLink } from '@/utils/projectLink'
 
   const router = useRouter()
   const store = useProjectStore()
   const frameworkStore = useFrameworkStore()
+
+  const isEditing = ref(false)
+  const pendingDelete = ref<Project | null>(null)
+
+  function requestDelete (project: Project): void {
+    pendingDelete.value = project
+  }
+
+  async function confirmDelete (): Promise<void> {
+    if (!pendingDelete.value) return
+    try {
+      await store.deleteProject(pendingDelete.value.id)
+    } catch (error) {
+      console.error('刪除專案失敗', error)
+    } finally {
+      pendingDelete.value = null
+    }
+  }
 
   const statusLabel: Record<Project['status'], string> = {
     completed: '已完成',
@@ -76,21 +121,6 @@
 
   function frameworkTitle (project: Project): string {
     return frameworkStore.frameworks.find(fw => fw.id === project.frameworkId)?.title ?? '（未選擇）'
-  }
-
-  // 欄位對映還沒完成的話，先回對齊頁把它做完 —— 這時候進 workflow 也是什麼都不能做
-  function needsMapping (project: Project): boolean {
-    // 用 null 判斷而非空物件：使用者可能全部選「資料表中沒有此變數」，
-    // 那時對映是 {} 但他確實走完了流程，不該再被推回這一頁
-    return project.status !== 'completed' && project.columnMapping == null
-  }
-
-  // 進行中代表 workflow 還沒跑完，直接點進去繼續；其他狀態先進詳情頁
-  function projectLink (project: Project): string {
-    if (needsMapping(project)) return `/hub/projects/${project.id}/mapping`
-    return project.status === 'running'
-      ? `/workflow?project=${project.id}`
-      : `/hub/projects/${project.id}`
   }
 
   function goToCreate (): void {
@@ -113,6 +143,7 @@
 
   /* hover 跟框架庫的 .fw-card 同一套 */
   .project-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     /* 固定高度：專案名稱長短、有沒有進度條都不該讓同一列的卡片高低不一 */
@@ -125,6 +156,38 @@
     transition: transform var(--dur-fast) var(--ease-out),
       border-color var(--dur-fast) var(--ease-out),
       box-shadow var(--dur-fast) var(--ease-out);
+  }
+
+  /* 編輯模式下卡片不可點擊進入，游標改回預設、拿掉 hover 位移避免誤導 */
+  .project-card--editing {
+    cursor: default;
+  }
+
+  .project-card--editing:hover {
+    transform: none;
+  }
+
+  .project-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-error);
+    color: white;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .project-delete-btn:hover {
+    transform: scale(1.1);
   }
 
   .project-card:hover {

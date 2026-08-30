@@ -77,3 +77,11 @@ export async function getProject (id: number): Promise<ProjectDTO> {
   const result = await parseProjectResponse(response)
   return result.result as ProjectDTO
 }
+
+export async function deleteProject (id: number): Promise<void> {
+  const response = await fetch(`/api/projects/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  await parseProjectResponse(response)
+}
