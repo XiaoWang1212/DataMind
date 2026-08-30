@@ -6,7 +6,10 @@
         <v-icon class="ci-panel__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
-          <p class="ci-panel__sub">橫線是 95% 信賴區間，圓點是實際數值</p>
+          <p class="ci-panel__sub">
+            圓點是實際數值、橫線是 95% 信賴區間；區間越寬代表這個指標的估計越不穩定，
+            標黃色的是這組結果裡區間最寬的指標。
+          </p>
         </div>
       </div>
 
@@ -255,6 +258,7 @@
   .ci-panel__sub {
     margin: 0;
     font-size: 12px;
+    line-height: 1.5;
     color: var(--color-secondary);
   }
 
