@@ -53,8 +53,8 @@
               {{ item.sample_values.slice(0, 3).join('、') }}
             </div>
             <!-- 配不出來時提供最接近的幾個欄位，讓使用者一鍵選取 -->
-            <div v-if="item.status === 'UNMATCHED' && item.candidate_columns.length > 0" class="col-candidates">
-              <span class="candidates-label">可能是</span>
+            <div v-if="showQuickPicks(item)" class="col-candidates">
+              <span v-if="item.candidate_columns.length > 0" class="candidates-label">可能是</span>
               <AppButton
                 v-for="name in item.candidate_columns"
                 :key="name"
@@ -64,6 +64,17 @@
                 @click="emit('update:selection', item, name)"
               >
                 {{ name }}
+              </AppButton>
+              <!-- 「資料表沒有」與候選欄位同樣是一種指定，放在同一排省去回頭開選單。
+                   虛線邊框與候選欄位區隔 -->
+              <AppButton
+                v-if="!isTarget(item)"
+                class="candidate-chip candidate-chip--skip"
+                title="標記為資料表中沒有此變數"
+                variant="ghost"
+                @click="emit('update:selection', item, SKIP_VALUE)"
+              >
+                資料表中沒有此變數
               </AppButton>
             </div>
           </td>
@@ -171,6 +182,12 @@
     return item.paper_variable === props.targetName
   }
 
+  // 預測目標沒有「資料表沒有」這個出路，所以候選一個都沒有時整排就不必出現
+  function showQuickPicks (item: MappingItem): boolean {
+    if (item.status !== 'UNMATCHED') return false
+    return item.candidate_columns.length > 0 || !isTarget(item)
+  }
+
   // 預測目標排最前面，避免混在其他變數中被忽略
   const sortedItems = computed(() => {
     const list = [...props.items]
@@ -272,6 +289,11 @@
   .candidate-chip.app-btn {
     padding: 2px 10px;
     font-size: 11px;
+  }
+
+  .candidate-chip--skip.app-btn {
+    border: 1px dashed var(--color-border-strong);
+    color: var(--color-ink-soft);
   }
 
   .status-trigger {
