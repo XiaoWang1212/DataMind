@@ -1,17 +1,6 @@
 <template>
   <div class="dashboard">
-    <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="儀表板" />
-
-    <div class="stat-grid enter-stagger">
-      <div v-for="stat in stats" :key="stat.label" class="stat-card">
-        <div class="stat-label">{{ stat.label }}</div>
-        <div class="stat-number">{{ stat.value }}</div>
-        <div class="stat-trend">
-          <v-icon icon="mdi-trending-up" size="14" />
-          {{ stat.trend }}
-        </div>
-      </div>
-    </div>
+    <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="主頁" />
 
     <div class="action-grid enter-stagger">
       <RouterLink class="action-card" to="/hub/library/extract">
@@ -40,9 +29,12 @@
         <v-icon icon="mdi-clock-outline" size="18" />
         <span class="activity-title">最近活動</span>
       </div>
+      <p v-if="activities.length === 0" class="activity-empty">
+        還沒有任何活動，建立專案或提取框架後會顯示在這裡。
+      </p>
       <div
         v-for="(item, i) in activities"
-        :key="i"
+        :key="`${item.name}-${item.date}-${i}`"
         class="activity-item"
         :class="{ 'activity-item--last': i === activities.length - 1 }"
       >
@@ -57,65 +49,68 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { RouterLink } from 'vue-router'
   import PageHeader from '@/components/ui/PageHeader.vue'
+  import { useFrameworkStore } from '@/store/frameworkStore'
+  import { type Project, useProjectStore } from '@/store/projectStore'
 
-  const stats = [
-    { label: '框架總數', value: '24', trend: '本週新增 3 個' },
-    { label: '活躍專案', value: '8', trend: '2 個進行中' },
-    { label: '已完成分析', value: '156', trend: '本月新增 12 個' },
-  ]
+  const projectStore = useProjectStore()
+  const frameworkStore = useFrameworkStore()
 
-  const activities = [
-    { name: 'CNN 架構分析', status: '框架已提取', time: '2 小時前' },
-    { name: '市場情緒研究', status: '專案已完成', time: '5 小時前' },
-    { name: '回歸模型模板', status: '框架已儲存', time: '1 天前' },
-  ]
+  const PROJECT_STATUS_LABEL: Record<Project['status'], string> = {
+    draft: '專案草稿',
+    running: '專案進行中',
+    completed: '專案已完成',
+  }
+
+  // date 是後端 created_at 格式化成 YYYY-MM-DD 的日期字串（沒有時分秒），
+  // 所以只能做到「幾天前」這種天級的相對時間，不能像設計稿那樣精確到小時
+  function relativeDateLabel (dateStr: string): string {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86_400_000)
+
+    if (diffDays <= 0) return '今天'
+    if (diffDays === 1) return '昨天'
+    if (diffDays < 30) return `${diffDays} 天前`
+    return dateStr
+  }
+
+  interface ActivityItem {
+    name: string
+    status: string
+    date: string
+    time: string
+  }
+
+  // 合併專案跟框架的建立紀錄，依日期排序，只取最近幾筆
+  const activities = computed<ActivityItem[]>(() => {
+    const fromProjects: ActivityItem[] = projectStore.projects.map(p => ({
+      name: p.name,
+      status: PROJECT_STATUS_LABEL[p.status],
+      date: p.date,
+      time: relativeDateLabel(p.date),
+    }))
+    const fromFrameworks: ActivityItem[] = frameworkStore.frameworks.map(f => ({
+      name: f.title,
+      status: '框架已提取',
+      date: f.date,
+      time: relativeDateLabel(f.date),
+    }))
+
+    return [...fromProjects, ...fromFrameworks]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+  })
 </script>
 
 <style scoped>
   .dashboard {
     max-width: var(--content-max-width);
     margin-inline: auto;
-  }
-
-  /* ── 統計 ── */
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .stat-card {
-    padding: 20px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .stat-label {
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: var(--color-ink-soft);
-  }
-
-  /* 用藏青讓三個數字成為畫面的視覺錨點 */
-  .stat-number {
-    margin-bottom: 10px;
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 1;
-    color: var(--color-ink);
-  }
-
-  .stat-trend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: var(--color-ink-soft);
   }
 
   /* ── 行動 ── */
@@ -193,6 +188,13 @@
   .activity-title {
     font-size: 15px;
     font-weight: 500;
+  }
+
+  .activity-empty {
+    margin: 0;
+    padding: 14px 0;
+    font-size: 13px;
+    color: var(--color-ink-soft);
   }
 
   /* 負邊距讓 hover 底色延伸到卡片邊緣 */
