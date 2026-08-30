@@ -3,7 +3,7 @@
     <!-- 有執行結果：顯示 CI 數據 -->
     <template v-if="ciGroups.length > 0">
       <div class="ci-panel__header">
-        <span class="ci-panel__icon">📊</span>
+        <v-icon class="ci-panel__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
           <p class="ci-panel__sub">每個指標的 CI Lower / Value / CI Upper</p>
@@ -49,7 +49,7 @@
     <!-- 尚無結果：顯示靜態介紹 -->
     <template v-else>
       <div class="ci-info__header">
-        <span class="ci-info__icon">📊</span>
+        <v-icon class="ci-info__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-info__title">Bootstrap 信賴區間</h4>
           <p class="ci-info__sub">對每個評估指標計算 95% 信賴區間</p>
@@ -74,12 +74,12 @@
       </div>
 
       <div class="ci-info__notice">
-        <span>⚠️</span>
+        <v-icon icon="mdi-alert-outline" size="16" />
         <p>計算時間顯著增加，建議在模型確認後再開啟。</p>
       </div>
 
       <div class="ci-info__footer">
-        <span>⚙️</span>
+        <v-icon icon="mdi-cog-outline" size="16" />
         <p>若要啟用或停用 Compute CI，請至 <strong>Settings</strong> 節點調整。</p>
       </div>
     </template>
@@ -172,9 +172,8 @@
   }
 
   .ci-panel__icon {
-    font-size: 22px;
-    line-height: 1;
     flex-shrink: 0;
+    color: var(--color-accent);
   }
 
   .ci-panel__title {
@@ -291,9 +290,8 @@
   }
 
   .ci-info__icon {
-    font-size: 22px;
-    line-height: 1;
     flex-shrink: 0;
+    color: var(--color-accent);
   }
 
   .ci-info__title {
