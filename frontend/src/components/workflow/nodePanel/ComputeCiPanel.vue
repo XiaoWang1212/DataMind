@@ -6,10 +6,7 @@
         <v-icon class="ci-panel__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
-          <p class="ci-panel__sub">
-            圓點是實際數值、橫線是 95% 信賴區間；區間越寬代表這個指標的估計越不穩定，
-            標黃色的是這組結果裡區間最寬的指標。
-          </p>
+          <p class="ci-panel__sub">{{ panelCaption }}</p>
         </div>
       </div>
 
@@ -22,7 +19,7 @@
             :options="modelOptions"
           />
         </div>
-        <div class="ci-field">
+        <div v-if="viewMode === 'fold'" class="ci-field">
           <span class="ci-field__label">fold</span>
           <CustomSelect
             v-model="selectedFold"
@@ -32,7 +29,26 @@
         </div>
       </div>
 
-      <div v-if="currentSplitMetrics.length > 0" class="ci-forest">
+      <div class="ci-tabs">
+        <button
+          type="button"
+          class="ci-tab"
+          :class="{ 'ci-tab--active': viewMode === 'fold' }"
+          @click="viewMode = 'fold'"
+        >
+          單一 Fold
+        </button>
+        <button
+          type="button"
+          class="ci-tab"
+          :class="{ 'ci-tab--active': viewMode === 'summary' }"
+          @click="viewMode = 'summary'"
+        >
+          跨 Fold 摘要
+        </button>
+      </div>
+
+      <div v-if="displayRows.length > 0" class="ci-forest">
         <div class="ci-forest__axis">
           <span
             v-for="t in AXIS_TICKS"
@@ -43,14 +59,14 @@
         </div>
 
         <div
-          v-for="m in currentSplitMetrics"
-          :key="m.metric"
+          v-for="row in displayRows"
+          :key="row.metric"
           class="ci-forest__row"
-          :class="{ 'ci-forest__row--widest': m.metric === widestCiMetric }"
+          :class="{ 'ci-forest__row--widest': row.highlighted }"
         >
           <div class="ci-forest__label">
-            {{ m.metric }}
-            <span v-if="m.metric === widestCiMetric" class="ci-forest__badge">區間最寬</span>
+            {{ row.metric }}
+            <span v-if="row.highlighted" class="ci-forest__badge">{{ rowBadgeLabel }}</span>
           </div>
 
           <div class="ci-forest__track">
@@ -62,14 +78,14 @@
             />
             <div
               class="ci-forest__bar"
-              :style="{ left: `${pct(m.ci_lower)}%`, width: `${pct(m.ci_upper) - pct(m.ci_lower)}%` }"
+              :style="{ left: `${pct(row.lo)}%`, width: `${pct(row.hi) - pct(row.lo)}%` }"
             />
-            <div class="ci-forest__dot" :style="{ left: `${pct(m.value)}%` }" />
+            <div class="ci-forest__dot" :style="{ left: `${pct(row.marker)}%` }" />
           </div>
 
           <div class="ci-forest__value">
-            {{ fmt(m.value) }}
-            <span class="ci-forest__ci-range">({{ fmt(m.ci_lower) }}–{{ fmt(m.ci_upper) }})</span>
+            {{ row.primaryLabel }}
+            <span class="ci-forest__ci-range">{{ row.secondaryLabel }}</span>
           </div>
         </div>
       </div>
@@ -211,6 +227,101 @@
     return widest?.metric ?? null
   })
 
+  // 單一 fold 的信賴區間寬窄，其實會隨切分方式跳動——單看一個 fold「區間最寬」不代表這個指標
+  // 真的不穩定。跨 fold 摘要把同一個模型的所有 fold 疊在一起看兩件事：
+  // (1) 這個指標平均信賴區間有多寬（跨 fold 都偏寬，才是真的不穩，不是雜訊）
+  // (2) 實際數值本身在不同切分之間跳動多大（模型對切分方式敏不敏感）
+  interface SummaryRow {
+    metric: string
+    avgCiWidth: number | null
+    minValue: number | null
+    maxValue: number | null
+    meanValue: number | null
+  }
+
+  type ViewMode = 'fold' | 'summary'
+  const viewMode = ref<ViewMode>('fold')
+
+  const crossFoldSummary = computed<SummaryRow[]>(() => {
+    const splits = currentModelGroup.value?.splits ?? []
+    const byMetric = new Map<string, { widths: number[], values: number[] }>()
+
+    for (const split of splits) {
+      for (const m of split.metrics) {
+        if (!byMetric.has(m.metric)) byMetric.set(m.metric, { widths: [], values: [] })
+        const entry = byMetric.get(m.metric)!
+        if (m.ci_lower != null && m.ci_upper != null) {
+          entry.widths.push(m.ci_upper - m.ci_lower)
+        }
+        if (m.value != null) {
+          entry.values.push(m.value)
+        }
+      }
+    }
+
+    const mean = (nums: number[]): number | null =>
+      nums.length > 0 ? nums.reduce((a, b) => a + b, 0) / nums.length : null
+
+    const rows = Array.from(byMetric.entries()).map(([metric, { widths, values }]) => ({
+      metric,
+      avgCiWidth: mean(widths),
+      minValue: values.length > 0 ? Math.min(...values) : null,
+      maxValue: values.length > 0 ? Math.max(...values) : null,
+      meanValue: mean(values),
+    }))
+
+    // 平均信賴區間最寬的排最前面——這才是真正值得留意的重點，不用自己心算 10 個 fold
+    return rows.sort((a, b) => (b.avgCiWidth ?? -1) - (a.avgCiWidth ?? -1))
+  })
+
+  const leastStableMetric = computed(() => crossFoldSummary.value[0]?.metric ?? null)
+
+  interface ForestRow {
+    metric: string
+    lo: number | null
+    hi: number | null
+    marker: number | null
+    highlighted: boolean
+    primaryLabel: string
+    secondaryLabel: string
+  }
+
+  // 「單一 fold」跟「跨 fold 摘要」畫的是同一種橫向誤差棒圖，只是每列的數字來源不同，
+  // 統一轉成同一種列資料，圖表模板就不用為兩種模式各刻一份
+  const displayRows = computed<ForestRow[]>(() => {
+    if (viewMode.value === 'fold') {
+      return currentSplitMetrics.value.map(m => ({
+        metric: m.metric,
+        lo: m.ci_lower,
+        hi: m.ci_upper,
+        marker: m.value,
+        highlighted: m.metric === widestCiMetric.value,
+        primaryLabel: fmt(m.value),
+        secondaryLabel: `(${fmt(m.ci_lower)}–${fmt(m.ci_upper)})`,
+      }))
+    }
+    return crossFoldSummary.value.map(s => ({
+      metric: s.metric,
+      lo: s.minValue,
+      hi: s.maxValue,
+      marker: s.meanValue,
+      highlighted: s.metric === leastStableMetric.value,
+      primaryLabel: fmt(s.meanValue),
+      secondaryLabel: `範圍 ${fmt(s.minValue)}–${fmt(s.maxValue)}・平均寬度 ${fmt(s.avgCiWidth)}`,
+    }))
+  })
+
+  const rowBadgeLabel = computed(() => (viewMode.value === 'fold' ? '區間最寬' : '最不穩定'))
+
+  const panelCaption = computed(() => {
+    if (viewMode.value === 'fold') {
+      return '圓點是實際數值、橫線是 95% 信賴區間；區間越寬代表這個指標的估計越不穩定，'
+        + '標黃色的是這組結果裡區間最寬的指標。'
+    }
+    return '圓點是這個模型所有 fold 的平均值、橫線是實際數值在各 fold 之間的範圍；'
+      + '範圍越寬代表這個指標越容易隨切分方式跳動，標黃色的是平均信賴區間最寬（最不穩定）的指標。'
+  })
+
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
   watch(ciGroups, groups => {
     if (groups.length === 0) {
@@ -284,6 +395,29 @@
 
   .ci-select {
     width: 160px;
+  }
+
+  /* ── 檢視模式切換 ── */
+  .ci-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ci-tab {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-strong);
+    background: transparent;
+    color: var(--color-ink-soft);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ci-tab--active {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-inverted);
   }
 
   /* ── 森林圖（forest plot） ── */
