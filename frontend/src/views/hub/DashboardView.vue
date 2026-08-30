@@ -2,6 +2,13 @@
   <div class="dashboard">
     <PageHeader subtitle="歡迎回來，這是您的研究概覽。" title="主頁" />
 
+    <div class="stat-grid enter-stagger">
+      <div v-for="stat in stats" :key="stat.label" class="stat-card">
+        <div class="stat-label">{{ stat.label }}</div>
+        <div class="stat-number">{{ stat.value }}</div>
+      </div>
+    </div>
+
     <div class="dashboard-grid">
       <div class="action-col enter-stagger">
         <RouterLink class="action-card" to="/hub/library/extract">
@@ -63,6 +70,14 @@
   const projectStore = useProjectStore()
   const frameworkStore = useFrameworkStore()
 
+  // 這次是真的從 store 算出來的數字，不是寫死的示範資料——沒有真實的「本週新增」這種
+  // 趨勢資料可以比對，所以只顯示目前的總數，不硬掰一句看起來像趨勢的文字
+  const stats = computed(() => [
+    { label: '框架總數', value: String(frameworkStore.frameworks.length) },
+    { label: '活躍專案', value: String(projectStore.projects.filter(p => p.status === 'running').length) },
+    { label: '已完成分析', value: String(projectStore.projects.filter(p => p.status === 'completed').length) },
+  ])
+
   const PROJECT_STATUS_LABEL: Record<Project['status'], string> = {
     draft: '專案草稿',
     running: '專案進行中',
@@ -120,6 +135,36 @@
   .dashboard {
     max-width: var(--content-max-width);
     margin-inline: auto;
+  }
+
+  /* ── 統計（真實數字，不是示範資料） ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-label {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
+  }
+
+  /* 用藏青讓三個數字成為畫面的視覺錨點 */
+  .stat-number {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--color-ink);
   }
 
   /* ── 主頁面版面：左邊行動卡片、右邊最近活動並排，避免行動卡片下方留一大片空白 ── */
