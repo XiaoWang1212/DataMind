@@ -111,7 +111,22 @@
     }
   }
 
+  // 引用標記捲出視窗後，連接線的起點已經不在畫面上，浮卡與線會孤懸在那裡。
+  // 標記一離開可視範圍就關掉
+  let markObserver: IntersectionObserver | null = null
+
+  function observeMark (target: HTMLElement | null) {
+    markObserver?.disconnect()
+    markObserver = null
+    if (!target) return
+    markObserver = new IntersectionObserver(entries => {
+      if (entries.some(entry => !entry.isIntersecting)) emit('close')
+    })
+    markObserver.observe(target)
+  }
+
   watch(() => [props.citation, props.target], async () => {
+    observeMark(props.citation ? props.target : null)
     if (!props.citation || !props.target) {
       cardStyle.value = hiddenStyle
       return
@@ -155,6 +170,7 @@
     document.removeEventListener('click', handleDocumentClick)
     window.removeEventListener('scroll', handleReposition, true)
     window.removeEventListener('resize', handleReposition)
+    markObserver?.disconnect()
     if (repositionFrame) cancelAnimationFrame(repositionFrame)
   })
 </script>
