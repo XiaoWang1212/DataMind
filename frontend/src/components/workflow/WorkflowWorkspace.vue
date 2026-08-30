@@ -3,6 +3,7 @@
   <section class="workspace">
     <!-- 畫布區：顯示節點與連線 -->
     <WorkflowCanvas
+      :bottom-inset="canvasBottomInset"
       :canvas-min-height="canvasMinHeight"
       :canvas-min-width="canvasMinWidth"
       class="workspace-canvas"
@@ -194,7 +195,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
+  const { style: drawerStyle, heightPx: drawerHeight, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
@@ -276,6 +277,10 @@
     const node = nodes.value.find(n => n.id === selectedNodeId.value)
     return node ? { id: node.id, data: node.data } : null
   })
+
+  // 抽屜是絕對定位、蓋在畫布上而不是把畫布壓扁，畫布自己量不到它。
+  // 把它遮住的高度往下傳，fitView 才知道可用的區域只到抽屜上緣為止
+  const canvasBottomInset = computed(() => (selectedNode.value ? drawerHeight.value : 0))
 
   const testScoreValidationConfig = computed<Record<string, unknown>>(() => {
     const node = nodes.value.find(n => n.id === 'testScore')

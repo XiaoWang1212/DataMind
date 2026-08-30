@@ -1,14 +1,12 @@
 <template>
   <!-- 畫布容器：專注顯示 Vue Flow，不承擔狀態管理 -->
   <section class="canvas">
-    <!-- 真正的 flow 可視區 -->
+    <!-- 真正的 flow 可視區。不依節點範圍撐大它：父層 .workspace 是 overflow: hidden，
+         撐出去的部分會被直接裁掉（不是變成可捲動），fitView 就會把圖置中在一個比
+         看得到的還大的盒子裡。平移縮放交給 VueFlow 自己，範圍由 translate-extent 決定 -->
     <section
       ref="flowAreaRef"
       class="flow-area"
-      :style="{
-        minHeight: canvasMinHeight ? `${canvasMinHeight}px` : undefined,
-        minWidth: canvasMinWidth ? `${canvasMinWidth}px` : undefined,
-      }"
       @mousedown="userHasPanned = true"
       @touchstart.passive="userHasPanned = true"
       @wheel.passive="userHasPanned = true"
@@ -17,8 +15,6 @@
         id="main-flow"
         :edges="edges"
         :elements-selectable="false"
-        fit-view-on-init
-        :fit-view-on-init-options="{ padding: isMobile ? 0.18 : 0.3 }"
         :max-zoom="isMobile ? 1.5 : 1.6"
         :min-zoom="minZoom"
         :node-types="nodeTypes"
@@ -40,7 +36,7 @@
 <script setup lang="ts">
   import type { Component } from 'vue'
   import type { FlowNode } from '@/types/workflow'
-  import { type Edge, useVueFlow, VueFlow } from '@vue-flow/core'
+  import { type Edge, type Padding, useVueFlow, VueFlow } from '@vue-flow/core'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import '@vue-flow/core/dist/style.css'
   import '@vue-flow/core/dist/theme-default.css'
@@ -52,6 +48,8 @@
     nodeTypes: Record<string, Component>
     canvasMinHeight?: number
     canvasMinWidth?: number
+    /** 底部抽屜遮住的高度，fitView 用來把圖收進抽屜上方的可視帶 */
+    bottomInset?: number
   }>()
 
   // 這個元件只往外通知事件，不直接改資料
@@ -81,7 +79,7 @@
   const flowAreaRef = ref<HTMLElement | null>(null)
 
   // 取得 VueFlow 操作函式（fitView 在容器 resize 時重新對齊）
-  const { fitView, getViewport, setNodes, setEdges } = useVueFlow('main-flow')
+  const { fitView, setNodes, setEdges } = useVueFlow('main-flow')
 
   // 使用者手動移動過視角後，不再自動 fitView（避免打斷操作）
   const userHasPanned = ref(false)
@@ -91,10 +89,27 @@
     isMobile.value = window.innerWidth < 768
   }
 
-  function refreshFitView (force = false): void {
-    if (!force && userHasPanned.value) return
+  // 抽屜遮住的高度直接算進下緣留白，圖就會被壓縮並上移到抽屜上方那條可視帶。
+  // 四邊都用固定 px 而不是比例：容器只有視窗那麼大，按比例留白會把圖壓得比需要的更小
+  const FIT_PADDING = 24
+  // 抽屜拉到 full 時剩下的帶子放不下任何東西，那種情況寧可讓圖被蓋住一部分
+  const MAX_INSET_RATIO = 0.65
+
+  function fitPadding (): Padding {
+    const height = flowAreaRef.value?.clientHeight ?? 0
+    const inset = Math.min(props.bottomInset ?? 0, height * MAX_INSET_RATIO)
+    return {
+      top: `${FIT_PADDING}px`,
+      bottom: `${Math.round(FIT_PADDING + inset)}px`,
+      left: `${FIT_PADDING}px`,
+      right: `${FIT_PADDING}px`,
+    }
+  }
+
+  function refreshFitView (): void {
+    if (userHasPanned.value) return
     nextTick(() => {
-      fitView({ padding: isMobile.value ? 0.18 : 0.3 })
+      fitView({ padding: fitPadding() })
     })
   }
 
@@ -116,16 +131,19 @@
     }
   })
 
-  // 初始對齊完成後鎖定視角，之後新增/刪除節點不會因為 canvasMinWidth 改變而重置。
+  // 初始對齊完成後鎖定視角，之後 ResizeObserver 就不再自動重對，免得打斷操作。
   // 計時從「第一次真的對齊過」起算而不是從掛載起算：節點可能是從 localStorage 還原、
   // 或等執行結果回來才有，掛載時 nodes 還是空的，那時候 fitView 沒有東西可以對
   const VIEWPORT_LOCK_DELAY_MS = 800
   let hasFitted = false
 
-  function fitOnce (): void {
+  async function fitOnce (): Promise<void> {
     if (hasFitted) return
+    await nextTick()
+    // 節點還沒量到尺寸時 fitView 會回 false，這時不能算對齊過，
+    // 否則晚一步才進來的節點就再也沒有機會置中
+    if (!await fitView({ padding: fitPadding() })) return
     hasFitted = true
-    refreshFitView(true)
     window.setTimeout(() => {
       userHasPanned.value = true
     }, VIEWPORT_LOCK_DELAY_MS)
@@ -168,21 +186,6 @@
     },
     { deep: true },
   )
-
-  // 計算底部節點（flowY）有沒有被 options panel 遮住，回傳需要往上抬幾 px
-  function computeRequiredRaise (flowY: number): number {
-    const { y: viewportY, zoom } = getViewport()
-    const canvasRect = flowAreaRef.value?.getBoundingClientRect()
-    if (!canvasRect) return 0
-    const panelHeight = Math.min(window.innerHeight * 0.46, 360)
-    const panelTop = window.innerHeight - panelHeight
-    const margin = 16
-    // 節點底部的螢幕 Y（節點高度約 100px）
-    const screenBottom = canvasRect.top + (flowY + 100) * zoom + viewportY
-    const needed = screenBottom - (panelTop - margin)
-    return Math.max(0, needed)
-  }
-  defineExpose({ computeRequiredRaise })
 
   // 將點擊節點 id 傳回父層（同時視為使用者已確立視角，不再自動 fitView）
   function onNodeClick (event: { node: { id: string } }) {
