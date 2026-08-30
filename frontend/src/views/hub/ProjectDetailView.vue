@@ -35,8 +35,13 @@
 
               <template v-if="pipelineRows.length > 0">
                 <div v-for="row in pipelineRows" :key="row.label" class="result-row result-row--compact">
-                  <div class="result-label">{{ row.label }}</div>
-                  <div class="result-value">{{ row.value }}</div>
+                  <div class="result-label">
+                    {{ row.label }}
+                    <span v-if="row.count" class="result-count">{{ row.count }} 個</span>
+                  </div>
+                  <div class="pipeline-pills">
+                    <span v-for="value in row.values" :key="value" class="pipeline-pill">{{ value }}</span>
+                  </div>
                 </div>
               </template>
               <div v-else class="result-empty">找不到此專案的執行紀錄</div>
@@ -182,12 +187,13 @@
   // 全空代表沒有可用的執行紀錄
   const pipelineRows = computed(() => {
     const p = pipeline.value
-    const rows: Array<{ label: string, value: string }> = []
-    if (p.preprocess.length > 0) rows.push({ label: '前處理', value: p.preprocess.join('、') })
-    if (p.featureEngineering.length > 0) rows.push({ label: '特徵工程', value: p.featureEngineering.join('、') })
-    if (p.resampling) rows.push({ label: '重採樣', value: p.resampling })
-    if (p.validation) rows.push({ label: '驗證', value: p.validation })
-    if (p.models.length > 0) rows.push({ label: '模型', value: `${p.models.length} 個：${p.models.join('、')}` })
+    // count 只給模型：其他幾類一眼數得完，標一個數字反而多餘
+    const rows: Array<{ label: string, values: string[], count?: number }> = []
+    if (p.preprocess.length > 0) rows.push({ label: '前處理', values: p.preprocess })
+    if (p.featureEngineering.length > 0) rows.push({ label: '特徵工程', values: p.featureEngineering })
+    if (p.resampling) rows.push({ label: '重採樣', values: [p.resampling] })
+    if (p.validation) rows.push({ label: '驗證', values: [p.validation] })
+    if (p.models.length > 0) rows.push({ label: '模型', values: p.models, count: p.models.length })
     return rows
   })
 
@@ -305,8 +311,26 @@
     padding: 10px 0;
   }
 
-  .result-row--compact .result-value {
-    line-height: 1.5;
+  .result-count {
+    margin-left: 6px;
+    color: var(--color-ink-soft);
+  }
+
+  /* 一步驟一顆 pill，取代原本用頓號串成一整串的寫法 —— 步驟多的時候那串會黏成一片。
+     樣式跟框架庫詳情面板的 .tag-pill 同一套 */
+  .pipeline-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pipeline-pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink-strong);
     word-break: break-word;
   }
 
