@@ -32,18 +32,20 @@
       <p v-if="activities.length === 0" class="activity-empty">
         還沒有任何活動，建立專案或提取框架後會顯示在這裡。
       </p>
-      <div
+      <component
+        :is="item.link ? RouterLink : 'div'"
         v-for="(item, i) in activities"
         :key="`${item.name}-${item.date}-${i}`"
         class="activity-item"
-        :class="{ 'activity-item--last': i === activities.length - 1 }"
+        :class="{ 'activity-item--last': i === activities.length - 1, 'activity-item--link': item.link }"
+        :to="item.link ?? undefined"
       >
         <div class="activity-info">
           <div class="activity-name">{{ item.name }}</div>
           <div class="activity-status">{{ item.status }}</div>
         </div>
         <div class="activity-time">{{ item.time }}</div>
-      </div>
+      </component>
     </div>
   </div>
 </template>
@@ -54,6 +56,7 @@
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { type Project, useProjectStore } from '@/store/projectStore'
+  import { projectLink } from '@/utils/projectLink'
 
   const projectStore = useProjectStore()
   const frameworkStore = useFrameworkStore()
@@ -84,6 +87,8 @@
     status: string
     date: string
     time: string
+    /** 專案項目可以點進去繼續（跟專案列表同一套規則）；框架項目沒有對應頁面，維持不可點 */
+    link: string | null
   }
 
   // 合併專案跟框架的建立紀錄，依日期排序，只取最近幾筆
@@ -93,12 +98,14 @@
       status: PROJECT_STATUS_LABEL[p.status],
       date: p.date,
       time: relativeDateLabel(p.date),
+      link: projectLink(p),
     }))
     const fromFrameworks: ActivityItem[] = frameworkStore.frameworks.map(f => ({
       name: f.title,
       status: '框架已提取',
       date: f.date,
       time: relativeDateLabel(f.date),
+      link: null,
     }))
 
     return [...fromProjects, ...fromFrameworks]
@@ -205,10 +212,17 @@
     margin: 0 -24px;
     padding: 14px 24px;
     border-bottom: 1px solid var(--color-border);
+    color: inherit;
+    text-decoration: none;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
 
-  .activity-item:hover {
+  /* 只有專案項目可以點進去，只讓這種才有 hover 底色跟手指游標，避免框架項目看起來能點卻沒反應 */
+  .activity-item--link {
+    cursor: pointer;
+  }
+
+  .activity-item--link:hover {
     background: var(--color-surface-alt);
   }
 
