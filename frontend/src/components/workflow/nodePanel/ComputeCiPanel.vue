@@ -6,7 +6,7 @@
         <v-icon class="ci-panel__icon" icon="mdi-chart-bell-curve" size="22" />
         <div>
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
-          <p class="ci-panel__sub">每個指標的 CI Lower / Value / CI Upper</p>
+          <p class="ci-panel__sub">橫線是 95% 信賴區間，圓點是實際數值</p>
         </div>
       </div>
 
@@ -29,22 +29,45 @@
         </div>
       </div>
 
-      <div v-if="currentSplitMetrics.length > 0" class="ci-table">
-        <div class="ci-table__header">
-          <span>指標</span>
-          <span class="ci-table__num">CI Lower</span>
-          <span class="ci-table__num">Value</span>
-          <span class="ci-table__num">CI Upper</span>
+      <div v-if="currentSplitMetrics.length > 0" class="ci-forest">
+        <div class="ci-forest__axis">
+          <span
+            v-for="t in AXIS_TICKS"
+            :key="t"
+            class="ci-forest__axis-tick"
+            :style="{ left: `${t * 100}%` }"
+          >{{ t }}</span>
         </div>
+
         <div
           v-for="m in currentSplitMetrics"
           :key="m.metric"
-          class="ci-table__row"
+          class="ci-forest__row"
+          :class="{ 'ci-forest__row--widest': m.metric === widestCiMetric }"
         >
-          <span class="ci-table__metric">{{ m.metric }}</span>
-          <span class="ci-table__num ci-table__num--lo">{{ fmt(m.ci_lower) }}</span>
-          <span class="ci-table__num ci-table__num--val">{{ fmt(m.value) }}</span>
-          <span class="ci-table__num ci-table__num--hi">{{ fmt(m.ci_upper) }}</span>
+          <div class="ci-forest__label">
+            {{ m.metric }}
+            <span v-if="m.metric === widestCiMetric" class="ci-forest__badge">區間最寬</span>
+          </div>
+
+          <div class="ci-forest__track">
+            <span
+              v-for="t in AXIS_TICKS"
+              :key="t"
+              class="ci-forest__gridline"
+              :style="{ left: `${t * 100}%` }"
+            />
+            <div
+              class="ci-forest__bar"
+              :style="{ left: `${pct(m.ci_lower)}%`, width: `${pct(m.ci_upper) - pct(m.ci_lower)}%` }"
+            />
+            <div class="ci-forest__dot" :style="{ left: `${pct(m.value)}%` }" />
+          </div>
+
+          <div class="ci-forest__value">
+            {{ fmt(m.value) }}
+            <span class="ci-forest__ci-range">({{ fmt(m.ci_lower) }}–{{ fmt(m.ci_upper) }})</span>
+          </div>
         </div>
       </div>
     </template>
@@ -161,6 +184,30 @@
     currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
   )
 
+  // 這裡的指標都是 0–1 尺度（AUC/準確率/precision/recall/F1...），直接乘 100 當百分比座標用
+  const AXIS_TICKS = [0, 0.25, 0.5, 0.75, 1]
+
+  function pct (v: number | null): number {
+    if (v == null || !Number.isFinite(v)) return 0
+    return Math.max(0, Math.min(1, v)) * 100
+  }
+
+  // 標出信賴區間最寬（最不確定）的指標，比起一排數字，這是使用者實際想先看到的重點
+  const widestCiMetric = computed(() => {
+    const metrics = currentSplitMetrics.value
+    let widest: MetricRow | null = null
+    let widestSpan = -1
+    for (const m of metrics) {
+      if (m.ci_lower == null || m.ci_upper == null) continue
+      const span = m.ci_upper - m.ci_lower
+      if (span > widestSpan) {
+        widestSpan = span
+        widest = m
+      }
+    }
+    return widest?.metric ?? null
+  })
+
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
   watch(ciGroups, groups => {
     if (groups.length === 0) {
@@ -235,64 +282,118 @@
     width: 160px;
   }
 
-  /* ── 表格 ── */
-  .ci-table {
+  /* ── 森林圖（forest plot） ── */
+  .ci-forest {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
+    gap: 2px;
   }
 
-  .ci-table__header,
-  .ci-table__row {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  .ci-forest__axis {
+    position: relative;
+    height: 14px;
+    margin: 0 108px 0 138px;
+  }
+
+  .ci-forest__axis-tick {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--color-secondary);
+  }
+
+  .ci-forest__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+  }
+
+  .ci-forest__label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 130px;
+    flex-shrink: 0;
     font-size: 12px;
-    padding: 5px 8px;
-  }
-
-  .ci-table__header {
     font-weight: 500;
     color: var(--color-secondary);
-    background: var(--color-surface);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  }
-
-  .ci-table__header span:not(:first-child) {
-    text-align: center;
-  }
-
-  .ci-table__row {
-    background: var(--color-surface);
-  }
-
-  .ci-table__row:nth-child(even) {
-    background: var(--color-surface);
-  }
-
-  .ci-table__metric {
-    color: var(--color-secondary);
-    font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .ci-table__num {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    color: var(--color-secondary);
+  .ci-forest__row--widest .ci-forest__label {
+    color: var(--color-warning-text);
   }
 
-  .ci-table__num--val {
+  .ci-forest__badge {
+    flex-shrink: 0;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-warning) 15%, transparent);
+    color: var(--color-warning-text);
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ci-forest__track {
+    position: relative;
+    flex: 1;
+    height: 20px;
+  }
+
+  .ci-forest__gridline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .ci-forest__bar {
+    position: absolute;
+    top: 50%;
+    height: 3px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--color-accent) 45%, transparent);
+  }
+
+  .ci-forest__row--widest .ci-forest__bar {
+    background: color-mix(in oklab, var(--color-warning) 55%, transparent);
+  }
+
+  .ci-forest__dot {
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--color-accent);
+    border: 2px solid var(--color-surface);
+  }
+
+  .ci-forest__row--widest .ci-forest__dot {
+    background: var(--color-warning);
+  }
+
+  .ci-forest__value {
+    width: 100px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 12px;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
     color: var(--color-text);
   }
 
-  .ci-table__num--lo,
-  .ci-table__num--hi {
+  .ci-forest__ci-range {
+    margin-left: 4px;
+    font-size: 11px;
+    font-weight: 400;
     color: var(--color-secondary);
   }
 
