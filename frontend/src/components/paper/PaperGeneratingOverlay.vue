@@ -20,6 +20,15 @@
         <span>撰寫章節中…</span>
       </div>
 
+      <div
+        aria-label="生成進度"
+        :aria-valuenow="Math.round(progress)"
+        class="pgo-progress"
+        role="progressbar"
+      >
+        <div class="pgo-progress-fill" :style="{ width: `${progress}%` }" />
+      </div>
+
       <p class="pgo-hint">這可能需要幾分鐘，請不要關閉視窗</p>
 
       <!-- 逸出口。刻意延遲出現：正常等待時不該把「放棄」放在眼前，
@@ -42,8 +51,16 @@
 <script setup lang="ts">
   import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-  const props = defineProps<{ visible: boolean }>()
+  const props = defineProps<{ visible: boolean, complete?: boolean }>()
   const emit = defineEmits<{ abandon: [] }>()
+
+  // 後端 /api/rag/arxiv/generate 是一發同步請求，拿不到真實進度，只能依經過時間估算。
+  // 前段快、後段趨緩，停在 90% 等實際完成，避免進度條到底了工作還沒結束。
+  // 節奏與上方那四句階段文字無關：那四句是 17 秒一輪的循環動畫，不對應真實階段
+  const PROGRESS_CEILING = 90
+  // 衰減常數。60 秒約到 60%、兩分鐘約 80%、三分鐘約 87%
+  const PROGRESS_TAU_MS = 55_000
+  const PROGRESS_TICK_MS = 240
 
   const WORD_A = 'Data'
   // ı 是無點的 i（U+0131）。i 的點另外做成獨立元素，才能離開字身去別的地方
@@ -62,6 +79,32 @@
   const grpDataRef = ref<HTMLElement | null>(null)
   const grpMindRef = ref<HTMLElement | null>(null)
   const showAbandon = ref(false)
+  const progress = ref(0)
+  let progressTimer: number | undefined
+  let progressStart = 0
+
+  function tickProgress (): void {
+    const elapsed = performance.now() - progressStart
+    progress.value = PROGRESS_CEILING * (1 - Math.exp(-elapsed / PROGRESS_TAU_MS))
+  }
+
+  function startProgress (): void {
+    progress.value = 0
+    progressStart = performance.now()
+    progressTimer = window.setInterval(tickProgress, PROGRESS_TICK_MS)
+  }
+
+  function stopProgress (): void {
+    window.clearInterval(progressTimer)
+    progressTimer = undefined
+  }
+
+  // 生成完成到畫面切走之間還有存檔要跑，那段時間夠這條走完最後一段
+  watch(() => props.complete, done => {
+    if (!done) return
+    stopProgress()
+    progress.value = 100
+  })
 
   // 逐字母的 keyframes 由 JS 產生（每個字母壓扁比例不同、方塊落點每圈不同），
   // 掛在這個節點上。元件收起來時一併移除
@@ -383,9 +426,12 @@
     abandonTimer = window.setTimeout(() => {
       showAbandon.value = true
     }, ABANDON_DELAY_MS)
+    startProgress()
   }
 
   function stop (): void {
+    stopProgress()
+    progress.value = 0
     wmRef.value?.removeEventListener('animationiteration', onIteration as EventListener)
     window.removeEventListener('resize', build)
     window.clearTimeout(abandonTimer)
@@ -720,6 +766,24 @@
   @keyframes pgo-cap2 { 0%, 30% { opacity: 0; filter: blur(3px); } 35%, 50% { opacity: 1; filter: blur(0); } 55%, 100% { opacity: 0; filter: blur(3px); } }
   @keyframes pgo-cap3 { 0%, 54% { opacity: 0; filter: blur(3px); } 59%, 74% { opacity: 1; filter: blur(0); } 79%, 100% { opacity: 0; filter: blur(3px); } }
   @keyframes pgo-cap4 { 0%, 78% { opacity: 0; filter: blur(3px); } 82%, 97% { opacity: 1; filter: blur(0); } 99.5%, 100% { opacity: 0; filter: blur(3px); } }
+
+  .pgo-progress {
+    width: min(280px, 70%);
+    height: 4px;
+    /* 卡片的 gap 是 30px，這裡收窄成跟下面那句提示差不多的間距，三者才讀得出是一組 */
+    margin: -16px 0 0;
+    border-radius: 999px;
+    background: var(--color-surface-alt);
+    overflow: hidden;
+  }
+
+  /* transition 的時間比 tick 間隔長一點，一格一格的跳動才會被抹平成連續移動 */
+  .pgo-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-ink);
+    transition: width 320ms linear;
+  }
 
   .pgo-hint {
     margin: -18px 0 0;
