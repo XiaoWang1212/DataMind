@@ -18,6 +18,9 @@
         :to="projectLink(project)"
       >
         <div class="project-title-row">
+          <div class="project-icon-wrap">
+            <v-icon icon="mdi-folder-outline" size="19" />
+          </div>
           <span class="project-name">{{ project.name }}</span>
           <StatusBadge :status="statusTone[project.status]">
             {{ statusLabel[project.status] }}
@@ -28,14 +31,17 @@
           <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
           {{ project.date }}
         </div>
-        <div v-if="project.status === 'running'" class="progress-wrap">
-          <div class="progress-label-row">
-            <span class="progress-label">分析進度</span>
-            <span class="progress-pct">{{ project.progress }}%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
-          </div>
+        <!-- 一律留在版面上，只切換內容，避免進行中的卡片比其他卡片高一截 -->
+        <div class="progress-wrap">
+          <template v-if="project.status === 'running'">
+            <div class="progress-label-row">
+              <span class="progress-label">分析進度</span>
+              <span class="progress-pct">{{ project.progress }}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
+            </div>
+          </template>
         </div>
       </RouterLink>
     </div>
@@ -109,6 +115,8 @@
   .project-card {
     display: flex;
     flex-direction: column;
+    /* 固定高度：專案名稱長短、有沒有進度條都不該讓同一列的卡片高低不一 */
+    height: 168px;
     padding: 18px 20px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -129,7 +137,20 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+  }
+
+  /* 跟框架庫的 .fw-icon-wrap 同一套。純裝飾，不帶狀態資訊 —— 狀態由右邊的徽章負責 */
+  .project-icon-wrap {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    color: var(--color-ink);
   }
 
   .project-name {
@@ -164,7 +185,9 @@
 
   /* ── Progress ── */
   .progress-wrap {
-    margin-top: 10px;
+    margin-top: auto;
+    /* 標籤列 + 軌道的高度，空的時候一樣佔著 */
+    min-height: 27px;
   }
 
   .progress-label-row {
