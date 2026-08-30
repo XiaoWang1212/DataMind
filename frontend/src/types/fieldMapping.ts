@@ -34,6 +34,8 @@ export interface MappingItem {
   sample_values: string[]
   candidate_columns: string[]
   definition?: string | null
+  /** 使用者自行新增的變數，框架沒有定義。決定能不能被刪除、名稱能不能編輯。 */
+  is_custom?: boolean
 }
 
 export interface MappingState {

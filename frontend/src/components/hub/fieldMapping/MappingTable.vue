@@ -9,9 +9,11 @@
         </tr>
       </thead>
       <tbody>
+        <!-- key 用 index 不用 paper_variable：自訂列的名稱是可編輯欄位，
+             拿它當 key 的話，打字改名會被 Vue 當成整列重新掛載，輸入框失焦、字打不完 -->
         <tr
-          v-for="item in sortedItems"
-          :key="item.paper_variable"
+          v-for="(item, index) in sortedItems"
+          :key="index"
           :class="{ 'row-flash': flashed.has(item.paper_variable) }"
         >
           <td class="col-var">
@@ -21,7 +23,22 @@
               class="target-badge"
               role="img"
             >★</span>
-            <span class="var-name">{{ item.paper_variable }}</span>
+            <template v-if="item.is_custom">
+              <span class="var-name" :class="{ 'var-name--placeholder': !item.paper_variable }">
+                {{ item.paper_variable || '請在右側選擇欄位' }}
+              </span>
+              <AppButton
+                :aria-label="`刪除自訂變數「${item.paper_variable || '未命名'}」`"
+                class="remove-custom-btn"
+                icon-only
+                title="刪除這個自訂變數"
+                variant="ghost"
+                @click="emit('remove-custom', item)"
+              >
+                <v-icon icon="mdi-close" size="14" />
+              </AppButton>
+            </template>
+            <span v-else class="var-name">{{ item.paper_variable }}</span>
             <v-tooltip
               v-if="item.definition"
               content-class="status-tooltip"
@@ -116,6 +133,12 @@
         </tr>
       </tbody>
     </table>
+    <div class="mapping-add-row">
+      <AppButton variant="secondary" @click="emit('add-custom')">
+        <v-icon icon="mdi-plus" size="16" />
+        新增自訂變數
+      </AppButton>
+    </div>
   </TableShell>
 </template>
 
@@ -139,6 +162,8 @@
     'update:selection': [item: MappingItem, value: string]
     'confirm': [item: MappingItem]
     'unconfirm': [item: MappingItem]
+    'add-custom': []
+    'remove-custom': [item: MappingItem]
   }>()
 
   const STATUS_LABEL: Record<string, string> = {
@@ -195,8 +220,9 @@
       hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
       muted: taken.has(column.name),
     }))
-    // 預測目標一定要有對應欄位，不提供「沒有這個變數」的選項
-    if (!isTarget(item)) {
+    // 預測目標一定要有對應欄位；自訂變數本來就是為了認領某個欄位而加的，
+    // 不需要也不提供「沒有這個變數」的選項——不想要就直接刪除整列
+    if (!isTarget(item) && !item.is_custom) {
       options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined, muted: false })
     }
     return options
@@ -233,6 +259,22 @@
   .var-name {
     font-weight: 500;
     color: var(--color-text);
+  }
+
+  /* 還沒選欄位時的提示字，跟已經有名稱的自訂變數用不同字重區隔 */
+  .var-name--placeholder {
+    font-weight: 400;
+    font-style: italic;
+    color: var(--color-ink-soft);
+  }
+
+  .remove-custom-btn.app-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 4px;
+    vertical-align: middle;
+    color: var(--color-ink-soft);
   }
 
   .var-info-icon {
@@ -289,6 +331,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .mapping-add-row {
+    display: flex;
+    padding: 10px 32px;
+    border-top: 1px solid var(--color-border);
   }
 
   /* 狀態換了才會重新掛載徽章，藉此帶出一次性的淡入強調 */

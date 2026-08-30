@@ -88,6 +88,7 @@
                 :paused-node-id="pausedAtNodeId"
                 :project-id="projectId"
                 :selected-node="selectedNode"
+                :target-col-hint="testScoreTargetColHint"
                 :used-model-names="usedModelNames"
                 :validation-config="testScoreValidationConfig"
                 :workflow-file-name="workflowDataFile?.name"
@@ -281,6 +282,12 @@
     const node = nodes.value.find(n => n.id === 'testScore')
     const v = node?.data.config.validation
     return (v && typeof v === 'object') ? (v as Record<string, unknown>) : {}
+  })
+
+  const testScoreTargetColHint = computed<string>(() => {
+    const node = nodes.value.find(n => n.id === 'testScore')
+    const val = node?.data.config.targetCol
+    return typeof val === 'string' ? val : ''
   })
 
   const dataTableColumns = computed<Array<{ name: string, type: string, role: string }>>(() => {

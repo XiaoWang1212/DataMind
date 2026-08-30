@@ -33,7 +33,9 @@ export async function readExcelRows (file: File): Promise<string[][]> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array' })
   const sheetName = workbook.SheetNames[0]
-  if (!sheetName) return []
+  if (!sheetName) {
+    return []
+  }
 
   const sheet = workbook.Sheets[sheetName]!
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
@@ -44,7 +46,9 @@ export async function readExcelRows (file: File): Promise<string[][]> {
 
 /** 讀出整張表（第一列是表頭），CSV 與 Excel 都能吃。 */
 export async function readTableRows (file: File): Promise<string[][]> {
-  if (isExcelFile(file)) return readExcelRows(file)
+  if (isExcelFile(file)) {
+    return readExcelRows(file)
+  }
 
   const text = await decodeFileText(file)
   return text
@@ -60,7 +64,9 @@ export async function readTablePreview (
   sampleRows = 5,
 ): Promise<{ columns: string[], rows: string[][] }> {
   const rows = await readTableRows(file)
-  if (rows.length === 0) return { columns: [], rows: [] }
+  if (rows.length === 0) {
+    return { columns: [], rows: [] }
+  }
   return { columns: rows[0]!, rows: rows.slice(1, sampleRows + 1) }
 }
 
@@ -78,15 +84,21 @@ export function buildRenamedHeader (
   const targets = new Set<string>()
   for (const name of columns) {
     const renamed = renameByColumn.get(name)
-    if (renamed) targets.add(renamed)
+    if (renamed) {
+      targets.add(renamed)
+    }
   }
 
   const used = new Set<string>([...targets, ...columns])
 
   return columns.map(name => {
     const renamed = renameByColumn.get(name)
-    if (renamed) return renamed
-    if (!targets.has(name)) return name
+    if (renamed) {
+      return renamed
+    }
+    if (!targets.has(name)) {
+      return name
+    }
 
     let candidate = `${name}${COLLISION_SUFFIX}`
     let serial = 2
@@ -101,62 +113,113 @@ export function buildRenamedHeader (
 
 /** 欄位名含逗號或引號時要包起來，否則改寫後的表頭會被拆錯欄。 */
 function escapeCsvCell (value: string): string {
-  if (!/[",\n]/.test(value)) return value
+  if (!/[",\n]/.test(value)) {
+    return value
+  }
   return `"${value.replace(/"/g, '""')}"`
 }
 
-async function rewriteCsvHeader (
+/** 算出改名後的表頭，以及要保留的原始欄位索引（沒被任何變數用到的欄位不會出現在這裡）。 */
+function buildRewritePlan (
+  columns: string[],
+  renameByColumn: Map<string, string>,
+  dropColumns: Set<string>,
+): { keepIndices: number[], header: string[] } {
+  const keepIndices: number[] = []
+  const keptColumns: string[] = []
+  for (const [index, name] of columns.entries()) {
+    if (dropColumns.has(name)) {
+      continue
+    }
+    keepIndices.push(index)
+    keptColumns.push(name)
+  }
+  return { keepIndices, header: buildRenamedHeader(keptColumns, renameByColumn) }
+}
+
+async function rewriteCsv (
   file: File,
   renameByColumn: Map<string, string>,
+  dropColumns: Set<string>,
 ): Promise<File> {
   const text = await decodeFileText(file)
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   const headerIndex = lines.findIndex(line => line.trim().length > 0)
-  if (headerIndex >= 0) {
-    const header = buildRenamedHeader(parseCsvLine(lines[headerIndex]!), renameByColumn)
-    lines[headerIndex] = header.map(name => escapeCsvCell(name)).join(',')
+  if (headerIndex === -1) {
+    return file
   }
-  return new File([lines.join('\n')], file.name, { type: file.type || 'text/csv' })
+
+  const originalHeader = parseCsvLine(lines[headerIndex]!)
+  const { keepIndices, header } = buildRewritePlan(originalHeader, renameByColumn, dropColumns)
+
+  // 沒有要刪欄位時維持原本「只換表頭、資料列原樣寫回」的做法：
+  // 逐列重新解析會连帶把每個儲存格 trim 掉，沒必要在不刪欄位時冒這個風險
+  if (dropColumns.size === 0) {
+    lines[headerIndex] = header.map(name => escapeCsvCell(name)).join(',')
+    return new File([lines.join('\n')], file.name, { type: file.type || 'text/csv' })
+  }
+
+  const rewritten = lines.map((line, index) => {
+    if (index === headerIndex) {
+      return header.map(name => escapeCsvCell(name)).join(',')
+    }
+    if (line.trim().length === 0) {
+      return line
+    }
+    // trim:false 保留原始儲存格內容，只動要刪的欄位，不要順便改掉其他欄位的空白
+    const cells = parseCsvLine(line, { trim: false })
+    return keepIndices.map(i => escapeCsvCell(cells[i] ?? '')).join(',')
+  })
+  return new File([rewritten.join('\n')], file.name, { type: file.type || 'text/csv' })
 }
 
 /**
- * Excel 只換表頭那一列，資料列原樣寫回。
- *
  * 資料格不轉字串：轉了之後整張表在 pandas 眼中都變成文字，數值欄位就廢了。
  */
-async function rewriteExcelHeader (
+async function rewriteExcel (
   file: File,
   renameByColumn: Map<string, string>,
+  dropColumns: Set<string>,
 ): Promise<File> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
   const sheetName = workbook.SheetNames[0]
-  if (!sheetName) return file
+  if (!sheetName) {
+    return file
+  }
 
   const sheet = workbook.Sheets[sheetName]!
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
   const headerIndex = rows.findIndex(
     row => row.some(cell => toCellText(cell).trim().length > 0),
   )
-  if (headerIndex === -1) return file
+  if (headerIndex === -1) {
+    return file
+  }
 
-  rows[headerIndex] = buildRenamedHeader(
-    rows[headerIndex]!.map(cell => toCellText(cell)),
-    renameByColumn,
+  const originalHeader = rows[headerIndex]!.map(cell => toCellText(cell))
+  const { keepIndices, header } = buildRewritePlan(originalHeader, renameByColumn, dropColumns)
+
+  const rewrittenRows = rows.map((row, index) =>
+    index === headerIndex ? header : keepIndices.map(i => row[i]),
   )
-  workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(rows, { cellDates: true })
+  workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(rewrittenRows, { cellDates: true })
 
   const bookType = getFileExtension(file) === 'xls' ? 'xls' : 'xlsx'
   const output = XLSX.write(workbook, { bookType, type: 'array' }) as ArrayBuffer
   return new File([output], file.name, { type: file.type || EXCEL_MIME })
 }
 
-/** 改寫表頭後回傳新檔案；Excel 仍是合法活頁簿，副檔名不變。 */
-export async function rewriteDatasetHeader (
+/**
+ * 依對映改寫表頭，並移除沒被任何變數認領的原始欄位；Excel 仍是合法活頁簿，副檔名不變。
+ * dropColumns 留空時等同只改表頭，不動任何欄位。
+ */
+export async function rewriteDataset (
   file: File,
   renameByColumn: Map<string, string>,
+  dropColumns: Set<string> = new Set(),
 ): Promise<File> {
   return isExcelFile(file)
-    ? await rewriteExcelHeader(file, renameByColumn)
-    : await rewriteCsvHeader(file, renameByColumn)
+    ? await rewriteExcel(file, renameByColumn, dropColumns)
+    : await rewriteCsv(file, renameByColumn, dropColumns)
 }

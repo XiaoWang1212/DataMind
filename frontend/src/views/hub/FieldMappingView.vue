@@ -41,7 +41,9 @@
           :items="items"
           :target-name="targetName"
           :user-columns="userColumns"
+          @add-custom="addCustomVariable"
           @confirm="confirmRow"
+          @remove-custom="removeCustomVariable"
           @unconfirm="unconfirmRow"
           @update:selection="applySelection"
         />
@@ -56,6 +58,9 @@
           <span v-if="saveError" class="footer-error">{{ saveError }}</span>
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
+          </span>
+          <span v-else-if="!loading && unusedColumns.length > 0" class="footer-hint footer-hint--neutral">
+            送出後將移除 {{ unusedColumns.length }} 個未使用欄位（{{ unusedColumnNames }}）
           </span>
           <AppButton variant="ghost" @click="skipToWorkflow">
             略過（開發用）
@@ -107,7 +112,7 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import { SKIP_VALUE } from '@/types/fieldMapping'
-  import { readTablePreview, rewriteDatasetHeader } from '@/utils/dataset'
+  import { readTablePreview, rewriteDataset } from '@/utils/dataset'
 
   const route = useRoute()
   const router = useRouter()
@@ -168,6 +173,15 @@
   )
   const canConfirm = computed(() => !loading.value && unmatchedCount.value === 0)
 
+  // 沒被任何變數（含自訂變數）認領的原始欄位，確認後會被移除
+  const unusedColumns = computed(() => {
+    const used = new Set(
+      items.value.filter(i => i.matched_user_column).map(i => i.matched_user_column as string),
+    )
+    return userColumns.value.filter(c => !used.has(c.name))
+  })
+  const unusedColumnNames = computed(() => unusedColumns.value.map(c => c.name).join('、'))
+
   // 確認過的列一併鎖住，後續 AI 建議不再改動
   function confirmRow (item: MappingItem): void {
     if (item.status !== 'NEEDS_REVIEW') return
@@ -201,6 +215,46 @@
     saveDraft()
   }
 
+  // 使用者自己想抓某個欄位、框架又沒定義對應變數時，讓他自己加一列
+  function addCustomVariable (): void {
+    pushHistory()
+    items.value.push({
+      paper_variable: '',
+      required_type: '',
+      matched_user_column: null,
+      confidence_score: 0,
+      status: 'UNMATCHED',
+      sample_values: [],
+      candidate_columns: [],
+      definition: null,
+      is_custom: true,
+    })
+    saveError.value = ''
+    saveDraft()
+  }
+
+  function removeCustomVariable (item: MappingItem): void {
+    if (!item.is_custom) return
+    pushHistory()
+    const index = items.value.indexOf(item)
+    if (index === -1) return
+    items.value.splice(index, 1)
+    locked.value.delete(item.paper_variable)
+    saveError.value = ''
+    saveDraft()
+  }
+
+  // 自訂變數的名稱直接沿用欄位原名；跟別的變數撞名時加序號避免蓋掉對方的對映
+  function uniqueCustomName (base: string, excludeItem: MappingItem): string {
+    const used = new Set(
+      items.value.filter(i => i !== excludeItem).map(i => i.paper_variable),
+    )
+    if (!used.has(base)) return base
+    let serial = 2
+    while (used.has(`${base}_${serial}`)) serial += 1
+    return `${base}_${serial}`
+  }
+
   function applySelection (item: MappingItem, value: string): void {
     // 選到跟目前相同的值就不處理，避免重新點選同一欄位時狀態被降級
     const unchanged = value === SKIP_VALUE
@@ -224,12 +278,14 @@
 
     // 一個欄位只能對應一個變數，原本對應到的變數退回未對應
     for (const other of items.value) {
-      if (other.paper_variable !== item.paper_variable && other.matched_user_column === value) {
+      if (other !== item && other.matched_user_column === value) {
+        flash(other.paper_variable)
         other.matched_user_column = null
         other.sample_values = []
         other.confidence_score = 0
         other.status = 'UNMATCHED'
-        flash(other.paper_variable)
+        // 自訂變數的名稱是借欄位名來的，欄位被搶走了名稱也跟著清掉
+        if (other.is_custom) other.paper_variable = ''
       }
     }
 
@@ -240,6 +296,8 @@
     item.confidence_score = 1
     // 使用者自己選的直接視為已確認，不需要再確認一次自己的操作
     item.status = 'CONFIRMED'
+    // 自訂變數不用手動命名，直接沿用選到的欄位名稱
+    if (item.is_custom) item.paper_variable = uniqueCustomName(value, item)
     saveDraft()
   }
 
@@ -397,8 +455,7 @@
     router.replace(`/workflow?project=${projectId.value}`)
   }
 
-  // 依對映改寫表頭後交給 workflow。
-  // 只改名不刪欄位，未對應的欄位在 workflow 仍可選用
+  // 依對映改寫表頭、移除未使用欄位後交給 workflow
   async function confirmAndRun (): Promise<void> {
     if (!datasetFile.value) return
     confirming.value = true
@@ -419,8 +476,11 @@
         renameByColumn.set(info.column, variable)
       }
 
+      // 沒被任何變數（含自訂變數）認領的原始欄位，之後在 workflow 就不會再出現
+      const dropColumns = new Set(unusedColumns.value.map(c => c.name))
+
       // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
-      const renamed = await rewriteDatasetHeader(datasetFile.value, renameByColumn)
+      const renamed = await rewriteDataset(datasetFile.value, renameByColumn, dropColumns)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
       // IndexedDB 寫入失敗不會拋例外，只在 console 留紀錄，因此回讀確認
@@ -454,6 +514,15 @@
   onMounted(async () => {
     try {
       await ensureStoresLoaded()
+
+      // 對映已經送出過（後端存過 columnMapping）就不要重跑：這時資料集已經被改寫過
+      // 一次（改名+刪欄位），拿改寫後的檔案重新配對只會得到不對的結果。用 replace
+      // 蓋掉這筆歷史紀錄，瀏覽器上一頁才不會又繞回這個頁面
+      const project = projectStore.projects.find(p => p.id === projectId.value)
+      if (project?.columnMapping) {
+        router.replace(`/workflow?project=${projectId.value}`)
+        return
+      }
 
       // 同上，回傳型別是 ResultView 那組，轉成本頁的形狀
       chatHistory.value = loadChatHistoryFromStorage(
@@ -639,6 +708,11 @@
   .footer-hint {
     font-size: 12px;
     color: var(--color-error-text);
+  }
+
+  /* 移除欄位只是提醒、不是擋著不給送出的錯誤，用中性色跟上面那個未對應提示區隔 */
+  .footer-hint--neutral {
+    color: var(--color-ink-soft);
   }
 
   .footer-error {
