@@ -10,38 +10,41 @@
         </div>
       </div>
 
-      <div
-        v-for="group in ciGroups"
-        :key="group.model"
-        class="ci-model-block"
-      >
-        <div class="ci-model-block__name">{{ group.model }}</div>
+      <div class="ci-controls">
+        <div class="ci-field">
+          <span class="ci-field__label">模型</span>
+          <CustomSelect
+            v-model="selectedModel"
+            class="ci-select"
+            :options="modelOptions"
+          />
+        </div>
+        <div class="ci-field">
+          <span class="ci-field__label">fold</span>
+          <CustomSelect
+            v-model="selectedFold"
+            class="ci-select"
+            :options="foldOptions"
+          />
+        </div>
+      </div>
 
+      <div v-if="currentSplitMetrics.length > 0" class="ci-table">
+        <div class="ci-table__header">
+          <span>指標</span>
+          <span class="ci-table__num">CI Lower</span>
+          <span class="ci-table__num">Value</span>
+          <span class="ci-table__num">CI Upper</span>
+        </div>
         <div
-          v-for="split in group.splits"
-          :key="split.split_name"
-          class="ci-split"
+          v-for="m in currentSplitMetrics"
+          :key="m.metric"
+          class="ci-table__row"
         >
-          <div class="ci-split__label">{{ split.split_name }}</div>
-
-          <div class="ci-table">
-            <div class="ci-table__header">
-              <span>指標</span>
-              <span class="ci-table__num">CI Lower</span>
-              <span class="ci-table__num">Value</span>
-              <span class="ci-table__num">CI Upper</span>
-            </div>
-            <div
-              v-for="m in split.metrics"
-              :key="m.metric"
-              class="ci-table__row"
-            >
-              <span class="ci-table__metric">{{ m.metric }}</span>
-              <span class="ci-table__num ci-table__num--lo">{{ fmt(m.ci_lower) }}</span>
-              <span class="ci-table__num ci-table__num--val">{{ fmt(m.value) }}</span>
-              <span class="ci-table__num ci-table__num--hi">{{ fmt(m.ci_upper) }}</span>
-            </div>
-          </div>
+          <span class="ci-table__metric">{{ m.metric }}</span>
+          <span class="ci-table__num ci-table__num--lo">{{ fmt(m.ci_lower) }}</span>
+          <span class="ci-table__num ci-table__num--val">{{ fmt(m.value) }}</span>
+          <span class="ci-table__num ci-table__num--hi">{{ fmt(m.ci_upper) }}</span>
         </div>
       </div>
     </template>
@@ -67,7 +70,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
 
   const props = defineProps<{
     workflowResult?: Record<string, unknown> | null
@@ -135,6 +139,44 @@
       })),
     }))
   })
+
+  // 每個模型每個 fold 都是一張獨立的表，一次全部攤開會變成長到滑不完的清單，
+  // 改成跟 ConfusionMatrixPanel 一樣的模型/fold 下拉選單，一次只顯示一張表
+  const selectedModel = ref('')
+  const selectedFold = ref('')
+
+  const modelOptions = computed(() =>
+    ciGroups.value.map(g => ({ value: g.model, label: g.model })),
+  )
+
+  const currentModelGroup = computed(() =>
+    ciGroups.value.find(g => g.model === selectedModel.value) ?? null,
+  )
+
+  const foldOptions = computed(() =>
+    (currentModelGroup.value?.splits ?? []).map(s => ({ value: s.split_name, label: s.split_name })),
+  )
+
+  const currentSplitMetrics = computed(() =>
+    currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
+  )
+
+  // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
+  watch(ciGroups, groups => {
+    if (groups.length === 0) {
+      selectedModel.value = ''
+      return
+    }
+    if (!groups.some(g => g.model === selectedModel.value)) {
+      selectedModel.value = groups[0]!.model
+    }
+  }, { immediate: true })
+
+  // 換模型（或結果載入）時，fold 一律重置為該模型的第一個
+  watch(currentModelGroup, group => {
+    const splits = group?.splits ?? []
+    selectedFold.value = splits[0]?.split_name ?? ''
+  }, { immediate: true })
 </script>
 
 <style scoped>
@@ -169,36 +211,28 @@
     color: var(--color-secondary);
   }
 
-  /* ── 模型區塊 ── */
-  .ci-model-block {
+  /* ── 模型／fold 選擇 ── */
+  .ci-controls {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .ci-field {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    padding: 10px;
-    background: color-mix(in oklab, var(--color-accent) 3%, transparent);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 10%, transparent);
-    border-radius: var(--radius-md);
   }
 
-  .ci-model-block__name {
+  .ci-field__label {
     font-size: 13px;
-    font-weight: 500;
-    color: var(--color-accent);
+    color: var(--color-ink-soft);
+    white-space: nowrap;
   }
 
-  /* ── Split ── */
-  .ci-split {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .ci-split__label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--color-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+  .ci-select {
+    width: 160px;
   }
 
   /* ── 表格 ── */
