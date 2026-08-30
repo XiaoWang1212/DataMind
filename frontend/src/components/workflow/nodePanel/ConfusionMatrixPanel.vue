@@ -212,14 +212,14 @@
           </p>
           <template v-if="currentTabChatError">
             <p class="cm-insight-error">{{ currentTabChatError }}</p>
-            <button
-              class="cm-insight-btn"
+            <AppButton
               :disabled="!props.projectId || isCurrentTabChatLoading"
-              type="button"
+              variant="ai"
               @click="retryTabChatMessage"
             >
+              <v-icon icon="mdi-shimmer" size="14" />
               重試
-            </button>
+            </AppButton>
           </template>
         </div>
 
@@ -231,13 +231,14 @@
             placeholder="針對這個圖表提問..."
             :disabled="!props.projectId || isCurrentTabChatLoading"
           >
-          <button
-            class="cm-insight-btn"
-            type="submit"
+          <AppButton
             :disabled="!props.projectId || isCurrentTabChatLoading || !tabChatInput.trim()"
+            :loading="isCurrentTabChatLoading"
+            type="submit"
+            variant="primary"
           >
             送出
-          </button>
+          </AppButton>
         </form>
       </div>
     </div>
