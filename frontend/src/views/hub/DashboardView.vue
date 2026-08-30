@@ -122,17 +122,21 @@
     margin-inline: auto;
   }
 
-  /* ── 主頁面版面：左邊行動卡片、右邊最近活動並排，避免行動卡片下方留一大片空白 ── */
+  /* ── 主頁面版面：左邊行動卡片、右邊最近活動並排，並把整列撐到接近視窗剩餘高度，
+     避免內容量少時下面留一大片空白。activity-card 內容不多時保持自然高度就好
+     （硬撐高只會把空白搬到卡片內部），多出來的高度交給 action-col 的兩張卡片長大 ── */
   .dashboard-grid {
     display: grid;
     grid-template-columns: 300px 1fr;
     align-items: stretch;
     gap: 16px;
+    min-height: calc(100vh - 200px);
   }
 
   @media (max-width: 860px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
+      min-height: 0;
     }
   }
 
@@ -193,6 +197,7 @@
   /* ── 最近活動 ── */
   /* 下緣留白，讓最後一項 hover 的底色下方還看得到卡片白底 */
   .activity-card {
+    align-self: start;
     padding: 20px 24px 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
