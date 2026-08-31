@@ -85,7 +85,7 @@
               <!-- 「資料表沒有」與候選欄位同樣是一種指定，放在同一排省去回頭開選單。
                    虛線邊框與候選欄位區隔 -->
               <AppButton
-                v-if="!isTarget(item)"
+                v-if="canSkip(item)"
                 class="candidate-chip candidate-chip--skip"
                 title="標記為資料表中沒有此變數"
                 variant="ghost"
@@ -207,10 +207,16 @@
     return item.paper_variable === props.targetName
   }
 
-  // 預測目標沒有「資料表沒有」這個出路，所以候選一個都沒有時整排就不必出現
+  // 預測目標一定要有欄位；自訂變數是為了認領某個欄位而加的，不想要就整列刪掉。
+  // 兩者都沒有「資料表沒有」這條出路，與下拉選單的選項條件一致
+  function canSkip (item: MappingItem): boolean {
+    return !isTarget(item) && !item.is_custom
+  }
+
+  // 沒有候選欄位、又不能標記為沒有，整排就不必出現
   function showQuickPicks (item: MappingItem): boolean {
     if (item.status !== 'UNMATCHED') return false
-    return item.candidate_columns.length > 0 || !isTarget(item)
+    return item.candidate_columns.length > 0 || canSkip(item)
   }
 
   // 預測目標排最前面，避免混在其他變數中被忽略
@@ -237,9 +243,7 @@
       hint: taken.has(column.name) ? `已對應至 ${taken.get(column.name)}` : undefined,
       muted: taken.has(column.name),
     }))
-    // 預測目標一定要有對應欄位；自訂變數本來就是為了認領某個欄位而加的，
-    // 不需要也不提供「沒有這個變數」的選項——不想要就直接刪除整列
-    if (!isTarget(item) && !item.is_custom) {
+    if (canSkip(item)) {
       options.push({ value: SKIP_VALUE, label: '資料表中沒有此變數', hint: undefined, muted: false })
     }
     return options
