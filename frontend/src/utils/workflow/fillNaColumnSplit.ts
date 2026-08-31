@@ -1,3 +1,5 @@
+import { PREPROCESS_LABELS } from '@/constants/workflowLabels'
+
 export interface DatasetColumn {
   name: string
   type: string
@@ -58,4 +60,33 @@ export function fillNaColumnKind (
     return 'nominal'
   }
   return 'mixed'
+}
+
+/** 前處理步驟的顯示名稱。fill_na 依 columns 的實際型別補上型別後綴，
+ * 讓 Settings 面板與 Preprocessor 節點面板顯示同一組名稱。 */
+export function preprocessStepLabel (
+  step: Record<string, unknown>,
+  datasetColumns: DatasetColumn[],
+): string {
+  const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
+  if (step.type !== 'fill_na') {
+    return base
+  }
+
+  const kind = fillNaColumnKind(step, datasetColumns)
+  if (kind === 'numeric') {
+    return `${base}（數值型）`
+  }
+  if (kind === 'nominal') {
+    return `${base}（類別型）`
+  }
+  return base
+}
+
+/** fill_na 的 strategy 值對應的中文說法。 */
+export const FILL_NA_STRATEGY_LABELS: Record<string, string> = {
+  auto: '自動（數值用均值／類別用眾數）',
+  mean: '均值',
+  median: '中位數',
+  mode: '眾數',
 }

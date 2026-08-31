@@ -11,7 +11,7 @@
         >
           <div class="step-header">
             <span class="step-index">{{ index + 1 }}</span>
-            <span class="step-label">{{ stepLabel(step.type as string) }}</span>
+            <span class="step-label">{{ preprocessStepLabel(step, datasetColumns) }}</span>
           </div>
           <div v-if="visibleParams(step).length > 0" class="step-params">
             <div
@@ -34,34 +34,31 @@
 </template>
 
 <script setup lang="ts">
-  const props = defineProps<{
+  import type { DatasetColumn } from '@/utils/workflow/fillNaColumnSplit'
+  import { FILL_NA_STRATEGY_LABELS, preprocessStepLabel } from '@/utils/workflow/fillNaColumnSplit'
+
+  withDefaults(defineProps<{
     pipeline: Array<Record<string, unknown>>
-  }>()
-
-  const STEP_LABELS: Record<string, string> = {
-    fill_na: '缺值填補',
-    knn_impute: 'KNN 缺值填補',
-    iterative_impute: 'MICE 多重插補',
-    normalize: 'Min-Max 正規化',
-    standardize: 'Z-score 標準化',
-    one_hot: 'One-Hot 編碼',
-    label_encode: 'Label 編碼',
-    drop_columns: '移除欄位',
-    remove_outliers_iqr: 'IQR 異常值處理',
-    remove_outliers_zscore: 'Z-score 異常值處理',
-  }
-
-  function stepLabel (type: string): string {
-    return STEP_LABELS[type] ?? type
-  }
+    datasetColumns?: DatasetColumn[]
+  }>(), {
+    datasetColumns: () => [],
+  })
 
   // columns 常常是一長串欄位名稱，卡片裡放不下會跟其他卡片重疊，不顯示
   const HIDDEN_KEYS = new Set(['type', 'columns'])
 
+  // 參數值照 Settings 面板的說法顯示，同一個步驟在兩邊看到的字才一致
+  function paramValueLabel (step: Record<string, unknown>, key: string, value: unknown): string {
+    if (step.type === 'fill_na' && key === 'strategy') {
+      return FILL_NA_STRATEGY_LABELS[String(value)] ?? String(value)
+    }
+    return String(value)
+  }
+
   function visibleParams (step: Record<string, unknown>): [string, string][] {
     return Object.entries(step)
       .filter(([k]) => !HIDDEN_KEYS.has(k))
-      .map(([k, v]) => [k, String(v)])
+      .map(([k, v]) => [k, paramValueLabel(step, k, v)])
   }
 </script>
 
@@ -80,7 +77,8 @@
 
   .steps {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    /* 與 Settings 面板的步驟卡片同寬，兩邊看到的排版才一致 */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 8px;
     align-items: stretch;
   }
@@ -152,8 +150,11 @@
 
   .param-val {
     font-size: 13px;
+    line-height: 1.35;
     color: var(--color-text);
     font-weight: 500;
+    /* key 是 nowrap，值不給收縮空間的話會把整排撐出卡片 */
+    min-width: 0;
   }
 
   .empty-hint {

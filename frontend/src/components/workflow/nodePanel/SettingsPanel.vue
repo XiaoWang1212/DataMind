@@ -40,7 +40,7 @@
         <div v-for="(step, i) in localPreprocessing" :key="i" class="item-row">
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
-            <span class="item-name">{{ preprocessStepLabel(step) }}</span>
+            <span class="item-name">{{ preprocessStepLabel(step, datasetColumns) }}</span>
             <AppButton
               aria-label="移除"
               icon-only
@@ -362,7 +362,7 @@
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import { FEATURE_LABELS, PREPROCESS_LABELS, VALIDATION_LABELS } from '@/constants/workflowLabels'
-  import { expandAutoFillNaSteps, fillNaColumnKind, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
+  import { expandAutoFillNaSteps, fillNaColumnKind, preprocessStepLabel, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -411,15 +411,6 @@
 
   const VALIDATION_METHODS = Object.entries(VALIDATION_LABELS)
     .map(([value, label]) => ({ value, label }))
-
-  function preprocessStepLabel (step: Record<string, unknown>): string {
-    const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
-    if (step.type !== 'fill_na') return base
-    const kind = fillNaColumnKind(step, props.datasetColumns)
-    if (kind === 'numeric') return `${base}（數值型）`
-    if (kind === 'nominal') return `${base}（類別型）`
-    return base
-  }
 
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))
@@ -688,7 +679,8 @@
 
   .item-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    /* 240px 才放得下「缺值填補（數值型）」這種較長的步驟名稱 */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 8px;
     align-items: stretch;
   }
@@ -737,7 +729,6 @@
     line-height: 1.3;
     color: var(--color-text);
     min-width: 0;
-    word-break: break-word;
   }
 
   .item-params {
@@ -770,7 +761,10 @@
   .param-fixed {
     font-size: 13px;
     font-weight: 500;
+    line-height: 1.35;
     color: var(--color-text);
+    /* key 是 nowrap，值不給收縮空間的話會把整排撐出卡片 */
+    min-width: 0;
   }
 
   .param-num {
@@ -809,7 +803,8 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: var(--color-ink);
+    /* 不能用 ink：它在深色主題翻成淺藍，內文會變成藍字 */
+    color: var(--color-text);
     cursor: pointer;
   }
 

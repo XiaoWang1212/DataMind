@@ -51,6 +51,7 @@
         <template v-else-if="selectedNode.id === 'preprocessor'">
           <PreprocessorPanel
             v-if="preprocessorPipeline.length > 0"
+            :dataset-columns="settingsDatasetColumns"
             :pipeline="preprocessorPipeline"
           />
           <template v-else>
