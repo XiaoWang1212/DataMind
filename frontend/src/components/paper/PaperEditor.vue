@@ -669,8 +669,13 @@
 
   @media (hover: hover) and (pointer: fine) {
     .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
-      background: color-mix(in oklab, var(--color-ink) 10%, transparent);
+      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
       color: var(--color-ink);
+    }
+
+    /* 工具列本身是 surface-alt，深色的 surface 比它暗，混出來的 hover 會像凹下去 */
+    .v-theme--dark .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
+      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface-alt));
     }
   }
 

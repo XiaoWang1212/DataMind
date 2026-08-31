@@ -383,7 +383,11 @@
 
 /* 淺色分類色跟頁面底色對比不足時的保險，不管色票怎麼調都通用 */
 .sg-node-dot--bordered {
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid rgba(18, 36, 74, 0.16);
+}
+
+.v-theme--dark .sg-node-dot--bordered {
+  border-color: color-mix(in oklab, var(--sg-node-color) 58%, var(--color-surface));
 }
 
 /* outline 風格：白底＋綠框＋綠勾，不管節點本身是什麼色都能跟它分開，見 IconNode.vue */
