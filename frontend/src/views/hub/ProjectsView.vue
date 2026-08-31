@@ -15,50 +15,59 @@
 
     <!-- Project list -->
     <div class="project-list enter-stagger">
-      <component
-        :is="isEditing ? 'div' : RouterLink"
+      <RouterLink
         v-for="project in store.projects"
         :key="project.id"
-        class="project-card"
-        :class="{ 'project-card--editing': isEditing }"
-        :to="isEditing ? undefined : projectLink(project)"
+        v-slot="{ href, navigate }"
+        custom
+        :to="projectLink(project)"
       >
-        <button
-          v-if="isEditing"
-          aria-label="刪除專案"
-          class="project-delete-btn"
-          type="button"
-          @click.stop="requestDelete(project)"
+        <!-- 用 custom slot 自己渲染 <a>：先前用 component :is 在 RouterLink 與 div
+             之間切換，元素型別一變 Vue 會重建整批卡片，enter-stagger 就跟著重播 -->
+        <a
+          class="project-card"
+          :class="{ 'project-card--editing': isEditing }"
+          :href="href"
+          @click="isEditing ? $event.preventDefault() : navigate($event)"
         >
-          <v-icon icon="mdi-minus" size="14" />
-        </button>
-        <div class="project-title-row">
-          <div class="project-icon-wrap">
-            <v-icon icon="mdi-folder-outline" size="19" />
+          <div class="project-title-row">
+            <div class="project-icon-wrap">
+              <v-icon icon="mdi-folder-outline" size="19" />
+            </div>
+            <span class="project-name">{{ project.name }}</span>
+            <StatusBadge :status="statusTone[project.status]">
+              {{ statusLabel[project.status] }}
+            </StatusBadge>
           </div>
-          <span class="project-name">{{ project.name }}</span>
-          <StatusBadge :status="statusTone[project.status]">
-            {{ statusLabel[project.status] }}
-          </StatusBadge>
-        </div>
-        <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
-        <div class="project-date">
-          <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
-          {{ project.date }}
-        </div>
-        <!-- 一律留在版面上，只切換內容，避免進行中的卡片比其他卡片高一截 -->
-        <div class="progress-wrap">
-          <template v-if="project.status === 'running'">
-            <div class="progress-label-row">
-              <span class="progress-label">分析進度</span>
-              <span class="progress-pct">{{ project.progress }}%</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
-            </div>
-          </template>
-        </div>
-      </component>
+          <div class="project-meta">框架：{{ frameworkTitle(project) }}</div>
+          <div class="project-date">
+            <v-icon class="date-icon" icon="mdi-calendar-outline" size="13" />
+            {{ project.date }}
+          </div>
+          <!-- 一律留在版面上，只切換內容，避免進行中的卡片比其他卡片高一截。
+               編輯模式借用同一塊位置放刪除鈕，卡片高度與其他元素的位置都不會動 -->
+          <div class="progress-wrap" :class="{ 'progress-wrap--editing': isEditing }">
+            <button
+              v-if="isEditing"
+              :aria-label="`刪除專案「${project.name}」`"
+              class="project-delete-btn"
+              type="button"
+              @click.stop.prevent="requestDelete(project)"
+            >
+              <v-icon icon="mdi-trash-can-outline" size="16" />
+            </button>
+            <template v-else-if="project.status === 'running'">
+              <div class="progress-label-row">
+                <span class="progress-label">分析進度</span>
+                <span class="progress-pct">{{ project.progress }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar" :style="{ width: `${project.progress}%` }" />
+              </div>
+            </template>
+          </div>
+        </a>
+      </RouterLink>
     </div>
 
     <ConfirmDialog
@@ -143,7 +152,6 @@
 
   /* hover 跟框架庫的 .fw-card 同一套 */
   .project-card {
-    position: relative;
     display: flex;
     flex-direction: column;
     /* 固定高度：專案名稱長短、有沒有進度條都不該讓同一列的卡片高低不一 */
@@ -167,29 +175,30 @@
     transform: none;
   }
 
+  /* 只有編輯模式看得到。卡片上已經有一堆方角圓角，這顆做成圓形不再多一種圓角 */
   .project-delete-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 30px;
+    height: 30px;
     border: none;
     border-radius: 50%;
-    background: var(--color-error);
-    /* 深色的 error 提亮成 #F0687F，白色圖示只剩 3.00:1 貼在門檻上；
-       跟著主題翻面才有餘裕 */
-    color: var(--color-surface);
+    background: var(--color-surface-alt);
+    color: var(--color-error);
     cursor: pointer;
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-fast) var(--ease-out);
+    transition: background var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
   }
 
   .project-delete-btn:hover {
-    transform: scale(1.1);
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+  }
+
+  .project-delete-btn:active {
+    transform: scale(0.94);
   }
 
   .project-card:hover {
@@ -253,6 +262,12 @@
     margin-top: auto;
     /* 標籤列 + 軌道的高度，空的時候一樣佔著 */
     min-height: 27px;
+  }
+
+  .progress-wrap--editing {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
   }
 
   .progress-label-row {
