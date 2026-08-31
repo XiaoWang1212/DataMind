@@ -90,12 +90,12 @@
     align-items: center;
     padding: 3px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--glass-tint-from);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--glass-edge);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 1px 0 var(--glass-sheen),
       var(--shadow-card);
   }
 
@@ -106,7 +106,7 @@
     left: 0;
     width: 0;
     border-radius: 999px;
-    background: var(--color-ink);
+    background: var(--color-ink-solid);
     transition:
       left var(--dur-slow) var(--ease-in-out),
       width var(--dur-slow) var(--ease-in-out);

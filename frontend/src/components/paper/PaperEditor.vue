@@ -638,7 +638,8 @@
     left: 50%;
     transform: translateX(-50%);
     background: var(--color-text);
-    color: var(--color-inverted);
+    /* 底是 --color-text，兩個主題明暗相反，文字得跟著翻成頁面底色 */
+    color: var(--color-page);
     font-size: 11px;
     padding: 3px 7px;
     border-radius: var(--radius-sm);
@@ -668,7 +669,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
-      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
+      background: color-mix(in oklab, var(--color-ink) 10%, transparent);
       color: var(--color-ink);
     }
   }
@@ -701,12 +702,12 @@
     width: 22px;
     height: 22px;
     border-radius: 5px;
-    border: 1.5px solid rgba(28, 33, 48, 0.15);
+    border: 1.5px solid var(--color-border-strong);
     cursor: pointer;
   }
 
   .cell-color-swatch:hover {
-    border-color: rgba(28, 33, 48, 0.4);
+    border-color: var(--color-ink-soft);
   }
 
   .editor-status-bar {

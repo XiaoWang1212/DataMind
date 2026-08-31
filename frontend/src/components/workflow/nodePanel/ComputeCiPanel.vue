@@ -414,8 +414,9 @@
     transition: all 0.15s ease;
   }
 
+  /* 實色底另用 --color-ink-solid：ink 在深色主題是淺藍，配淺色文字會看不見 */
   .ci-tab--active {
-    background: var(--color-ink);
+    background: var(--color-ink-solid);
     border-color: var(--color-ink);
     color: var(--color-inverted);
   }
@@ -487,7 +488,7 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background: rgba(0, 0, 0, 0.06);
+    background: color-mix(in oklab, var(--color-text) 8%, transparent);
   }
 
   .ci-forest__bar {
