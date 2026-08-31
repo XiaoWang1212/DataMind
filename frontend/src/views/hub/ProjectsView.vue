@@ -180,7 +180,9 @@
     border: none;
     border-radius: 50%;
     background: var(--color-error);
-    color: white;
+    /* 深色的 error 提亮成 #F0687F，白色圖示只剩 3.00:1 貼在門檻上；
+       跟著主題翻面才有餘裕 */
+    color: var(--color-surface);
     cursor: pointer;
     box-shadow: var(--shadow-card);
     transition: transform var(--dur-fast) var(--ease-out);

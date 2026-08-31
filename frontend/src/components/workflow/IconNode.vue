@@ -140,7 +140,8 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    color: #fff;
+    /* 底色會隨主題翻面（深色的 ink-strong 是淺藍），文字得跟著翻 */
+    color: var(--color-surface);
     box-shadow: var(--shadow-card);
     pointer-events: none;
   }
