@@ -825,6 +825,7 @@
     border: 1px solid var(--glass-drawer-edge);
     background: var(--glass-drawer-tint);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.05);
     will-change: height, transform;
     transition: height var(--dur-slow) cubic-bezier(0.4, 0, 0.2, 1);
@@ -834,6 +835,21 @@
        這裡固定用 full 段（90vh）當唯一上限，避免用分段 class
        卡高度時，收合到比自己上限還小的段落會被瞬間夾住而不是平滑動畫 */
     max-height: 90vh;
+  }
+
+  /* §5.2:不支援 backdrop-filter 時退回不透明底,否則抽屜會直接透出底下的節點 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .options-drawer {
+      background: var(--glass-fallback);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .options-drawer {
+      background: var(--glass-fallback);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
   }
 
   .options-drawer__scroll {
