@@ -33,6 +33,14 @@ export default createVuetify({
           // docs/DESIGN_SYSTEM.md 稱這個角色為 danger，這裡沿用 Vuetify 內建的 error 插槽名稱
           'error': '#D7445C',
           // 品牌藏青深一階：hover/按下、標題強調
+          // 「不隨主題翻面」的實色深底，專門承載 --color-inverted 淺字（見 DESIGN_SYSTEM §2.5）。
+          // 不能用 ink：它在深色主題翻成淺藍，淺字疊上去會看不見
+          'ink-solid': '#1A3159',
+          // 同一組深底的暗端，只給漸層當第二個色停
+          'ink-solid-deep': '#1B2C4C',
+          // AI 按鈕的漸層兩端，同樣兩個主題都必須是深的
+          'ai-from': '#2B5CA8',
+          'ai-to': '#12244A',
           'ink-strong': '#12244A',
           // 藏青亮一階。ink 疊在深色內文旁邊看不出差別時用，例如選單的已選項目
           'ink-vivid': '#2B5CA8',
@@ -88,6 +96,11 @@ export default createVuetify({
           'success': '#4FC79E',
           'warning': '#E0A93F',
           'error': '#F0687F',
+          // 深色的實色底比淺色亮一階但仍是深色：#2F5288 對 #F1F5F9 是 7.14:1
+          'ink-solid': '#2F5288',
+          'ink-solid-deep': '#1F3A63',
+          'ai-from': '#2C4A86',
+          'ai-to': '#1C3358',
           'ink-strong': '#B4CDF5',
           'ink-vivid': '#5B8FD8',
           'text': '#E8EAEC',

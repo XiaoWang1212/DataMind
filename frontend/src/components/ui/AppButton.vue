@@ -102,7 +102,7 @@
   }
 
   .app-btn--ai {
-    background: linear-gradient(100deg, var(--color-btn-ai-from) 0%, var(--color-btn-ai-to) 100%);
+    background: linear-gradient(100deg, var(--color-ai-from) 0%, var(--color-ai-to) 100%);
     color: var(--color-inverted);
   }
 
@@ -131,8 +131,8 @@
     .app-btn--ai:hover:not(:disabled) {
       background: linear-gradient(
         100deg,
-        color-mix(in oklab, var(--color-btn-ai-from) 88%, var(--color-surface)) 0%,
-        color-mix(in oklab, var(--color-btn-ai-to) 88%, var(--color-surface)) 100%
+        color-mix(in oklab, var(--color-ai-from) 88%, var(--color-surface)) 0%,
+        color-mix(in oklab, var(--color-ai-to) 88%, var(--color-surface)) 100%
       );
     }
   }
