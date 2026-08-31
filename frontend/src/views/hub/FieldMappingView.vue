@@ -128,12 +128,10 @@
   // Project.id 在資料庫是 int，useWorkflowStorage 收字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
 
-  // 第一句說明這一步的用途，第二句是使用者要動手的部分，靠 .page-header-sub 的
-  // white-space: pre-line 斷成兩行
-  const INTRO = [
-    '建立論文變數與資料表欄位的對應關係，後續工作流程才能正確讀取各變數的資料。',
-    '系統已自動比對一輪，AI 依語意建議的對應一律標示為待確認，須逐項確認後方可採用。',
-  ].join('\n')
+  // 不手動斷行，讓它自己折：頁首佔太多高度會把表格擠下去
+  const INTRO = '建立論文變數與資料表欄位的對應關係，後續工作流程才能以論文的變數名稱讀取資料。'
+    + '系統已自動比對一輪，AI 依語意建議的對應標示為待確認，請逐項檢查後確認。'
+    + '若略過此步驟，資料表將維持原本的欄位直接進入工作流程。'
 
   const loading = ref(true)
   const loadError = ref('')
