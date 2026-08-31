@@ -1,6 +1,23 @@
 <template>
   <div class="style-guide">
-    <h1 class="sg-h1">Design tokens 展示頁</h1>
+    <div class="sg-titlebar">
+      <h1 class="sg-h1">Design tokens 展示頁</h1>
+      <!-- 這頁沒有 Hub 側邊欄，自帶一顆切換鈕才能兩個主題對照著看 -->
+      <button
+        :aria-checked="themeStore.isDark"
+        aria-label="深色模式"
+        class="sg-theme-toggle"
+        role="switch"
+        type="button"
+        @click="themeStore.toggle()"
+      >
+        <v-icon
+          :icon="themeStore.isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
+          size="16"
+        />
+        {{ themeStore.isDark ? '深色' : '淺色' }}
+      </button>
+    </div>
     <p class="sg-note">
       僅在 dev 模式掛路由，用來核對 docs/DESIGN_SYSTEM.md 的 token 是否套對，不會出現在 production build。
     </p>
@@ -25,8 +42,8 @@
       </p>
       <div class="sg-node-grid">
         <div v-for="cat in nodeCategories" :key="cat.name" class="sg-node">
-          <div class="sg-node-dot sg-node-dot--bordered" :style="{ background: cat.varRef }">
-            <v-icon color="var(--color-ink-strong)" icon="mdi-circle-outline" size="24" />
+          <div class="sg-node-dot sg-node-dot--bordered" :style="{ '--sg-node-color': cat.varRef }">
+            <v-icon icon="mdi-circle-outline" size="24" />
             <span class="sg-node-badge">
               <v-icon icon="mdi-check" size="13" />
             </span>
@@ -202,7 +219,10 @@
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import { useThemeStore } from '@/store/themeStore'
   import { renderChatText } from '@/utils/formatChatText'
+
+  const themeStore = useThemeStore()
 
   const boldSample = '建議把 **年齡** 對應到 pt_age，其餘欄位維持不變。'
 
@@ -317,6 +337,32 @@
   gap: 12px;
 }
 
+.sg-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sg-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+
+.sg-theme-toggle:hover {
+  border-color: var(--color-ink);
+  background: var(--color-surface-alt);
+}
+
 .sg-node-dot {
   position: relative;
   display: flex;
@@ -326,12 +372,18 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  color: #fff;
+  background: var(--sg-node-color);
+  color: var(--color-ink-strong);
+}
+
+.v-theme--dark .sg-node-dot {
+  background: color-mix(in oklab, var(--sg-node-color) 24%, var(--color-surface));
+  color: color-mix(in oklab, var(--sg-node-color) 82%, #fff);
 }
 
 /* 淺色分類色跟頁面底色對比不足時的保險，不管色票怎麼調都通用 */
 .sg-node-dot--bordered {
-  border: 1.5px solid rgba(18, 36, 74, 0.16);
+  border: 1.5px solid var(--color-border-strong);
 }
 
 /* outline 風格：白底＋綠框＋綠勾，不管節點本身是什麼色都能跟它分開，見 IconNode.vue */
@@ -381,9 +433,9 @@
   padding: 24px;
   border-radius: var(--radius-md);
   background:
-    radial-gradient(220px circle at 20% 30%, rgba(90, 130, 190, 0.55), transparent 60%),
-    radial-gradient(200px circle at 80% 70%, rgba(196, 150, 130, 0.35), transparent 60%),
-    linear-gradient(175deg, #eef2f5 0%, #dce3e9 100%);
+    radial-gradient(220px circle at 20% 30%, var(--page-tint-primary), transparent 60%),
+    radial-gradient(200px circle at 80% 70%, var(--page-tint-warm), transparent 60%),
+    var(--page-base);
 }
 
 .sg-glass-demo {
