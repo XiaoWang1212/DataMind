@@ -66,6 +66,52 @@ export default createVuetify({
           'node-visualize': '#A9AED6',
           'node-model': '#85BDBC',
           'node-evaluate': '#CFA3B6',
+          // 原本寫死在 tailwind.css，改成主題插槽讓深色有對應值。
+          // AI 氣泡用純白＋投影浮在玻璃面板上，靠高度而不是明度差區分；
+          // 使用者氣泡用品牌藏青實色
+          'chat-system': '#FFFFFF',
+          'chat-user': '#1A3159',
+        },
+      },
+      // 深色底走中性石墨、不帶色相：狀態色與節點分類色跳得更開，資料比較好讀。
+      // 代價是少了藏青的品牌識別，這是刻意的取捨（見 spec §色票）
+      dark: {
+        dark: true,
+        colors: {
+          // ink 系列從深藏青翻成淺藍：深底上要維持 4.5:1 就不可能沿用原本的深色值。
+          // 色相留在藏青範圍（220° 附近），兩個模式仍是同一個品牌
+          'primary': '#8FB4EE',
+          'secondary': '#9BA1A8',
+          'accent': '#8FB4EE',
+          'background': '#141618',
+          'surface': '#1F2225',
+          'success': '#4FC79E',
+          'warning': '#E0A93F',
+          'error': '#F0687F',
+          'ink-strong': '#B4CDF5',
+          'ink-vivid': '#5B8FD8',
+          'text': '#E8EAEC',
+          'surface-alt': '#26292D',
+          'border': '#33373C',
+          'border-strong': '#454A50',
+          'success-bg': '#16342B',
+          'warning-bg': '#3A2E12',
+          'error-bg': '#3A1D25',
+          'success-text': '#6ADCB6',
+          'warning-text': '#F0C46A',
+          'error-text': '#FF8FA2',
+          'score-low': '#E8C24A',
+          // 節點分類色維持與淺色相同：這五個是中明度粉彩，直接當填色鋪在石墨底上
+          // 依然清楚，上面疊的深色文字也不受背景影響。翻成「深底＋亮色 icon」
+          // 要改 IconNode 的結構，而且畫布會失去 Orange Data Mining 的配色識別
+          'node-source': '#D2A596',
+          'node-transform': '#8EB8D1',
+          'node-visualize': '#A9AED6',
+          'node-model': '#85BDBC',
+          'node-evaluate': '#CFA3B6',
+          // AI 氣泡用次級底、使用者氣泡用亮一階的藏青，維持「一邊靠層次、一邊靠實色」
+          'chat-system': '#26292D',
+          'chat-user': '#2B5CA8',
         },
       },
     },
