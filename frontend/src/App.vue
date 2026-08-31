@@ -15,14 +15,16 @@
   const themeStore = useThemeStore()
   const vuetifyTheme = useTheme()
 
-  // 在第一次繪製之前就定案，避免首屏先閃一下淺色再跳成深色
+  // 讀 localStorage / 系統偏好定出初值。首次繪製前的防閃爍由 index.html 的 inline
+  // script 負責，這裡是同一份判斷在 Vue 這側的權威版本
   themeStore.init()
 
   // 套用主題的唯一入口：store 只管狀態，換色統一在這裡發生
   watchEffect(() => {
     vuetifyTheme.change(themeStore.mode)
-    // 下拉選單與引用浮卡是 Teleport 到 body 的，不在 .v-application 底下，
-    // 拿不到掛在那裡的主題變數。class 同步到 <html>，整份文件才都吃得到
+    // Vuetify 自己的 --v-theme-* 是發在 :root 上的，但專案的 .v-theme--dark {} 區塊
+    // （glass.css、main.scss、元件內）掛在 .v-application。下拉選單與引用浮卡是
+    // Teleport 到 body 的，落在那個範圍外，class 要同步到 <html> 才吃得到
     const root = document.documentElement
     root.classList.toggle('v-theme--dark', themeStore.isDark)
     root.classList.toggle('v-theme--light', !themeStore.isDark)

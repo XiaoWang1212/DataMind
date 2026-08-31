@@ -5,6 +5,21 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataMind</title>
+    <!-- 主題要在文件第一次繪製前就定案，否則系統偏好深色時會先閃一下白畫面。
+         必須是 inline script：外部檔案的載入是非同步的，趕不上首次繪製。
+         key 與 store/themeStore.ts 的 STORAGE_KEY 一致，改一邊要改兩邊 -->
+    <script>
+      (function () {
+        var stored = null
+        try { stored = localStorage.getItem('datamind:theme') } catch (e) { /* 無痕模式會擋 */ }
+        var dark = stored === 'dark' || (stored !== 'light'
+          && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var root = document.documentElement
+        root.classList.add(dark ? 'v-theme--dark' : 'v-theme--light')
+        // Vuetify 的樣式表這時還沒注入，先直接給 color-scheme 讓瀏覽器用深色畫底
+        root.style.colorScheme = dark ? 'dark' : 'light'
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>
