@@ -607,11 +607,15 @@
     transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
   }
 
+  /* 作用中的頁籤靠三件事跟其他四格分開：抬高一階的底色、分類色的內描邊、加粗的字。
+     只靠底色差在深色主題下讀不出來——軌道與面板的明度差本來就只有一階 */
   .wizard-tab--active {
-    background: var(--color-surface);
+    background: var(--color-surface-alt);
     color: var(--tab-color, var(--color-ink));
-    font-weight: 500;
-    box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
+    font-weight: 700;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--tab-color, var(--color-ink)) 55%, transparent),
+      0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -629,9 +633,12 @@
     transition: background var(--dur-fast), color var(--dur-fast);
   }
 
+  /* 分類色是中明度粉彩，淺字疊上去兩個主題都不到 3:1。
+     號碼改用兩個主題都深的 ink-solid */
   .wizard-tab--active .wizard-tab__num {
     background: var(--tab-color, var(--color-ink));
-    color: var(--color-inverted);
+    color: var(--color-ink-solid);
+    font-weight: 700;
   }
 
   .wizard-tab__text {
