@@ -4,6 +4,7 @@
       <thead>
         <tr>
           <th class="col-var">論文變數</th>
+          <th class="col-def">變數定義</th>
           <th class="col-col">你的欄位</th>
           <th class="col-status">狀態</th>
         </tr>
@@ -14,15 +15,9 @@
         <tr
           v-for="(item, index) in sortedItems"
           :key="index"
-          :class="{ 'row-flash': flashed.has(item.paper_variable) }"
+          :class="{ 'row-flash': flashed.has(item.paper_variable), 'row-target': isTarget(item) }"
         >
           <td class="col-var">
-            <span
-              v-if="isTarget(item)"
-              aria-label="預測目標"
-              class="target-badge"
-              role="img"
-            >★</span>
             <template v-if="item.is_custom">
               <span class="var-name" :class="{ 'var-name--placeholder': !item.paper_variable }">
                 {{ item.paper_variable || '請在右側選擇欄位' }}
@@ -39,23 +34,14 @@
               </AppButton>
             </template>
             <span v-else class="var-name">{{ item.paper_variable }}</span>
-            <v-tooltip
-              v-if="item.definition"
-              content-class="status-tooltip"
-              location="bottom"
-              max-width="240"
-              :text="item.definition"
-            >
-              <template #activator="{ props: tooltipProps }">
-                <v-icon
-                  v-bind="tooltipProps"
-                  class="var-info-icon"
-                  icon="mdi-information-outline"
-                  size="14"
-                />
-              </template>
-            </v-tooltip>
-            <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
+            <span class="var-type-row">
+              <span class="var-type">{{ item.required_type || '型態未指定' }}</span>
+              <span v-if="isTarget(item)" class="target-pill">預測目標</span>
+            </span>
+          </td>
+          <td class="col-def">
+            <span v-if="item.definition" class="var-def">{{ item.definition }}</span>
+            <span v-else class="var-def var-def--empty">—</span>
           </td>
           <td class="col-col">
             <CustomSelect
@@ -253,7 +239,7 @@
 <style scoped>
   /* 下拉欄固定寬度，視窗窄時由 TableShell 自己捲，避免撐開整頁 */
   .mapping-table {
-    min-width: 520px;
+    min-width: 720px;
     /* fixed 避免超長欄位名稱撐寬整欄，交給 .cs-label 做 ellipsis */
     table-layout: fixed;
   }
@@ -268,18 +254,74 @@
     width: 124px;
   }
 
-  .col-col {
-    width: 260px;
+  .col-var {
+    width: 210px;
   }
 
-  .target-badge {
-    color: var(--color-warning);
-    margin-right: 4px;
+  .col-col {
+    width: 240px;
+  }
+
+  .col-def {
+    width: 220px;
+  }
+
+  .var-def {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+    /* 論文原文常有長單字或化學式，不讓它撐破欄寬 */
+    overflow-wrap: anywhere;
+  }
+
+  .var-def--empty {
+    opacity: 0.5;
+  }
+
+  /* 預測目標是整份對應的主角，整列鋪一層品牌藍底 */
+  .row-target {
+    background: color-mix(in oklab, var(--color-ink-vivid) 14%, transparent);
+  }
+
+  .row-target .var-name {
+    color: var(--color-ink-vivid);
+    font-weight: 600;
+  }
+
+  /* ink-vivid 在深色主題是中亮度的藍，疊在藍底上會糊掉，改用更亮的 ink-strong */
+  .v-theme--dark .row-target .var-name {
+    color: var(--color-ink-strong);
+  }
+
+  .var-type-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .target-pill {
+    padding: 1px 7px;
+    border-radius: 9999px;
+    background: var(--color-ink-vivid);
+    color: var(--color-inverted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  /* 深色主題的 ink-vivid 太亮，撐不住反白字；改成亮底深字翻面 */
+  .v-theme--dark .target-pill {
+    background: var(--color-ink-strong);
+    color: var(--color-ink-solid-deep);
   }
 
   .var-name {
     font-weight: 500;
     color: var(--color-text);
+    /* 論文變數多是長底線識別字，沒有斷點會整串溢出欄位、壓到隔壁的定義欄 */
+    overflow-wrap: anywhere;
   }
 
   /* 還沒選欄位時的提示字，跟已經有名稱的自訂變數用不同字重區隔 */
@@ -298,16 +340,7 @@
     color: var(--color-ink-soft);
   }
 
-  .var-info-icon {
-    margin-left: 4px;
-    color: var(--color-ink-soft);
-    cursor: help;
-    vertical-align: middle;
-  }
-
   .var-type {
-    display: block;
-    margin-top: 2px;
     font-size: 11px;
     color: var(--color-ink-soft);
   }
