@@ -509,7 +509,7 @@
     padding: 24px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border-strong);
-    background: rgba(255, 255, 255, 0.88);
+    background: color-mix(in oklab, var(--color-surface) 88%, transparent);
     color: var(--color-accent);
     font-size: 14px;
     z-index: 10;

@@ -505,7 +505,7 @@
     padding: 7px 10px;
     font-size: 13px;
     outline: none;
-    background: rgba(255, 255, 255, 0.5);
+    background: color-mix(in oklab, var(--color-surface) 50%, transparent);
   }
 
   /* 隱藏原生 select 箭頭，換成自訂 chevron */

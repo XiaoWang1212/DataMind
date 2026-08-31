@@ -800,7 +800,7 @@
     overflow: auto;
     padding: 16px;
     background: var(--color-surface);
-    border: 1px solid rgba(148, 163, 184, 0.32);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-lg);
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
     color: var(--color-text);
@@ -822,8 +822,8 @@
     border-top-left-radius: var(--radius-lg);
     border-top-right-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid var(--glass-drawer-edge);
+    background: var(--glass-drawer-tint);
     backdrop-filter: blur(16px);
     box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.05);
     will-change: height, transform;

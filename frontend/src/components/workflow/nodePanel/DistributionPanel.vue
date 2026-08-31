@@ -383,7 +383,7 @@
     justify-content: center;
     min-height: 160px;
     border-radius: var(--radius-lg);
-    background: rgba(248, 250, 252, 0.9);
+    background: color-mix(in oklab, var(--color-surface-alt) 90%, transparent);
     color: var(--color-secondary);
     font-size: 14px;
   }
