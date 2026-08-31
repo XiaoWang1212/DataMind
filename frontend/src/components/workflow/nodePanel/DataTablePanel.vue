@@ -612,21 +612,6 @@
     flex: 1;
     min-height: 0;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
-  }
-
-  .column-settings-body::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .column-settings-body::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .column-settings-body::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background: rgba(148, 163, 184, 0.5);
   }
 
   .column-settings-actions {

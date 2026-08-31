@@ -335,9 +335,6 @@
     overflow-y: hidden;
     padding-bottom: 8px;
     scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
-    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface)) var(--color-border);
   }
 
   .distribution-chart-grid--full {
@@ -349,27 +346,6 @@
     min-height: 380px;
     overflow-y: auto;
     overflow-x: hidden;
-  }
-
-  /* macOS 的 overlay 捲軸平常是透明的，要明確給樣式才看得見。
-     滑塊用不透明色：半透明疊在淺色軌道上會被洗成白的 */
-  .distribution-chart-grid::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-track {
-    border-radius: 999px;
-    background: var(--color-border);
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface));
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-ink) 62%, var(--color-surface));
   }
 
   .distribution-chart-grid--full .distribution-chart-card {

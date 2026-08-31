@@ -863,9 +863,6 @@
     scrollbar-gutter: stable both-edges;
     overscroll-behavior: contain;
     padding-bottom: 16px;
-    scrollbar-width: thin;
-    /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
-    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface)) var(--color-border);
   }
 
   .drawer-content-wrapper {
@@ -873,26 +870,6 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar-track {
-    border-radius: 999px;
-    background: var(--color-border);
-  }
-
-  /* 原本是白色滑塊，那是配深色玻璃寫的；抽屜改淺色玻璃後等於隱形 */
-  .options-drawer__scroll::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface));
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-ink) 62%, var(--color-surface));
   }
 
   .options-drawer__bar {
