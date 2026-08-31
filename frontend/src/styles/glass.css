@@ -1,20 +1,47 @@
 /* docs/DESIGN_SYSTEM.md §5。只用在浮動/導覽性元件，一般卡片與表格維持實色 */
+:root,
+.v-theme--light {
+  --glass-tint-from: rgba(255, 255, 255, 0.78);
+  --glass-tint-to: rgba(255, 255, 255, 0.58);
+  --glass-edge: rgba(255, 255, 255, 0.4);
+  --glass-sheen: rgba(255, 255, 255, 0.7);
+  --glass-sheen-soft: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(14px) saturate(180%);
+  --glass-fallback: rgba(255, 255, 255, 0.96);
+  /* 選單多半開在實色卡上，backdrop-filter 透不出顏色，靠冷色 tint 撐出層次 */
+  --glass-menu-tint-from: rgba(255, 255, 255, 0.88);
+  --glass-menu-tint-to: rgba(255, 255, 255, 0.78);
+  --glass-menu-edge: rgba(255, 255, 255, 0.6);
+}
+
+/* 暗場玻璃：面板比底色暗，靠 blur 把後面的內容暈進來當亮度來源。
+   沿用淺色那組（面板比底色亮）在深色下會變成一層灰霧，把後面的顏色洗掉 */
+.v-theme--dark {
+  --glass-tint-from: rgba(20, 22, 25, 0.82);
+  --glass-tint-to: rgba(13, 14, 16, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.09);
+  --glass-sheen: rgba(255, 255, 255, 0.11);
+  --glass-sheen-soft: rgba(255, 255, 255, 0.04);
+  --glass-blur: blur(18px) saturate(180%);
+  --glass-fallback: rgba(31, 34, 37, 0.96);
+  /* 選單多半開在實色卡上，backdrop-filter 透不出顏色，靠更不透明的暗色 tint 撐出層次 */
+  --glass-menu-tint-from: rgba(20, 22, 25, 0.92);
+  --glass-menu-tint-to: rgba(13, 14, 16, 0.86);
+  --glass-menu-edge: rgba(255, 255, 255, 0.12);
+}
+
 @layer vuetify-final {
   .glass-panel,
   .glass-menu {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.78),
-      rgba(255, 255, 255, 0.58)
-    );
+    background: linear-gradient(135deg, var(--glass-tint-from), var(--glass-tint-to));
     /* saturate 讓透過來的顏色不會被 blur 洗淡 */
-    backdrop-filter: blur(14px) saturate(180%);
-    -webkit-backdrop-filter: blur(14px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-edge);
     /* 上下緣的 inset 白線是玻璃的折射邊，比 border 更能撐出材質感 */
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 var(--glass-sheen),
+      inset 0 -1px 0 var(--glass-sheen-soft),
       var(--shadow-float);
   }
 
@@ -22,21 +49,20 @@
     border-radius: var(--radius-md);
   }
 
-  /* 選單多半開在實色白卡上，backdrop-filter 透不出顏色，靠冷色 tint 撐出層次 */
   .glass-menu {
     border-radius: var(--radius-sm);
     background: linear-gradient(
       135deg,
-      color-mix(in oklab, var(--color-ink) 2%, rgba(255, 255, 255, 0.88)),
-      color-mix(in oklab, var(--color-ink) 4%, rgba(255, 255, 255, 0.78))
+      color-mix(in oklab, var(--color-ink) 2%, var(--glass-menu-tint-from)),
+      color-mix(in oklab, var(--color-ink) 4%, var(--glass-menu-tint-to))
     );
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: var(--glass-menu-edge);
   }
 
   @media (prefers-reduced-transparency: reduce) {
     .glass-panel,
     .glass-menu {
-      background: rgba(255, 255, 255, 0.96);
+      background: var(--glass-fallback);
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -45,7 +71,7 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-panel,
     .glass-menu {
-      background: rgba(255, 255, 255, 0.96);
+      background: var(--glass-fallback);
     }
   }
 }
