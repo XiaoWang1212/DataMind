@@ -136,7 +136,7 @@
     width: 28px;
     height: 28px;
     border-radius: var(--radius-sm);
-    background: color-mix(in oklab, var(--color-ink) 8%, white);
+    background: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
     color: var(--color-ink);
   }
 

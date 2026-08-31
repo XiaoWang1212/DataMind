@@ -29,9 +29,9 @@
     border-radius: var(--radius-sm);
     background: linear-gradient(
       90deg,
-      color-mix(in oklab, var(--color-ink) 10%, white) 0%,
+      color-mix(in oklab, var(--color-ink) 10%, var(--color-surface)) 0%,
       #fff 50%,
-      color-mix(in oklab, var(--color-ink) 10%, white) 100%
+      color-mix(in oklab, var(--color-ink) 10%, var(--color-surface)) 100%
     );
     background-size: 200% 100%;
     animation: skeleton-sweep 4s linear infinite;

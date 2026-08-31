@@ -475,7 +475,7 @@
 
   .fw-select-card:hover {
     transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    border-color: color-mix(in oklab, var(--color-ink) 24%, var(--color-surface));
     box-shadow: var(--shadow-card);
   }
 
@@ -520,7 +520,7 @@
     height: 34px;
     margin-bottom: 10px;
     border-radius: var(--radius-sm);
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     color: var(--color-ink);
   }
 

@@ -109,7 +109,7 @@
   @media (hover: hover) and (pointer: fine) {
     /* 藏青已經很暗，往亮的方向走才看得出變化 */
     .app-btn--primary:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 88%, white);
+      background: color-mix(in oklab, var(--color-ink) 88%, var(--color-surface));
       box-shadow: 0 2px 8px color-mix(in oklab, var(--color-ink) 28%, transparent);
     }
 
@@ -118,19 +118,19 @@
     }
 
     .app-btn--ghost:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 8%, white);
+      background: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
       color: var(--color-ink);
     }
 
     .app-btn--danger:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-error) 14%, white);
+      background: color-mix(in oklab, var(--color-error) 14%, var(--color-surface));
     }
 
     .app-btn--ai:hover:not(:disabled) {
       background: linear-gradient(
         100deg,
-        color-mix(in oklab, var(--color-ink-vivid) 88%, white) 0%,
-        color-mix(in oklab, var(--color-ink-strong) 88%, white) 100%
+        color-mix(in oklab, var(--color-ink-vivid) 88%, var(--color-surface)) 0%,
+        color-mix(in oklab, var(--color-ink-strong) 88%, var(--color-surface)) 100%
       );
     }
   }

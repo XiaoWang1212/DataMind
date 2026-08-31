@@ -327,7 +327,7 @@
   .pipeline-pill {
     padding: 3px 10px;
     border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     font-size: 12px;
     font-weight: 500;
     color: var(--color-ink-strong);

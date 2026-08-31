@@ -60,7 +60,7 @@
               <svg preserveAspectRatio="none" viewBox="0 0 320 170">
                 <g v-for="(item, idx) in chart.counts" :key="item.label">
                   <rect
-                    fill="color-mix(in oklab, var(--color-ink) 45%, white)"
+                    fill="color-mix(in oklab, var(--color-ink) 45%, var(--color-surface))"
                     :height="
                       Math.max(4, Math.round((item.count / chart.maxCount) * 110))
                     "
@@ -337,7 +337,7 @@
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
     /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
-    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, white) var(--color-border);
+    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface)) var(--color-border);
   }
 
   .distribution-chart-grid--full {
@@ -365,11 +365,11 @@
 
   .distribution-chart-grid::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 42%, white);
+    background: color-mix(in oklab, var(--color-ink) 42%, var(--color-surface));
   }
 
   .distribution-chart-grid::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-ink) 62%, white);
+    background: color-mix(in oklab, var(--color-ink) 62%, var(--color-surface));
   }
 
   .distribution-chart-grid--full .distribution-chart-card {

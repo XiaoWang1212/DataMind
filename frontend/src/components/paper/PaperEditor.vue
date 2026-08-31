@@ -605,7 +605,7 @@
     gap: 2px;
     padding: 6px 10px;
     border-radius: var(--radius-md);
-    background: color-mix(in oklab, var(--color-ink) 8%, white);
+    background: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-card);
   }
@@ -668,7 +668,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
-      background: color-mix(in oklab, var(--color-ink) 10%, white);
+      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
       color: var(--color-ink);
     }
   }

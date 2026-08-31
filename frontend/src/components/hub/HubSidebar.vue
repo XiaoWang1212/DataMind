@@ -205,7 +205,7 @@
   left: 5px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, white) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, var(--color-surface)) 0%, transparent 70%);
   opacity: 0.42;
 }
 
@@ -290,7 +290,7 @@
   font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
-  background: linear-gradient(135deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 55%, white) 100%);
+  background: linear-gradient(135deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 55%, var(--color-surface)) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

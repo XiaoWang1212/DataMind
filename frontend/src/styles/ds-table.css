@@ -30,7 +30,7 @@
   /* hover 要比表頭淡，列才會往前浮而不是沉下去 */
   @media (hover: hover) and (pointer: fine) {
     .ds-table tbody tr:hover {
-      background: color-mix(in oklab, var(--color-ink) 3%, white);
+      background: color-mix(in oklab, var(--color-ink) 3%, var(--color-surface));
     }
   }
 

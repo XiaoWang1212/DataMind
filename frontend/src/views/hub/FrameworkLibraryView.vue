@@ -475,7 +475,7 @@
 
   .fw-card:hover {
     transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    border-color: color-mix(in oklab, var(--color-ink) 24%, var(--color-surface));
     box-shadow: var(--shadow-card);
   }
 
@@ -499,7 +499,7 @@
     width: 36px;
     height: 36px;
     border-radius: var(--radius-sm);
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     color: var(--color-ink);
   }
 
@@ -744,14 +744,14 @@
     border-radius: 999px;
     font-size: 12px;
     font-weight: 500;
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     color: var(--color-ink-strong);
   }
 
   /* ── Hypotheses ── */
   .hypothesis-item {
     padding: 8px 12px;
-    border-left: 2.5px solid color-mix(in oklab, var(--color-ink) 24%, white);
+    border-left: 2.5px solid color-mix(in oklab, var(--color-ink) 24%, var(--color-surface));
     font-size: 13px;
     line-height: 1.5;
     color: var(--color-ink-soft);

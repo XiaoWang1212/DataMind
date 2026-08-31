@@ -108,7 +108,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--color-ink) 12%, white);
+    background: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
     color: var(--color-ink);
     display: flex;
     align-items: center;
