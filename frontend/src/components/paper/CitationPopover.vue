@@ -1,30 +1,35 @@
 <template>
   <Teleport to="body">
-    <svg v-if="citation && connector" aria-hidden="true" class="citation-connector">
-      <path class="citation-connector-line" :d="connector.d" />
-      <circle class="citation-connector-dot" :cx="connector.x" :cy="connector.y" r="2.5" />
-    </svg>
+    <Transition name="citation-fade">
+      <svg v-if="citation && connector" aria-hidden="true" class="citation-connector">
+        <path class="citation-connector-line" :d="connector.d" />
+        <circle class="citation-connector-dot" :cx="connector.x" :cy="connector.y" r="2.5" />
+      </svg>
+    </Transition>
 
-    <article
-      v-if="citation"
-      ref="cardRef"
-      class="citation-popover-card glass-menu enter-rise"
-      :style="cardStyle"
-    >
-      <p class="citation-label">
-        <v-icon icon="mdi-book-open-variant-outline" size="13" />
-        來源文獻 [{{ index }}]
-      </p>
-      <p class="citation-field"><span>標題:</span>{{ citation.title }}</p>
-      <p class="citation-field"><span>作者:</span>{{ citation.authors }} ({{ citation.year }})</p>
-      <p class="citation-field"><span>期刊:</span>{{ citation.journal }}</p>
+    <!-- 離場比進場快：關閉是使用者已經決定的事，不需要再等它慢慢淡掉 -->
+    <Transition name="citation-pop">
+      <article
+        v-if="citation"
+        ref="cardRef"
+        class="citation-popover-card glass-menu enter-rise"
+        :style="cardStyle"
+      >
+        <p class="citation-label">
+          <v-icon icon="mdi-book-open-variant-outline" size="13" />
+          來源文獻 [{{ index }}]
+        </p>
+        <p class="citation-field"><span>標題:</span>{{ citation.title }}</p>
+        <p class="citation-field"><span>作者:</span>{{ citation.authors }} ({{ citation.year }})</p>
+        <p class="citation-field"><span>期刊:</span>{{ citation.journal }}</p>
 
-      <p class="citation-label snippet-label">
-        <v-icon icon="mdi-text-search" size="13" />
-        檢索片段
-      </p>
-      <p class="citation-snippet">{{ citation.snippet }}</p>
-    </article>
+        <p class="citation-label snippet-label">
+          <v-icon icon="mdi-text-search" size="13" />
+          檢索片段
+        </p>
+        <p class="citation-snippet">{{ citation.snippet }}</p>
+      </article>
+    </Transition>
   </Teleport>
 </template>
 
@@ -208,6 +213,22 @@
     to { stroke-dashoffset: 0; }
   }
 
+  /* 離場：卡片縮回錨點方向並淡出。進場仍由 .enter-rise 負責 */
+  .citation-pop-leave-active,
+  .citation-fade-leave-active {
+    transition: opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+
+  .citation-pop-leave-to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+
+  .citation-fade-leave-to {
+    opacity: 0;
+  }
+
   @keyframes citation-dot {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -217,6 +238,10 @@
     .citation-connector-line,
     .citation-connector-dot {
       animation: none;
+    }
+
+    .citation-pop-leave-to {
+      transform: none;
     }
   }
 
