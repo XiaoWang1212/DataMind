@@ -12,6 +12,9 @@
   --glass-menu-tint-from: rgba(255, 255, 255, 0.88);
   --glass-menu-tint-to: rgba(255, 255, 255, 0.78);
   --glass-menu-edge: rgba(255, 255, 255, 0.6);
+  /* workflow 底部抽屜：整片橫跨畫布，比選單再透一階才不會壓掉底下的節點 */
+  --glass-drawer-tint: rgba(255, 255, 255, 0.45);
+  --glass-drawer-edge: rgba(255, 255, 255, 0.45);
 }
 
 /* 暗場玻璃：面板比底色暗，靠 blur 把後面的內容暈進來當亮度來源。
@@ -28,6 +31,9 @@
   --glass-menu-tint-from: rgba(20, 22, 25, 0.92);
   --glass-menu-tint-to: rgba(13, 14, 16, 0.86);
   --glass-menu-edge: rgba(255, 255, 255, 0.12);
+  /* 深色的抽屜比淺色不透明一階：石墨畫布本身就暗，同樣的 0.45 會糊成一片看不出邊界 */
+  --glass-drawer-tint: rgba(24, 27, 31, 0.62);
+  --glass-drawer-edge: rgba(255, 255, 255, 0.1);
 }
 
 @layer vuetify-final {

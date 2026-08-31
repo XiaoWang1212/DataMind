@@ -7,16 +7,46 @@
   --page-base: linear-gradient(175deg, #f4f7f9 0%, #e4eaef 55%, #dce3e9 100%);
   // 畫布區把漸層壓淡，Hub 那邊的濃度在畫布上太重
   --canvas-veil: rgba(255, 255, 255, 0.6);
+  // 標題沒有卡片墊底，靠光暈從漸層裡浮出來
+  --title-halo-near: rgba(255, 255, 255, 0.9);
+  --title-halo-far: rgba(255, 255, 255, 0.65);
+  // 實色深底：主要按鈕、選中的分頁、洞察卡這類「深底配淺字」的填色。
+  // 不能用 --color-ink，它在深色主題是淺藍，淺字疊上去會看不見
+  --color-ink-solid: #1a3159;
+  // 同一組深底的暗端，給漸層當第二個色停
+  --color-ink-solid-deep: color-mix(in oklab, #1a3159 70%, #1c2130);
+  // AI 按鈕的漸層底
+  --color-btn-ai-from: #2b5ca8;
+  --color-btn-ai-to: #12244a;
+  // workflow 畫布的點狀紋理
+  --canvas-dot: #d3d8dc;
+  // 骨架屏掃光的亮帶
+  --skeleton-sheen: #fff;
+  --color-scheme: light;
 }
 
 .v-theme--dark {
-  // 石墨底是中性的，主色塊跟著降到低彩度冷灰藍。
+  // 石墨底摻一點品牌藏青，讓深色不是全然中性的灰。刻意壓在很低的不透明度：
+  // 再濃一點色塊的邊界就會被看出來，變成兩坨藍斑而不是一層底
+  --page-tint-primary: rgba(62, 98, 160, 0.18);
+  --page-tint-secondary: rgba(52, 74, 116, 0.13);
   // 暖色那層在深底上看不出來，直接設成透明
-  --page-tint-primary: rgba(120, 128, 140, 0.16);
-  --page-tint-secondary: rgba(96, 108, 124, 0.14);
   --page-tint-warm: transparent;
-  --page-base: linear-gradient(175deg, #1a1c1f 0%, #141618 55%, #101112 100%);
+  --page-base: linear-gradient(175deg, #171a1f 0%, #131519 55%, #0f1114 100%);
   --canvas-veil: rgba(0, 0, 0, 0.35);
+  // 深色不加光暈：白光暈會讓字糊掉，暗光暈在深底上也只是把字周圍弄髒
+  --title-halo-near: transparent;
+  --title-halo-far: transparent;
+  // ink 在深色是淺藍，直接當實色底會太亮、白字也壓不住。實色底另用深一階的藍
+  --color-ink-solid: #2f5288;
+  --color-ink-solid-deep: #1f3a63;
+  --color-btn-ai-from: #2c4a86;
+  --color-btn-ai-to: #1c3358;
+  // 點紋只是標示「這裡可以操作」，深底上壓到剛好看得見就好，
+  // 沿用 border-strong 會變成一片明顯的灰點陣
+  --canvas-dot: rgba(255, 255, 255, 0.07);
+  --skeleton-sheen: #3a4048;
+  --color-scheme: dark;
 }
 
 @layer vuetify-overrides {
@@ -31,6 +61,12 @@
       radial-gradient(520px circle at 25% 92%, var(--page-tint-warm), transparent 55%),
       var(--page-base);
     background-attachment: fixed;
+  }
+
+  // 原生 select、輸入框、捲軸的配色由瀏覽器決定，只吃 color-scheme。
+  // 這個屬性會繼承，掛在這裡就夠整棵樹用
+  .v-application {
+    color-scheme: var(--color-scheme);
   }
 }
 

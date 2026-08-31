@@ -23,14 +23,15 @@
     to { opacity: 1; transform: none; }
   }
 
-  /* 底色壓深、亮帶用純白，兩者要有足夠明度差，掃光才看得出來 */
+  /* 底色與亮帶要有足夠明度差，掃光才看得出來。亮帶的方向兩個主題相反：
+     淺色往白衝，深色往上提一階就好，再亮會變成刺眼的白閃 */
   .skeleton-line {
     height: 1em;
     border-radius: var(--radius-sm);
     background: linear-gradient(
       90deg,
       color-mix(in oklab, var(--color-ink) 10%, var(--color-surface)) 0%,
-      #fff 50%,
+      var(--skeleton-sheen) 50%,
       color-mix(in oklab, var(--color-ink) 10%, var(--color-surface)) 100%
     );
     background-size: 200% 100%;
