@@ -610,12 +610,20 @@
   /* 作用中的頁籤靠三件事跟其他四格分開：抬高一階的底色、分類色的內描邊、加粗的字。
      只靠底色差在深色主題下讀不出來——軌道與面板的明度差本來就只有一階 */
   .wizard-tab--active {
-    background: var(--color-surface-alt);
-    color: var(--tab-color, var(--color-ink));
+    background: var(--color-surface);
+    /* 分類色是中明度粉彩，直接當文字疊在淺底上只有 1.9:1。往內文色收一半，
+       保住色相辨識又過 AA（淺色 5.8–6.0、深色 9.1–9.3） */
+    color: color-mix(in oklab, var(--tab-color, var(--color-ink)) 50%, var(--color-text));
     font-weight: 700;
     box-shadow:
       inset 0 0 0 1px color-mix(in oklab, var(--tab-color, var(--color-ink)) 55%, transparent),
       0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
+  }
+
+  /* 深色的軌道與 surface 明度差不夠，作用中那格要再抬一階才分得出來；
+     淺色不能這樣做，surface-alt 跟軌道算出來幾乎同色，反而把層次抹掉 */
+  .v-theme--dark .wizard-tab--active {
+    background: var(--color-surface-alt);
   }
 
   .wizard-tab__num {
@@ -633,12 +641,17 @@
     transition: background var(--dur-fast), color var(--dur-fast);
   }
 
-  /* 分類色是中明度粉彩，淺字疊上去兩個主題都不到 3:1。
-     號碼改用兩個主題都深的 ink-solid */
+  /* 比照 IconNode（§2.3）：淺色是粉彩底配深 icon，深色把構造翻面。
+     原本的白字疊粉彩兩個主題都只有 1.9:1 */
   .wizard-tab--active .wizard-tab__num {
     background: var(--tab-color, var(--color-ink));
-    color: var(--color-ink-solid);
+    color: var(--color-ink-strong);
     font-weight: 700;
+  }
+
+  .v-theme--dark .wizard-tab--active .wizard-tab__num {
+    background: color-mix(in oklab, var(--tab-color, var(--color-ink)) 24%, var(--color-surface));
+    color: color-mix(in oklab, var(--tab-color, var(--color-ink)) 82%, #fff);
   }
 
   .wizard-tab__text {
