@@ -204,6 +204,119 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">表單元件</h2>
+      <div class="sg-on-card sg-form-grid">
+        <label class="sg-field">
+          <span class="sg-field-label">文字輸入</span>
+          <input v-model="textValue" class="sg-input" placeholder="請輸入專案名稱" type="text">
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">停用</span>
+          <input class="sg-input" disabled placeholder="停用狀態" type="text">
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">下拉選單（待補值）</span>
+          <CustomSelect
+            v-model="highlightSelectValue"
+            aria-label="待補值的下拉選單"
+            highlight
+            :options="selectOptions"
+            placeholder="請選擇"
+          />
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">下拉選單（停用）</span>
+          <CustomSelect
+            aria-label="停用的下拉選單"
+            disabled
+            model-value=""
+            :options="selectOptions"
+            placeholder="停用狀態"
+          />
+        </label>
+      </div>
+
+      <div class="sg-on-card sg-check-row">
+        <label class="sg-check">
+          <AppCheckbox v-model="checkOn" aria-label="已勾選" />
+          已勾選
+        </label>
+        <label class="sg-check">
+          <AppCheckbox v-model="checkOff" aria-label="未勾選" />
+          未勾選
+        </label>
+        <label class="sg-check sg-check--disabled">
+          <AppCheckbox aria-label="停用" disabled :model-value="true" />
+          停用
+        </label>
+      </div>
+
+      <div class="sg-on-card">
+        <FileDropZone
+          v-model="demoFile"
+          accept=".csv,.xlsx"
+          accept-label="CSV、Excel"
+          file-icon="mdi-file-delimited-outline"
+          hint="或點擊選擇檔案，支援 CSV 與 Excel"
+          icon="mdi-tray-arrow-up"
+          text="將資料集拖放到這裡"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">對話框與彈出層</h2>
+      <div class="sg-row">
+        <AppButton variant="secondary" @click="showConfirm = true">確認對話框</AppButton>
+        <AppButton variant="secondary" @click="showInterrupt = true">中斷確認框</AppButton>
+        <v-tooltip
+          content-class="sg-tooltip"
+          location="bottom"
+          max-width="260"
+          text="滑鼠停留時出現的說明，用於補充按鈕或欄位的用途。"
+        >
+          <template #activator="{ props: tooltipProps }">
+            <AppButton v-bind="tooltipProps" variant="secondary">提示（hover）</AppButton>
+          </template>
+        </v-tooltip>
+        <AppButton variant="secondary" @click="toggleCitation">引用來源卡</AppButton>
+      </div>
+      <p class="sg-caption">
+        引用來源卡會指向這個標記
+        <span ref="citationAnchor" class="sg-citation-anchor">[1]</span>
+        ，連接線由卡片自動計算。
+      </p>
+
+      <ConfirmDialog
+        confirm-text="刪除"
+        message="確定要刪除「肺炎風險預測」嗎？此動作無法復原。"
+        title="刪除專案"
+        :visible="showConfirm"
+        @cancel="showConfirm = false"
+        @confirm="showConfirm = false"
+      />
+      <InterruptConfirmDialog
+        message="分析仍在進行中，離開將中斷目前的執行。確定要離開嗎？"
+        :visible="showInterrupt"
+        @cancel="showInterrupt = false"
+        @confirm="showInterrupt = false"
+      />
+      <CitationPopover
+        :citation="showCitation ? demoCitation : null"
+        :index="1"
+        :target="citationAnchor"
+        @close="showCitation = false"
+      />
+    </section>
+
+    <section>
+      <h2 class="sg-h2">論文生成中動畫</h2>
+      <p class="sg-caption">全螢幕遮罩，一輪 17 秒後循環。播放後按 Esc 關閉。</p>
+      <AppButton variant="secondary" @click="showGenerating = true">播放</AppButton>
+      <PaperGeneratingOverlay :visible="showGenerating" @abandon="showGenerating = false" />
+    </section>
+
+    <section>
       <h2 class="sg-h2">內容寬度</h2>
       <div class="sg-width-demo" style="max-width: var(--content-measure)">content-measure 760px</div>
       <div class="sg-width-demo" style="max-width: var(--content-max-width)">content-max-width 1280px</div>
@@ -213,16 +326,64 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import type { Citation } from '@/constants/reportData'
+  import { onBeforeUnmount, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import FileDropZone from '@/components/common/FileDropZone.vue'
+  import CitationPopover from '@/components/paper/CitationPopover.vue'
+  import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import AppCheckbox from '@/components/ui/AppCheckbox.vue'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import InterruptConfirmDialog from '@/components/workflow/InterruptConfirmDialog.vue'
   import { useThemeStore } from '@/store/themeStore'
   import { renderChatText } from '@/utils/formatChatText'
 
   const themeStore = useThemeStore()
+
+  const textValue = ref('')
+  const highlightSelectValue = ref('')
+  const checkOn = ref(true)
+  const checkOff = ref(false)
+  const demoFile = ref<File | null>(null)
+
+  const showConfirm = ref(false)
+  const showInterrupt = ref(false)
+  const showCitation = ref(false)
+  const showGenerating = ref(false)
+
+  const citationAnchor = ref<HTMLElement | null>(null)
+
+  const demoCitation: Citation = {
+    id: 'demo-1',
+    title: 'Machine Learning for Pressure Injury Risk Prediction in Critical Care',
+    authors: 'Lin, Y., Chen, H., & Wang, S.',
+    journal: 'Journal of Clinical Nursing',
+    year: 2024,
+    snippet: '本研究以隨機森林與梯度提升樹比較壓瘡風險預測表現，並以十摺交叉驗證評估穩定度。',
+  }
+
+  function toggleCitation (): void {
+    showCitation.value = !showCitation.value
+  }
+
+  // 生成動畫是全螢幕遮罩，沒有自己的關閉鈕，這頁補一個 Esc 出口
+  function closeGeneratingOnEsc (event: KeyboardEvent): void {
+    if (event.key === 'Escape') showGenerating.value = false
+  }
+
+  watch(showGenerating, on => {
+    if (on) {
+      window.addEventListener('keydown', closeGeneratingOnEsc)
+    } else {
+      window.removeEventListener('keydown', closeGeneratingOnEsc)
+    }
+  })
+
+  onBeforeUnmount(() => window.removeEventListener('keydown', closeGeneratingOnEsc))
 
   const boldSample = '建議把 **年齡** 對應到 pt_age，其餘欄位維持不變。'
 
@@ -585,4 +746,93 @@
   line-height: 1.7;
   color: var(--color-ink-soft);
 }
+
+.sg-caption {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-ink-soft);
+  margin-bottom: 12px;
+}
+
+.sg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 720px;
+  margin-bottom: 16px;
+}
+
+.sg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sg-field-label {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.sg-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.sg-input:focus {
+  border-color: var(--color-ink-vivid);
+}
+
+.sg-input:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-ink-soft);
+  cursor: not-allowed;
+}
+
+.sg-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 720px;
+  margin-bottom: 16px;
+}
+
+.sg-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.sg-check--disabled {
+  color: var(--color-ink-soft);
+}
+
+.sg-form-grid + .sg-on-card,
+.sg-check-row + .sg-on-card {
+  max-width: 720px;
+}
+
+/* 比照論文內文的引用標記，讓來源卡的連接線有東西可指 */
+.sg-citation-anchor {
+  color: var(--color-ink-vivid);
+  font-weight: 500;
+  cursor: pointer;
+}
+</style>
+
+<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，因此另開全域區塊 -->
+<style>
+  .sg-tooltip {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+  }
 </style>
