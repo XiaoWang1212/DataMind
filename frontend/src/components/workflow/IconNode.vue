@@ -100,6 +100,9 @@
     gap: 8px;
   }
 
+  /* 淺色是「粉彩底配深色 icon」（比照 Orange Data Mining 的構造）。
+     深色把構造翻過來：底色改成分類色在深底上的淡染，icon 直接用分類色本身。
+     照搬淺色那組的話，icon 的 ink-strong 在深色是淺藍，疊在粉彩底上會看不見 */
   .icon-node {
     position: relative;
     overflow: visible;
@@ -109,9 +112,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 淺底配深色 icon（比照 Orange Data Mining 的構造），取代原本的飽和底配白色 icon */
-    color: var(--color-ink-strong);
-    border: 1.5px solid rgba(18, 36, 74, 0.16);
+    --node-fill: var(--node-accent);
+    --node-ink: var(--color-ink-strong);
+    --node-edge: rgba(18, 36, 74, 0.16);
+    background: var(--node-fill);
+    color: var(--node-ink);
+    border: 1.5px solid var(--node-edge);
+  }
+
+  .v-theme--dark .icon-node {
+    --node-fill: color-mix(in oklab, var(--node-accent) 24%, var(--color-surface));
+    /* icon 比晶片底亮兩階才跳得出來，直接用原色在這個底上還是偏悶 */
+    --node-ink: color-mix(in oklab, var(--node-accent) 82%, #fff);
+    --node-edge: color-mix(in oklab, var(--node-accent) 58%, var(--color-surface));
   }
 
   /* 增刪通知圖示：浮在節點正上方的小圓，不疊在節點本體色塊上，也不用紅/綠填色 */
@@ -253,26 +266,6 @@
     .label-selected::after {
       animation: none;
     }
-  }
-
-  .node-source {
-    background: var(--color-node-source);
-  }
-
-  .node-transform {
-    background: var(--color-node-transform);
-  }
-
-  .node-visualize {
-    background: var(--color-node-visualize);
-  }
-
-  .node-model {
-    background: var(--color-node-model);
-  }
-
-  .node-evaluate {
-    background: var(--color-node-evaluate);
   }
 
   .invisible-handle {
