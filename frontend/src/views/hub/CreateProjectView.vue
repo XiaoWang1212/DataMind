@@ -417,7 +417,6 @@
     outline: none;
     background-color: var(--color-surface);
     color: var(--color-text);
-    color-scheme: light;
     font-size: 14px;
     transition: border-color var(--dur-fast) var(--ease-out);
   }
@@ -439,7 +438,6 @@
     outline: none;
     background-color: var(--color-surface);
     color: var(--color-text);
-    color-scheme: light;
     font-family: inherit;
     font-size: 14px;
     resize: vertical;

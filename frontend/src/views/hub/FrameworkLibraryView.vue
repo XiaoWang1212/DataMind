@@ -420,7 +420,6 @@
     font-size: 14px;
     color: var(--color-text);
     outline: none;
-    color-scheme: light;
     transition: border-color var(--dur-fast) var(--ease-out);
   }
 

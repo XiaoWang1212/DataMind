@@ -146,7 +146,6 @@
   outline: none;
   box-sizing: border-box;
   transition: border-color var(--dur-fast) var(--ease-out);
-  color-scheme: light;
 }
 
 .form-input::placeholder {
