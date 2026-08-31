@@ -30,6 +30,9 @@
         @pane-click="onPaneClick"
       />
     </section>
+
+    <!-- 放在 .flow-area 外面：那層有 overflow 與平移偵測，說明鈕不該被算進去 -->
+    <NodeGuideButton :bottom-inset="bottomInset ?? 0" />
   </section>
 </template>
 
@@ -38,6 +41,7 @@
   import type { FlowNode } from '@/types/workflow'
   import { type Edge, type Padding, useVueFlow, VueFlow } from '@vue-flow/core'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import NodeGuideButton from './NodeGuideButton.vue'
   import '@vue-flow/core/dist/style.css'
   import '@vue-flow/core/dist/theme-default.css'
 
@@ -204,6 +208,8 @@
     /* 不鋪底色也不套玻璃：直接讓頁面漸層透上來，畫布跟背景連成一片，
        只疊一層點狀紋理標示可操作區域。圓角交給外層 .workspace 統一裁 */
     background: radial-gradient(var(--canvas-dot) 0.9px, transparent 0.9px) 0 0 / 14px 14px;
+    /* 節點說明鈕以這層為定位基準 */
+    position: relative;
     padding-top: 6px;
     min-height: 0;
     min-width: 0;
