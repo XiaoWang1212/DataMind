@@ -163,7 +163,7 @@
   /* 該 metric 表現最好的模型。這是 leaderboard 真正要回答的問題，
      不用逐格比對小數點就看得出誰贏 */
   .table-cell--best {
-    font-weight: 500;
+    font-weight: 700;
   }
 
   /* 最左欄：模型名 + split 名兩行堆疊，靠左 */
