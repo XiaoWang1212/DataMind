@@ -51,7 +51,7 @@
   }
 
   /* 標題用藏青而非內文黑，在漸層背景上才跟內文拉開層級。
-     白色 offset/blur 把字周圍打亮，讓標題從漸層裡浮出來 */
+     光暈把字周圍打亮，讓標題從漸層裡浮出來；深色主題把它設成透明 */
   .page-header-title {
     margin: 0;
     font-size: 22px;
@@ -59,8 +59,8 @@
     letter-spacing: -0.01em;
     color: var(--color-ink-strong);
     text-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9),
-      0 2px 8px rgba(255, 255, 255, 0.65);
+      0 1px 0 var(--title-halo-near),
+      0 2px 8px var(--title-halo-far);
   }
 
   .page-header-sub {
