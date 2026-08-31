@@ -2,7 +2,6 @@
   <aside
     :class="[
       'hub-sidebar',
-      'hub-sidebar--glass-light',
       { 'hub-sidebar--collapsed': collapsed },
     ]"
   >
@@ -165,6 +164,14 @@
   border-radius: var(--radius-lg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  /* 淺色玻璃是側邊欄預設外觀，深色主題再由 .v-theme--dark .hub-sidebar 覆蓋 */
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
+    var(--shadow-float);
   transition: width var(--dur-base) var(--ease-in-out),
     min-width var(--dur-base) var(--ease-in-out);
 }
@@ -559,17 +566,6 @@
     opacity: 1;
     transform: translateY(-50%) translateX(0) scale(1);
   }
-}
-
-/* ── 淺色玻璃（現行版本） ── */
-.hub-sidebar--glass-light {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
-    var(--shadow-float);
 }
 
 /* 側邊欄的深淺兩版只差這幾個語意變數，值差異太大不適合用單一 token 表達，
