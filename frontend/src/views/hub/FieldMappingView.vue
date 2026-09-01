@@ -476,6 +476,8 @@
       // 只刪未使用欄位，不改寫欄位名稱：資料集維持使用者原始命名。
       // 論文變數 ↔ 欄位的對應關係已經存進 columnMapping（下面 saveColumnMapping），
       // 工作區會用那份資料查找目標欄位，不再靠欄位名稱跟變數名稱字串相符
+      //
+      // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
       const renamed = await rewriteDataset(datasetFile.value, new Map(), dropColumns)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
@@ -511,8 +513,8 @@
     try {
       await ensureStoresLoaded()
 
-      // 對映已經送出過（後端存過 columnMapping）就不要重跑：這時資料集已經被改寫過
-      // 一次（改名+刪欄位），拿改寫後的檔案重新配對只會得到不對的結果。用 replace
+      // 對映已經送出過（後端存過 columnMapping）就不要重跑：這時資料集已經被刪過
+      // 未使用欄位，拿改寫後的檔案重新配對只會得到不對的結果。用 replace
       // 蓋掉這筆歷史紀錄，瀏覽器上一頁才不會又繞回這個頁面
       const project = projectStore.projects.find(p => p.id === projectId.value)
       if (project?.columnMapping) {
