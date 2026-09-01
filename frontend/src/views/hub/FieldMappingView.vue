@@ -470,17 +470,13 @@
     try {
       saveError.value = ''
 
-      // 使用者欄位 → 論文變數（改寫表頭時要反查）
-      const renameByColumn = new Map<string, string>()
-      for (const [variable, info] of Object.entries(mapping)) {
-        renameByColumn.set(info.column, variable)
-      }
-
       // 沒被任何變數（含自訂變數）認領的原始欄位，之後在 workflow 就不會再出現
       const dropColumns = new Set(unusedColumns.value.map(c => c.name))
 
-      // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
-      const renamed = await rewriteDataset(datasetFile.value, renameByColumn, dropColumns)
+      // 只刪未使用欄位，不改寫欄位名稱：資料集維持使用者原始命名。
+      // 論文變數 ↔ 欄位的對應關係已經存進 columnMapping（下面 saveColumnMapping），
+      // 工作區會用那份資料查找目標欄位，不再靠欄位名稱跟變數名稱字串相符
+      const renamed = await rewriteDataset(datasetFile.value, new Map(), dropColumns)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
       // IndexedDB 寫入失敗不會拋例外，只在 console 留紀錄，因此回讀確認
