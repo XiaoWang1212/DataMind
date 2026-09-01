@@ -324,8 +324,9 @@
     })
   }
 
-  // 框架建議的目標欄位名稱通常是對齊頁改名後的結果，會跟欄位名完全相符；
-  // 找不到就不顯示「套用建議」按鈕，避免使用者點了卻沒反應
+  // 這個 hint 是上層（WorkflowWorkspace.vue）用專案的 columnMapping 把論文變數名稱
+  // 查回使用者原始欄名後才傳下來的；查不到對應關係時會 fallback 成原始變數名稱，
+  // 這裡就會比對失敗、不顯示「套用建議」按鈕，避免使用者點了卻沒反應
   const targetHintColumnIndex = computed(() => {
     const hint = props.targetColumnHint?.trim()
     if (!hint) return -1
