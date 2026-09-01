@@ -287,7 +287,16 @@
   const testScoreTargetColHint = computed<string>(() => {
     const node = nodes.value.find(n => n.id === 'testScore')
     const val = node?.data.config.targetCol
-    return typeof val === 'string' ? val : ''
+    if (typeof val !== 'string' || !val) return ''
+
+    // val 是論文變數名稱（例如 "readmission_30d"）。欄位對齊已經不改寫欄位名稱了，
+    // 資料集裡不會直接有這個名字的欄位，所以要透過 columnMapping 查回使用者的原始欄名；
+    // 查不到（沒使用框架、專案還沒存過 mapping、或這個變數沒被對應到任何欄位）就
+    // fallback 用原始變數名稱，效果等同「比對失敗、不顯示套用建議按鈕」
+    const mapping = projectId.value
+      ? projectStore.projects.find(p => p.id === Number(projectId.value))?.columnMapping
+      : undefined
+    return mapping?.[val]?.column ?? val
   })
 
   const dataTableColumns = computed<Array<{ name: string, type: string, role: string }>>(() => {
