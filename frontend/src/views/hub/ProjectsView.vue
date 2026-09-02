@@ -146,7 +146,7 @@
   /* ── Project grid ── */
   .project-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
 
@@ -227,15 +227,18 @@
     color: var(--color-ink);
   }
 
+  /* 標題允許折行，最多兩行後才截斷；名稱常有長串底線，補 anywhere 才會在字中斷開 */
   .project-name {
+    display: -webkit-box;
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     font-size: 15px;
     font-weight: 500;
     color: var(--color-text);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   /* ── Meta ── */
