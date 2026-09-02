@@ -24,6 +24,7 @@ export interface CreateFrameworkPayload {
   dependentVars: string[]
   hypotheses: string[]
   workflowJson?: Record<string, unknown>
+  pdfHash?: string | null
 }
 
 async function parseFrameworkResponse (response: Response): Promise<Record<string, unknown>> {
@@ -64,4 +65,25 @@ export async function updateFramework (id: number, patch: UpdateFrameworkPatch):
   })
   const result = await parseFrameworkResponse(response)
   return result.result as FrameworkDTO
+}
+
+export type DuplicateMatchType = 'hash' | 'title'
+
+export interface DuplicateFramework {
+  id: number
+  title: string
+  matchType: DuplicateMatchType
+}
+
+export async function checkFrameworkDuplicate (
+  params: { pdfHash?: string | null, title?: string },
+): Promise<DuplicateFramework | null> {
+  const response = await fetch('/api/frameworks/check-duplicate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ pdfHash: params.pdfHash ?? undefined, title: params.title }),
+  })
+  const result = await parseFrameworkResponse(response)
+  return (result.result as DuplicateFramework | null) ?? null
 }
