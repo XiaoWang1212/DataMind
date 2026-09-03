@@ -59,6 +59,9 @@
             :class="{ 'fw-select-card--selected': form.frameworkId === fw.id }"
             @click="form.frameworkId = fw.id"
           >
+            <div v-if="form.frameworkId === fw.id" class="fw-select-check">
+              <v-icon icon="mdi-check-bold" size="13" />
+            </div>
             <div class="fw-select-icon">
               <v-icon icon="mdi-book-open-outline" size="20" />
             </div>
@@ -414,7 +417,6 @@
     outline: none;
     background-color: var(--color-surface);
     color: var(--color-text);
-    color-scheme: light;
     font-size: 14px;
     transition: border-color var(--dur-fast) var(--ease-out);
   }
@@ -436,7 +438,6 @@
     outline: none;
     background-color: var(--color-surface);
     color: var(--color-text);
-    color-scheme: light;
     font-family: inherit;
     font-size: 14px;
     resize: vertical;
@@ -460,6 +461,7 @@
 
   /* 跟框架庫的 .fw-card 同一套 */
   .fw-select-card {
+    position: relative;
     padding: 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -471,12 +473,41 @@
 
   .fw-select-card:hover {
     transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--color-ink) 24%, white);
+    border-color: color-mix(in oklab, var(--color-ink) 24%, var(--color-surface));
     box-shadow: var(--shadow-card);
   }
 
+  /* 只換邊框顏色在一排卡片裡掃視時看不出選了哪張，
+     改用底色、邊框、圖示底座、角落勾號四個訊號 */
   .fw-select-card--selected {
-    border: 1.5px solid var(--color-ink);
+    border: 2px solid var(--color-ink);
+    /* 邊框從 1px 變 2px，補回差的那 1px 才不會把旁邊的卡擠位 */
+    padding: 15px;
+    background: color-mix(in oklab, var(--color-ink) 7%, var(--color-surface));
+    box-shadow: 0 4px 14px color-mix(in oklab, var(--color-ink) 18%, transparent);
+  }
+
+  .fw-select-card--selected:hover {
+    border-color: var(--color-ink-strong);
+  }
+
+  .fw-select-card--selected .fw-select-icon {
+    background: var(--color-ink);
+    color: var(--color-surface);
+  }
+
+  .fw-select-check {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: var(--color-ink);
+    color: var(--color-surface);
   }
 
   .fw-select-icon {
@@ -487,7 +518,7 @@
     height: 34px;
     margin-bottom: 10px;
     border-radius: var(--radius-sm);
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     color: var(--color-ink);
   }
 

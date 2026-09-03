@@ -60,7 +60,7 @@
               <svg preserveAspectRatio="none" viewBox="0 0 320 170">
                 <g v-for="(item, idx) in chart.counts" :key="item.label">
                   <rect
-                    fill="color-mix(in oklab, var(--color-ink) 45%, white)"
+                    fill="color-mix(in oklab, var(--color-ink) 45%, var(--color-surface))"
                     :height="
                       Math.max(4, Math.round((item.count / chart.maxCount) * 110))
                     "
@@ -335,9 +335,6 @@
     overflow-y: hidden;
     padding-bottom: 8px;
     scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
-    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, white) var(--color-border);
   }
 
   .distribution-chart-grid--full {
@@ -351,27 +348,6 @@
     overflow-x: hidden;
   }
 
-  /* macOS 的 overlay 捲軸平常是透明的，要明確給樣式才看得見。
-     滑塊用不透明色：半透明疊在淺色軌道上會被洗成白的 */
-  .distribution-chart-grid::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-track {
-    border-radius: 999px;
-    background: var(--color-border);
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 42%, white);
-  }
-
-  .distribution-chart-grid::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-ink) 62%, white);
-  }
-
   .distribution-chart-grid--full .distribution-chart-card {
     flex: none;
     min-width: 0;
@@ -383,7 +359,7 @@
     justify-content: center;
     min-height: 160px;
     border-radius: var(--radius-lg);
-    background: rgba(248, 250, 252, 0.9);
+    background: color-mix(in oklab, var(--color-surface-alt) 90%, transparent);
     color: var(--color-secondary);
     font-size: 14px;
   }

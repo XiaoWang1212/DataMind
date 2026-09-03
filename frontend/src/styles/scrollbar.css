@@ -1,0 +1,30 @@
+/* 全域捲軸。深色主題下系統預設捲軸的亮色軌道會比內容還搶眼，
+   這裡統一改成不畫軌道、只留一條吃 --color-ink 的半透明滑塊，深淺色共用同一組規則。 */
+
+* {
+  scrollbar-width: thin;
+  /* 標準屬性優先權高於 ::-webkit-scrollbar，兩邊要同步改 */
+  scrollbar-color: color-mix(in oklab, var(--color-ink) 22%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--color-ink) 22%, transparent);
+  border-radius: var(--radius-sm);
+  /* 透明邊框把滑塊往內縮，看起來比 10px 細，但點擊區維持原寬 */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--color-ink) 38%, transparent);
+}

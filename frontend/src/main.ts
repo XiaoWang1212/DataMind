@@ -25,6 +25,7 @@ import './styles/main.scss'
 import './styles/ds-table.css'
 import './styles/glass.css'
 import './styles/motion.css'
+import './styles/scrollbar.css'
 
 const app = createApp(App)
 

@@ -219,5 +219,5 @@ export function useDrawerDrag() {
 
   onBeforeUnmount(removeListeners);
 
-  return { style, startDrag, reset, expand, stage: computed(() => stage.value) };
+  return { style, heightPx, startDrag, reset, expand, stage: computed(() => stage.value) };
 }

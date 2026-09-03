@@ -168,7 +168,7 @@
 }
 
 :deep(.citation-mark:hover) {
-  background: color-mix(in oklab, var(--color-ink) 24%, white);
+  background: color-mix(in oklab, var(--color-ink) 24%, var(--color-surface));
 }
 
 :deep(.references-title) {

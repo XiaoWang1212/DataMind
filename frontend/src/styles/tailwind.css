@@ -39,16 +39,18 @@
   --color-secondary: rgb(var(--v-theme-secondary));
   --color-accent: rgb(var(--v-theme-accent));
 
-  /* AI 氣泡用純白 + 投影浮在玻璃面板上，兩者都是淺色，靠高度而不是明度差區分；
-     使用者氣泡用品牌藏青實色 */
-  --color-chat-system: #ffffff;
-  --color-chat-user: #1a3159;
+  --color-chat-system: rgb(var(--v-theme-chat-system));
+  --color-chat-user: rgb(var(--v-theme-chat-user));
   --color-text: rgb(var(--v-theme-text));
   --color-inverted: #f1f5f9;
 
   /* docs/DESIGN_SYSTEM.md §2.2 角色 token。ink 沿用既有 primary 插槽，不新增撞名 key
      （見 docs/superpowers/specs/2026-08-10-design-token-foundation-design.md） */
   --color-ink: rgb(var(--v-theme-primary));
+  --color-ink-solid: rgb(var(--v-theme-ink-solid));
+  --color-ink-solid-deep: rgb(var(--v-theme-ink-solid-deep));
+  --color-ai-from: rgb(var(--v-theme-ai-from));
+  --color-ai-to: rgb(var(--v-theme-ai-to));
   --color-ink-strong: rgb(var(--v-theme-ink-strong));
   --color-ink-vivid: rgb(var(--v-theme-ink-vivid));
   --color-ink-soft: rgb(var(--v-theme-secondary));

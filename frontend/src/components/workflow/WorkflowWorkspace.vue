@@ -3,6 +3,7 @@
   <section class="workspace">
     <!-- 畫布區：顯示節點與連線 -->
     <WorkflowCanvas
+      :bottom-inset="canvasBottomInset"
       :canvas-min-height="canvasMinHeight"
       :canvas-min-width="canvasMinWidth"
       class="workspace-canvas"
@@ -195,7 +196,7 @@
 
   // ─── composables ─────────────────────────────────────────────────────────
 
-  const { style: drawerStyle, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
+  const { style: drawerStyle, heightPx: drawerHeight, startDrag, reset: resetDrawer, expand: expandDrawer, stage: drawerStage } = useDrawerDrag()
 
   const { nodeStatuses, isDemoRunning, isDemoFinished, scheduleWorkflowSteps, finishGatedSteps, buildDemoSteps } = useWorkflowDemo()
 
@@ -277,6 +278,10 @@
     const node = nodes.value.find(n => n.id === selectedNodeId.value)
     return node ? { id: node.id, data: node.data } : null
   })
+
+  // 抽屜是絕對定位、蓋在畫布上而不是把畫布壓扁，畫布自己量不到它。
+  // 把它遮住的高度往下傳，fitView 才知道可用的區域只到抽屜上緣為止
+  const canvasBottomInset = computed(() => (selectedNode.value ? drawerHeight.value : 0))
 
   const testScoreValidationConfig = computed<Record<string, unknown>>(() => {
     const node = nodes.value.find(n => n.id === 'testScore')
@@ -804,7 +809,7 @@
     overflow: auto;
     padding: 16px;
     background: var(--color-surface);
-    border: 1px solid rgba(148, 163, 184, 0.32);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-lg);
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
     color: var(--color-text);
@@ -826,9 +831,10 @@
     border-top-left-radius: var(--radius-lg);
     border-top-right-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid var(--glass-drawer-edge);
+    background: var(--glass-drawer-tint);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.05);
     will-change: height, transform;
     transition: height var(--dur-slow) cubic-bezier(0.4, 0, 0.2, 1);
@@ -838,6 +844,21 @@
        這裡固定用 full 段（90vh）當唯一上限，避免用分段 class
        卡高度時，收合到比自己上限還小的段落會被瞬間夾住而不是平滑動畫 */
     max-height: 90vh;
+  }
+
+  /* §5.2:不支援 backdrop-filter 時退回不透明底,否則抽屜會直接透出底下的節點 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .options-drawer {
+      background: var(--glass-fallback);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .options-drawer {
+      background: var(--glass-fallback);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
   }
 
   .options-drawer__scroll {
@@ -851,9 +872,6 @@
     scrollbar-gutter: stable both-edges;
     overscroll-behavior: contain;
     padding-bottom: 16px;
-    scrollbar-width: thin;
-    /* 標準屬性優先權高於下面的 ::-webkit-scrollbar，兩邊要同步改 */
-    scrollbar-color: color-mix(in oklab, var(--color-ink) 42%, white) var(--color-border);
   }
 
   .drawer-content-wrapper {
@@ -861,26 +879,6 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar-track {
-    border-radius: 999px;
-    background: var(--color-border);
-  }
-
-  /* 原本是白色滑塊，那是配深色玻璃寫的；抽屜改淺色玻璃後等於隱形 */
-  .options-drawer__scroll::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-ink) 42%, white);
-  }
-
-  .options-drawer__scroll::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-ink) 62%, white);
   }
 
   .options-drawer__bar {
