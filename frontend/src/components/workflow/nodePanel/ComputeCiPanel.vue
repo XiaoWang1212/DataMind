@@ -8,6 +8,12 @@
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
           <p class="ci-panel__sub">每個指標的 CI Lower / Value / CI Upper</p>
         </div>
+        <ResultTableActions
+          v-if="currentSplitMetrics.length > 0"
+          :filename="exportFilename"
+          :headers="exportHeaders"
+          :rows="exportRows"
+        />
       </div>
 
       <div class="ci-controls">
@@ -72,6 +78,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import ResultTableActions from '@/components/common/ResultTableActions.vue'
 
   const props = defineProps<{
     workflowResult?: Record<string, unknown> | null
@@ -161,6 +168,14 @@
     currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
   )
 
+  const exportHeaders = ['指標', 'CI Lower', 'Value', 'CI Upper']
+
+  const exportRows = computed(() =>
+    currentSplitMetrics.value.map(m => [m.metric, fmt(m.ci_lower), fmt(m.value), fmt(m.ci_upper)]),
+  )
+
+  const exportFilename = computed(() => `bootstrap_ci_${selectedModel.value}_${selectedFold.value}`)
+
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
   watch(ciGroups, groups => {
     if (groups.length === 0) {
@@ -191,6 +206,10 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .ci-panel__header > div:nth-child(2) {
+    flex: 1;
   }
 
   .ci-panel__icon {

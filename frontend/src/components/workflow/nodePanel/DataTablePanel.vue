@@ -7,10 +7,7 @@
         :class="{ 'data-table-guide--ready': hasTarget }"
       >
         <span v-if="hasTarget">
-          已選定目標變數「{{ targetColumnName }}」，按右下角「繼續」即可進入下一步。
-        </span>
-        <span v-else-if="props.targetColumnHint">
-          根據框架建議，目標欄位應該對應「{{ props.targetColumnHint }}」，請在下方「Role」欄位選擇對應的欄位設為 <strong>Target</strong>，再按右下角「繼續」。
+          已選定目標變數「{{ targetColumnName }}」，如需更改請在下方「Role」欄調整，再按右下角「繼續」即可進入下一步。
         </span>
         <span v-else>
           請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
@@ -21,15 +18,6 @@
         <span>{{ previewDataRows.length }} 筆已讀取</span>
         <span v-if="hasTarget">目標變數：{{ targetColumnName }}</span>
       </div>
-      <AppButton
-        v-if="headerState === 'guide' && !hasTarget && targetHintColumnIndex !== -1"
-        class="apply-target-hint-btn"
-        variant="secondary"
-        @click="applyTargetHint"
-      >
-        <v-icon icon="mdi-target" size="15" />
-        套用建議
-      </AppButton>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
       </div>
@@ -344,6 +332,13 @@
     roleSelectTouched.value = true
   }
 
+  // 不用等使用者按按鈕確認：只要框架有建議、且目前還沒有欄位被設成 Target，
+  // 就直接套用，並靠上面 hasTarget 的提示文字告知使用者結果（如需更改可以自己在 Role 欄調整）
+  function maybeAutoApplyTargetHint (): void {
+    if (hasTarget.value) return
+    applyTargetHint()
+  }
+
   function getColumnRawValues (index: number): string[] {
     return previewDataRows.value
       .map(row => row[index] ?? '')
@@ -439,6 +434,7 @@
       if (previewColumns.value.length === 0) return
       if (!areColumnConfigsEqual(value, columnSettings.value)) {
         buildColumnSettings()
+        maybeAutoApplyTargetHint()
       }
     },
     { immediate: true, deep: true },
@@ -460,6 +456,7 @@
       previewColumns.value = rows[0] ?? []
       previewDataRows.value = rows.slice(1)
       buildColumnSettings()
+      maybeAutoApplyTargetHint()
     } catch {
       previewColumns.value = []
       previewDataRows.value = []
@@ -527,13 +524,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  /* 跟旁邊的提示文字同高，比預設的 app-btn 稍窄一點 */
-  .apply-target-hint-btn {
-    flex-shrink: 0;
-    padding: 6px 14px 6px 12px;
-    font-size: 13px;
   }
 
   .data-table-file {
