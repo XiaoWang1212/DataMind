@@ -5,9 +5,11 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler  # noqa: F401 (產生的程式碼會用到)
+from sklearn.decomposition import PCA  # noqa: F401
+from sklearn.feature_selection import SelectKBest, f_classif  # noqa: F401
 
 from services.model.registry import ModelRegistry
-from services.workflow.code_export_service import MODEL_IMPORTS, render_model_construction, render_preprocess_step
+from services.workflow.code_export_service import MODEL_IMPORTS, render_model_construction, render_preprocess_step, render_feature_engineering_step
 
 
 def test_model_imports_covers_every_registered_model():
@@ -254,3 +256,41 @@ def test_render_preprocess_normalize_nonexistent_columns():
     # Verify unchanged
     assert out_train.equals(X_train)
     assert out_test.equals(X_test)
+
+
+def _run_generated_fe(step, X_train, X_test, y_train=None):
+    code = render_feature_engineering_step(step)
+    # 去掉迴圈層級的縮排，讓程式碼可以在模組層級執行
+    code = textwrap.dedent(code)
+    namespace = {
+        "pd": pd, "PCA": PCA, "SelectKBest": SelectKBest, "f_classif": f_classif,
+        "MinMaxScaler": MinMaxScaler,
+        "X_train": X_train.copy(), "X_test": X_test.copy(),
+        "y_train": y_train,
+    }
+    exec(code, namespace)
+    return namespace["X_train"], namespace["X_test"]
+
+
+def test_render_fe_pca():
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0]})
+    X_test = pd.DataFrame({"a": [7.0], "b": [8.0]})
+    out_train, out_test = _run_generated_fe({"type": "pca", "n_components": 1}, X_train, X_test)
+    assert list(out_train.columns) == ["pca_1"]
+    assert len(out_train) == 3
+
+
+def test_render_fe_select_relevant_features():
+    X_train = pd.DataFrame({"a": [1, 2, 3, 4], "b": [1, 1, 1, 1]})
+    X_test = pd.DataFrame({"a": [5], "b": [1]})
+    y_train = pd.Series([0, 0, 1, 1])
+    out_train, out_test = _run_generated_fe(
+        {"type": "select_relevant_features", "k": 1}, X_train, X_test, y_train=y_train,
+    )
+    assert list(out_train.columns) == list(out_test.columns)
+
+
+def test_render_fe_unsupported_step_returns_todo_comment():
+    code = render_feature_engineering_step({"type": "randomize_rows"})
+    assert "TODO" in code
+    assert "randomize_rows" in code

@@ -270,3 +270,85 @@ def render_preprocess_step(step: Dict[str, Any]) -> str:
         lines.append("    X_test = X_test.drop(columns=[c for c in _cols if c in X_test.columns])")
 
     return "\n".join(lines)
+
+
+FEATURE_ENGINEERING_STEP_LABELS: Dict[str, str] = {
+    "pca": "PCA 降維",
+    "select_relevant_features": "特徵選擇",
+    "normalize_features": "Min-Max 正規化（特徵工程）",
+    "impute_missing": "缺值填補（特徵工程）",
+}
+
+_UNSUPPORTED_FE_STEPS = {
+    "discretize_continuous", "continuize_discrete", "select_random_features",
+    "randomize_rows", "remove_sparse_features", "cur_decomposition",
+}
+
+
+def render_feature_engineering_step(step: Dict[str, Any]) -> str:
+    """特徵工程的 4 種支援 step，對 X_train / X_test 各自獨立套用同一個操作
+    （不是像前處理那樣 fit 在 train、套用到兩邊——這是 feature_engineering_service.py
+    現有的實際行為，這裡如實反映，不是這次新增的設計）。
+    """
+    step_type = step.get("type")
+
+    if step_type not in FEATURE_ENGINEERING_STEP_LABELS:
+        if step_type in _UNSUPPORTED_FE_STEPS:
+            return _unsupported_step_comment(step_type, "feature_engineering_service.py")
+        return _unsupported_step_comment(step_type or "(未知)", "feature_engineering_service.py")
+
+    label = FEATURE_ENGINEERING_STEP_LABELS[step_type]
+    lines = [f"    # {label}"]
+
+    if step_type == "pca":
+        n_components = int(step.get("n_components", 2))
+        lines.append(f"    _n = min({n_components}, X_train.select_dtypes(include=['number']).shape[1])")
+        lines.append("    _pca_train = PCA(n_components=_n).fit(X_train.select_dtypes(include=['number']))")
+        lines.append(
+            "    X_train = pd.DataFrame(_pca_train.transform(X_train.select_dtypes(include=['number'])), "
+            "columns=[f'pca_{i + 1}' for i in range(_n)], index=X_train.index)"
+        )
+        lines.append("    _pca_test = PCA(n_components=_n).fit(X_test.select_dtypes(include=['number']))")
+        lines.append(
+            "    X_test = pd.DataFrame(_pca_test.transform(X_test.select_dtypes(include=['number'])), "
+            "columns=[f'pca_{i + 1}' for i in range(_n)], index=X_test.index)"
+        )
+
+    elif step_type == "select_relevant_features":
+        k = int(step.get("k", 10))
+        lines.append(f"    _k = min({k}, X_train.select_dtypes(include=['number']).shape[1])")
+        lines.append(
+            "    _selector = SelectKBest(score_func=f_classif, k=_k).fit("
+            "X_train.select_dtypes(include=['number']), y_train)"
+        )
+        lines.append(
+            "    _selected = X_train.select_dtypes(include=['number']).columns[_selector.get_support()].tolist()"
+        )
+        lines.append("    X_train = X_train[[c for c in _selected if c in X_train.columns]]")
+        lines.append("    X_test = X_test[[c for c in _selected if c in X_test.columns]]")
+
+    elif step_type == "normalize_features":
+        columns = step.get("columns")
+        cols_expr = repr(columns) if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
+        lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+        lines.append("    X_train[_cols] = MinMaxScaler().fit_transform(X_train[_cols])")
+        lines.append("    _cols_test = [c for c in _cols if c in X_test.columns]")
+        lines.append("    X_test[_cols_test] = MinMaxScaler().fit_transform(X_test[_cols_test])")
+
+    elif step_type == "impute_missing":
+        strategy = step.get("strategy", "constant")
+        value = step.get("value", 0)
+        if strategy == "mean":
+            lines.append("    X_train = X_train.fillna(X_train.mean(numeric_only=True))")
+            lines.append("    X_test = X_test.fillna(X_test.mean(numeric_only=True))")
+        elif strategy == "median":
+            lines.append("    X_train = X_train.fillna(X_train.median(numeric_only=True))")
+            lines.append("    X_test = X_test.fillna(X_test.median(numeric_only=True))")
+        elif strategy == "mode":
+            lines.append("    X_train = X_train.fillna(X_train.mode().iloc[0])")
+            lines.append("    X_test = X_test.fillna(X_test.mode().iloc[0])")
+        else:
+            lines.append(f"    X_train = X_train.fillna({value!r})")
+            lines.append(f"    X_test = X_test.fillna({value!r})")
+
+    return "\n".join(lines)
