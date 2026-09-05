@@ -422,7 +422,10 @@ def export_workflow_code():
         - code：完整的 Python 原始碼字串
         - filename：建議的下載檔名
     """
-    _data_path, kwargs = _parse_execute_params()
+    try:
+        _data_path, kwargs = _parse_execute_params()
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
 
     if not kwargs.get("model_names"):
         return jsonify({"success": False, "error": "請至少選擇一個模型"}), 400
