@@ -14,8 +14,8 @@
         >
         <div class="code-preview-actions">
           <AppButton variant="ghost" @click="handleCopy">
-            <v-icon :icon="copied ? 'mdi-check' : 'mdi-content-copy'" size="15" />
-            {{ copied ? '已複製' : '複製' }}
+            <v-icon :icon="copyError ? 'mdi-alert-circle-outline' : (copied ? 'mdi-check' : 'mdi-content-copy')" size="15" />
+            {{ copyError ? '複製失敗' : (copied ? '已複製' : '複製') }}
           </AppButton>
           <AppButton variant="primary" @click="handleDownload">
             <v-icon icon="mdi-download" size="15" />
@@ -53,6 +53,7 @@
 
   const filename = ref(props.defaultFilename)
   const copied = ref(false)
+  const copyError = ref(false)
 
   // highlight.js 直接對純文字做語法高亮、輸出 HTML 字串，比操作 DOM 節點（highlightElement）
   // 更適合搭配 Vue 的響應式渲染——code 換了 computed 會自動重新算，不用自己在 watch 裡手動觸發
@@ -77,9 +78,14 @@
   })
 
   async function handleCopy (): Promise<void> {
-    await navigator.clipboard.writeText(props.code)
-    copied.value = true
-    setTimeout(() => { copied.value = false }, 2000)
+    try {
+      await navigator.clipboard.writeText(props.code)
+      copied.value = true
+      setTimeout(() => { copied.value = false }, 2000)
+    } catch {
+      copyError.value = true
+      setTimeout(() => { copyError.value = false }, 2000)
+    }
   }
 
   function resolveFilename (): string {
