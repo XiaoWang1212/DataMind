@@ -1,10 +1,13 @@
 import ast
+import textwrap
 from typing import Any, Dict
 
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler  # noqa: F401 (產生的程式碼會用到)
 
 from services.model.registry import ModelRegistry
-from services.workflow.code_export_service import MODEL_IMPORTS, render_model_construction
+from services.workflow.code_export_service import MODEL_IMPORTS, render_model_construction, render_preprocess_step
 
 
 def test_model_imports_covers_every_registered_model():
@@ -109,3 +112,55 @@ def test_render_model_construction_all_models_are_executable():
 
         # 驗證產生了 models 字典
         assert "models" in namespace, f"模型 {model_name!r} 的程式碼未定義 models 字典"
+
+
+def _run_generated_preprocess(step, X_train, X_test):
+    """組出一段可以直接 exec() 的程式碼，驗證產生的邏輯本身跑起來跟預期一致，
+    不是只驗證語法合法。"""
+    code = render_preprocess_step(step)
+    # 去掉迴圈層級的縮排，讓程式碼可以在模組層級執行
+    code = textwrap.dedent(code)
+    namespace = {"pd": pd, "StandardScaler": StandardScaler, "MinMaxScaler": MinMaxScaler,
+                 "LabelEncoder": LabelEncoder, "X_train": X_train.copy(), "X_test": X_test.copy()}
+    exec(code, namespace)
+    return namespace["X_train"], namespace["X_test"]
+
+
+def test_render_preprocess_fill_na_mean():
+    X_train = pd.DataFrame({"a": [1.0, None, 3.0]})
+    X_test = pd.DataFrame({"a": [None, 5.0]})
+    step = {"type": "fill_na", "strategy": "mean", "columns": ["a"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    assert out_train["a"].tolist() == [1.0, 2.0, 3.0]
+    assert out_test["a"].tolist() == [2.0, 5.0]  # 用 train 的平均值（2.0）填 test，不是 test 自己的
+
+
+def test_render_preprocess_standardize():
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [4.0]})
+    step = {"type": "standardize", "columns": ["a"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    assert abs(out_train["a"].mean()) < 1e-9  # 標準化後平均應為 0
+
+
+def test_render_preprocess_one_hot():
+    X_train = pd.DataFrame({"color": ["red", "blue"]})
+    X_test = pd.DataFrame({"color": ["red", "green"]})  # green 是 train 沒看過的類別
+    step = {"type": "one_hot", "columns": ["color"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    assert set(out_train.columns) == set(out_test.columns)  # 欄位要對齊
+
+
+def test_render_preprocess_drop_columns():
+    X_train = pd.DataFrame({"a": [1], "b": [2]})
+    X_test = pd.DataFrame({"a": [3], "b": [4]})
+    step = {"type": "drop_columns", "columns": ["b"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    assert "b" not in out_train.columns
+    assert "b" not in out_test.columns
+
+
+def test_render_preprocess_unsupported_step_returns_todo_comment():
+    code = render_preprocess_step({"type": "knn_impute"})
+    assert "TODO" in code
+    assert "knn_impute" in code

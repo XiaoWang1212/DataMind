@@ -156,3 +156,107 @@ def render_model_construction(model_names: List[str]) -> Tuple[List[str], str]:
 
     code = "models = {\n" + body + "\n}"
     return import_lines, code
+
+
+PREPROCESS_STEP_LABELS: Dict[str, str] = {
+    "fill_na": "缺值填補",
+    "standardize": "Z-score 標準化",
+    "normalize": "Min-Max 正規化",
+    "one_hot": "One-Hot 編碼",
+    "label_encode": "Label 編碼",
+    "drop_columns": "移除欄位",
+}
+
+# 這 4 種目前沒有範本，遇到時用固定格式的 TODO 註解取代，不擋住其餘 step 的產生
+_UNSUPPORTED_PREPROCESS_STEPS = {
+    "knn_impute", "iterative_impute", "remove_outliers_iqr", "remove_outliers_zscore",
+}
+
+
+def _unsupported_step_comment(step_type: str, source_file: str) -> str:
+    return (
+        f"    # ⚠️ TODO：這個 workflow 用了「{step_type}」步驟，DataMind 程式碼匯出功能目前"
+        "還不支援自動產生這段邏輯。\n"
+        f"    # 請參考 backend/services/workflow/{source_file} 裡對應的實作，自行補上。"
+    )
+
+
+def render_preprocess_step(step: Dict[str, Any]) -> str:
+    """產生單一前處理步驟的程式碼。呼叫端負責把回傳字串接在既有的 X_train/X_test 迴圈裡，
+    每次呼叫都是「fit 在 X_train、同時套用到 X_train 和 X_test」，跟 preprocess_service.py
+    的 apply_preprocess_pipeline_for_split() 語意一致，避免資料洩漏。
+    """
+    step_type = step.get("type")
+    label = PREPROCESS_STEP_LABELS.get(step_type, step_type)
+    columns = step.get("columns")
+    columns_expr = repr(columns) if columns else "None"
+
+    if step_type not in PREPROCESS_STEP_LABELS:
+        if step_type in _UNSUPPORTED_PREPROCESS_STEPS:
+            return _unsupported_step_comment(step_type, "preprocess_service.py")
+        return _unsupported_step_comment(step_type or "(未知)", "preprocess_service.py")
+
+    lines = [f"    # {label}"]
+
+    if step_type == "fill_na":
+        strategy = step.get("strategy", "constant")
+        value = step.get("value", 0)
+        cols_expr = columns_expr if columns else "X_train.columns"
+        if strategy == "mean":
+            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+            lines.append("    _fill_values = X_train[_cols].mean()")
+        elif strategy == "median":
+            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+            lines.append("    _fill_values = X_train[_cols].median()")
+        elif strategy == "mode":
+            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+            lines.append("    _fill_values = X_train[_cols].mode().iloc[0]")
+        else:
+            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+            lines.append(f"    _fill_values = pd.Series({value!r}, index=_cols)")
+        lines.append("    X_train[_cols] = X_train[_cols].fillna(_fill_values)")
+        lines.append("    X_test[_cols] = X_test[_cols].fillna(_fill_values)")
+
+    elif step_type == "standardize":
+        cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
+        lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+        lines.append("    _scaler = StandardScaler().fit(X_train[_cols])")
+        lines.append("    X_train[_cols] = _scaler.transform(X_train[_cols])")
+        lines.append("    X_test[_cols] = _scaler.transform(X_test[_cols])")
+
+    elif step_type == "normalize":
+        cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
+        lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+        lines.append("    _scaler = MinMaxScaler().fit(X_train[_cols])")
+        lines.append("    X_train[_cols] = _scaler.transform(X_train[_cols])")
+        lines.append("    X_test[_cols] = _scaler.transform(X_test[_cols])")
+
+    elif step_type == "one_hot":
+        cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['object', 'category']).columns.tolist()"
+        lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+        lines.append("    _train_dummies = pd.get_dummies(X_train[_cols], drop_first=False)")
+        lines.append("    _test_dummies = pd.get_dummies(X_test[_cols], drop_first=False)")
+        lines.append("    for _c in _train_dummies.columns:")
+        lines.append("        if _c not in _test_dummies.columns:")
+        lines.append("            _test_dummies[_c] = 0")
+        lines.append("    _test_dummies = _test_dummies[_train_dummies.columns]")
+        lines.append("    X_train = pd.concat([X_train.drop(columns=_cols), _train_dummies], axis=1)")
+        lines.append("    X_test = pd.concat([X_test.drop(columns=_cols), _test_dummies], axis=1)")
+
+    elif step_type == "label_encode":
+        cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['object', 'category']).columns.tolist()"
+        lines.append(f"    for _c in [c for c in ({cols_expr}) if c in X_train.columns]:")
+        lines.append("        _enc = LabelEncoder().fit(X_train[_c].astype(str))")
+        lines.append("        _known = set(_enc.classes_)")
+        lines.append("        X_train[_c] = _enc.transform(X_train[_c].astype(str))")
+        lines.append(
+            "        X_test[_c] = X_test[_c].astype(str).map("
+            "lambda v: _enc.transform([v])[0] if v in _known else -1)"
+        )
+
+    elif step_type == "drop_columns":
+        lines.append(f"    _cols = {columns_expr if columns else '[]'}")
+        lines.append("    X_train = X_train.drop(columns=[c for c in _cols if c in X_train.columns])")
+        lines.append("    X_test = X_test.drop(columns=[c for c in _cols if c in X_test.columns])")
+
+    return "\n".join(lines)
