@@ -80,9 +80,11 @@
   async function handleCopy (): Promise<void> {
     try {
       await navigator.clipboard.writeText(props.code)
+      copyError.value = false
       copied.value = true
       setTimeout(() => { copied.value = false }, 2000)
     } catch {
+      copied.value = false
       copyError.value = true
       setTimeout(() => { copyError.value = false }, 2000)
     }
@@ -178,6 +180,7 @@
     overflow: auto;
     padding: 16px 20px;
     background: #282c34;
+    color: #abb2bf;
     font-family: var(--font-mono, 'SF Mono', Consolas, monospace);
     font-size: 13px;
     line-height: 1.6;
