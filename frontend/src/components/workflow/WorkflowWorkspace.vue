@@ -38,6 +38,13 @@
       @confirm="confirmUpload"
     />
 
+    <CodeExportPreviewModal
+      :code="exportedCode"
+      :default-filename="exportedFilename"
+      :visible="codePreviewVisible"
+      @close="codePreviewVisible = false"
+    />
+
     <!-- 隱藏 file inputs（由 useWorkflowImport 內部使用） -->
     <input
       ref="jsonFileInput"
@@ -162,6 +169,7 @@
   import { useFrameworkStore } from '@/store/frameworkStore'
   import { useProjectStore } from '@/store/projectStore'
   import { expandAutoFillNaSteps } from '@/utils/workflow/fillNaColumnSplit'
+  import CodeExportPreviewModal from './CodeExportPreviewModal.vue'
   import IconNode from './IconNode.vue'
   import InterruptConfirmDialog from './InterruptConfirmDialog.vue'
   import UploadDialog from './UploadDialog.vue'
@@ -391,20 +399,18 @@
   }
 
   const exportingCode = ref(false)
+  const codePreviewVisible = ref(false)
+  const exportedCode = ref('')
+  const exportedFilename = ref('workflow_export.py')
 
   async function handleExportCode (): Promise<void> {
     exportingCode.value = true
     try {
       const payload = buildWorkflowPayload()
       const { code, filename } = await exportWorkflowCode(payload)
-
-      const blob = new Blob([code], { type: 'text/x-python' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.click()
-      URL.revokeObjectURL(url)
+      exportedCode.value = code
+      exportedFilename.value = filename
+      codePreviewVisible.value = true
     } catch (error) {
       workflowError.value = error instanceof Error ? error.message : String(error)
     } finally {
