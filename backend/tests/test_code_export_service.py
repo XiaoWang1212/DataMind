@@ -7,9 +7,15 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler  # noqa: F401 (產生的程式碼會用到)
 from sklearn.decomposition import PCA  # noqa: F401
 from sklearn.feature_selection import SelectKBest, f_classif  # noqa: F401
+from sklearn.model_selection import (  # noqa: F401
+    GroupKFold, KFold, ShuffleSplit, StratifiedKFold, StratifiedShuffleSplit, train_test_split,
+)
 
 from services.model.registry import ModelRegistry
-from services.workflow.code_export_service import MODEL_IMPORTS, render_model_construction, render_preprocess_step, render_feature_engineering_step
+from services.workflow.code_export_service import (
+    MODEL_IMPORTS, render_categorical_fallback_encoding, render_feature_engineering_step,
+    render_model_construction, render_preprocess_step, render_validation_split,
+)
 
 
 def test_model_imports_covers_every_registered_model():
@@ -367,3 +373,53 @@ def test_render_fe_impute_missing_mode_entirely_nan_column():
     assert out_test["a"].isna().sum() == 0
     # Verify fallback value was used
     assert out_train["a"].iloc[0] == 0
+
+
+def _run_generated_split(validation_config, X, y=None):
+    import_lines, code = render_validation_split(validation_config)
+    full_source = "\n".join(import_lines) + "\n" + code
+    ast.parse(full_source)  # import 陳述式 + 程式碼合起來也要是合法 Python
+    namespace = {
+        "pd": pd, "np": np, "X": X, "y": y if y is not None else pd.Series([0] * len(X)),
+        "StratifiedKFold": StratifiedKFold, "KFold": KFold, "GroupKFold": GroupKFold,
+        "StratifiedShuffleSplit": StratifiedShuffleSplit, "ShuffleSplit": ShuffleSplit,
+        "train_test_split": train_test_split,
+    }
+    exec(full_source, namespace)
+    return namespace["splits"]
+
+
+def test_render_validation_split_k_fold():
+    X = pd.DataFrame({"a": range(10)})
+    y = pd.Series([0, 1] * 5)
+    splits = _run_generated_split({"method": "k_fold", "n_splits": 5, "stratified": True}, X, y)
+    assert len(splits) == 5
+    for train_idx, test_idx in splits:
+        assert len(train_idx) + len(test_idx) == 10
+
+
+def test_render_validation_split_test_on_train_uses_same_indices_for_both():
+    X = pd.DataFrame({"a": range(10)})
+    splits = _run_generated_split({"method": "test_on_train", "train_size": 0.7}, X)
+    assert len(splits) == 1
+    train_idx, test_idx = splits[0]
+    assert list(train_idx) == list(test_idx)
+
+
+def test_render_validation_split_test_on_test_train_and_test_disjoint():
+    X = pd.DataFrame({"a": range(10)})
+    splits = _run_generated_split({"method": "test_on_test", "train_size": 0.7}, X)
+    train_idx, test_idx = splits[0]
+    assert set(train_idx).isdisjoint(set(test_idx))
+
+
+def test_render_categorical_fallback_encoding_one_hots_remaining_object_columns():
+    code = render_categorical_fallback_encoding()
+    namespace = {
+        "pd": pd,
+        "X_train": pd.DataFrame({"color": ["red", "blue"], "n": [1, 2]}),
+        "X_test": pd.DataFrame({"color": ["red", "green"], "n": [3, 4]}),
+    }
+    exec(textwrap.dedent(code), namespace)
+    assert "color" not in namespace["X_train"].columns
+    assert list(namespace["X_train"].columns) == list(namespace["X_test"].columns)

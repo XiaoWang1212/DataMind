@@ -364,3 +364,97 @@ def render_feature_engineering_step(step: Dict[str, Any]) -> str:
             lines.append(f"    X_test = X_test.fillna({value!r})")
 
     return "\n".join(lines)
+
+
+def render_validation_split(validation_config: Dict[str, Any]) -> Tuple[List[str], str]:
+    """回傳 (import 陳述式清單, 產生 splits 的程式碼)。splits 統一是
+    List[Tuple[np.ndarray, np.ndarray]]（train_idx, test_idx 都是整數位置索引），
+    不管哪種驗證方式，下游都用同一種方式消費：`for train_idx, test_idx in splits: ...`。
+
+    這段程式碼是頂層模組程式碼（在任何迴圈或函式之外，generate_workflow_script() 是把它
+    直接接在檔案的最上層），所以每一行都不能有縮排，這點跟 render_preprocess_step() /
+    render_feature_engineering_step() / render_metrics_block()（那三個都是插進迴圈裡面，
+    需要縮排）不一樣。
+    """
+    method = str(validation_config.get("method", "test_on_test")).lower()
+    n_splits = int(validation_config.get("n_splits") or 5)
+    n_repeats = int(validation_config.get("n_repeats") or 1)
+    train_size = float(validation_config.get("train_size") or 0.7)
+    stratified = bool(validation_config.get("stratified", True))
+    group_column = validation_config.get("group_column")
+    shuffle = bool(validation_config.get("shuffle", True))
+    random_state = int(validation_config.get("random_state") or 42)
+    stratify_arg = "y" if stratified else "None"
+
+    if method == "k_fold":
+        cls_name = "StratifiedKFold" if stratified else "KFold"
+        split_source = "y" if stratified else "X"
+        code = (
+            f"# 交叉驗證（{n_splits} 折）\n"
+            f"_splitter = {cls_name}(n_splits={n_splits}, shuffle={shuffle}, random_state={random_state})\n"
+            f"splits = list(_splitter.split(X, {split_source}))"
+        )
+        return [f"from sklearn.model_selection import {cls_name}"], code
+
+    if method == "group_k_fold":
+        code = (
+            "# 依欄位分組的交叉驗證，同一組的資料不會同時出現在 train 跟 test\n"
+            f"_groups = X[{group_column!r}]\n"
+            f"_splitter = GroupKFold(n_splits={n_splits})\n"
+            "splits = list(_splitter.split(X, y, _groups))"
+        )
+        return ["from sklearn.model_selection import GroupKFold"], code
+
+    if method == "random_sampling":
+        cls_name = "StratifiedShuffleSplit" if stratified else "ShuffleSplit"
+        split_source = "y" if stratified else "X"
+        code = (
+            f"# 重複隨機切分（重複 {n_repeats} 次）\n"
+            f"_splitter = {cls_name}(n_splits={n_repeats}, train_size={train_size}, "
+            f"random_state={random_state})\n"
+            f"splits = list(_splitter.split(X, {split_source}))"
+        )
+        return [f"from sklearn.model_selection import {cls_name}"], code
+
+    if method == "test_on_train":
+        code = (
+            "# 訓練與測試用同一份資料（僅用於檢查模型是否過擬合，不是正式的效能評估）\n"
+            "_train_idx, _ = train_test_split(\n"
+            f"    np.arange(len(X)), train_size={train_size}, stratify={stratify_arg}, "
+            f"shuffle={shuffle}, random_state={random_state},\n"
+            ")\n"
+            "splits = [(_train_idx, _train_idx)]"
+        )
+        return ["from sklearn.model_selection import train_test_split"], code
+
+    # test_on_test（預設）
+    code = (
+        "# 單次切分成訓練集／測試集\n"
+        "_train_idx, _test_idx = train_test_split(\n"
+        f"    np.arange(len(X)), train_size={train_size}, stratify={stratify_arg}, "
+        f"shuffle={shuffle}, random_state={random_state},\n"
+        ")\n"
+        "splits = [(_train_idx, _test_idx)]"
+    )
+    return ["from sklearn.model_selection import train_test_split"], code
+
+
+def render_categorical_fallback_encoding() -> str:
+    """對應 workflow_service.py 的 _prepare_categorical()：前處理設定跑完後，
+    任何還沒被處理掉的類別型欄位，一律 One-Hot 編碼（fit 在 train）。這一段
+    不受任何 step type 設定影響，一定會出現在產生的程式碼裡。
+    """
+    return (
+        "    # 前處理設定跑完後，任何還沒被處理掉的類別型欄位，一律 One-Hot 編碼\n"
+        "    # （這一步不受上面的前處理設定影響，DataMind 執行 workflow 時一定會做這步）\n"
+        "    _object_cols = X_train.select_dtypes(include=['object', 'category']).columns.tolist()\n"
+        "    if _object_cols:\n"
+        "        _train_dummies = pd.get_dummies(X_train[_object_cols], drop_first=True)\n"
+        "        _test_dummies = pd.get_dummies(X_test[_object_cols], drop_first=True)\n"
+        "        for _c in _train_dummies.columns:\n"
+        "            if _c not in _test_dummies.columns:\n"
+        "                _test_dummies[_c] = 0\n"
+        "        _test_dummies = _test_dummies[_train_dummies.columns]\n"
+        "        X_train = pd.concat([X_train.drop(columns=_object_cols), _train_dummies], axis=1)\n"
+        "        X_test = pd.concat([X_test.drop(columns=_object_cols), _test_dummies], axis=1)"
+    )
