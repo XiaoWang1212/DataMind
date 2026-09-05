@@ -8,6 +8,12 @@
           <h4 class="ci-panel__title">Bootstrap 95% 信賴區間</h4>
           <p class="ci-panel__sub">{{ panelCaption }}</p>
         </div>
+        <ResultTableActions
+          v-if="currentSplitMetrics.length > 0"
+          :filename="exportFilename"
+          :headers="exportHeaders"
+          :rows="exportRows"
+        />
       </div>
 
       <div class="ci-controls">
@@ -114,6 +120,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import ResultTableActions from '@/components/common/ResultTableActions.vue'
 
   const props = defineProps<{
     workflowResult?: Record<string, unknown> | null
@@ -202,6 +209,14 @@
   const currentSplitMetrics = computed(() =>
     currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
   )
+
+  const exportHeaders = ['指標', 'CI Lower', 'Value', 'CI Upper']
+
+  const exportRows = computed(() =>
+    currentSplitMetrics.value.map(m => [m.metric, fmt(m.ci_lower), fmt(m.value), fmt(m.ci_upper)]),
+  )
+
+  const exportFilename = computed(() => `bootstrap_ci_${selectedModel.value}_${selectedFold.value}`)
 
   // 這裡的指標都是 0–1 尺度（AUC/準確率/precision/recall/F1...），直接乘 100 當百分比座標用
   const AXIS_TICKS = [0, 0.25, 0.5, 0.75, 1]
@@ -352,6 +367,10 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .ci-panel__header > div:nth-child(2) {
+    flex: 1;
   }
 
   .ci-panel__icon {

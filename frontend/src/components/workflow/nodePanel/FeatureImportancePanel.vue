@@ -17,6 +17,13 @@
           :options="foldOptions"
         />
       </div>
+      <ResultTableActions
+        v-if="currentImportance.length > 0"
+        class="fi-actions"
+        :filename="exportFilename"
+        :headers="exportHeaders"
+        :rows="exportRows"
+      />
     </div>
 
     <div
@@ -50,6 +57,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import ResultTableActions from '@/components/common/ResultTableActions.vue'
 
   interface FeatureImportanceItem {
     feature: string
@@ -167,6 +175,14 @@
   function formatImportance (value: number): string {
     return value.toFixed(4)
   }
+
+  const exportHeaders = ['Feature', 'Importance']
+
+  const exportRows = computed(() =>
+    currentImportance.value.map(item => [item.feature, formatImportance(item.importance)]),
+  )
+
+  const exportFilename = computed(() => `feature_importance_${selectedModel.value}_${selectedFold.value}`)
 </script>
 
 <style scoped>
@@ -183,6 +199,10 @@
     align-items: center;
     gap: 20px;
     flex-wrap: wrap;
+  }
+
+  .fi-actions {
+    margin-left: auto;
   }
 
   .fi-field {

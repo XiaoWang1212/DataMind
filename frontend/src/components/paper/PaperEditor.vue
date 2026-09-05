@@ -584,8 +584,14 @@
   }
 
   /* 工具列嵌在實色白紙上，玻璃沒有東西可以透（DESIGN_SYSTEM.md §5.1），
-     改用 §7.7 的 surface-alt 實色底 */
+     改用 §7.7 的 surface-alt 實色底。
+     sticky 在上層 PaperPage 的 .paper-toolbar 下方——那條工具列高度會隨標題換行
+     變動，所以 top 吃 PaperPage 用 ResizeObserver 動態算出來的 --paper-toolbar-height，
+     不寫死高度 */
   .editor-toolbar {
+    position: sticky;
+    top: var(--paper-toolbar-height, 0px);
+    z-index: 4;
     display: flex;
     flex-wrap: wrap;
     align-items: center;

@@ -2,8 +2,8 @@
   <section class="paper-page">
     <HubSidebar />
 
-    <main class="paper-main">
-      <header class="paper-toolbar">
+    <main ref="mainRef" class="paper-main">
+      <header ref="toolbarRef" class="paper-toolbar">
         <AppButton aria-label="返回" icon-only variant="ghost" @click="router.back()">
           <v-icon icon="mdi-arrow-left" size="18" />
         </AppButton>
@@ -102,7 +102,7 @@
 
 <script setup lang="ts">
   import type { CitationStyle, PaperReport } from '@/constants/reportData'
-  import { computed, onMounted, ref, toRaw } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { type JournalScore, scorePaper } from '@/api/arxiv'
   import { downloadReportPdf, getReport, saveReport } from '@/api/report'
@@ -138,6 +138,8 @@
   const paginatedViewRef = ref<InstanceType<typeof PaginatedPaperView> | null>(null)
   const downloadingPdf = ref(false)
   const pdfError = ref<string | null>(null)
+  const mainRef = ref<HTMLElement | null>(null)
+  const toolbarRef = ref<HTMLElement | null>(null)
 
   const popoverCitation = computed(() => {
     const base = report.value.citations.find(c => c.id === activeCitationId.value) ?? null
@@ -196,6 +198,25 @@
 
     savedSnapshot = structuredClone(toRaw(report.value))
     loading.value = false
+  })
+
+  // 編輯模式的富文本工具列（PaperEditor 的 .editor-toolbar）也要 sticky 在這條工具列
+  // 下方，但它的高度會隨標題換行變動，所以量測後寫成 CSS 變數，讓子元件的
+  // sticky top 可以跟著動態調整，不用寫死一個容易對不上的固定值
+  let toolbarResizeObserver: ResizeObserver | null = null
+
+  onMounted(() => {
+    if (!toolbarRef.value || !mainRef.value) return
+    const updateToolbarHeight = () => {
+      mainRef.value?.style.setProperty('--paper-toolbar-height', `${toolbarRef.value?.offsetHeight ?? 0}px`)
+    }
+    updateToolbarHeight()
+    toolbarResizeObserver = new ResizeObserver(updateToolbarHeight)
+    toolbarResizeObserver.observe(toolbarRef.value)
+  })
+
+  onBeforeUnmount(() => {
+    toolbarResizeObserver?.disconnect()
   })
 
   function onCitationClick ({ citationId, target }: { citationId: string, target: HTMLElement }) {
@@ -321,36 +342,38 @@
     display: flex;
     flex-direction: column;
     padding: 12px 20px 18px;
-    overflow: hidden;
   }
 
   .paper-toolbar {
     /* .paper-page 只設 min-height，內容一長（尤其編輯模式沒有高度上限）就會撐開
-       整頁，變成瀏覽器視窗本身在捲動；工具列要 sticky 才不會跟著捲走，
-       backdrop-filter 讓底下捲過去的內容不會直接貼著文字 */
+       整頁，變成瀏覽器視窗本身在捲動；工具列要 sticky 才不會跟著捲走。
+       .paper-main 不能設 overflow:hidden/auto——那樣它會變成 sticky 的捲動邊界，
+       但它本身永遠不會真的捲動（高度就是內容高度），sticky 就會完全失效。
+       不做卡片外觀（沒有底色/陰影/模糊）：文字跟按鈕就是直接浮在頁面背景上，
+       捲動到底下內容重疊時不再靠模糊/陰影隔開 */
     position: sticky;
     top: 0;
     z-index: 5;
     display: flex;
-    /* 標題太長換行時用頂對齊，兩側的按鈕才不會被拉去跟著整段標題垂直置中 */
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
     width: 100%;
     max-width: var(--paper-column);
     margin: 0 auto;
-    padding: 0 2px 10px;
-    border-bottom: 1px solid var(--color-border);
-    background: color-mix(in oklab, var(--color-surface) 85%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    padding: 10px 2px;
+    background: transparent;
   }
 
   .paper-title {
     /* min-width:0 才能讓標題在空間不夠時換行/縮小，而不是撐開整列、
-       把 .toolbar-actions 擠到變形（flex item 預設 min-width:auto 不會自己讓步） */
+       把 .toolbar-actions 擠到變形（flex item 預設 min-width:auto 不會自己讓步）。
+       overflow-wrap:anywhere 是防長標題裡有不含空白/中日韓字元斷點的長字串
+       （例如英文專有名詞、無空格的長字串）時，文字會直接溢出這個縮到很窄的
+       box，蓋到右邊的 toolbar-actions 按鈕上 */
     flex: 1 1 0;
     min-width: 0;
-    margin: 4px 0 0;
+    overflow-wrap: anywhere;
+    margin: 0;
     font-size: 15px;
     font-weight: 500;
     line-height: 1.4;
@@ -419,6 +442,10 @@
   }
 
   .paper-body {
+    /* 不設 overflow:auto——寬表格已經有 TipTap 自己的 .tableWrapper { overflow-x:auto }
+       擋著，這裡如果也設 overflow，會變成 .editor-toolbar sticky 的捲動邊界，但這個
+       box 本身跟 .paper-main 一樣永遠不會真的捲動，sticky 就會失效（同 .paper-main
+       overflow:hidden 那個問題） */
     flex: 1;
     min-height: 0;
     display: flex;
@@ -426,7 +453,6 @@
     max-width: var(--paper-column);
     gap: 24px;
     margin: 14px auto 0;
-    overflow: auto;
   }
 
   .paper-sheet {
