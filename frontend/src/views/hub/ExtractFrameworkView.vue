@@ -414,7 +414,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  background: color-mix(in oklab, var(--color-ink) 10%, white);
+  background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
   color: var(--color-ink-strong);
 }
 
@@ -424,7 +424,7 @@
 }
 
 .result-tag--indigo {
-  background: color-mix(in oklab, var(--color-ink) 16%, white);
+  background: color-mix(in oklab, var(--color-ink) 16%, var(--color-surface));
   color: var(--color-ink-strong);
 }
 

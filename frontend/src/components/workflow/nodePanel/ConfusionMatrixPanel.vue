@@ -30,6 +30,13 @@
       >
         {{ tab.label }}
       </button>
+      <ResultTableActions
+        v-if="exportableTable"
+        class="cm-tabs__actions"
+        :filename="exportableTable.filename"
+        :headers="exportableTable.headers"
+        :rows="exportableTable.rows"
+      />
     </div>
 
     <div v-if="groupedResults.length > 0" class="cm-tab-row">
@@ -253,6 +260,7 @@
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import { fetchTabChatReply, fetchTabInsight, type TabChatMessage } from '@/api/insight'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import ResultTableActions from '@/components/common/ResultTableActions.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import {
     loadTabChatFromStorage,
@@ -510,6 +518,36 @@
     const rows = perClassRows.value
     if (rows.length === 0) return null
     return rows.reduce((min, row) => (row.f1 < min.f1 ? row : min)).label
+  })
+
+  // 只有 matrix / perClass 這兩個分頁是表格，ROC / PR / 校準曲線是圖表，沒有對應的複製/匯出內容
+  const exportableTable = computed(() => {
+    const suffix = `${selectedModel.value}_${selectedFold.value}`
+
+    if (activeTab.value === 'matrix' && currentMatrix.value) {
+      const matrix = currentMatrix.value
+      return {
+        headers: ['', ...matrix.labels.map(label => `預測：${label}`)],
+        rows: matrix.matrix.map((row, i) => [`實際：${matrix.labels[i]}`, ...row]),
+        filename: `confusion_matrix_${suffix}`,
+      }
+    }
+
+    if (activeTab.value === 'perClass' && perClassRows.value.length > 0) {
+      return {
+        headers: ['類別', 'Precision', 'Recall', 'F1', '樣本數'],
+        rows: perClassRows.value.map(row => [
+          row.label,
+          row.precision.toFixed(3),
+          row.recall.toFixed(3),
+          row.f1.toFixed(3),
+          row.support,
+        ]),
+        filename: `per_class_metrics_${suffix}`,
+      }
+    }
+
+    return null
   })
 
   const hasCurrentTabData = computed(() => {
@@ -870,7 +908,12 @@
 
   .cm-tabs {
     display: flex;
+    align-items: center;
     gap: 6px;
+  }
+
+  .cm-tabs__actions {
+    margin-left: auto;
   }
 
   .cm-tab {
@@ -884,8 +927,9 @@
     transition: all 0.15s ease;
   }
 
+  /* 實色底另用 --color-ink-solid：ink 在深色主題是淺藍，配淺色文字會看不見 */
   .cm-tab--active {
-    background: var(--color-ink);
+    background: var(--color-ink-solid);
     border-color: var(--color-ink);
     color: var(--color-inverted);
   }

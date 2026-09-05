@@ -78,9 +78,11 @@
     padding: 8px;
   }
 
+  /* 實色底另用 --color-ink-solid 而不是 --color-ink：深色主題的 ink 是淺藍，
+     直接當底會太亮、白字也壓不住 */
   .app-btn--primary {
-    background: var(--color-ink);
-    color: #fff;
+    background: var(--color-ink-solid);
+    color: var(--color-inverted);
   }
 
   .app-btn--secondary {
@@ -100,7 +102,7 @@
   }
 
   .app-btn--ai {
-    background: linear-gradient(100deg, var(--color-ink-vivid) 0%, var(--color-ink-strong) 100%);
+    background: linear-gradient(100deg, var(--color-ai-from) 0%, var(--color-ai-to) 100%);
     color: var(--color-inverted);
   }
 
@@ -109,8 +111,8 @@
   @media (hover: hover) and (pointer: fine) {
     /* 藏青已經很暗，往亮的方向走才看得出變化 */
     .app-btn--primary:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 88%, white);
-      box-shadow: 0 2px 8px color-mix(in oklab, var(--color-ink) 28%, transparent);
+      background: color-mix(in oklab, var(--color-ink-solid) 88%, var(--color-surface));
+      box-shadow: 0 2px 8px color-mix(in oklab, var(--color-ink-solid) 28%, transparent);
     }
 
     .app-btn--secondary:hover:not(:disabled) {
@@ -118,19 +120,19 @@
     }
 
     .app-btn--ghost:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-ink) 8%, white);
+      background: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
       color: var(--color-ink);
     }
 
     .app-btn--danger:hover:not(:disabled) {
-      background: color-mix(in oklab, var(--color-error) 14%, white);
+      background: color-mix(in oklab, var(--color-error) 14%, var(--color-surface));
     }
 
     .app-btn--ai:hover:not(:disabled) {
       background: linear-gradient(
         100deg,
-        color-mix(in oklab, var(--color-ink-vivid) 88%, white) 0%,
-        color-mix(in oklab, var(--color-ink-strong) 88%, white) 100%
+        color-mix(in oklab, var(--color-ai-from) 88%, var(--color-surface)) 0%,
+        color-mix(in oklab, var(--color-ai-to) 88%, var(--color-surface)) 100%
       );
     }
   }

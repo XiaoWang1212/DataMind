@@ -432,6 +432,6 @@
 
   /* 已被別的欄位占用，但仍可點擊選取（會把它搶過來）；弱化但保持 AA 對比（跟 .cs-option-hint 的淺灰不同，因為這裡是可互動文字） */
   .cs-option.is-muted .cs-option-label {
-    color: #64748b;
+    color: var(--color-ink-soft);
   }
 </style>

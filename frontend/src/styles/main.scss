@@ -1,17 +1,50 @@
+:root,
+.v-theme--light {
+  // 主色塊窄而高、貼齊左緣，縱向覆蓋整條側邊欄供玻璃透光
+  --page-tint-primary: rgba(90, 130, 190, 0.5);
+  --page-tint-secondary: rgba(110, 143, 178, 0.22);
+  --page-tint-warm: rgba(196, 150, 130, 0.1);
+  --page-base: linear-gradient(175deg, #f4f7f9 0%, #e4eaef 55%, #dce3e9 100%);
+  // 畫布區把漸層壓淡，Hub 那邊的濃度在畫布上太重
+  --canvas-veil: rgba(255, 255, 255, 0.6);
+  // 標題沒有卡片墊底，靠光暈從漸層裡浮出來
+  --title-halo-near: rgba(255, 255, 255, 0.9);
+  --title-halo-far: rgba(255, 255, 255, 0.65);
+  // workflow 畫布的點狀紋理
+  --canvas-dot: #d3d8dc;
+  // 骨架屏掃光的亮帶
+  --skeleton-sheen: #fff;
+}
+
+.v-theme--dark {
+  // 石墨底摻一點品牌藏青，讓深色不是全然中性的灰。刻意壓在很低的不透明度：
+  // 再濃一點色塊的邊界就會被看出來，變成兩坨藍斑而不是一層底
+  --page-tint-primary: rgba(62, 98, 160, 0.18);
+  --page-tint-secondary: rgba(52, 74, 116, 0.13);
+  // 暖色那層在深底上看不出來，直接設成透明
+  --page-tint-warm: transparent;
+  --page-base: linear-gradient(175deg, #171a1f 0%, #131519 55%, #0f1114 100%);
+  --canvas-veil: rgba(0, 0, 0, 0.35);
+  // 深色不加光暈：白光暈會讓字糊掉，暗光暈在深底上也只是把字周圍弄髒
+  --title-halo-near: transparent;
+  --title-halo-far: transparent;
+  // 點紋只是標示「這裡可以操作」，深底上壓到剛好看得見就好，
+  // 沿用 border-strong 會變成一片明顯的灰點陣
+  --canvas-dot: rgba(255, 255, 255, 0.07);
+  --skeleton-sheen: #3a4048;
+}
+
 @layer vuetify-overrides {
-  // docs/DESIGN_SYSTEM.md §5.4：頁面底鋪柔和漸層，讓玻璃效果（之後階段套用）有東西可以透出來。
+  // docs/DESIGN_SYSTEM.md §5.4：頁面底鋪柔和漸層，讓玻璃效果有東西可以透出來。
   // 蓋在 .v-application 而不是 body，因為 VApp 元件本身有不透明的 background
   // （node_modules/vuetify/lib/components/VApp/VApp.css），蓋在 body 上的話漸層完全看不到。
-  // 主色塊改成窄而高的橢圓並貼齊左緣：縱向覆蓋整條側邊欄（220px 寬）供玻璃透光，
-  // 橫向在側邊欄右緣外就衰減完，讓頁面上方標題帶落在近乎純底色的區域。
-  // 標題與副標沒有卡片墊底，只能靠底色夠淺維持對比（§2.4 禁用 text-shadow）。
-  // 右側色塊同樣下移到視窗中段，避開標題帶，並留在浮動面板常駐的高度。
+  // 色塊的位置與大小兩個主題共用，只有顏色由 --page-tint-* 決定
   .v-application {
     background:
-      radial-gradient(520px 900px ellipse at 4% 60%, rgba(90, 130, 190, 0.50), transparent 70%),
-      radial-gradient(640px circle at 92% 58%, rgba(110, 143, 178, 0.22), transparent 60%),
-      radial-gradient(520px circle at 25% 92%, rgba(196, 150, 130, 0.10), transparent 55%),
-      linear-gradient(175deg, #F4F7F9 0%, #E4EAEF 55%, #DCE3E9 100%);
+      radial-gradient(520px 900px ellipse at 4% 60%, var(--page-tint-primary), transparent 70%),
+      radial-gradient(640px circle at 92% 58%, var(--page-tint-secondary), transparent 60%),
+      radial-gradient(520px circle at 25% 92%, var(--page-tint-warm), transparent 55%),
+      var(--page-base);
     background-attachment: fixed;
   }
 }

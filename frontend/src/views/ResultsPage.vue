@@ -591,7 +591,7 @@
     border-radius: var(--radius-md);
     color: var(--color-inverted);
     padding: 14px 16px;
-    background: linear-gradient(102deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 70%, var(--color-text)) 100%);
+    background: linear-gradient(102deg, var(--color-ink-solid) 0%, var(--color-ink-solid-deep) 100%);
     animation: reveal-up 0.5s ease both;
     animation-delay: 0.12s;
   }

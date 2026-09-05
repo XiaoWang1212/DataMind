@@ -2,7 +2,6 @@
   <aside
     :class="[
       'hub-sidebar',
-      `hub-sidebar--glass-${glassVariant}`,
       { 'hub-sidebar--collapsed': collapsed },
     ]"
   >
@@ -57,20 +56,20 @@
           <div>© 2026 研究中心</div>
         </div>
 
-        <div v-if="isDev" class="hub-glass-row">
-          <span id="hub-glass-label" class="hub-glass-label">側邊欄顏色模式</span>
+        <div class="hub-glass-row">
+          <span id="hub-glass-label" class="hub-glass-label">深色模式</span>
           <button
-            :aria-checked="glassVariant === 'dark'"
+            :aria-checked="themeStore.isDark"
             aria-labelledby="hub-glass-label"
             class="hub-glass-switch"
-            :class="{ 'is-dark': glassVariant === 'dark' }"
+            :class="{ 'is-dark': themeStore.isDark }"
             role="switch"
             type="button"
-            @click="toggleGlassVariant"
+            @click="themeStore.toggle()"
           >
             <span class="hub-glass-knob">
               <v-icon
-                :icon="glassVariant === 'dark' ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
+                :icon="themeStore.isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
                 size="12"
               />
             </span>
@@ -86,10 +85,12 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useDisplay } from 'vuetify'
   import { useAuthStore } from '@/store/authStore'
+  import { useThemeStore } from '@/store/themeStore'
 
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
+  const themeStore = useThemeStore()
 
   // §8.3：小於 md(840px) 預設收合，主要是平板直向。斷點取自 vuetify.ts 的
   // mobileBreakpoint，收合後仍可手動展開
@@ -99,19 +100,6 @@
   watch(mobile, isMobile => {
     collapsed.value = isMobile
   })
-
-  const GLASS_STORAGE_KEY = 'datamind:sidebar-glass'
-
-  // 深/淺兩版玻璃並存只是為了在瀏覽器互相對照，定案後刪掉落選的那版與這個切換
-  const glassVariant = ref<'light' | 'dark'>(
-    (localStorage.getItem(GLASS_STORAGE_KEY) as 'light' | 'dark' | null) ?? 'light',
-  )
-  const isDev = import.meta.env.DEV
-
-  function toggleGlassVariant (): void {
-    glassVariant.value = glassVariant.value === 'light' ? 'dark' : 'light'
-    localStorage.setItem(GLASS_STORAGE_KEY, glassVariant.value)
-  }
 
   async function handleLogout (): Promise<void> {
     try {
@@ -176,6 +164,14 @@
   border-radius: var(--radius-lg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  /* 淺色玻璃是側邊欄預設外觀，深色主題再由 .v-theme--dark .hub-sidebar 覆蓋 */
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
+    var(--shadow-float);
   transition: width var(--dur-base) var(--ease-in-out),
     min-width var(--dur-base) var(--ease-in-out);
 }
@@ -209,7 +205,7 @@
   left: 5px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, white) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-ink) 60%, var(--color-surface)) 0%, transparent 70%);
   opacity: 0.42;
 }
 
@@ -294,7 +290,7 @@
   font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
-  background: linear-gradient(135deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 55%, white) 100%);
+  background: linear-gradient(135deg, var(--color-ink) 0%, color-mix(in oklab, var(--color-ink) 55%, var(--color-surface)) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -572,20 +568,9 @@
   }
 }
 
-/* ── 淺色玻璃（現行版本） ── */
-.hub-sidebar--glass-light {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    inset -12px -12px 24px -20px rgba(0, 0, 0, 0.15),
-    var(--shadow-float);
-}
-
-/* ── 深色玻璃（§7.2 規範版本） ──
-   只換上面那組語意變數，文字色、hover 底色、選中滑塊、分隔線都會跟著走 */
-.hub-sidebar--glass-dark {
+/* 側邊欄的深淺兩版只差這幾個語意變數，值差異太大不適合用單一 token 表達，
+   是全站唯一直接掛主題選擇器的地方 */
+.v-theme--dark .hub-sidebar {
   --nav-fg: rgba(255, 255, 255, 0.72);
   --nav-fg-strong: #fff;
   --nav-surface-hover: rgba(255, 255, 255, 0.1);
@@ -594,16 +579,16 @@
     inset 0 1px 3px rgba(0, 0, 0, 0.34),
     inset 0 -1px 0 rgba(255, 255, 255, 0.12);
   --nav-border: rgba(255, 255, 255, 0.14);
-  background: rgba(16, 32, 66, 0.62);
+  background: rgba(20, 22, 25, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: var(--shadow-float);
 }
 
-.hub-sidebar--glass-dark .hub-user-name {
+.v-theme--dark .hub-sidebar .hub-user-name {
   color: var(--nav-fg-strong);
 }
 
-.hub-sidebar--glass-dark .hub-brand-title {
+.v-theme--dark .hub-sidebar .hub-brand-title {
   background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.62) 100%);
   background-clip: text;
   -webkit-background-clip: text;
@@ -611,17 +596,17 @@
   color: transparent;
 }
 
-.hub-sidebar--glass-dark .hub-logout-btn {
+.v-theme--dark .hub-sidebar .hub-logout-btn {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.12);
 }
 
-.hub-sidebar--glass-dark .hub-nav-tooltip {
+.v-theme--dark .hub-sidebar .hub-nav-tooltip {
   background: rgba(16, 32, 66, 0.92);
   color: var(--nav-fg-strong);
 }
 
-.hub-sidebar--glass-dark .hub-glass-toggle {
+.v-theme--dark .hub-sidebar .hub-glass-toggle {
   border-color: rgba(255, 255, 255, 0.28);
 }
 </style>

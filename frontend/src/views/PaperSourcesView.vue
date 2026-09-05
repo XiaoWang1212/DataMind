@@ -92,7 +92,7 @@
       </template>
     </main>
 
-    <PaperGeneratingOverlay :visible="generating" @abandon="handleAbandon" />
+    <PaperGeneratingOverlay :complete="generationComplete" :visible="generating" @abandon="handleAbandon" />
   </section>
 </template>
 
@@ -134,6 +134,8 @@
   const searchError = ref<string | null>(null)
 
   const generating = ref(false)
+  // 生成結束、畫面還沒切走的那段（存檔中），讓進度條走完最後一段
+  const generationComplete = ref(false)
   const generateError = ref<string | null>(null)
 
   async function loadCandidates (): Promise<void> {
@@ -165,6 +167,7 @@
     }
     const token = ++generationToken
     generating.value = true
+    generationComplete.value = false
     generateError.value = null
     try {
       const selectedCandidates = candidates.value.filter(c => selectedIds.value.includes(c.arxiv_id))
@@ -176,6 +179,7 @@
       })
       if (token !== generationToken) return
       const report = transformArxivResultToPaperReport(result, topic.value)
+      generationComplete.value = true
       // 生成很花時間（要跑後端 RAG/AI），使用者看到結果就會當作「完成了」，
       // 不會直覺想到還要手動切去編輯模式按儲存——生成完直接存檔，
       // 離開這頁或忘記按儲存都不會把剛跑出來的結果弄丟
@@ -191,7 +195,10 @@
       if (token !== generationToken) return
       generateError.value = error instanceof Error ? error.message : String(error)
     } finally {
-      if (token === generationToken) generating.value = false
+      if (token === generationToken) {
+        generating.value = false
+        generationComplete.value = false
+      }
     }
   }
 

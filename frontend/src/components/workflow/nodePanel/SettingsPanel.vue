@@ -40,7 +40,7 @@
         <div v-for="(step, i) in localPreprocessing" :key="i" class="item-row">
           <div class="item-head">
             <span class="item-idx">{{ i + 1 }}</span>
-            <span class="item-name">{{ preprocessStepLabel(step) }}</span>
+            <span class="item-name">{{ preprocessStepLabel(step, datasetColumns) }}</span>
             <AppButton
               aria-label="移除"
               icon-only
@@ -362,7 +362,7 @@
   import CustomSelect from '@/components/common/CustomSelect.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import { FEATURE_LABELS, PREPROCESS_LABELS, VALIDATION_LABELS } from '@/constants/workflowLabels'
-  import { expandAutoFillNaSteps, fillNaColumnKind, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
+  import { expandAutoFillNaSteps, fillNaColumnKind, preprocessStepLabel, splitAutoFillNaStep } from '@/utils/workflow/fillNaColumnSplit'
 
   type ModelEntry = string | { name?: string; [k: string]: unknown }
 
@@ -411,15 +411,6 @@
 
   const VALIDATION_METHODS = Object.entries(VALIDATION_LABELS)
     .map(([value, label]) => ({ value, label }))
-
-  function preprocessStepLabel (step: Record<string, unknown>): string {
-    const base = PREPROCESS_LABELS[step.type as string] ?? String(step.type)
-    if (step.type !== 'fill_na') return base
-    const kind = fillNaColumnKind(step, props.datasetColumns)
-    if (kind === 'numeric') return `${base}（數值型）`
-    if (kind === 'nominal') return `${base}（類別型）`
-    return base
-  }
 
   const preprocessOptions = computed(() => Object.entries(PREPROCESS_LABELS))
   const featureOptions = computed(() => Object.entries(FEATURE_LABELS))
@@ -607,11 +598,23 @@
     transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
   }
 
+  /* 淺色靠白底 + 分類色的字與投影就分得出來，維持原樣 */
   .wizard-tab--active {
     background: var(--color-surface);
     color: var(--tab-color, var(--color-ink));
     font-weight: 500;
     box-shadow: 0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
+  }
+
+  /* 深色的軌道跟 surface 只差一階，光靠底色讀不出作用中是哪一格：
+     底色再抬一階、補一圈分類色內描邊、字加粗，三件事一起才夠。
+     這三項都不套到淺色——淺色的 surface-alt 跟軌道算出來幾乎同色，反而把層次抹掉 */
+  .v-theme--dark .wizard-tab--active {
+    background: var(--color-surface-alt);
+    font-weight: 700;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--tab-color, var(--color-ink)) 55%, transparent),
+      0 1px 5px color-mix(in oklab, var(--tab-color, var(--color-ink)) 20%, transparent);
   }
 
   .wizard-tab__num {
@@ -632,6 +635,14 @@
   .wizard-tab--active .wizard-tab__num {
     background: var(--tab-color, var(--color-ink));
     color: var(--color-inverted);
+  }
+
+  /* 深色比照 IconNode（§2.3）把構造翻面成深底 + 亮號碼。
+     淺色沿用原本的白字疊粉彩（1.9:1，已知不足，見附錄） */
+  .v-theme--dark .wizard-tab--active .wizard-tab__num {
+    background: color-mix(in oklab, var(--tab-color, var(--color-ink)) 24%, var(--color-surface));
+    color: color-mix(in oklab, var(--tab-color, var(--color-ink)) 82%, #fff);
+    font-weight: 700;
   }
 
   .wizard-tab__text {
@@ -668,7 +679,8 @@
 
   .item-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    /* 240px 才放得下「缺值填補（數值型）」這種較長的步驟名稱 */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 8px;
     align-items: stretch;
   }
@@ -717,7 +729,6 @@
     line-height: 1.3;
     color: var(--color-text);
     min-width: 0;
-    word-break: break-word;
   }
 
   .item-params {
@@ -750,7 +761,10 @@
   .param-fixed {
     font-size: 13px;
     font-weight: 500;
+    line-height: 1.35;
     color: var(--color-text);
+    /* key 是 nowrap，值不給收縮空間的話會把整排撐出卡片 */
+    min-width: 0;
   }
 
   .param-num {
@@ -789,7 +803,8 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: var(--color-ink);
+    /* 不能用 ink：它在深色主題翻成淺藍，內文會變成藍字 */
+    color: var(--color-text);
     cursor: pointer;
   }
 

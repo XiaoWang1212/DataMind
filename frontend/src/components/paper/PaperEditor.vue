@@ -584,8 +584,14 @@
   }
 
   /* 工具列嵌在實色白紙上，玻璃沒有東西可以透（DESIGN_SYSTEM.md §5.1），
-     改用 §7.7 的 surface-alt 實色底 */
+     改用 §7.7 的 surface-alt 實色底。
+     sticky 在上層 PaperPage 的 .paper-toolbar 下方——那條工具列高度會隨標題換行
+     變動，所以 top 吃 PaperPage 用 ResizeObserver 動態算出來的 --paper-toolbar-height，
+     不寫死高度 */
   .editor-toolbar {
+    position: sticky;
+    top: var(--paper-toolbar-height, 0px);
+    z-index: 4;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -605,7 +611,7 @@
     gap: 2px;
     padding: 6px 10px;
     border-radius: var(--radius-md);
-    background: color-mix(in oklab, var(--color-ink) 8%, white);
+    background: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-card);
   }
@@ -638,7 +644,8 @@
     left: 50%;
     transform: translateX(-50%);
     background: var(--color-text);
-    color: var(--color-inverted);
+    /* 底是 --color-text，兩個主題明暗相反，文字得跟著翻成頁面底色 */
+    color: var(--color-page);
     font-size: 11px;
     padding: 3px 7px;
     border-radius: var(--radius-sm);
@@ -668,8 +675,13 @@
 
   @media (hover: hover) and (pointer: fine) {
     .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
-      background: color-mix(in oklab, var(--color-ink) 10%, white);
+      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
       color: var(--color-ink);
+    }
+
+    /* 工具列本身是 surface-alt，深色的 surface 比它暗，混出來的 hover 會像凹下去 */
+    .v-theme--dark .toolbar-btn-wrap :deep(.v-btn:hover:not(.v-btn--disabled)) {
+      background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface-alt));
     }
   }
 
@@ -701,12 +713,12 @@
     width: 22px;
     height: 22px;
     border-radius: 5px;
-    border: 1.5px solid rgba(28, 33, 48, 0.15);
+    border: 1.5px solid var(--color-border-strong);
     cursor: pointer;
   }
 
   .cell-color-swatch:hover {
-    border-color: rgba(28, 33, 48, 0.4);
+    border-color: var(--color-ink-soft);
   }
 
   .editor-status-bar {

@@ -1,6 +1,14 @@
 <template>
   <section class="workflow-summary">
-    <h4>Score Summary</h4>
+    <div class="workflow-summary__header">
+      <h4>Score Summary</h4>
+      <ResultTableActions
+        v-if="summary.length > 0"
+        filename="score_summary"
+        :headers="exportHeaders"
+        :rows="exportRows"
+      />
+    </div>
 
     <div v-if="summary.length > 0" class="summary-table">
       <div class="table-row table-row--header">
@@ -38,6 +46,7 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
+  import ResultTableActions from '@/components/common/ResultTableActions.vue'
 
   const props = defineProps<{
     summary: Array<{
@@ -89,6 +98,16 @@
       }),
     })),
   )
+
+  const exportHeaders = computed(() => ['Model', 'Split', ...metricKeys.value])
+
+  const exportRows = computed(() =>
+    modelRows.value.map(row => [
+      row.model_name,
+      row.split_name,
+      ...row.values.map(cell => cell.text),
+    ]),
+  )
 </script>
 
 <style scoped>
@@ -97,6 +116,13 @@
     flex-direction: column;
     gap: 10px;
     padding: 0 0 16px;
+  }
+
+  .workflow-summary__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .workflow-summary h4 {
@@ -163,7 +189,7 @@
   /* 該 metric 表現最好的模型。這是 leaderboard 真正要回答的問題，
      不用逐格比對小數點就看得出誰贏 */
   .table-cell--best {
-    font-weight: 500;
+    font-weight: 700;
   }
 
   /* 最左欄：模型名 + split 名兩行堆疊，靠左 */

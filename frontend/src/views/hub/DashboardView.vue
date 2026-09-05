@@ -177,7 +177,7 @@
     height: 40px;
     border-radius: var(--radius-sm);
     /* 從品牌色推導，不另外引入游離色碼 */
-    background: color-mix(in oklab, var(--color-ink) 10%, white);
+    background: color-mix(in oklab, var(--color-ink) 10%, var(--color-surface));
     color: var(--color-ink);
   }
 

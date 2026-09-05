@@ -176,7 +176,7 @@
     padding: 10px 22px;
     border-radius: 999px;
     background: var(--color-accent);
-    color: #fff;
+    color: var(--color-surface);
     cursor: pointer;
     font-size: 14px;
   }

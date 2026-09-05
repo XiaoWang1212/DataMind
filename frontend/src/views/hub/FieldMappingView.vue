@@ -1,6 +1,9 @@
 <template>
   <div class="mapping-page">
-    <PageHeader title="欄位對齊">
+    <PageHeader
+      :subtitle="INTRO"
+      title="欄位對齊"
+    >
       <template #back>
         <RouterLink class="back-link" to="/hub/projects">
           <v-icon icon="mdi-arrow-left" size="15" />
@@ -31,7 +34,10 @@
       <!-- 左：對映表 + 資料預覽 -->
       <section class="mapping-main">
         <!-- 骨架屏用五行模擬對映表的列，載入前後的版面高度才接近 -->
-        <div v-if="loading" class="mapping-skeleton">
+        <div v-if="loading" aria-live="polite" class="mapping-skeleton" role="status">
+          <!-- 對齊要跑三層（比名字、看資料、問 AI），最久的那層要等 Gemini 回來。
+               輪替的階段文字讓等待有東西可看，也順便說明系統在做什麼 -->
+          <p class="skeleton-caption">{{ LOADING_CAPTIONS[captionIndex] }}</p>
           <div v-for="n in 5" :key="n" class="skeleton-line" />
         </div>
 
@@ -93,7 +99,7 @@
     PaperVariable,
     UserColumn,
   } from '@/types/fieldMapping'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { initFieldMapping, refineFieldMapping } from '@/api/fieldMapping'
   import DatasetPreview from '@/components/hub/fieldMapping/DatasetPreview.vue'
@@ -122,6 +128,11 @@
   // Project.id 在資料庫是 int，useWorkflowStorage 收字串，呼叫時要轉
   const projectId = computed(() => Number(route.params.id ?? 0))
 
+  // 不手動斷行，讓它自己折：頁首佔太多高度會把表格擠下去
+  const INTRO = '建立論文變數與資料表欄位的對應關係，後續工作流程才能以論文的變數名稱讀取資料。'
+    + '系統已自動比對一輪，AI 依語意建議的對應標示為待確認，請逐項檢查後確認。'
+    + '若略過此步驟，資料表將維持原本的欄位直接進入工作流程。'
+
   const loading = ref(true)
   const loadError = ref('')
   const items = ref<MappingItem[]>([])
@@ -141,6 +152,33 @@
   const chatHistory = ref<ChatMessage[]>([])
   const chatPending = ref(false)
   const confirming = ref(false)
+
+  // 對應 field_mapping_service 的三層：比名字、看資料、問 Gemini
+  const LOADING_CAPTIONS = [
+    '比對欄位名稱…',
+    '檢查資料型態是否相符…',
+    '請 AI 判讀縮寫與同義詞…',
+  ]
+  const CAPTION_INTERVAL_MS = 2400
+
+  const captionIndex = ref(0)
+  let captionTimer: number | undefined
+
+  // 停在最後一句而不是繞回第一句：轉回去會讓人以為卡住重跑了
+  function advanceCaption (): void {
+    if (captionIndex.value < LOADING_CAPTIONS.length - 1) captionIndex.value += 1
+  }
+
+  watch(loading, isLoading => {
+    window.clearInterval(captionTimer)
+    captionTimer = undefined
+    if (isLoading) {
+      captionIndex.value = 0
+      captionTimer = window.setInterval(advanceCaption, CAPTION_INTERVAL_MS)
+    }
+  }, { immediate: true })
+
+  onUnmounted(() => window.clearInterval(captionTimer))
 
   const { saveDraft, loadDraft, clearDraft } = useMappingDraft({
     projectId,
@@ -470,17 +508,15 @@
     try {
       saveError.value = ''
 
-      // 使用者欄位 → 論文變數（改寫表頭時要反查）
-      const renameByColumn = new Map<string, string>()
-      for (const [variable, info] of Object.entries(mapping)) {
-        renameByColumn.set(info.column, variable)
-      }
-
       // 沒被任何變數（含自訂變數）認領的原始欄位，之後在 workflow 就不會再出現
       const dropColumns = new Set(unusedColumns.value.map(c => c.name))
 
+      // 只刪未使用欄位，不改寫欄位名稱：資料集維持使用者原始命名。
+      // 論文變數 ↔ 欄位的對應關係已經存進 columnMapping（下面 saveColumnMapping），
+      // 工作區會用那份資料查找目標欄位，不再靠欄位名稱跟變數名稱字串相符
+      //
       // 先改寫檔案再寫資料庫，避免寫檔失敗但對映已存檔，下次用到未改寫的資料集
-      const renamed = await rewriteDataset(datasetFile.value, renameByColumn, dropColumns)
+      const renamed = await rewriteDataset(datasetFile.value, new Map(), dropColumns)
       await saveWorkflowDataFileToStorage(renamed, String(projectId.value))
 
       // IndexedDB 寫入失敗不會拋例外，只在 console 留紀錄，因此回讀確認
@@ -515,8 +551,8 @@
     try {
       await ensureStoresLoaded()
 
-      // 對映已經送出過（後端存過 columnMapping）就不要重跑：這時資料集已經被改寫過
-      // 一次（改名+刪欄位），拿改寫後的檔案重新配對只會得到不對的結果。用 replace
+      // 對映已經送出過（後端存過 columnMapping）就不要重跑：這時資料集已經被刪過
+      // 未使用欄位，拿改寫後的檔案重新配對只會得到不對的結果。用 replace
       // 蓋掉這筆歷史紀錄，瀏覽器上一頁才不會又繞回這個頁面
       const project = projectStore.projects.find(p => p.id === projectId.value)
       if (project?.columnMapping) {
@@ -642,6 +678,22 @@
     font-weight: 500;
   }
 
+  /* 這一頁的副標比其他頁長，上下間距各自調：PageHeader 的預設值是給一行短句用的，
+     不動元件本身，避免影響其他頁 */
+  .mapping-page :deep(.page-header) {
+    margin-bottom: 16px;
+  }
+
+  .mapping-page :deep(.page-header-titlerow) {
+    margin-bottom: 8px;
+  }
+
+  .mapping-page :deep(.page-header-sub) {
+    max-width: var(--content-measure);
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+
   .mapping-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -695,6 +747,12 @@
 
   .mapping-skeleton .skeleton-line {
     height: 20px;
+  }
+
+  .skeleton-caption {
+    margin: 0 0 2px;
+    font-size: 13px;
+    color: var(--color-ink-soft);
   }
 
   .mapping-footer {

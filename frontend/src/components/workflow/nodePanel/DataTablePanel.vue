@@ -7,10 +7,7 @@
         :class="{ 'data-table-guide--ready': hasTarget }"
       >
         <span v-if="hasTarget">
-          已選定目標變數「{{ targetColumnName }}」，按右下角「繼續」即可進入下一步。
-        </span>
-        <span v-else-if="props.targetColumnHint">
-          根據框架建議，目標欄位應該對應「{{ props.targetColumnHint }}」，請在下方「Role」欄位選擇對應的欄位設為 <strong>Target</strong>，再按右下角「繼續」。
+          已選定目標變數「{{ targetColumnName }}」，如需更改請在下方「Role」欄調整，再按右下角「繼續」即可進入下一步。
         </span>
         <span v-else>
           請將要預測的欄位在下方「Role」欄選為 <strong>Target</strong>，再按右下角「繼續」。
@@ -21,15 +18,6 @@
         <span>{{ previewDataRows.length }} 筆已讀取</span>
         <span v-if="hasTarget">目標變數：{{ targetColumnName }}</span>
       </div>
-      <AppButton
-        v-if="headerState === 'guide' && !hasTarget && targetHintColumnIndex !== -1"
-        class="apply-target-hint-btn"
-        variant="secondary"
-        @click="applyTargetHint"
-      >
-        <v-icon icon="mdi-target" size="15" />
-        套用建議
-      </AppButton>
       <div v-if="fileName" class="data-table-file">
         已選檔案：{{ fileName }}
       </div>
@@ -324,8 +312,9 @@
     })
   }
 
-  // 框架建議的目標欄位名稱通常是對齊頁改名後的結果，會跟欄位名完全相符；
-  // 找不到就不顯示「套用建議」按鈕，避免使用者點了卻沒反應
+  // 這個 hint 是上層（WorkflowWorkspace.vue）用專案的 columnMapping 把論文變數名稱
+  // 查回使用者原始欄名後才傳下來的；查不到對應關係時會 fallback 成原始變數名稱，
+  // 這裡就會比對失敗、不顯示「套用建議」按鈕，避免使用者點了卻沒反應
   const targetHintColumnIndex = computed(() => {
     const hint = props.targetColumnHint?.trim()
     if (!hint) return -1
@@ -341,6 +330,13 @@
     onRoleChange(index)
     // 等同使用者自己動過 Role 欄，關掉左上角那個引導用的脈動提示
     roleSelectTouched.value = true
+  }
+
+  // 不用等使用者按按鈕確認：只要框架有建議、且目前還沒有欄位被設成 Target，
+  // 就直接套用，並靠上面 hasTarget 的提示文字告知使用者結果（如需更改可以自己在 Role 欄調整）
+  function maybeAutoApplyTargetHint (): void {
+    if (hasTarget.value) return
+    applyTargetHint()
   }
 
   function getColumnRawValues (index: number): string[] {
@@ -438,6 +434,7 @@
       if (previewColumns.value.length === 0) return
       if (!areColumnConfigsEqual(value, columnSettings.value)) {
         buildColumnSettings()
+        maybeAutoApplyTargetHint()
       }
     },
     { immediate: true, deep: true },
@@ -459,6 +456,7 @@
       previewColumns.value = rows[0] ?? []
       previewDataRows.value = rows.slice(1)
       buildColumnSettings()
+      maybeAutoApplyTargetHint()
     } catch {
       previewColumns.value = []
       previewDataRows.value = []
@@ -509,7 +507,7 @@
     padding: 24px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border-strong);
-    background: rgba(255, 255, 255, 0.88);
+    background: color-mix(in oklab, var(--color-surface) 88%, transparent);
     color: var(--color-accent);
     font-size: 14px;
     z-index: 10;
@@ -526,13 +524,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  /* 跟旁邊的提示文字同高，比預設的 app-btn 稍窄一點 */
-  .apply-target-hint-btn {
-    flex-shrink: 0;
-    padding: 6px 14px 6px 12px;
-    font-size: 13px;
   }
 
   .data-table-file {
@@ -612,21 +603,6 @@
     flex: 1;
     min-height: 0;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
-  }
-
-  .column-settings-body::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .column-settings-body::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .column-settings-body::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background: rgba(148, 163, 184, 0.5);
   }
 
   .column-settings-actions {

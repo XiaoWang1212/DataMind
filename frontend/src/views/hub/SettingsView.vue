@@ -163,7 +163,6 @@
     outline: none;
     cursor: pointer;
     appearance: auto;
-    color-scheme: light;
   }
 
   .timeout-select:focus {
@@ -234,7 +233,6 @@
     outline: none;
     transition: border-color var(--dur-fast) var(--ease-out),
       background-color var(--dur-fast) var(--ease-out);
-    color-scheme: light;
   }
 
   .api-input:focus {

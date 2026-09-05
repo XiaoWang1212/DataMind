@@ -81,7 +81,7 @@
   .app-checkbox-tick {
     width: 14px;
     height: 14px;
-    color: #fff;
+    color: var(--color-inverted);
     opacity: 0;
     transform: scale(0.7);
     transition: opacity 140ms ease, transform 140ms ease;
@@ -92,8 +92,9 @@
   }
 
   .app-checkbox-input:checked + .app-checkbox-box {
-    border-color: var(--color-ink);
-    background: var(--color-ink);
+    /* 打勾是淺色的，底得用兩個主題都深的 ink-solid；ink 在深色主題是淺藍 */
+    border-color: var(--color-ink-solid);
+    background: var(--color-ink-solid);
   }
 
   .app-checkbox-input:checked + .app-checkbox-box .app-checkbox-tick {

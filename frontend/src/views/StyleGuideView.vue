@@ -1,6 +1,23 @@
 <template>
   <div class="style-guide">
-    <h1 class="sg-h1">Design tokens 展示頁</h1>
+    <div class="sg-titlebar">
+      <h1 class="sg-h1">Design tokens 展示頁</h1>
+      <!-- 這頁沒有 Hub 側邊欄，自帶一顆切換鈕才能兩個主題對照著看 -->
+      <button
+        :aria-checked="themeStore.isDark"
+        aria-label="深色模式"
+        class="sg-theme-toggle"
+        role="switch"
+        type="button"
+        @click="themeStore.toggle()"
+      >
+        <v-icon
+          :icon="themeStore.isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'"
+          size="16"
+        />
+        {{ themeStore.isDark ? '深色' : '淺色' }}
+      </button>
+    </div>
     <p class="sg-note">
       僅在 dev 模式掛路由，用來核對 docs/DESIGN_SYSTEM.md 的 token 是否套對，不會出現在 production build。
     </p>
@@ -25,8 +42,8 @@
       </p>
       <div class="sg-node-grid">
         <div v-for="cat in nodeCategories" :key="cat.name" class="sg-node">
-          <div class="sg-node-dot sg-node-dot--bordered" :style="{ background: cat.varRef }">
-            <v-icon color="var(--color-ink-strong)" icon="mdi-circle-outline" size="24" />
+          <div class="sg-node-dot sg-node-dot--bordered" :style="{ '--sg-node-color': cat.varRef }">
+            <v-icon icon="mdi-circle-outline" size="24" />
             <span class="sg-node-badge">
               <v-icon icon="mdi-check" size="13" />
             </span>
@@ -187,6 +204,119 @@
     </section>
 
     <section>
+      <h2 class="sg-h2">表單元件</h2>
+      <div class="sg-on-card sg-form-grid">
+        <label class="sg-field">
+          <span class="sg-field-label">文字輸入</span>
+          <input v-model="textValue" class="sg-input" placeholder="請輸入專案名稱" type="text">
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">停用</span>
+          <input class="sg-input" disabled placeholder="停用狀態" type="text">
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">下拉選單（待補值）</span>
+          <CustomSelect
+            v-model="highlightSelectValue"
+            aria-label="待補值的下拉選單"
+            highlight
+            :options="selectOptions"
+            placeholder="請選擇"
+          />
+        </label>
+        <label class="sg-field">
+          <span class="sg-field-label">下拉選單（停用）</span>
+          <CustomSelect
+            aria-label="停用的下拉選單"
+            disabled
+            model-value=""
+            :options="selectOptions"
+            placeholder="停用狀態"
+          />
+        </label>
+      </div>
+
+      <div class="sg-on-card sg-check-row">
+        <label class="sg-check">
+          <AppCheckbox v-model="checkOn" aria-label="已勾選" />
+          已勾選
+        </label>
+        <label class="sg-check">
+          <AppCheckbox v-model="checkOff" aria-label="未勾選" />
+          未勾選
+        </label>
+        <label class="sg-check sg-check--disabled">
+          <AppCheckbox aria-label="停用" disabled :model-value="true" />
+          停用
+        </label>
+      </div>
+
+      <div class="sg-on-card">
+        <FileDropZone
+          v-model="demoFile"
+          accept=".csv,.xlsx"
+          accept-label="CSV、Excel"
+          file-icon="mdi-file-delimited-outline"
+          hint="或點擊選擇檔案，支援 CSV 與 Excel"
+          icon="mdi-tray-arrow-up"
+          text="將資料集拖放到這裡"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sg-h2">對話框與彈出層</h2>
+      <div class="sg-row">
+        <AppButton variant="secondary" @click="showConfirm = true">確認對話框</AppButton>
+        <AppButton variant="secondary" @click="showInterrupt = true">中斷確認框</AppButton>
+        <v-tooltip
+          content-class="sg-tooltip"
+          location="bottom"
+          max-width="260"
+          text="滑鼠停留時出現的說明，用於補充按鈕或欄位的用途。"
+        >
+          <template #activator="{ props: tooltipProps }">
+            <AppButton v-bind="tooltipProps" variant="secondary">提示（hover）</AppButton>
+          </template>
+        </v-tooltip>
+        <AppButton variant="secondary" @click="toggleCitation">引用來源卡</AppButton>
+      </div>
+      <p class="sg-caption">
+        引用來源卡會指向這個標記
+        <span ref="citationAnchor" class="sg-citation-anchor">[1]</span>
+        ，連接線由卡片自動計算。
+      </p>
+
+      <ConfirmDialog
+        confirm-text="刪除"
+        message="確定要刪除「肺炎風險預測」嗎？此動作無法復原。"
+        title="刪除專案"
+        :visible="showConfirm"
+        @cancel="showConfirm = false"
+        @confirm="showConfirm = false"
+      />
+      <InterruptConfirmDialog
+        message="分析仍在進行中，離開將中斷目前的執行。確定要離開嗎？"
+        :visible="showInterrupt"
+        @cancel="showInterrupt = false"
+        @confirm="showInterrupt = false"
+      />
+      <CitationPopover
+        :citation="showCitation ? demoCitation : null"
+        :index="1"
+        :target="citationAnchor"
+        @close="showCitation = false"
+      />
+    </section>
+
+    <section>
+      <h2 class="sg-h2">論文生成中動畫</h2>
+      <p class="sg-caption">全螢幕遮罩，一輪 17 秒後循環。播放後按 Esc 關閉。</p>
+      <AppButton variant="secondary" @click="showGenerating = true">播放</AppButton>
+      <PaperGeneratingOverlay :visible="showGenerating" @abandon="showGenerating = false" />
+    </section>
+
+    <section>
       <h2 class="sg-h2">內容寬度</h2>
       <div class="sg-width-demo" style="max-width: var(--content-measure)">content-measure 760px</div>
       <div class="sg-width-demo" style="max-width: var(--content-max-width)">content-max-width 1280px</div>
@@ -196,13 +326,64 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import type { Citation } from '@/constants/reportData'
+  import { onBeforeUnmount, ref, watch } from 'vue'
   import CustomSelect from '@/components/common/CustomSelect.vue'
+  import FileDropZone from '@/components/common/FileDropZone.vue'
+  import CitationPopover from '@/components/paper/CitationPopover.vue'
+  import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import AppCheckbox from '@/components/ui/AppCheckbox.vue'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import StatusBadge from '@/components/ui/StatusBadge.vue'
   import TableShell from '@/components/ui/TableShell.vue'
+  import InterruptConfirmDialog from '@/components/workflow/InterruptConfirmDialog.vue'
+  import { useThemeStore } from '@/store/themeStore'
   import { renderChatText } from '@/utils/formatChatText'
+
+  const themeStore = useThemeStore()
+
+  const textValue = ref('')
+  const highlightSelectValue = ref('')
+  const checkOn = ref(true)
+  const checkOff = ref(false)
+  const demoFile = ref<File | null>(null)
+
+  const showConfirm = ref(false)
+  const showInterrupt = ref(false)
+  const showCitation = ref(false)
+  const showGenerating = ref(false)
+
+  const citationAnchor = ref<HTMLElement | null>(null)
+
+  const demoCitation: Citation = {
+    id: 'demo-1',
+    title: 'Machine Learning for Pressure Injury Risk Prediction in Critical Care',
+    authors: 'Lin, Y., Chen, H., & Wang, S.',
+    journal: 'Journal of Clinical Nursing',
+    year: 2024,
+    snippet: '本研究以隨機森林與梯度提升樹比較壓瘡風險預測表現，並以十摺交叉驗證評估穩定度。',
+  }
+
+  function toggleCitation (): void {
+    showCitation.value = !showCitation.value
+  }
+
+  // 生成動畫是全螢幕遮罩，沒有自己的關閉鈕，這頁補一個 Esc 出口
+  function closeGeneratingOnEsc (event: KeyboardEvent): void {
+    if (event.key === 'Escape') showGenerating.value = false
+  }
+
+  watch(showGenerating, on => {
+    if (on) {
+      window.addEventListener('keydown', closeGeneratingOnEsc)
+    } else {
+      window.removeEventListener('keydown', closeGeneratingOnEsc)
+    }
+  })
+
+  onBeforeUnmount(() => window.removeEventListener('keydown', closeGeneratingOnEsc))
 
   const boldSample = '建議把 **年齡** 對應到 pt_age，其餘欄位維持不變。'
 
@@ -317,6 +498,32 @@
   gap: 12px;
 }
 
+.sg-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sg-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+
+.sg-theme-toggle:hover {
+  border-color: var(--color-ink);
+  background: var(--color-surface-alt);
+}
+
 .sg-node-dot {
   position: relative;
   display: flex;
@@ -326,12 +533,22 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  color: #fff;
+  background: var(--sg-node-color);
+  color: var(--color-ink-strong);
+}
+
+.v-theme--dark .sg-node-dot {
+  background: color-mix(in oklab, var(--sg-node-color) 24%, var(--color-surface));
+  color: color-mix(in oklab, var(--sg-node-color) 82%, #fff);
 }
 
 /* 淺色分類色跟頁面底色對比不足時的保險，不管色票怎麼調都通用 */
 .sg-node-dot--bordered {
   border: 1.5px solid rgba(18, 36, 74, 0.16);
+}
+
+.v-theme--dark .sg-node-dot--bordered {
+  border-color: color-mix(in oklab, var(--sg-node-color) 58%, var(--color-surface));
 }
 
 /* outline 風格：白底＋綠框＋綠勾，不管節點本身是什麼色都能跟它分開，見 IconNode.vue */
@@ -381,9 +598,9 @@
   padding: 24px;
   border-radius: var(--radius-md);
   background:
-    radial-gradient(220px circle at 20% 30%, rgba(90, 130, 190, 0.55), transparent 60%),
-    radial-gradient(200px circle at 80% 70%, rgba(196, 150, 130, 0.35), transparent 60%),
-    linear-gradient(175deg, #eef2f5 0%, #dce3e9 100%);
+    radial-gradient(220px circle at 20% 30%, var(--page-tint-primary), transparent 60%),
+    radial-gradient(200px circle at 80% 70%, var(--page-tint-warm), transparent 60%),
+    var(--page-base);
 }
 
 .sg-glass-demo {
@@ -529,4 +746,93 @@
   line-height: 1.7;
   color: var(--color-ink-soft);
 }
+
+.sg-caption {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-ink-soft);
+  margin-bottom: 12px;
+}
+
+.sg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 720px;
+  margin-bottom: 16px;
+}
+
+.sg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sg-field-label {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.sg-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.sg-input:focus {
+  border-color: var(--color-ink-vivid);
+}
+
+.sg-input:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-ink-soft);
+  cursor: not-allowed;
+}
+
+.sg-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 720px;
+  margin-bottom: 16px;
+}
+
+.sg-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.sg-check--disabled {
+  color: var(--color-ink-soft);
+}
+
+.sg-form-grid + .sg-on-card,
+.sg-check-row + .sg-on-card {
+  max-width: 720px;
+}
+
+/* 比照論文內文的引用標記，讓來源卡的連接線有東西可指 */
+.sg-citation-anchor {
+  color: var(--color-ink-vivid);
+  font-weight: 500;
+  cursor: pointer;
+}
+</style>
+
+<!-- v-tooltip 會 teleport 到元件外，scoped 樣式管不到，因此另開全域區塊 -->
+<style>
+  .sg-tooltip {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+  }
 </style>
