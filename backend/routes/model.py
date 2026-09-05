@@ -10,6 +10,7 @@ from services.model.registry import extract_model_components
 from services.workflow import WorkflowService
 from services.workflow.extraction_mapper import build_workflow_payload
 from services.workflow.job_manager import get_job, start_job
+from services.workflow.code_export_service import generate_workflow_script
 
 model_bp = Blueprint("model", __name__)
 
@@ -407,6 +408,33 @@ def execute_workflow():
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": f"Workflow execution failed: {str(exc)}"}), 500
+
+
+@model_bp.post("/workflow/export-code")
+@login_required
+def export_workflow_code():
+    """把目前 workflow 的設定匯出成一份帶註解的 Python 程式碼。
+
+    跟 /workflow/execute 共用同一套 payload 解析（_parse_execute_params()），
+    但不需要真的有資料集檔案——這個路由只是「讀設定、產生程式碼文字」，不執行任何訓練。
+
+    回傳：
+        - code：完整的 Python 原始碼字串
+        - filename：建議的下載檔名
+    """
+    _data_path, kwargs = _parse_execute_params()
+
+    if not kwargs.get("model_names"):
+        return jsonify({"success": False, "error": "請至少選擇一個模型"}), 400
+
+    try:
+        code = generate_workflow_script(kwargs)
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"程式碼產生失敗：{exc}"}), 500
+
+    return jsonify({"success": True, "code": code, "filename": "workflow_export.py"})
 
 
 @model_bp.post("/workflow/jobs")
