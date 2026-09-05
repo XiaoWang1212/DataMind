@@ -7,7 +7,10 @@ feature_engineering_service.py 是平行、獨立的功能，不會呼叫、也�
 """
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional, Tuple
+
+from sklearn.utils._pprint import _EstimatorPrettyPrinter
 
 from services.model.registry import ModelRegistry
 
@@ -65,6 +68,50 @@ MODEL_IMPORTS: Dict[str, List[str]] = {
 }
 
 
+def _render_estimator(estimator: Any) -> str:
+    """渲染 sklearn 估計子的完整、未截斷的 repr。
+
+    避免 sklearn 的預設 __repr__() 因 n_max_elements_to_show=30 而截斷參數列表
+    （例如 XGBoost 有 ~40 個參數），導致產生的程式碼包含 `...` 在關鍵字參數之間，
+    造成語法錯誤。改為直接使用 _EstimatorPrettyPrinter 並提升 n_max_elements_to_show。
+    """
+    pp = _EstimatorPrettyPrinter(
+        compact=True,
+        indent=1,
+        indent_at_name=True,
+        n_max_elements_to_show=1000,
+    )
+    return pp.pformat(estimator)
+
+
+def _inject_missing_imports(rendered_code: str, import_lines: List[str]) -> None:
+    """檢查渲染的程式碼是否包含裸露的 `nan`/`inf`/`array`/`dtype` 等符號，
+    並將必要的 import 語句注入 import_lines（去重）。
+
+    例如 XGBoost 的 repr 會包含 `missing=nan`，但 `nan` 沒有在作用域內定義。
+    """
+    # 檢查裸露的 nan、inf 等 tokens（word boundary 確保不在識別符內部）
+    if re.search(r'\bnan\b', rendered_code):
+        import_stmt = "from numpy import nan"
+        if import_stmt not in import_lines:
+            import_lines.append(import_stmt)
+
+    if re.search(r'\binf\b', rendered_code):
+        import_stmt = "from numpy import inf"
+        if import_stmt not in import_lines:
+            import_lines.append(import_stmt)
+
+    if re.search(r'\barray\b', rendered_code):
+        import_stmt = "from numpy import array"
+        if import_stmt not in import_lines:
+            import_lines.append(import_stmt)
+
+    if re.search(r'\bdtype\b', rendered_code):
+        import_stmt = "from numpy import dtype"
+        if import_stmt not in import_lines:
+            import_lines.append(import_stmt)
+
+
 def render_model_construction(model_names: List[str]) -> Tuple[List[str], str]:
     """回傳 (需要的 import 陳述式清單, 模型字典的程式碼區塊字串)。
 
@@ -89,13 +136,16 @@ def render_model_construction(model_names: List[str]) -> Tuple[List[str], str]:
                 import_lines.append(line)
 
         try:
-            estimator_repr = repr(model_config.create_estimator())
+            estimator_repr = _render_estimator(model_config.create_estimator())
         except Exception as exc:  # pragma: no cover - 目前所有已註冊模型都能正常 repr()
             entries.append(
                 f"    # ⚠️ TODO：模型「{name}」目前無法自動產生建構子程式碼（{exc}），"
                 "請自行參考 DataMind 原始碼手動補上。"
             )
             continue
+
+        # 檢查渲染的程式碼是否包含需要額外 import 的裸露符號（例如 XGBoost 的 `nan`）
+        _inject_missing_imports(estimator_repr, import_lines)
 
         entries.append(f"    {name!r}: {estimator_repr},")
 
