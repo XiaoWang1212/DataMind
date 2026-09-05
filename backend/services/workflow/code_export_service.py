@@ -484,6 +484,7 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
     """
     metrics = [str(v.get("metric", "")).lower() for v in score_variants]
     metrics = [m for m in metrics if m]
+    metrics = list(dict.fromkeys(metrics))
 
     sklearn_fns = sorted({_METRIC_SKLEARN_FN[m] for m in metrics if m in _METRIC_SKLEARN_FN})
     import_lines = []
@@ -496,7 +497,11 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
     if any(m == "specificity" for m in metrics):
         import_lines.append("from sklearn.metrics import confusion_matrix")
 
-    lines = ["        _is_multiclass = y_test.nunique() > 2", "        _results = {}"]
+    lines = [
+        "        _is_multiclass = y_test.nunique() > 2",
+        "        _pos_label = sorted(y_test.unique())[-1] if not _is_multiclass else None",
+        "        _results = {}",
+    ]
     for metric in metrics:
         label = _METRIC_LABELS.get(metric, metric)
         if metric in _METRIC_SKLEARN_FN:
@@ -506,7 +511,8 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
             fn = f"{metric}_score"
             lines.append(
                 f"        _results[{metric!r}] = {fn}(y_test, y_pred, "
-                f"average='macro' if _is_multiclass else 'binary', zero_division=0)  # {label}"
+                f"average='macro' if _is_multiclass else 'binary', "
+                f"pos_label=_pos_label if not _is_multiclass else 1, zero_division=0)  # {label}"
             )
         elif metric == "specificity":
             lines.append("        _cm = confusion_matrix(y_test, y_pred)")
@@ -517,8 +523,8 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
         elif metric in {"auc", "auprc"}:
             fn = "roc_auc_score" if metric == "auc" else "average_precision_score"
             lines.append(
-                f"        _results[{metric!r}] = {fn}(y_test, y_score[:, -1]) "
-                f"if y_score is not None else None  # {label}（假設二元分類）"
+                f"        _results[{metric!r}] = ({fn}(y_test, y_score[:, -1]) "
+                f"if y_score is not None and not _is_multiclass else None)  # {label}（假設二元分類）"
             )
         else:
             lines.append(f"        # ⚠️ 不支援的指標「{metric}」，略過")
@@ -541,7 +547,10 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
                 metric_call = f"{fn}(_yt, _yp)"
             elif metric in {"precision", "recall", "f1"}:
                 fn = f"{metric}_score"
-                metric_call = f"{fn}(_yt, _yp, average='macro' if _is_multiclass else 'binary', zero_division=0)"
+                metric_call = (
+                    f"{fn}(_yt, _yp, average='macro' if _is_multiclass else 'binary', "
+                    "pos_label=_pos_label if not _is_multiclass else 1, zero_division=0)"
+                )
             else:
                 continue  # specificity/auc/auprc 的 CI 這裡不支援，維持點估計即可
             lines.append(f"        _boot_{metric} = []")

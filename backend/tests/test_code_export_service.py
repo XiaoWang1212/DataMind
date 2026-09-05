@@ -15,8 +15,8 @@ from sklearn.model_selection import (  # noqa: F401
 from services.model.registry import ModelRegistry
 from services.workflow.code_export_service import (
     MODEL_IMPORTS, generate_workflow_script, render_categorical_fallback_encoding,
-    render_feature_engineering_step, render_model_construction, render_preprocess_step,
-    render_validation_split,
+    render_feature_engineering_step, render_metrics_block, render_model_construction,
+    render_preprocess_step, render_validation_split,
 )
 
 
@@ -490,6 +490,67 @@ def test_generate_workflow_script_actually_runs_end_to_end(tmp_path):
     fake_df.to_csv(data_path, index=False)
 
     payload = _sample_payload()
+    payload["validation_config"] = {"method": "test_on_test", "train_size": 0.7}
+    code = generate_workflow_script(payload)
+    code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
+
+    exec(compile(code, "<generated>", "exec"), {"__name__": "__main__"})
+
+
+def test_generate_workflow_script_multiclass_target_with_auc_and_ci_runs_end_to_end(tmp_path):
+    """迴歸測試：Finding 1 — 多分類 target + auc/auprc 之前會讓 roc_auc_score() 直接
+    crash，炸掉整個 export（因為插在雙層迴圈裡，第一次出錯就中斷後面所有 fold/model）。
+    修正後應該優雅地把該指標值設成 None，而不是中止整個腳本。"""
+    rng = np.random.RandomState(1)
+    n = 90
+    fake_df = pd.DataFrame({
+        "age": rng.normal(50, 10, n),
+        "sex": rng.choice(["M", "F"], n),
+        "label": rng.choice([0, 1, 2], n),  # 3 類，觸發 _is_multiclass
+    })
+    data_path = tmp_path / "fake_multiclass.csv"
+    fake_df.to_csv(data_path, index=False)
+
+    payload = _sample_payload()
+    payload["score_variants"] = [
+        {"metric": "accuracy"}, {"metric": "f1"}, {"metric": "auc"}, {"metric": "auprc"},
+    ]
+    payload["validation_config"] = {"method": "test_on_test", "train_size": 0.7}
+    payload["compute_ci"] = True
+    code = generate_workflow_script(payload)
+    code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
+
+    exec(compile(code, "<generated>", "exec"), {"__name__": "__main__"})
+
+
+def test_render_metrics_block_dedupes_duplicate_metric_names():
+    """迴歸測試：Finding 2 — score_variants 裡同一個 metric 重複出現時（真實的
+    generate_score_variants() 會產生 cartesian product，同名 metric 合法地重複），
+    不應該重複產生同一個 bootstrap 迴圈區塊，否則 CI 會用不同的隨機抽樣算出兩個
+    互相矛盾的結果，且浪費一倍運算時間。"""
+    score_variants = [{"metric": "accuracy"}, {"metric": "accuracy"}, {"metric": "f1"}]
+    _, code = render_metrics_block(score_variants, compute_ci=True)
+    assert code.count("_boot_accuracy = []") == 1
+    assert code.count("_results['accuracy']") == 1
+
+
+def test_generate_workflow_script_string_labeled_binary_target_runs_end_to_end(tmp_path):
+    """迴歸測試：Finding 3 — target 是字串標籤（例如 "yes"/"no"）時，precision/recall/f1
+    在 average='binary' 底下預設 pos_label=1，會直接 crash（1 不是合法的字串類別標籤）。
+    修正後應該用 sorted(y_test.unique())[-1] 當作 pos_label，跟 confusion_matrix 的
+    升冪排序慣例一致。"""
+    rng = np.random.RandomState(2)
+    n = 60
+    fake_df = pd.DataFrame({
+        "age": rng.normal(50, 10, n),
+        "sex": rng.choice(["M", "F"], n),
+        "label": rng.choice(["yes", "no"], n),
+    })
+    data_path = tmp_path / "fake_string_label.csv"
+    fake_df.to_csv(data_path, index=False)
+
+    payload = _sample_payload()
+    payload["score_variants"] = [{"metric": "accuracy"}, {"metric": "f1"}]
     payload["validation_config"] = {"method": "test_on_test", "train_size": 0.7}
     code = generate_workflow_script(payload)
     code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
