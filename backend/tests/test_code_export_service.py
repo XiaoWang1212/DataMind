@@ -14,9 +14,9 @@ from sklearn.model_selection import (  # noqa: F401
 
 from services.model.registry import ModelRegistry
 from services.workflow.code_export_service import (
-    MODEL_IMPORTS, generate_workflow_script, render_categorical_fallback_encoding,
-    render_feature_engineering_step, render_metrics_block, render_model_construction,
-    render_preprocess_step, render_validation_split,
+    MODEL_IMPORTS, _comment_safe, _unsupported_step_comment, generate_workflow_script,
+    render_categorical_fallback_encoding, render_feature_engineering_step, render_metrics_block,
+    render_model_construction, render_preprocess_step, render_validation_split,
 )
 
 
@@ -556,3 +556,101 @@ def test_generate_workflow_script_string_labeled_binary_target_runs_end_to_end(t
     code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
 
     exec(compile(code, "<generated>", "exec"), {"__name__": "__main__"})
+
+
+def test_generate_workflow_script_string_labeled_binary_target_with_auprc_runs_end_to_end(tmp_path):
+    """最終整合審查 Fix 1 迴歸測試：target 是字串標籤（例如 "yes"/"no"）且指標包含 auprc 時，
+    average_precision_score() 預設 pos_label=1 會直接 crash（ValueError: pos_label=1 is not
+    a valid label）。修正後 auprc 要跟其他二元分類指標一樣，用 _pos_label（sorted(y_test.unique())[-1]）。
+    """
+    rng = np.random.RandomState(3)
+    n = 60
+    fake_df = pd.DataFrame({
+        "age": rng.normal(50, 10, n),
+        "sex": rng.choice(["M", "F"], n),
+        "label": rng.choice(["yes", "no"], n),
+    })
+    data_path = tmp_path / "fake_string_label_auprc.csv"
+    fake_df.to_csv(data_path, index=False)
+
+    payload = _sample_payload()
+    payload["score_variants"] = [{"metric": "accuracy"}, {"metric": "f1"}, {"metric": "auprc"}]
+    payload["validation_config"] = {"method": "test_on_test", "train_size": 0.7}
+    code = generate_workflow_script(payload)
+    code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
+
+    # 確認產生的程式碼真的把 pos_label=_pos_label 接在 average_precision_score 呼叫上，
+    # 而不是跟 auc 共用同一段沒有 pos_label 的程式碼
+    assert "average_precision_score(y_test, y_score[:, -1], pos_label=_pos_label)" in code
+    assert "roc_auc_score(y_test, y_score[:, -1], pos_label=_pos_label)" not in code
+
+    exec(compile(code, "<generated>", "exec"), {"__name__": "__main__"})
+
+
+def test_render_validation_split_leave_one_out_produces_todo_warning():
+    """Fix 2 迴歸測試：leave_one_out 是真實、使用者可選的驗證方式，但目前沒有對應的
+    程式碼範本，會悄悄退回成 test_on_test（單次 70/30 切分），卻沒有任何警告。
+    修正後應該在退回的程式碼裡加上明顯的 TODO 警告註解，說明用了哪種不支援的方式。"""
+    _, code = render_validation_split({"method": "leave_one_out"})
+    assert "TODO" in code
+    assert "leave_one_out" in code
+
+
+def test_render_validation_split_group_k_fold_without_group_column_raises_clear_error():
+    """Fix 3 迴歸測試：group_k_fold 沒有指定 group_column 時，原本會產生 `X[None]`，
+    執行時丟出不易理解的 KeyError: None。修正後應該產生清楚的 raise ValueError，
+    比照 workflow_service.py 遇到同樣情況時的錯誤訊息。"""
+    _, code = render_validation_split({"method": "group_k_fold", "group_column": None})
+    assert "raise ValueError" in code
+    assert "X[None]" not in code
+
+
+def test_render_validation_split_group_k_fold_missing_group_column_key_raises_clear_error():
+    """同上，但 group_column 這個 key 完全沒有出現在 config 裡（而不是明確傳 None）。"""
+    _, code = render_validation_split({"method": "group_k_fold"})
+    assert "raise ValueError" in code
+    assert "X[None]" not in code
+
+
+def test_render_preprocess_fill_na_mode_entirely_nan_column():
+    """Fix 4 迴歸測試：fill_na/mode 遇到整欄都是 NaN 的欄位時，原本的
+    `X_train[_cols].mode().iloc[0]` 會因為 .mode() 回傳空結果而丟出
+    IndexError: single positional indexer is out-of-bounds。修正後應該逐欄計算，
+    遇到空的 mode 就退回指定的 fallback 值，跟 impute_missing/mode 的處理方式一致。"""
+    X_train = pd.DataFrame({"a": [None, None, None], "b": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [None], "b": [4.0]})
+    step = {"type": "fill_na", "strategy": "mode", "columns": ["a", "b"], "value": 0}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    assert out_train["a"].isna().sum() == 0
+    assert out_test["a"].isna().sum() == 0
+    assert out_train["a"].iloc[0] == 0
+
+
+def test_comment_safe_strips_embedded_newlines():
+    """Fix 5 迴歸測試：外部字串（例如 step type）如果包含換行，直接塞進 `#` 開頭的
+    註解行會讓換行後面的內容變成產生檔案裡真的會被執行的程式碼（ast.parse() 逐行看
+    仍然合法，但下載下來的 .py 檔案就被注入了）。_comment_safe() 應該要把換行拿掉。"""
+    malicious = "evil\nimport os\nos.system('rm -rf /')\n#"
+    safe = _comment_safe(malicious)
+    assert "\n" not in safe
+    assert "\r" not in safe
+
+
+def test_unsupported_step_comment_with_embedded_newline_stays_single_logical_comment():
+    """Fix 5 迴歸測試：確認 _unsupported_step_comment() 真的套用了 _comment_safe()，
+    含有換行的 step type 不會讓產生的程式碼行數暴增（也就是不會有內容跳出註解）。"""
+    malicious_type = "evil\nimport os\nos.system('echo pwned')\n#"
+    code = _unsupported_step_comment(malicious_type, "preprocess_service.py")
+    # 原本這個函式回傳固定 2 行（TODO 說明 + 參考路徑），套用 _comment_safe 後應該還是 2 行，
+    # 不應該因為 step_type 裡的換行而多出額外的、會被當成獨立陳述句執行的行數。
+    assert len(code.splitlines()) == 2
+    assert "\nimport os" not in code
+    assert "os.system" in code  # 內容還在，只是不再是獨立一行的可執行敘述
+
+
+def test_render_preprocess_step_unsupported_type_with_embedded_newline_is_comment_safe():
+    """比照上一個測試，但走完整的 render_preprocess_step() 路徑（走 _UNSUPPORTED_PREPROCESS_STEPS
+    以外的未知 step type 分支）。"""
+    malicious_type = "unknown_step\nimport os\nos.system('echo pwned')\n#"
+    code = render_preprocess_step({"type": malicious_type})
+    assert "\nimport os" not in code

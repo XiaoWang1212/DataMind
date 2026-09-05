@@ -14,6 +14,13 @@ from sklearn.utils._pprint import _EstimatorPrettyPrinter
 
 from services.model.registry import ModelRegistry
 
+
+def _comment_safe(value: str) -> str:
+    """外部字串（step type、指標名稱等）要放進註解行之前，先擋掉換行——
+    否則含換行的字串可以在產生的檔案裡跳出註解、變成會被執行的程式碼。"""
+    return str(value).replace("\r", " ").replace("\n", " ")[:200]
+
+
 # 每個模型名稱需要的 import 陳述式，內容抄自 backend/services/model/models/*.py
 # 各檔案開頭的 import 行。新增模型時記得同步更新這裡（有單元測試會檢查
 # ModelRegistry 裡的每個模型名稱都能在這個表裡查到，忘記加會直接測試失敗）。
@@ -174,8 +181,9 @@ _UNSUPPORTED_PREPROCESS_STEPS = {
 
 
 def _unsupported_step_comment(step_type: str, source_file: str) -> str:
+    safe_step_type = _comment_safe(step_type)
     return (
-        f"    # ⚠️ TODO：這個 workflow 用了「{step_type}」步驟，DataMind 程式碼匯出功能目前"
+        f"    # ⚠️ TODO：這個 workflow 用了「{safe_step_type}」步驟，DataMind 程式碼匯出功能目前"
         "還不支援自動產生這段邏輯。\n"
         f"    # 請參考 backend/services/workflow/{source_file} 裡對應的實作，自行補上。"
     )
@@ -209,7 +217,10 @@ def render_preprocess_step(step: Dict[str, Any]) -> str:
         elif strategy == "median":
             lines.append("        _fill_values = X_train[_cols].median()")
         elif strategy == "mode":
-            lines.append("        _fill_values = X_train[_cols].mode().iloc[0]")
+            lines.append("        _fill_values = {}")
+            lines.append("        for _col in _cols:")
+            lines.append("            _mode = X_train[_col].mode()")
+            lines.append(f"            _fill_values[_col] = _mode.iloc[0] if not _mode.empty else {value!r}")
         else:
             lines.append(f"        _fill_values = pd.Series({value!r}, index=_cols)")
         lines.append("        X_train[_cols] = X_train[_cols].fillna(_fill_values)")
@@ -397,6 +408,13 @@ def render_validation_split(validation_config: Dict[str, Any]) -> Tuple[List[str
         return [f"from sklearn.model_selection import {cls_name}"], code
 
     if method == "group_k_fold":
+        if not group_column:
+            code = (
+                "# ⚠️ 這個 workflow 設定 group_k_fold 驗證方式，但沒有指定分組欄位（group_column）\n"
+                'raise ValueError("group_k_fold 驗證方式需要指定 group_column，'
+                '請回 workflow 設定分組欄位後再匯出")'
+            )
+            return [], code
         code = (
             "# 依欄位分組的交叉驗證，同一組的資料不會同時出現在 train 跟 test\n"
             f"_groups = X[{group_column!r}]\n"
@@ -427,8 +445,16 @@ def render_validation_split(validation_config: Dict[str, Any]) -> Tuple[List[str
         )
         return ["from sklearn.model_selection import train_test_split"], code
 
-    # test_on_test（預設）
+    # test_on_test（預設，也是未知/不支援驗證方式的退回選項）
+    if method not in {"k_fold", "group_k_fold", "random_sampling", "test_on_train", "test_on_test"}:
+        warning = (
+            f"# ⚠️ TODO：這個 workflow 用的是「{_comment_safe(method)}」驗證方式，"
+            "DataMind 程式碼匯出功能目前還不支援，以下退回單次訓練/測試切分。\n"
+        )
+    else:
+        warning = ""
     code = (
+        warning +
         "# 單次切分成訓練集／測試集\n"
         "_train_idx, _test_idx = train_test_split(\n"
         f"    np.arange(len(X)), train_size={train_size}, stratify={stratify_arg}, "
@@ -520,14 +546,19 @@ def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool)
                 "        _results['specificity'] = (_cm[0, 0] / (_cm[0, 0] + _cm[0, 1])) "
                 "if _cm.shape == (2, 2) and (_cm[0, 0] + _cm[0, 1]) else 0.0  # 特異度"
             )
-        elif metric in {"auc", "auprc"}:
-            fn = "roc_auc_score" if metric == "auc" else "average_precision_score"
+        elif metric == "auc":
             lines.append(
-                f"        _results[{metric!r}] = ({fn}(y_test, y_score[:, -1]) "
+                "        _results['auc'] = (roc_auc_score(y_test, y_score[:, -1]) "
+                f"if y_score is not None and not _is_multiclass else None)  # {label}（假設二元分類）"
+            )
+        elif metric == "auprc":
+            lines.append(
+                "        _results['auprc'] = (average_precision_score(y_test, y_score[:, -1], "
+                "pos_label=_pos_label) "
                 f"if y_score is not None and not _is_multiclass else None)  # {label}（假設二元分類）"
             )
         else:
-            lines.append(f"        # ⚠️ 不支援的指標「{metric}」，略過")
+            lines.append(f"        # ⚠️ 不支援的指標「{_comment_safe(metric)}」，略過")
 
     lines.append("        for _name, _value in _results.items():")
     lines.append("            print(f'  {_name}: {_value}')")
