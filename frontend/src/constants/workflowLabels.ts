@@ -51,13 +51,14 @@ export interface NodeHelpEntry {
   text: string
 }
 
-// 節點說明，順序照 pipeline 由前到後。模型節點一律用 'model'（實際 id 是 model-0、model-1…）
+// 節點說明。Settings 是前處理與特徵工程的設定入口，排在兩者之前，其餘照 pipeline 由前到後。
+// 模型節點一律用 'model'（實際 id 是 model-0、model-1…）
 export const NODE_HELP: Record<string, NodeHelpEntry> = {
   file: {
     label: 'File',
     icon: 'mdi-file-outline',
     nodeType: 'source',
-    text: '上傳並選擇要分析的資料集檔案，支援 CSV 與 Excel 格式。後續所有節點皆以此檔案為輸入。',
+    text: '您所上傳待分析的資料集檔案。後續所有節點皆以此檔案為輸入。',
   },
   dataTable: {
     label: 'Data Table',
@@ -71,6 +72,12 @@ export const NODE_HELP: Record<string, NodeHelpEntry> = {
     nodeType: 'visualize',
     text: '以直方圖呈現各欄位的數值分布，用於檢查資料偏態、離群值與類別是否失衡。',
   },
+  settings: {
+    label: 'Settings',
+    icon: 'mdi-tune-variant',
+    nodeType: 'model',
+    text: '設定整條流程的前處理、特徵工程、重抽樣與驗證方式，是此工作流程的主要設定入口。',
+  },
   preprocessor: {
     label: 'Preprocessor',
     icon: 'mdi-filter-cog-outline',
@@ -82,12 +89,6 @@ export const NODE_HELP: Record<string, NodeHelpEntry> = {
     icon: 'mdi-chart-scatter-plot',
     nodeType: 'transform',
     text: '對前處理後的特徵進行轉換與篩選，例如特徵選擇、PCA 降維或連續與離散型別互換。',
-  },
-  settings: {
-    label: 'Settings',
-    icon: 'mdi-tune-variant',
-    nodeType: 'model',
-    text: '設定整條流程的前處理、特徵工程、重抽樣與驗證方式，是此工作流程的主要設定入口。',
   },
   model: {
     label: 'Models',
