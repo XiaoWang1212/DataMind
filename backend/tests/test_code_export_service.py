@@ -164,3 +164,93 @@ def test_render_preprocess_unsupported_step_returns_todo_comment():
     code = render_preprocess_step({"type": "knn_impute"})
     assert "TODO" in code
     assert "knn_impute" in code
+
+
+# Regression tests: column mismatch between X_train and X_test
+def test_render_preprocess_fill_na_train_only_column():
+    """X_train has a column that X_test lacks — should not crash, just skip X_test side."""
+    X_train = pd.DataFrame({"a": [1.0, None, 3.0], "b": [10.0, 20.0, 30.0]})
+    X_test = pd.DataFrame({"a": [None, 5.0]})  # Missing "b"
+    step = {"type": "fill_na", "strategy": "mean", "columns": ["a", "b"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify no crash and output is sensible
+    assert out_train["a"].tolist() == [1.0, 2.0, 3.0]
+    assert out_test["a"].tolist() == [2.0, 5.0]
+
+
+def test_render_preprocess_standardize_train_only_column():
+    """X_train has a column that X_test lacks — should not crash."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [10.0, 20.0, 30.0]})
+    X_test = pd.DataFrame({"a": [4.0]})  # Missing "b"
+    step = {"type": "standardize", "columns": ["a", "b"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify no crash
+    assert "a" in out_train.columns
+    assert "a" in out_test.columns
+
+
+def test_render_preprocess_normalize_train_only_column():
+    """X_train has a column that X_test lacks — should not crash."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [10.0, 20.0, 30.0]})
+    X_test = pd.DataFrame({"a": [4.0]})  # Missing "b"
+    step = {"type": "normalize", "columns": ["a", "b"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify no crash
+    assert "a" in out_train.columns
+    assert "a" in out_test.columns
+
+
+def test_render_preprocess_one_hot_train_only_column():
+    """X_train has a column that X_test lacks — should not crash."""
+    X_train = pd.DataFrame({"color": ["red", "blue"], "size": ["small", "large"]})
+    X_test = pd.DataFrame({"color": ["red"]})  # Missing "size"
+    step = {"type": "one_hot", "columns": ["color", "size"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify no crash and column count changed (dummies added)
+    assert "color" not in out_train.columns  # Original should be replaced with dummies
+    assert "color" not in out_test.columns
+
+
+def test_render_preprocess_label_encode_train_only_column():
+    """X_train has a column that X_test lacks — should not crash."""
+    X_train = pd.DataFrame({"cat": ["a", "b"], "size": ["S", "L"]})
+    X_test = pd.DataFrame({"cat": ["a"]})  # Missing "size"
+    step = {"type": "label_encode", "columns": ["cat", "size"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify no crash
+    assert "cat" in out_train.columns
+    assert "cat" in out_test.columns
+
+
+# Regression tests: configured columns don't exist in X_train
+def test_render_preprocess_fill_na_mode_nonexistent_columns():
+    """Configured columns don't exist in X_train — should skip without crashing."""
+    X_train = pd.DataFrame({"a": [1, 2, 3]})
+    X_test = pd.DataFrame({"a": [4, 5]})
+    step = {"type": "fill_na", "strategy": "mode", "columns": ["nonexistent"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify unchanged (since nonexistent columns don't exist in X_train)
+    assert out_train.equals(X_train)
+    assert out_test.equals(X_test)
+
+
+def test_render_preprocess_standardize_nonexistent_columns():
+    """Configured columns don't exist in X_train — should skip without crashing."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [4.0]})
+    step = {"type": "standardize", "columns": ["nonexistent"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify unchanged
+    assert out_train.equals(X_train)
+    assert out_test.equals(X_test)
+
+
+def test_render_preprocess_normalize_nonexistent_columns():
+    """Configured columns don't exist in X_train — should skip without crashing."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [4.0]})
+    step = {"type": "normalize", "columns": ["nonexistent"]}
+    out_train, out_test = _run_generated_preprocess(step, X_train, X_test)
+    # Verify unchanged
+    assert out_train.equals(X_train)
+    assert out_test.equals(X_test)

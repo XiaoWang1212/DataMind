@@ -202,46 +202,55 @@ def render_preprocess_step(step: Dict[str, Any]) -> str:
         strategy = step.get("strategy", "constant")
         value = step.get("value", 0)
         cols_expr = columns_expr if columns else "X_train.columns"
+        lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
+        lines.append("    if _cols:")
         if strategy == "mean":
-            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-            lines.append("    _fill_values = X_train[_cols].mean()")
+            lines.append("        _fill_values = X_train[_cols].mean()")
         elif strategy == "median":
-            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-            lines.append("    _fill_values = X_train[_cols].median()")
+            lines.append("        _fill_values = X_train[_cols].median()")
         elif strategy == "mode":
-            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-            lines.append("    _fill_values = X_train[_cols].mode().iloc[0]")
+            lines.append("        _fill_values = X_train[_cols].mode().iloc[0]")
         else:
-            lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-            lines.append(f"    _fill_values = pd.Series({value!r}, index=_cols)")
-        lines.append("    X_train[_cols] = X_train[_cols].fillna(_fill_values)")
-        lines.append("    X_test[_cols] = X_test[_cols].fillna(_fill_values)")
+            lines.append(f"        _fill_values = pd.Series({value!r}, index=_cols)")
+        lines.append("        X_train[_cols] = X_train[_cols].fillna(_fill_values)")
+        lines.append("        _cols_test = [c for c in _cols if c in X_test.columns]")
+        lines.append("        if _cols_test:")
+        lines.append("            X_test[_cols_test] = X_test[_cols_test].fillna(_fill_values)")
 
     elif step_type == "standardize":
         cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
         lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-        lines.append("    _scaler = StandardScaler().fit(X_train[_cols])")
-        lines.append("    X_train[_cols] = _scaler.transform(X_train[_cols])")
-        lines.append("    X_test[_cols] = _scaler.transform(X_test[_cols])")
+        lines.append("    if _cols:")
+        lines.append("        _scaler = StandardScaler().fit(X_train[_cols])")
+        lines.append("        X_train[_cols] = _scaler.transform(X_train[_cols])")
+        lines.append("        _cols_test = [c for c in _cols if c in X_test.columns]")
+        lines.append("        if _cols_test == _cols:")
+        lines.append("            X_test[_cols_test] = _scaler.transform(X_test[_cols_test])")
 
     elif step_type == "normalize":
         cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
         lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-        lines.append("    _scaler = MinMaxScaler().fit(X_train[_cols])")
-        lines.append("    X_train[_cols] = _scaler.transform(X_train[_cols])")
-        lines.append("    X_test[_cols] = _scaler.transform(X_test[_cols])")
+        lines.append("    if _cols:")
+        lines.append("        _scaler = MinMaxScaler().fit(X_train[_cols])")
+        lines.append("        X_train[_cols] = _scaler.transform(X_train[_cols])")
+        lines.append("        _cols_test = [c for c in _cols if c in X_test.columns]")
+        lines.append("        if _cols_test == _cols:")
+        lines.append("            X_test[_cols_test] = _scaler.transform(X_test[_cols_test])")
 
     elif step_type == "one_hot":
         cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['object', 'category']).columns.tolist()"
         lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-        lines.append("    _train_dummies = pd.get_dummies(X_train[_cols], drop_first=False)")
-        lines.append("    _test_dummies = pd.get_dummies(X_test[_cols], drop_first=False)")
-        lines.append("    for _c in _train_dummies.columns:")
-        lines.append("        if _c not in _test_dummies.columns:")
-        lines.append("            _test_dummies[_c] = 0")
-        lines.append("    _test_dummies = _test_dummies[_train_dummies.columns]")
-        lines.append("    X_train = pd.concat([X_train.drop(columns=_cols), _train_dummies], axis=1)")
-        lines.append("    X_test = pd.concat([X_test.drop(columns=_cols), _test_dummies], axis=1)")
+        lines.append("    if _cols:")
+        lines.append("        _train_dummies = pd.get_dummies(X_train[_cols], drop_first=False)")
+        lines.append("        X_train = pd.concat([X_train.drop(columns=_cols), _train_dummies], axis=1)")
+        lines.append("        _cols_test = [c for c in _cols if c in X_test.columns]")
+        lines.append("        if _cols_test:")
+        lines.append("            _test_dummies = pd.get_dummies(X_test[_cols_test], drop_first=False)")
+        lines.append("            for _c in _train_dummies.columns:")
+        lines.append("                if _c not in _test_dummies.columns:")
+        lines.append("                    _test_dummies[_c] = 0")
+        lines.append("            _test_dummies = _test_dummies[_train_dummies.columns]")
+        lines.append("            X_test = pd.concat([X_test.drop(columns=_cols_test), _test_dummies], axis=1)")
 
     elif step_type == "label_encode":
         cols_expr = columns_expr if columns else "X_train.select_dtypes(include=['object', 'category']).columns.tolist()"
@@ -249,8 +258,9 @@ def render_preprocess_step(step: Dict[str, Any]) -> str:
         lines.append("        _enc = LabelEncoder().fit(X_train[_c].astype(str))")
         lines.append("        _known = set(_enc.classes_)")
         lines.append("        X_train[_c] = _enc.transform(X_train[_c].astype(str))")
+        lines.append("        if _c in X_test.columns:")
         lines.append(
-            "        X_test[_c] = X_test[_c].astype(str).map("
+            "            X_test[_c] = X_test[_c].astype(str).map("
             "lambda v: _enc.transform([v])[0] if v in _known else -1)"
         )
 
