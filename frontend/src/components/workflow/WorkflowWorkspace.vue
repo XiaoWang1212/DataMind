@@ -22,6 +22,15 @@
       查看結果
     </AppButton>
 
+    <AppButton
+      class="export-code-btn"
+      :disabled="exportingCode"
+      variant="secondary"
+      @click="handleExportCode"
+    >
+      {{ exportingCode ? '產生中...' : '匯出程式碼' }}
+    </AppButton>
+
     <!-- 上傳 model 檔案 dialog -->
     <UploadDialog
       :visible="uploadDialogVisible"
@@ -132,7 +141,7 @@
     watch,
   } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { fetchAvailableModels } from '@/api/workflow'
+  import { exportWorkflowCode, fetchAvailableModels } from '@/api/workflow'
   import AppButton from '@/components/ui/AppButton.vue'
   import { useDrawerDrag } from '@/composables/useDrawerDrag'
   import { useWorkflowDemo } from '@/composables/workflow/useWorkflowDemo.ts'
@@ -238,6 +247,7 @@
     continueWorkflow,
     resumeJob,
     abandonActiveJob,
+    buildWorkflowPayload,
   } = useWorkflowExecution({
     nodes,
     workflowDataFile,
@@ -378,6 +388,28 @@
     selectedNodeId.value = 'dataTable'
     expandDrawer()
     saveState()
+  }
+
+  const exportingCode = ref(false)
+
+  async function handleExportCode (): Promise<void> {
+    exportingCode.value = true
+    try {
+      const payload = buildWorkflowPayload()
+      const { code, filename } = await exportWorkflowCode(payload)
+
+      const blob = new Blob([code], { type: 'text/x-python' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      workflowError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+      exportingCode.value = false
+    }
   }
 
   // preprocessor/featureEngineering/computeCi/testScore/featureImportance/confusionMatrix
@@ -782,6 +814,13 @@
     position: absolute;
     top: 14px;
     right: 14px;
+    z-index: 5;
+  }
+
+  .export-code-btn {
+    position: absolute;
+    top: 14px;
+    right: 128px;
     z-index: 5;
   }
 
