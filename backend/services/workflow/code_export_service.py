@@ -458,3 +458,199 @@ def render_categorical_fallback_encoding() -> str:
         "        X_train = pd.concat([X_train.drop(columns=_object_cols), _train_dummies], axis=1)\n"
         "        X_test = pd.concat([X_test.drop(columns=_object_cols), _test_dummies], axis=1)"
     )
+
+
+_METRIC_LABELS: Dict[str, str] = {
+    "accuracy": "準確率", "balanced_accuracy": "平衡準確率", "precision": "精準度",
+    "recall": "召回率", "f1": "F1 分數", "auc": "AUC_ROC", "auprc": "AUPRC",
+    "specificity": "特異度", "mcc": "MCC", "kappa": "Kappa 係數",
+}
+
+_METRIC_SKLEARN_FN: Dict[str, str] = {
+    "accuracy": "accuracy_score", "balanced_accuracy": "balanced_accuracy_score",
+    "mcc": "matthews_corrcoef", "kappa": "cohen_kappa_score",
+}
+
+
+def render_metrics_block(score_variants: List[Dict[str, Any]], compute_ci: bool) -> Tuple[List[str], str]:
+    """回傳 (import 陳述式清單, 評估邏輯的程式碼字串)。程式碼假設 y_test / y_pred / y_score
+    (predict_proba 的結果，可能是 None) 已經存在。二元/多分類的判定只看 y_test 的類別數，
+    跟 test_score_service.py 用 y_true ∪ y_pred 判定不同——這裡是為了讓產生的程式碼保持簡短
+    易讀，刻意的簡化，不是要跟後端逐位元對齊。
+
+    這段程式碼會被插進兩層迴圈裡面（for fold ... / for model ...），所以每一行都是 8 個
+    空白的縮排，不是 4 個——呼叫端（generate_workflow_script()）是直接把這段字串接在
+    `for _model_name, _model in models.items():` 底下，縮排要跟同一層的其他敘述句對齊。
+    """
+    metrics = [str(v.get("metric", "")).lower() for v in score_variants]
+    metrics = [m for m in metrics if m]
+
+    sklearn_fns = sorted({_METRIC_SKLEARN_FN[m] for m in metrics if m in _METRIC_SKLEARN_FN})
+    import_lines = []
+    if sklearn_fns:
+        import_lines.append(f"from sklearn.metrics import {', '.join(sklearn_fns)}")
+    if any(m in {"precision", "recall", "f1"} for m in metrics):
+        import_lines.append("from sklearn.metrics import precision_score, recall_score, f1_score")
+    if any(m in {"auc", "auprc"} for m in metrics):
+        import_lines.append("from sklearn.metrics import roc_auc_score, average_precision_score")
+    if any(m == "specificity" for m in metrics):
+        import_lines.append("from sklearn.metrics import confusion_matrix")
+
+    lines = ["        _is_multiclass = y_test.nunique() > 2", "        _results = {}"]
+    for metric in metrics:
+        label = _METRIC_LABELS.get(metric, metric)
+        if metric in _METRIC_SKLEARN_FN:
+            fn = _METRIC_SKLEARN_FN[metric]
+            lines.append(f"        _results[{metric!r}] = {fn}(y_test, y_pred)  # {label}")
+        elif metric in {"precision", "recall", "f1"}:
+            fn = f"{metric}_score"
+            lines.append(
+                f"        _results[{metric!r}] = {fn}(y_test, y_pred, "
+                f"average='macro' if _is_multiclass else 'binary', zero_division=0)  # {label}"
+            )
+        elif metric == "specificity":
+            lines.append("        _cm = confusion_matrix(y_test, y_pred)")
+            lines.append(
+                "        _results['specificity'] = (_cm[0, 0] / (_cm[0, 0] + _cm[0, 1])) "
+                "if _cm.shape == (2, 2) and (_cm[0, 0] + _cm[0, 1]) else 0.0  # 特異度"
+            )
+        elif metric in {"auc", "auprc"}:
+            fn = "roc_auc_score" if metric == "auc" else "average_precision_score"
+            lines.append(
+                f"        _results[{metric!r}] = {fn}(y_test, y_score[:, -1]) "
+                f"if y_score is not None else None  # {label}（假設二元分類）"
+            )
+        else:
+            lines.append(f"        # ⚠️ 不支援的指標「{metric}」，略過")
+
+    lines.append("        for _name, _value in _results.items():")
+    lines.append("            print(f'  {_name}: {_value}')")
+
+    if compute_ci and metrics:
+        lines.append("")
+        lines.append("        # Bootstrap 95% 信賴區間（重抽樣 1000 次，跟 DataMind 後端算法一致）")
+        lines.append("        _rng = np.random.RandomState(42)")
+        lines.append("        _n = len(y_test)")
+        lines.append("        _y_test_arr = y_test.to_numpy()")
+        lines.append(
+            "        _y_pred_arr = y_pred.to_numpy() if hasattr(y_pred, 'to_numpy') else np.asarray(y_pred)"
+        )
+        for metric in metrics:
+            if metric in _METRIC_SKLEARN_FN:
+                fn = _METRIC_SKLEARN_FN[metric]
+                metric_call = f"{fn}(_yt, _yp)"
+            elif metric in {"precision", "recall", "f1"}:
+                fn = f"{metric}_score"
+                metric_call = f"{fn}(_yt, _yp, average='macro' if _is_multiclass else 'binary', zero_division=0)"
+            else:
+                continue  # specificity/auc/auprc 的 CI 這裡不支援，維持點估計即可
+            lines.append(f"        _boot_{metric} = []")
+            lines.append("        for _ in range(1000):")
+            lines.append("            _idx = _rng.randint(0, _n, _n)")
+            lines.append("            try:")
+            lines.append("                _yt, _yp = _y_test_arr[_idx], _y_pred_arr[_idx]")
+            lines.append(f"                _boot_{metric}.append({metric_call})")
+            lines.append("            except Exception:")
+            lines.append("                pass")
+            lines.append(f"        if _boot_{metric}:")
+            lines.append(
+                f"            print(f'  {metric} 95% CI: "
+                f"[{{np.percentile(_boot_{metric}, 2.5):.4f}}, "
+                f"{{np.percentile(_boot_{metric}, 97.5):.4f}}]')"
+            )
+
+    return import_lines, "\n".join(lines)
+
+
+def _format_step_groups(steps: List[Dict[str, Any]], render_fn) -> str:
+    if not steps:
+        return "    pass  # 這個 workflow 沒有設定任何步驟"
+    return "\n".join(render_fn(step) for step in steps)
+
+
+def generate_workflow_script(payload: Dict[str, Any]) -> str:
+    """payload 的形狀沿用 backend/routes/model.py 的 _parse_execute_params() 回傳的 kwargs：
+    target_col, preprocess_pipelines, feature_engineering_pipelines, model_names,
+    score_variants, validation_config, compute_ci（其餘鍵值如 resampling_method/tuning_method
+    這次不支援，忽略不處理）。
+    """
+    target_col = payload.get("target_col") or ""
+    preprocess_pipelines = payload.get("preprocess_pipelines") or []
+    feature_engineering_pipelines = payload.get("feature_engineering_pipelines") or []
+    model_names = payload.get("model_names") or []
+    score_variants = payload.get("score_variants") or []
+    validation_config = payload.get("validation_config") or {"method": "test_on_test"}
+    compute_ci = bool(payload.get("compute_ci", False))
+
+    if not model_names:
+        raise ValueError("請至少選擇一個模型")
+
+    preprocess_steps = preprocess_pipelines[0] if preprocess_pipelines else []
+    feature_steps = feature_engineering_pipelines[0] if feature_engineering_pipelines else []
+
+    model_import_lines, models_code = render_model_construction(model_names)
+    split_import_lines, split_code = render_validation_split(validation_config)
+    metrics_import_lines, metrics_code = render_metrics_block(score_variants, compute_ci)
+    preprocess_code = _format_step_groups(preprocess_steps, render_preprocess_step)
+    fe_code = _format_step_groups(feature_steps, render_feature_engineering_step)
+    categorical_fallback_code = render_categorical_fallback_encoding()
+
+    fixed_imports = [
+        "import numpy as np",
+        "import pandas as pd",
+        "from sklearn.base import clone",
+        "from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler",
+        "from sklearn.decomposition import PCA",
+        "from sklearn.feature_selection import SelectKBest, f_classif",
+    ]
+    all_import_lines = list(fixed_imports)
+    for line in split_import_lines + model_import_lines + metrics_import_lines:
+        if line and line not in all_import_lines:
+            all_import_lines.append(line)
+
+    return f'''"""DataMind Workflow 匯出程式碼
+
+由 DataMind 自動產生，重現這個 workflow 在畫布上設定的完整流程：
+前處理 → 特徵工程 → 資料切分 → 訓練 → 評估指標{"（含 95% 信賴區間）" if compute_ci else ""}。
+
+部分步驟類型目前還不支援自動產生程式碼，會用「⚠️ TODO」標註，請自行補上對應邏輯。
+"""
+{chr(10).join(all_import_lines)}
+
+# ── 1. 讀取資料集 ──
+# TODO：換成你自己的資料集路徑
+DATA_PATH = "your_dataset.csv"
+TARGET_COLUMN = {target_col!r}
+
+df = pd.read_csv(DATA_PATH)
+y = df[TARGET_COLUMN]
+X = df.drop(columns=[TARGET_COLUMN])
+
+# ── 2. 切分資料 ──
+{split_code}
+
+# ── 3. 建立模型 ──
+{models_code}
+
+# ── 4. 對每個切分、每個模型：前處理 → 特徵工程 → 訓練 → 評估 ──
+for _fold_idx, (train_idx, test_idx) in enumerate(splits):
+    X_train, X_test = X.iloc[train_idx].copy(), X.iloc[test_idx].copy()
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    # 前處理（fit 在 train，同時套用到 train/test，避免資料洩漏）
+{preprocess_code}
+
+{categorical_fallback_code}
+
+    # 特徵工程
+{fe_code}
+
+    for _model_name, _model in models.items():
+        _clf = clone(_model)
+        _clf.fit(X_train, y_train)
+        y_pred = pd.Series(_clf.predict(X_test), index=X_test.index)
+        y_score = _clf.predict_proba(X_test) if hasattr(_clf, "predict_proba") else None
+
+        print(f"=== {{_model_name}} | Fold {{_fold_idx + 1}} ===")
+{metrics_code}
+'''

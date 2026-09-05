@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler  # noqa: F401 (產生的程式碼會用到)
 from sklearn.decomposition import PCA  # noqa: F401
 from sklearn.feature_selection import SelectKBest, f_classif  # noqa: F401
@@ -13,8 +14,9 @@ from sklearn.model_selection import (  # noqa: F401
 
 from services.model.registry import ModelRegistry
 from services.workflow.code_export_service import (
-    MODEL_IMPORTS, render_categorical_fallback_encoding, render_feature_engineering_step,
-    render_model_construction, render_preprocess_step, render_validation_split,
+    MODEL_IMPORTS, generate_workflow_script, render_categorical_fallback_encoding,
+    render_feature_engineering_step, render_model_construction, render_preprocess_step,
+    render_validation_split,
 )
 
 
@@ -423,3 +425,73 @@ def test_render_categorical_fallback_encoding_one_hots_remaining_object_columns(
     exec(textwrap.dedent(code), namespace)
     assert "color" not in namespace["X_train"].columns
     assert list(namespace["X_train"].columns) == list(namespace["X_test"].columns)
+
+
+def _sample_payload():
+    return {
+        "target_col": "label",
+        "preprocess_pipelines": [[
+            {"type": "fill_na", "strategy": "mean", "columns": ["age"]},
+            {"type": "standardize", "columns": ["age"]},
+            {"type": "one_hot", "columns": ["sex"]},
+        ]],
+        "feature_engineering_pipelines": [[
+            {"type": "normalize_features", "columns": ["age"]},
+        ]],
+        "model_names": ["Random Forest", "Logistic Regression"],
+        "score_variants": [{"metric": "accuracy"}, {"metric": "f1"}, {"metric": "auc"}],
+        "validation_config": {"method": "k_fold", "n_splits": 3, "stratified": True},
+        "compute_ci": True,
+    }
+
+
+def test_generate_workflow_script_is_valid_python():
+    code = generate_workflow_script(_sample_payload())
+    ast.parse(code)  # 語法必須合法
+
+
+def test_generate_workflow_script_contains_expected_pieces():
+    code = generate_workflow_script(_sample_payload())
+    assert "RandomForestClassifier(" in code
+    assert "LogisticRegression(" in code
+    assert "StratifiedKFold(" in code
+    assert "TARGET_COLUMN = 'label'" in code
+    assert "accuracy_score" in code
+    assert "95% 信賴區間" in code
+
+
+def test_generate_workflow_script_marks_unsupported_step_with_todo():
+    payload = _sample_payload()
+    payload["preprocess_pipelines"] = [[{"type": "knn_impute"}]]
+    code = generate_workflow_script(payload)
+    assert "TODO" in code
+    assert "knn_impute" in code
+
+
+def test_generate_workflow_script_raises_without_models():
+    payload = _sample_payload()
+    payload["model_names"] = []
+    with pytest.raises(ValueError, match="至少選擇一個模型"):
+        generate_workflow_script(payload)
+
+
+def test_generate_workflow_script_actually_runs_end_to_end(tmp_path):
+    """不只驗證語法合法，實際 exec() 整份產生的程式碼，確認邏輯真的能跑得動、印出結果。"""
+    import numpy as np
+
+    rng = np.random.RandomState(0)
+    n = 60
+    fake_df = pd.DataFrame({
+        "age": rng.normal(50, 10, n),
+        "sex": rng.choice(["M", "F"], n),
+        "label": rng.choice([0, 1], n),
+    })
+    data_path = tmp_path / "fake.csv"
+    fake_df.to_csv(data_path, index=False)
+
+    payload = _sample_payload()
+    payload["validation_config"] = {"method": "test_on_test", "train_size": 0.7}
+    code = generate_workflow_script(payload)
+    code = code.replace('DATA_PATH = "your_dataset.csv"', f'DATA_PATH = {str(data_path)!r}')
+
+    exec(compile(code, "<generated>", "exec"), {"__name__": "__main__"})
