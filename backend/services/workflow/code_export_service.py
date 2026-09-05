@@ -302,28 +302,34 @@ def render_feature_engineering_step(step: Dict[str, Any]) -> str:
 
     if step_type == "pca":
         n_components = int(step.get("n_components", 2))
-        lines.append(f"    _n = min({n_components}, X_train.select_dtypes(include=['number']).shape[1])")
-        lines.append("    _pca_train = PCA(n_components=_n).fit(X_train.select_dtypes(include=['number']))")
+        lines.append("    _numeric_train = X_train.select_dtypes(include=['number'])")
+        lines.append("    if not _numeric_train.empty:")
+        lines.append(f"        _n = min({n_components}, _numeric_train.shape[1])")
+        lines.append("        _pca_train = PCA(n_components=_n).fit(_numeric_train)")
         lines.append(
-            "    X_train = pd.DataFrame(_pca_train.transform(X_train.select_dtypes(include=['number'])), "
+            "        X_train = pd.DataFrame(_pca_train.transform(_numeric_train), "
             "columns=[f'pca_{i + 1}' for i in range(_n)], index=X_train.index)"
         )
-        lines.append("    _pca_test = PCA(n_components=_n).fit(X_test.select_dtypes(include=['number']))")
+        lines.append("    _numeric_test = X_test.select_dtypes(include=['number'])")
+        lines.append("    if not _numeric_test.empty:")
+        lines.append(f"        _n_test = min({n_components}, _numeric_test.shape[1])")
+        lines.append("        _pca_test = PCA(n_components=_n_test).fit(_numeric_test)")
         lines.append(
-            "    X_test = pd.DataFrame(_pca_test.transform(X_test.select_dtypes(include=['number'])), "
-            "columns=[f'pca_{i + 1}' for i in range(_n)], index=X_test.index)"
+            "        X_test = pd.DataFrame(_pca_test.transform(_numeric_test), "
+            "columns=[f'pca_{i + 1}' for i in range(_n_test)], index=X_test.index)"
         )
 
     elif step_type == "select_relevant_features":
         k = int(step.get("k", 10))
-        lines.append(f"    _k = min({k}, X_train.select_dtypes(include=['number']).shape[1])")
+        lines.append("    _numeric_train = X_train.select_dtypes(include=['number'])")
+        lines.append("    if not _numeric_train.empty:")
+        lines.append(f"        _k = min({k}, _numeric_train.shape[1])")
         lines.append(
-            "    _selector = SelectKBest(score_func=f_classif, k=_k).fit("
-            "X_train.select_dtypes(include=['number']), y_train)"
+            "        _selector = SelectKBest(score_func=f_classif, k=_k).fit(_numeric_train, y_train)"
         )
-        lines.append(
-            "    _selected = X_train.select_dtypes(include=['number']).columns[_selector.get_support()].tolist()"
-        )
+        lines.append("        _selected = _numeric_train.columns[_selector.get_support()].tolist()")
+        lines.append("    else:")
+        lines.append("        _selected = []")
         lines.append("    X_train = X_train[[c for c in _selected if c in X_train.columns]]")
         lines.append("    X_test = X_test[[c for c in _selected if c in X_test.columns]]")
 
@@ -331,9 +337,11 @@ def render_feature_engineering_step(step: Dict[str, Any]) -> str:
         columns = step.get("columns")
         cols_expr = repr(columns) if columns else "X_train.select_dtypes(include=['number']).columns.tolist()"
         lines.append(f"    _cols = [c for c in ({cols_expr}) if c in X_train.columns]")
-        lines.append("    X_train[_cols] = MinMaxScaler().fit_transform(X_train[_cols])")
-        lines.append("    _cols_test = [c for c in _cols if c in X_test.columns]")
-        lines.append("    X_test[_cols_test] = MinMaxScaler().fit_transform(X_test[_cols_test])")
+        lines.append("    if _cols:")
+        lines.append("        X_train[_cols] = MinMaxScaler().fit_transform(X_train[_cols])")
+        lines.append(f"    _cols_test = [c for c in ({cols_expr}) if c in X_test.columns]")
+        lines.append("    if _cols_test:")
+        lines.append("        X_test[_cols_test] = MinMaxScaler().fit_transform(X_test[_cols_test])")
 
     elif step_type == "impute_missing":
         strategy = step.get("strategy", "constant")
@@ -345,8 +353,12 @@ def render_feature_engineering_step(step: Dict[str, Any]) -> str:
             lines.append("    X_train = X_train.fillna(X_train.median(numeric_only=True))")
             lines.append("    X_test = X_test.fillna(X_test.median(numeric_only=True))")
         elif strategy == "mode":
-            lines.append("    X_train = X_train.fillna(X_train.mode().iloc[0])")
-            lines.append("    X_test = X_test.fillna(X_test.mode().iloc[0])")
+            lines.append("    for _col in X_train.columns:")
+            lines.append("        _mode = X_train[_col].mode()")
+            lines.append(f"        X_train[_col] = X_train[_col].fillna(_mode.iloc[0] if not _mode.empty else {value!r})")
+            lines.append("    for _col in X_test.columns:")
+            lines.append("        _mode = X_test[_col].mode()")
+            lines.append(f"        X_test[_col] = X_test[_col].fillna(_mode.iloc[0] if not _mode.empty else {value!r})")
         else:
             lines.append(f"    X_train = X_train.fillna({value!r})")
             lines.append(f"    X_test = X_test.fillna({value!r})")

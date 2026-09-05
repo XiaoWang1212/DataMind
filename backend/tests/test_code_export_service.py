@@ -294,3 +294,76 @@ def test_render_fe_unsupported_step_returns_todo_comment():
     code = render_feature_engineering_step({"type": "randomize_rows"})
     assert "TODO" in code
     assert "randomize_rows" in code
+
+
+def test_render_fe_pca_zero_numeric_columns():
+    """PCA with zero numeric columns should not crash, just leave frame unchanged."""
+    X_train = pd.DataFrame({"a": ["x", "y", "z"]})  # All non-numeric
+    X_test = pd.DataFrame({"a": ["w"]})
+    out_train, out_test = _run_generated_fe({"type": "pca", "n_components": 1}, X_train, X_test)
+    # Should not crash and frame should be unchanged
+    assert out_train.equals(X_train)
+    assert out_test.equals(X_test)
+
+
+def test_render_fe_select_relevant_features_zero_numeric_columns():
+    """SelectKBest with zero numeric columns should not crash, return zero-column frame."""
+    X_train = pd.DataFrame({"a": ["x", "y", "z", "w"]})  # All non-numeric
+    X_test = pd.DataFrame({"a": ["v"]})
+    y_train = pd.Series([0, 0, 1, 1])
+    out_train, out_test = _run_generated_fe(
+        {"type": "select_relevant_features", "k": 1}, X_train, X_test, y_train=y_train,
+    )
+    # Should not crash, and result should have no columns (all non-numeric filtered out)
+    assert len(out_train.columns) == 0
+    assert len(out_test.columns) == 0
+
+
+def test_render_fe_normalize_features_happy_path():
+    """normalize_features with valid numeric columns should work."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [10.0, 20.0, 30.0]})
+    X_test = pd.DataFrame({"a": [4.0], "b": [40.0]})
+    out_train, out_test = _run_generated_fe(
+        {"type": "normalize_features", "columns": ["a", "b"]}, X_train, X_test
+    )
+    # Verify normalized (values should be in [0, 1] range)
+    assert (out_train["a"] >= 0).all() and (out_train["a"] <= 1).all()
+    assert (out_train["b"] >= 0).all() and (out_train["b"] <= 1).all()
+
+
+def test_render_fe_normalize_features_nonexistent_columns():
+    """normalize_features with nonexistent column spec should not crash."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [4.0]})
+    out_train, out_test = _run_generated_fe(
+        {"type": "normalize_features", "columns": ["nonexistent"]}, X_train, X_test
+    )
+    # Should not crash and frame should be unchanged
+    assert out_train.equals(X_train)
+    assert out_test.equals(X_test)
+
+
+def test_render_fe_impute_missing_mode_happy_path():
+    """impute_missing with mode strategy should work on normal data."""
+    X_train = pd.DataFrame({"a": [1, 1, 2, None], "b": [5, 5, 5, 5]})
+    X_test = pd.DataFrame({"a": [None], "b": [5]})
+    out_train, out_test = _run_generated_fe(
+        {"type": "impute_missing", "strategy": "mode"}, X_train, X_test
+    )
+    # Mode of "a" in train is 1, should be filled
+    assert out_train["a"].isna().sum() == 0
+    assert out_test["a"].isna().sum() == 0
+
+
+def test_render_fe_impute_missing_mode_entirely_nan_column():
+    """impute_missing with mode strategy should handle entirely NaN columns with fallback."""
+    X_train = pd.DataFrame({"a": [None, None, None], "b": [1, 2, 3]})
+    X_test = pd.DataFrame({"a": [None], "b": [4]})
+    out_train, out_test = _run_generated_fe(
+        {"type": "impute_missing", "strategy": "mode", "value": 0}, X_train, X_test
+    )
+    # Should not crash; column with all NaN should be filled with fallback value (0)
+    assert out_train["a"].isna().sum() == 0
+    assert out_test["a"].isna().sum() == 0
+    # Verify fallback value was used
+    assert out_train["a"].iloc[0] == 0
