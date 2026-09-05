@@ -159,7 +159,7 @@
   }
 
   .code-preview-filename-input:hover {
-    background: color-mix(in oklab, var(--color-ink) 6%, white);
+    background: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
   }
 
   .code-preview-filename-input:focus {
