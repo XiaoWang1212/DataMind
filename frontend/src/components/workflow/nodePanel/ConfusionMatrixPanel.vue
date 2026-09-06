@@ -621,7 +621,9 @@
     switch (activeTab.value) {
       case 'matrix': return currentMatrix.value !== null
       case 'roc':
-      case 'pr': return visibleModelNames.value.length > 0
+      case 'pr': return visibleModelNames.value.some(name =>
+        groupedResults.value.find(g => g.model_name === name)
+          ?.splits.some(s => s.split_name === selectedFold.value && s.roc_pr_curve !== null))
       case 'calibration': return currentCalibrationCurve.value !== null
       case 'perClass': return currentPerClassMetrics.value !== null
       default: return false
@@ -817,7 +819,7 @@
   }
 
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
-  watch([activeTab, insightModelParam, selectedFold], () => {
+  watch([activeTab, () => modelParamToString(insightModelParam.value), selectedFold], () => {
     tabInsightError.value = null
     tabChatInput.value = ''
     if (!props.projectId) return
