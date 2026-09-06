@@ -77,28 +77,30 @@
       </div>
 
       <div v-if="activeTab === 'roc' && groupedResults.length > 0" class="cm-chart-wrap">
-        <div class="cm-chart-label">
-          正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">
+            正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+          </div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
+            <path
+              v-for="series in rocSeries"
+              v-show="series.visible"
+              :key="series.modelName"
+              class="cm-chart-line"
+              :d="series.path"
+              fill="none"
+              :style="{ stroke: series.color }"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">FPR (0 – 1)</div>
+          <div class="cm-chart-axis-y">TPR (0 – 1)</div>
         </div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
-          <path
-            v-for="series in rocSeries"
-            v-show="series.visible"
-            :key="series.modelName"
-            class="cm-chart-line"
-            :d="series.path"
-            fill="none"
-            :style="{ stroke: series.color }"
-          />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">FPR (0 – 1)</div>
-        <div class="cm-chart-axis-y">TPR (0 – 1)</div>
         <div class="cm-chart-legend">
           <button
             v-for="series in rocSeries"
@@ -118,27 +120,29 @@
       </div>
 
       <div v-if="activeTab === 'pr' && groupedResults.length > 0" class="cm-chart-wrap">
-        <div class="cm-chart-label">
-          正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">
+            正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+          </div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <path
+              v-for="series in prSeries"
+              v-show="series.visible"
+              :key="series.modelName"
+              class="cm-chart-line"
+              :d="series.path"
+              fill="none"
+              :style="{ stroke: series.color }"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">Recall (0 – 1)</div>
+          <div class="cm-chart-axis-y">Precision (0 – 1)</div>
         </div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <path
-            v-for="series in prSeries"
-            v-show="series.visible"
-            :key="series.modelName"
-            class="cm-chart-line"
-            :d="series.path"
-            fill="none"
-            :style="{ stroke: series.color }"
-          />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">Recall (0 – 1)</div>
-        <div class="cm-chart-axis-y">Precision (0 – 1)</div>
         <div class="cm-chart-legend">
           <button
             v-for="series in prSeries"
@@ -158,26 +162,28 @@
       </div>
 
       <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
-        <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
-          <path class="cm-chart-line" :d="calibrationPath" fill="none" />
-          <circle
-            v-for="(point, index) in calibrationPoints"
-            :key="`cal-point-${index}`"
-            class="cm-chart-point"
-            :cx="point.x"
-            :cy="point.y"
-            r="1.5"
-          />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
-        <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
+            <path class="cm-chart-line" :d="calibrationPath" fill="none" />
+            <circle
+              v-for="(point, index) in calibrationPoints"
+              :key="`cal-point-${index}`"
+              class="cm-chart-point"
+              :cx="point.x"
+              :cy="point.y"
+              r="1.5"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
+          <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+        </div>
       </div>
       <div v-else-if="activeTab === 'calibration'" class="summary-empty">
         此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
@@ -1030,11 +1036,24 @@
   }
 
   .cm-chart-wrap {
-    position: relative;
-    padding: 12px 16px 28px 52px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 16px;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     background: var(--color-surface);
+  }
+
+  /* 圖表本體（含軸標籤）獨立出來，因為 axis-x/axis-y 是相對這一層定位，
+     不能再相對 .cm-chart-wrap——那一層現在要跟圖例並排。這裡的 padding 只放
+     X/Y 軸標籤額外需要的空間，跟 .cm-chart-wrap 自己的 12px/16px 加起來
+     等於原本單一 .cm-chart-wrap 的 12px 16px 28px 52px（沒有改變總留白量，
+     只是拆成兩層） */
+  .cm-chart-plot {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 0 0 16px 36px;
   }
 
   .cm-chart {
@@ -1065,9 +1084,9 @@
 
   .cm-chart-legend {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-    margin-top: 8px;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
   }
 
   .cm-legend-item {
