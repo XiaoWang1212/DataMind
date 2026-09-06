@@ -304,3 +304,14 @@ def test_tab_chat_rejects_missing_both_model_fields(client, monkeypatch):
 
     assert response.status_code == 400
     assert fake_service.calls == []
+
+
+def test_tab_chat_requires_login(client_with_login_required):
+    response = client_with_login_required.post("/api/rag/tab-chat", json={
+        "mining_results": {"results": []},
+        "tab": "pr",
+        "model_name": "SVM",
+        "split_name": "fold_1",
+        "message": "哪個模型比較好？",
+    })
+    assert response.status_code == 401

@@ -606,6 +606,7 @@ def generate_tab_insight():
 
 
 @rag_bp.route("/tab-chat", methods=["POST"])
+@login_required
 def chat_about_tab():
     """針對 workflow 結果裡某個分頁（混淆矩陣/ROC/PR/校準曲線/各類別指標），進行範圍限定的多輪問答
 
