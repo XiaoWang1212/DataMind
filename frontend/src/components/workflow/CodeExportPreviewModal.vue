@@ -4,6 +4,9 @@
     class="code-preview-backdrop"
     @click.self="emit('close')"
   >
+    <!-- highlight.js 的主題檔是整份 CSS 檔案，不是可以用 CSS 變數切換的設計，
+         所以用 <link> 動態換整份樣式表，而不是硬寫死一份深色主題 -->
+    <link :href="highlightThemeHref" rel="stylesheet">
     <div class="code-preview-card">
       <header class="code-preview-header">
         <input
@@ -27,7 +30,7 @@
         </div>
       </header>
 
-      <pre class="code-preview-body"><code class="language-python" v-html="highlightedCode" /></pre>
+      <pre class="code-preview-body" :style="codeBodyStyle"><code class="language-python" v-html="highlightedCode" /></pre>
     </div>
   </div>
 </template>
@@ -35,11 +38,23 @@
 <script setup lang="ts">
   import hljs from 'highlight.js/lib/core'
   import python from 'highlight.js/lib/languages/python'
-  import 'highlight.js/styles/atom-one-dark.css'
+  // 兩份主題都用 ?url 匯入純網址字串，不會像一般 CSS import 那樣直接套用到全站——
+  // 實際要套用哪一份，由下面的 <link> 依目前 light/dark 模式動態決定
+  import darkThemeHref from 'highlight.js/styles/atom-one-dark.css?url'
+  import lightThemeHref from 'highlight.js/styles/atom-one-light.css?url'
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import AppButton from '@/components/ui/AppButton.vue'
+  import { useThemeStore } from '@/store/themeStore'
 
   hljs.registerLanguage('python', python)
+
+  const themeStore = useThemeStore()
+  const highlightThemeHref = computed(() => themeStore.isDark ? darkThemeHref : lightThemeHref)
+  // atom-one-dark / atom-one-light 兩份主題各自的底色跟基礎文字色，主題檔本身沒有用 CSS 變數，
+  // 沒辦法只換主題檔就連底色一起換，所以這裡跟著手動對應
+  const codeBodyStyle = computed(() => themeStore.isDark
+    ? { background: '#282c34', color: '#abb2bf' }
+    : { background: '#fafafa', color: '#383a42' })
 
   const props = defineProps<{
     visible: boolean
@@ -179,8 +194,6 @@
     margin: 0;
     overflow: auto;
     padding: 16px 20px;
-    background: #282c34;
-    color: #abb2bf;
     font-family: var(--font-mono, 'SF Mono', Consolas, monospace);
     font-size: 13px;
     line-height: 1.6;
