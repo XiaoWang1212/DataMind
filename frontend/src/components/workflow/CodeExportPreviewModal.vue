@@ -4,9 +4,6 @@
     class="code-preview-backdrop"
     @click.self="emit('close')"
   >
-    <!-- highlight.js 的主題檔是整份 CSS 檔案，不是可以用 CSS 變數切換的設計，
-         所以用 <link> 動態換整份樣式表，而不是硬寫死一份深色主題 -->
-    <link :href="highlightThemeHref" rel="stylesheet">
     <div class="code-preview-card">
       <header class="code-preview-header">
         <input
@@ -38,10 +35,10 @@
 <script setup lang="ts">
   import hljs from 'highlight.js/lib/core'
   import python from 'highlight.js/lib/languages/python'
-  // 兩份主題都用 ?url 匯入純網址字串，不會像一般 CSS import 那樣直接套用到全站——
-  // 實際要套用哪一份，由下面的 <link> 依目前 light/dark 模式動態決定
-  import darkThemeHref from 'highlight.js/styles/atom-one-dark.css?url'
-  import lightThemeHref from 'highlight.js/styles/atom-one-light.css?url'
+  // 兩份主題都用 ?raw 匯入成純文字字串，不會像一般 CSS import 那樣直接套用到全站——
+  // 實際要套用哪一份，由下面的 <style> 依目前 light/dark 模式動態決定
+  import darkThemeCss from 'highlight.js/styles/atom-one-dark.css?raw'
+  import lightThemeCss from 'highlight.js/styles/atom-one-light.css?raw'
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import { useThemeStore } from '@/store/themeStore'
@@ -49,12 +46,26 @@
   hljs.registerLanguage('python', python)
 
   const themeStore = useThemeStore()
-  const highlightThemeHref = computed(() => themeStore.isDark ? darkThemeHref : lightThemeHref)
+  const highlightThemeCss = computed(() => themeStore.isDark ? darkThemeCss : lightThemeCss)
   // atom-one-dark / atom-one-light 兩份主題各自的底色跟基礎文字色，主題檔本身沒有用 CSS 變數，
   // 沒辦法只換主題檔就連底色一起換，所以這裡跟著手動對應
   const codeBodyStyle = computed(() => themeStore.isDark
     ? { background: '#282c34', color: '#abb2bf' }
     : { background: '#fafafa', color: '#383a42' })
+
+  // Vue 的 SFC 編譯器不允許在 <template> 裡直接寫 <style>（會被當成側效應標籤忽略、直接編譯失敗），
+  // 所以要動態切換 highlight.js 主題只能用原生 DOM API 手動管理一個 <style> 節點，
+  // 不能宣告在 template 裡。掛在 document.head 上（不是這個元件自己的節點），
+  // 因為 highlight.js 輸出的 .hljs-* 是全站唯一一份、不會跟其他樣式衝突
+  let highlightStyleEl: HTMLStyleElement | null = null
+
+  watch(highlightThemeCss, css => {
+    if (!highlightStyleEl) {
+      highlightStyleEl = document.createElement('style')
+      document.head.appendChild(highlightStyleEl)
+    }
+    highlightStyleEl.textContent = css
+  }, { immediate: true })
 
   const props = defineProps<{
     visible: boolean
@@ -90,6 +101,7 @@
 
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown)
+    highlightStyleEl?.remove()
   })
 
   async function handleCopy (): Promise<void> {
