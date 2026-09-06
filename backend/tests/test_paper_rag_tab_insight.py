@@ -142,6 +142,87 @@ def test_generate_tab_insight_multi_model_no_matching_results():
     assert text == "找不到對應的結果資料。"
 
 
+def test_generate_tab_insight_single_element_model_names_uses_single_model_path():
+    """Fix 1 迴歸測試：圖例只剩 1 個模型時（即使前端仍傳 model_names 陣列），
+    不該套用「請比較它們的表現」這種多模型 prompt，要退回單模型路徑。"""
+    service = make_service()
+    captured_prompt = {}
+
+    def fake_call_gemini(prompt, usage_total):
+        captured_prompt["value"] = prompt
+        return "解讀內容。"
+
+    service._call_gemini = fake_call_gemini
+    mining_results = {"results": [make_result("SomeModel")]}
+
+    text = service.generate_tab_insight(
+        mining_results, "roc", "SomeModel", "fold_1", model_names=["SomeModel"],
+    )
+
+    assert text == "解讀內容。"
+    prompt = captured_prompt["value"]
+    assert "請比較它們的表現" not in prompt
+    assert "個模型" not in prompt
+    assert '模型「SomeModel」在「fold_1」這筆結果的資料' in prompt
+
+
+def test_generate_tab_insight_model_count_excludes_models_without_curve_data():
+    """Fix 2 迴歸測試：3 個模型比對，但其中 1 個沒有 roc_pr_curve 資料時，
+    prompt 裡宣稱的模型數量應該只算真的有資料、會被列出來的 2 個。"""
+    service = make_service()
+    captured_prompt = {}
+
+    def fake_call_gemini(prompt, usage_total):
+        captured_prompt["value"] = prompt
+        return "解讀內容。"
+
+    service._call_gemini = fake_call_gemini
+    no_curve = make_result("C")
+    no_curve["roc_pr_curve"] = None
+    mining_results = {"results": [make_result("A"), make_result("B"), no_curve]}
+
+    text = service.generate_tab_insight(
+        mining_results, "roc", "A", "fold_1", model_names=["A", "B", "C"],
+    )
+
+    assert text == "解讀內容。"
+    prompt = captured_prompt["value"]
+    assert "2 個模型" in prompt
+    assert "3 個模型" not in prompt
+    assert "▶ C" not in prompt
+
+
+def test_chat_about_tab_single_element_model_names_uses_single_model_path():
+    """Fix 1 迴歸測試：chat_about_tab() 版本，圖例只剩 1 個模型時
+    context 文字不該出現「N 個模型的比較」這種多模型措辭。"""
+    service = make_service()
+    captured = {}
+
+    class FakeChat:
+        def send_message(self, message):
+            captured["message"] = message
+            class Resp:
+                text = "解讀內容。"
+            return Resp()
+
+    class FakeModel:
+        def start_chat(self, history):
+            captured["history"] = history
+            return FakeChat()
+
+    service._model = FakeModel()
+    mining_results = {"results": [make_result("SomeModel")]}
+
+    reply = service.chat_about_tab(
+        mining_results, "roc", "SomeModel", "fold_1", [], "這個模型表現如何？",
+        model_names=["SomeModel"],
+    )
+
+    assert reply == "解讀內容。"
+    first_turn_text = captured["history"][0]["parts"][0]
+    assert "個模型的比較" not in first_turn_text
+
+
 def test_chat_about_tab_multi_model_context_mentions_model_count():
     service = make_service()
     captured = {}

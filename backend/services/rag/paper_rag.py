@@ -648,6 +648,19 @@ class PaperRAGService:
             if not results:
                 return "找不到對應的結果資料。"
 
+            # Fix 2：先濾掉沒有曲線資料的模型，這樣下面 len(results) 用來組 prompt
+            # 文字時，才會跟 _format_multi_model_curve_data() 實際列出的 ▶ 區塊數一致，
+            # 不會出現「以下是 3 個模型」但只列出 2 個的落差。
+            results = [r for r in results if r.get("roc_pr_curve")]
+
+            # Fix 1：篩選/縮減圖例後如果只剩 1 個模型，這其實就是單模型情境，
+            # 不該套用「請比較它們的表現」這種多模型 prompt——退回單模型路徑，
+            # 讓它產生跟真的只傳單一 model_name 時完全相同的 prompt。
+            if len(results) == 1:
+                model_name = results[0].get("model_name") or model_name
+                model_names = None
+
+        if model_names:
             tab_text = self._format_multi_model_curve_data(results, tab)
             if tab_text is None:
                 return "此分頁沒有可供解讀的資料。"
@@ -672,7 +685,7 @@ class PaperRAGService:
                 raise RuntimeError(text)
             return text.strip()
 
-        # 單模型路徑（既有邏輯，完全不動）
+        # 單模型路徑（既有邏輯，完全不動；model_names 只剩 1 個符合模型時也會走這裡）
         result = self._find_tab_result(mining_results, model_name, split_name)
         if result is None:
             return "找不到對應的結果資料。"
@@ -724,6 +737,18 @@ class PaperRAGService:
             if not results:
                 return "找不到對應的結果資料。"
 
+            # Fix 2：同 generate_tab_insight()，先濾掉沒有曲線資料的模型，
+            # 讓下面 context 文字裡的模型數跟實際列出的 ▶ 區塊數一致。
+            results = [r for r in results if r.get("roc_pr_curve")]
+
+            # Fix 1：篩選/縮減圖例後如果只剩 1 個模型，退回單模型路徑，
+            # 產生跟真的只傳單一 model_name 時完全相同的 context 文字，
+            # 不要問「這個模型比其他模型…」這種沒有其他模型可比的問題。
+            if len(results) == 1:
+                model_name = results[0].get("model_name") or model_name
+                model_names = None
+
+        if model_names:
             tab_text = self._format_multi_model_curve_data(results, tab)
             if tab_text is None:
                 return "此分頁沒有可供解讀的資料。"
@@ -751,7 +776,7 @@ class PaperRAGService:
             resp = chat.send_message(message)
             return (getattr(resp, "text", "") or "").strip()
 
-        # 單模型路徑（既有邏輯，完全不動）
+        # 單模型路徑（既有邏輯，完全不動；model_names 只剩 1 個符合模型時也會走這裡）
         result = self._find_tab_result(mining_results, model_name, split_name)
         if result is None:
             return "找不到對應的結果資料。"

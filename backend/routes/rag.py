@@ -584,6 +584,8 @@ def generate_tab_insight():
     model_name = data.get("model_name")
     model_names = data.get("model_names")
     split_name = data.get("split_name")
+    if model_names is not None and not isinstance(model_names, list):
+        return jsonify({"success": False, "error": "model_names 必須是陣列"}), 400
     if not tab or not split_name or (not model_name and not model_names):
         return jsonify({
             "success": False,
@@ -629,6 +631,8 @@ def chat_about_tab():
     model_names = data.get("model_names")
     split_name = data.get("split_name")
     message = (data.get("message") or "").strip()
+    if model_names is not None and not isinstance(model_names, list):
+        return jsonify({"success": False, "error": "model_names 必須是陣列"}), 400
     if not tab or not split_name or (not model_name and not model_names):
         return jsonify({
             "success": False,

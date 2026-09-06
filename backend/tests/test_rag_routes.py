@@ -235,6 +235,28 @@ def test_tab_insight_still_accepts_single_model_name(client, monkeypatch):
     assert call == ("generate_tab_insight", "matrix", "SVM", "fold_1", None)
 
 
+def test_tab_insight_rejects_non_list_model_names(client, monkeypatch):
+    """Fix 3 迴歸測試：model_names 不是陣列（例如前端/呼叫端誤傳字串）時，
+    路由層要擋下來回 400，不能讓它一路傳進 service，導致 _find_tab_results()
+    的 `for name in model_names` 對字串逐字元疊代或拋出未處理的 TypeError。"""
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-insight", json={
+        "mining_results": {"results": []},
+        "tab": "roc",
+        "model_names": "not-a-list",
+        "split_name": "fold_1",
+    })
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body["success"] is False
+    assert "model_names" in body["error"]
+    assert fake_service.calls == []
+
+
 def test_tab_insight_rejects_missing_both_model_fields(client, monkeypatch):
     monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
     fake_service = FakeService()
