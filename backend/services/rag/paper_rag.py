@@ -513,6 +513,63 @@ class PaperRAGService:
                 return r
         return None
 
+    def _find_tab_results(
+        self, mining_results: dict, model_names: List[str], split_name: str
+    ) -> List[dict]:
+        """依 model_names 的順序回傳所有符合的結果；跳過找不到或有 error 的模型，
+        不因為某個模型缺資料就整批失敗——這是刻意的寬鬆行為，圖例上顯示中的模型
+        理論上都該有資料，這裡只是防禦性處理。
+        """
+        by_key = {
+            (r.get("model_name"), r.get("split_name")): r
+            for r in mining_results.get("results", [])
+            if "error" not in r
+        }
+        return [
+            by_key[(name, split_name)]
+            for name in model_names
+            if (name, split_name) in by_key
+        ]
+
+    def _format_multi_model_curve_data(self, results: List[dict], tab: str) -> Optional[str]:
+        """把多個模型的 ROC/PR 曲線資料組成一段文字，每個模型各自一個 ▶ 區塊，
+        照抄 _format_datamind_output() 既有的分段慣例。"""
+        blocks = []
+        for result in results:
+            curve_text = self._format_roc_pr_curve_text(result, tab)
+            if curve_text is None:
+                continue
+            blocks.append(f"▶ {result.get('model_name', 'N/A')}\n{curve_text}")
+        if not blocks:
+            return None
+        header = "【ROC 曲線】" if tab == "roc" else "【PR 曲線】"
+        return f"{header}\n\n" + "\n\n".join(blocks)
+
+    def _format_roc_pr_curve_text(self, result: dict, tab: str) -> Optional[str]:
+        """單一模型的 ROC/PR 曲線格式化文字（不含【ROC 曲線】這種外層標題），
+        給單模型跟多模型兩條路徑共用，各自決定要不要加標題/模型名稱前綴。
+        """
+        curve = result.get("roc_pr_curve")
+        if not curve:
+            return None
+        metric_key = "auc" if tab == "roc" else "auprc"
+        metric_val = next(
+            (m.get("value") for m in result.get("metrics", []) if m.get("metric") == metric_key),
+            None,
+        )
+        sub = curve.get("roc" if tab == "roc" else "pr", {})
+        xs_key, ys_key = ("fpr", "tpr") if tab == "roc" else ("recall", "precision")
+        points = self._sample_curve_points(sub.get(xs_key, []), sub.get(ys_key, []))
+        points_str = "、".join(f"({x:.2f}, {y:.2f})" for x, y in points) or "N/A"
+        metric_label = "AUC" if tab == "roc" else "AUPRC"
+        metric_str = f"{metric_val:.4f}" if isinstance(metric_val, (int, float)) else "N/A"
+        axis_label = "FPR, TPR" if tab == "roc" else "Recall, Precision"
+        return (
+            f"正類：{curve.get('pos_label', 'N/A')}\n"
+            f"{metric_label}：{metric_str}\n"
+            f"取樣座標點（{axis_label}）：{points_str}"
+        )
+
     def _format_tab_data(self, result: dict, tab: str) -> Optional[str]:
         """只挑該分頁需要的欄位轉成精簡文字，不送整包原始資料。"""
         if tab == "matrix":
@@ -531,27 +588,10 @@ class PaperRAGService:
             return "【混淆矩陣】\n" + "\n".join(rows)
 
         if tab in ("roc", "pr"):
-            curve = result.get("roc_pr_curve")
-            if not curve:
+            curve_text = self._format_roc_pr_curve_text(result, tab)
+            if curve_text is None:
                 return None
-            metric_key = "auc" if tab == "roc" else "auprc"
-            metric_val = next(
-                (m.get("value") for m in result.get("metrics", []) if m.get("metric") == metric_key),
-                None,
-            )
-            sub = curve.get("roc" if tab == "roc" else "pr", {})
-            xs_key, ys_key = ("fpr", "tpr") if tab == "roc" else ("recall", "precision")
-            points = self._sample_curve_points(sub.get(xs_key, []), sub.get(ys_key, []))
-            points_str = "、".join(f"({x:.2f}, {y:.2f})" for x, y in points) or "N/A"
-            metric_label = "AUC" if tab == "roc" else "AUPRC"
-            metric_str = f"{metric_val:.4f}" if isinstance(metric_val, (int, float)) else "N/A"
-            axis_label = "FPR, TPR" if tab == "roc" else "Recall, Precision"
-            return (
-                f"【{'ROC' if tab == 'roc' else 'PR'} 曲線】\n"
-                f"正類：{curve.get('pos_label', 'N/A')}\n"
-                f"{metric_label}：{metric_str}\n"
-                f"取樣座標點（{axis_label}）：{points_str}"
-            )
+            return f"【{'ROC' if tab == 'roc' else 'PR'} 曲線】\n{curve_text}"
 
         if tab == "calibration":
             curve = result.get("calibration_curve")
@@ -594,9 +634,45 @@ class PaperRAGService:
         return None
 
     def generate_tab_insight(
-        self, mining_results: dict, tab: str, model_name: str, split_name: str
+        self, mining_results: dict, tab: str, model_name: str, split_name: str,
+        model_names: Optional[List[str]] = None,
     ) -> str:
-        """針對 workflow 結果裡某個 (model × fold) 的單一分頁資料，生成一段繁體中文解讀。"""
+        """針對 workflow 結果裡某個分頁生成一段繁體中文解讀。
+
+        model_names 有帶值（非空 list）時走多模型比較路徑（目前只有 ROC/PR 分頁的
+        前端會帶這個參數）；否則維持原本的單一 (model_name × split_name) 路徑，
+        matrix/calibration/perClass 分頁完全不受影響。
+        """
+        if model_names:
+            results = self._find_tab_results(mining_results, model_names, split_name)
+            if not results:
+                return "找不到對應的結果資料。"
+
+            tab_text = self._format_multi_model_curve_data(results, tab)
+            if tab_text is None:
+                return "此分頁沒有可供解讀的資料。"
+
+            if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
+                tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
+
+            ideal_hint = "ROC 曲線越靠左上角" if tab == "roc" else "PR 曲線越靠右上角"
+            hint = self._TAB_PROMPT_HINTS.get(tab, "")
+            prompt = (
+                "你是資料科學顧問，正在協助解讀一份醫學研究的機器學習分類結果。\n"
+                f"以下是 {len(results)} 個模型在「{split_name}」這筆結果的"
+                f"{'ROC' if tab == 'roc' else 'PR'} 曲線資料，請比較它們的表現：\n\n"
+                f"{tab_text}\n\n"
+                f"請用繁體中文寫 3 到 5 句話的解讀，明確指出哪個模型的表現最接近理想"
+                f"（{ideal_hint}），並簡短說明其他模型的相對表現。{hint}\n"
+                "請「只」輸出解讀本身，不要加上任何標題、條列符號或多餘說明文字。"
+            )
+            usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            text = self._call_gemini(prompt, usage_total)
+            if text.startswith("（生成失敗："):
+                raise RuntimeError(text)
+            return text.strip()
+
+        # 單模型路徑（既有邏輯，完全不動）
         result = self._find_tab_result(mining_results, model_name, split_name)
         if result is None:
             return "找不到對應的結果資料。"
@@ -630,13 +706,52 @@ class PaperRAGService:
         split_name: str,
         history: List[dict],
         message: str,
+        model_names: Optional[List[str]] = None,
     ) -> str:
-        """針對 workflow 結果裡某個 (model × fold) 的單一分頁資料，跟使用者進行範圍限定的多輪問答。
+        """針對 workflow 結果裡某個分頁的資料，跟使用者進行範圍限定的多輪問答。
+
+        model_names 有帶值時，context 涵蓋多個模型的資料（目前只有 ROC/PR 分頁的前端
+        會帶這個參數）；否則維持原本單一 (model_name × split_name) 的既有邏輯。
 
         跟 chat_about_results() 不同：這裡不帶 arXiv 查詢工具（用不帶 tools 的 self._model，
         不是 self._chat_model），範圍限定在這個分頁的資料，不做例外處理——Gemini 呼叫本身的
         例外、resp.text 解析例外都直接往上拋，讓路由層統一接住、回傳 success:false。
         """
+        tab_label = self._TAB_LABELS.get(tab, tab)
+
+        if model_names:
+            results = self._find_tab_results(mining_results, model_names, split_name)
+            if not results:
+                return "找不到對應的結果資料。"
+
+            tab_text = self._format_multi_model_curve_data(results, tab)
+            if tab_text is None:
+                return "此分頁沒有可供解讀的資料。"
+
+            if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
+                tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
+
+            context_turns = [
+                {
+                    "role": "user",
+                    "parts": [
+                        f"以下是這次機器學習實驗中「{tab_label}」的資料（{len(results)} 個模型的比較），"
+                        "請記住這些資訊，之後我會針對這個圖表提問。"
+                        "你只能回答跟這個圖表或這次 workflow 執行結果直接相關的問題；"
+                        "如果我問到無關的話題（例如其他學術文獻查證、與此資料無關的閒聊），"
+                        "請禮貌地簡短說明你只能討論這個分頁的內容，不需要展開回答。\n\n"
+                        f"{tab_text}"
+                    ],
+                },
+                {"role": "model", "parts": [f"好的，我已經了解「{tab_label}」這個分頁的資料，請問有什麼問題？"]},
+            ]
+            prior_turns = [{"role": h["role"], "parts": [h["text"]]} for h in history]
+
+            chat = self._model.start_chat(history=context_turns + prior_turns)
+            resp = chat.send_message(message)
+            return (getattr(resp, "text", "") or "").strip()
+
+        # 單模型路徑（既有邏輯，完全不動）
         result = self._find_tab_result(mining_results, model_name, split_name)
         if result is None:
             return "找不到對應的結果資料。"
@@ -648,7 +763,6 @@ class PaperRAGService:
         if len(tab_text) > self._MAX_TAB_TEXT_CHARS:
             tab_text = tab_text[: self._MAX_TAB_TEXT_CHARS] + "\n…（資料量過大，僅取部分內容）"
 
-        tab_label = self._TAB_LABELS.get(tab, tab)
         context_turns = [
             {
                 "role": "user",
