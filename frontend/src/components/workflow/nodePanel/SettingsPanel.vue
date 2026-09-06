@@ -271,7 +271,7 @@
                   class="param-num"
                   min="1"
                   type="number"
-                  :value="Number(localValidation.n_repeats ?? 10)"
+                  :value="Number(localValidation.n_repeats ?? 1)"
                   @change="patchValidation('n_repeats', Number(($event.target as HTMLInputElement).value))"
                 >
               </div>

@@ -399,8 +399,12 @@
     emit('update-config', { nodeId: props.selectedNode.id, config: { featureEngineering: steps } })
   }
 
+  // 不在這裡直接寫 localConfig.compute_ci——compute_ci 是 gated 欄位，真正的節點設定
+  // 可能被 WorkflowWorkspace 的中斷確認擋下、延後才套用（甚至使用者取消整個沒套用）。
+  // 樂觀更新畫面上的開關會讓畫面顯示「已關閉」但實際送給後端的設定其實還沒變，
+  // 使用者會誤以為調整生效了。改成完全交給下面的 watch(selectedNode config) 反映
+  // 真正套用後的節點狀態，開關永遠跟後端實際會收到的值一致
   function handleSettingsComputeCiUpdate (value: boolean): void {
-    localConfig.compute_ci = value
     if (!props.selectedNode) return
     emit('update-config', { nodeId: props.selectedNode.id, config: { compute_ci: value } })
   }
@@ -421,6 +425,17 @@
       Object.assign(localConfig, node.data.config)
     },
     { immediate: true },
+  )
+
+  // compute_ci 不像其他欄位在使用者離開節點才需要對齊，因為它可能被父層的中斷確認
+  // 擋下、延後套用（見 handleSettingsComputeCiUpdate 的說明）——這裡持續盯著同一個
+  // 節點底下 compute_ci 真正的值，一旦父層實際套用了（不管是立刻套用還是使用者確認
+  // 中斷對話框之後），開關就會跟著反映，不會停在使用者剛按下去、但還沒真正生效的狀態
+  watch(
+    () => props.selectedNode?.data.config.compute_ci,
+    value => {
+      if (value !== undefined) localConfig.compute_ci = value as ConfigValue
+    },
   )
 </script>
 
