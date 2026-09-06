@@ -78,6 +78,23 @@ export async function executeWorkflowApi(params: {
   return result;
 }
 
+export async function exportWorkflowCode (
+  payload: Record<string, unknown>,
+): Promise<{ code: string, filename: string }> {
+  const response = await fetch('/api/models/workflow/export-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  const result = (await response.json()) as Record<string, unknown>
+  if (!response.ok || !result.success) {
+    throw new Error(result.error ? String(result.error) : `HTTP ${response.status}`)
+  }
+
+  return { code: String(result.code ?? ''), filename: String(result.filename ?? 'workflow_export.py') }
+}
+
 export async function fetchAvailableModels(): Promise<string[]> {
   const response = await fetch("/api/models/available");
   const result = (await response.json()) as {
