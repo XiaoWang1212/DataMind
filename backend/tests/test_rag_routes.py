@@ -78,6 +78,14 @@ class FakeService:
         self.calls.append(("search_arxiv_candidates", user_title))
         return {"topic": "t", "arxiv_query": "q", "candidates": []}
 
+    def generate_tab_insight(self, mining_results, tab, model_name, split_name, model_names=None):
+        self.calls.append(("generate_tab_insight", tab, model_name, split_name, model_names))
+        return "假的解讀文字"
+
+    def chat_about_tab(self, mining_results, tab, model_name, split_name, history, message, model_names=None):
+        self.calls.append(("chat_about_tab", tab, model_name, split_name, model_names, message))
+        return "假的回覆文字"
+
 
 class FakeServiceRaising:
     """search_arxiv_candidates / ingest_arxiv_selection 拋出指定例外，模擬 arXiv 逾時/連線失敗。"""
@@ -190,3 +198,87 @@ def test_arxiv_route_returns_friendly_message_on_network_timeout(client, monkeyp
     assert body["success"] is False
     assert "逾時" in body["error"]
     assert "read operation timed out" not in body["error"]
+
+
+def test_tab_insight_accepts_model_names_list(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-insight", json={
+        "mining_results": {"results": []},
+        "tab": "roc",
+        "model_names": ["SVM", "Random Forest"],
+        "split_name": "fold_1",
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()["success"] is True
+    call = fake_service.calls[0]
+    assert call == ("generate_tab_insight", "roc", None, "fold_1", ["SVM", "Random Forest"])
+
+
+def test_tab_insight_still_accepts_single_model_name(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-insight", json={
+        "mining_results": {"results": []},
+        "tab": "matrix",
+        "model_name": "SVM",
+        "split_name": "fold_1",
+    })
+
+    assert response.status_code == 200
+    call = fake_service.calls[0]
+    assert call == ("generate_tab_insight", "matrix", "SVM", "fold_1", None)
+
+
+def test_tab_insight_rejects_missing_both_model_fields(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-insight", json={
+        "mining_results": {"results": []},
+        "tab": "roc",
+        "split_name": "fold_1",
+    })
+
+    assert response.status_code == 400
+    assert fake_service.calls == []
+
+
+def test_tab_chat_accepts_model_names_list(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-chat", json={
+        "mining_results": {"results": []},
+        "tab": "pr",
+        "model_names": ["SVM", "Random Forest"],
+        "split_name": "fold_1",
+        "message": "哪個模型比較好？",
+    })
+
+    assert response.status_code == 200
+    call = fake_service.calls[0]
+    assert call == ("chat_about_tab", "pr", None, "fold_1", ["SVM", "Random Forest"], "哪個模型比較好？")
+
+
+def test_tab_chat_rejects_missing_both_model_fields(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/tab-chat", json={
+        "mining_results": {"results": []},
+        "tab": "pr",
+        "split_name": "fold_1",
+        "message": "哪個模型比較好？",
+    })
+
+    assert response.status_code == 400
+    assert fake_service.calls == []

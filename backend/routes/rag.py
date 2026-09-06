@@ -568,7 +568,8 @@ def generate_tab_insight():
     JSON body:
         - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
         - tab             : 'matrix' | 'roc' | 'pr' | 'calibration' | 'perClass'（必填）
-        - model_name      : 要解讀哪個模型（必填）
+        - model_name      : 要解讀哪個模型（跟 model_names 二選一，至少要有一個）
+        - model_names     : 要解讀哪些模型的比較（ROC/PR 多模型疊圖用，跟 model_name 二選一）
         - split_name      : 要解讀哪個 fold/split（必填）
 
     回傳：
@@ -581,14 +582,20 @@ def generate_tab_insight():
         return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
     tab = data.get("tab")
     model_name = data.get("model_name")
+    model_names = data.get("model_names")
     split_name = data.get("split_name")
-    if not tab or not model_name or not split_name:
-        return jsonify({"success": False, "error": "tab、model_name、split_name 為必填欄位"}), 400
+    if not tab or not split_name or (not model_name and not model_names):
+        return jsonify({
+            "success": False,
+            "error": "tab、split_name 為必填欄位，且 model_name/model_names 至少要有一個",
+        }), 400
 
     service = get_paper_rag_service()
 
     try:
-        insight = service.generate_tab_insight(data["mining_results"], tab, model_name, split_name)
+        insight = service.generate_tab_insight(
+            data["mining_results"], tab, model_name, split_name, model_names=model_names,
+        )
         return jsonify({"success": True, "insight": insight})
 
     except Exception as e:
@@ -603,7 +610,8 @@ def chat_about_tab():
     JSON body:
         - mining_results : DataMind /api/models/workflow/execute 的完整回傳值（必填）
         - tab             : 'matrix' | 'roc' | 'pr' | 'calibration' | 'perClass'（必填）
-        - model_name      : 要問哪個模型的結果（必填）
+        - model_name      : 要問哪個模型的結果（跟 model_names 二選一，至少要有一個）
+        - model_names     : 要問哪些模型的比較（ROC/PR 多模型疊圖用，跟 model_name 二選一）
         - split_name      : 要問哪個 fold/split（必填）
         - history         : 對話歷史 [{role: "user"|"model", text: str}]（選填，預設空陣列）
         - message         : 本輪使用者輸入（必填）
@@ -618,10 +626,14 @@ def chat_about_tab():
         return jsonify({"success": False, "error": "mining_results 為必填欄位"}), 400
     tab = data.get("tab")
     model_name = data.get("model_name")
+    model_names = data.get("model_names")
     split_name = data.get("split_name")
     message = (data.get("message") or "").strip()
-    if not tab or not model_name or not split_name:
-        return jsonify({"success": False, "error": "tab、model_name、split_name 為必填欄位"}), 400
+    if not tab or not split_name or (not model_name and not model_names):
+        return jsonify({
+            "success": False,
+            "error": "tab、split_name 為必填欄位，且 model_name/model_names 至少要有一個",
+        }), 400
     if not message:
         return jsonify({"success": False, "error": "message 為必填欄位"}), 400
 
@@ -629,7 +641,9 @@ def chat_about_tab():
     service = get_paper_rag_service()
 
     try:
-        reply = service.chat_about_tab(data["mining_results"], tab, model_name, split_name, history, message)
+        reply = service.chat_about_tab(
+            data["mining_results"], tab, model_name, split_name, history, message, model_names=model_names,
+        )
         return jsonify({"success": True, "reply": reply})
 
     except Exception as e:
