@@ -509,6 +509,12 @@
 
   const hiddenModels = ref<Set<string>>(new Set())
 
+  const visibleModelNames = computed(() =>
+    groupedResults.value
+      .filter(g => !hiddenModels.value.has(g.model_name))
+      .map(g => g.model_name),
+  )
+
   function toggleModelVisibility (modelName: string): void {
     const next = new Set(hiddenModels.value)
     if (next.has(modelName)) next.delete(modelName)
@@ -615,23 +621,36 @@
     switch (activeTab.value) {
       case 'matrix': return currentMatrix.value !== null
       case 'roc':
-      case 'pr': return currentRocPrCurve.value !== null
+      case 'pr': return visibleModelNames.value.length > 0
       case 'calibration': return currentCalibrationCurve.value !== null
       case 'perClass': return currentPerClassMetrics.value !== null
       default: return false
     }
   })
 
+  // ROC/PR 用「目前顯示中的模型集合」當作 AI 解讀的範圍，其他分頁維持單一 selectedModel，
+  // 排序是為了同一組模型不管使用者關閉/開啟的先後順序，都對應到同一個快取 key
+  const insightModelParam = computed<string | string[]>(() => {
+    if (activeTab.value === 'roc' || activeTab.value === 'pr') {
+      return [...visibleModelNames.value].sort()
+    }
+    return selectedModel.value
+  })
+
+  function modelParamToString (model: string | string[]): string {
+    return Array.isArray(model) ? model.join(',') : model
+  }
+
   const tabInsightCache = ref<Map<string, string>>(new Map())
   const tabInsightLoadingKey = ref<string | null>(null)
   const tabInsightError = ref<string | null>(null)
 
-  function tabInsightCacheKey (tab: TabKey, model: string, fold: string): string {
-    return `${tab}::${model}::${fold}`
+  function tabInsightCacheKey (tab: TabKey, model: string | string[], fold: string): string {
+    return `${tab}::${modelParamToString(model)}::${fold}`
   }
 
   const currentTabInsightKey = computed(() =>
-    tabInsightCacheKey(activeTab.value, selectedModel.value, selectedFold.value),
+    tabInsightCacheKey(activeTab.value, insightModelParam.value, selectedFold.value),
   )
 
   const currentTabInsight = computed(() =>
@@ -643,7 +662,7 @@
   async function generateTabInsight (): Promise<void> {
     if (!props.projectId || !props.workflowResult) return
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
 
@@ -652,7 +671,7 @@
     try {
       const insight = await fetchTabInsight(props.workflowResult, tab, model, fold)
       tabInsightCache.value = new Map(tabInsightCache.value).set(key, insight)
-      saveTabInsightToStorage(props.projectId, model, fold, tab, insight)
+      saveTabInsightToStorage(props.projectId, modelParamToString(model), fold, tab, insight)
     } catch (error) {
       tabInsightError.value = error instanceof Error ? error.message : String(error)
     } finally {
@@ -725,7 +744,7 @@
   // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
   // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
   async function requestTabChatReply (
-    tab: TabKey, model: string, fold: string, history: TabChatMessage[], text: string,
+    tab: TabKey, model: string | string[], fold: string, history: TabChatMessage[], text: string,
   ): Promise<void> {
     if (!props.projectId || !props.workflowResult) return
     const key = tabInsightCacheKey(tab, model, fold)
@@ -740,7 +759,9 @@
       const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
       const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
       tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
-      saveTabChatToStorage(props.projectId, model, fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES))
+      saveTabChatToStorage(
+        props.projectId, modelParamToString(model), fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES),
+      )
       startTypewriter(`${key}::${messages.length - 1}`, reply)
     } catch (error) {
       tabChatError.value = new Map(tabChatError.value).set(
@@ -758,7 +779,7 @@
     if (!text || !props.projectId || !props.workflowResult) return
 
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     const cachedMessages = tabChatCache.value.get(key) ?? []
@@ -785,7 +806,7 @@
   // 用同一則訊息內容再打一次 API，不會讓使用者的問題重複出現在 history 裡
   function retryTabChatMessage (): void {
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     const messages = tabChatCache.value.get(key) ?? []
@@ -796,22 +817,23 @@
   }
 
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
-  watch([activeTab, selectedModel, selectedFold], () => {
+  watch([activeTab, insightModelParam, selectedFold], () => {
     tabInsightError.value = null
     tabChatInput.value = ''
     if (!props.projectId) return
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
+    const modelKey = modelParamToString(model)
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     if (!tabInsightCache.value.has(key)) {
-      const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
+      const cached = loadTabInsightFromStorage(props.projectId, modelKey, fold, tab)
       if (cached !== null) {
         tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
       }
     }
     if (!tabChatCache.value.has(key)) {
-      const cachedChat = loadTabChatFromStorage(props.projectId, model, fold, tab)
+      const cachedChat = loadTabChatFromStorage(props.projectId, modelKey, fold, tab)
       if (cachedChat.length > 0) {
         tabChatCache.value = new Map(tabChatCache.value).set(key, cachedChat)
       }
