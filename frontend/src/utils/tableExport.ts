@@ -52,7 +52,7 @@ export function exportTableToCsv (
   filename: string,
 ): void {
   const lines = [headers, ...rows].map(row => row.map(cell => toCsvCell(cell)).join(','))
-  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
