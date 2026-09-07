@@ -12,7 +12,7 @@
 
 - 完全不動後端——所有資料前端都已經有
 - 不新增通用 Modal/Dropdown 元件——選單直接寫在 `ResultTableActions.vue` 裡，用全站既有的 `glass-menu` 樣式（`frontend/src/styles/glass.css`，在 `@layer vuetify-final` 裡，只提供背景/模糊/邊框/陰影，不會跟自己 scoped 的版面 CSS 衝突——這是 `CustomSelect.vue` 的 `.cs-popup glass-menu` 已經在用的同一個組合模式）
-- CSV 內容開頭要加 UTF-8 BOM（用 `﻿` 跳脫序列寫在程式碼裡，不要貼看不見的字元），避免 Excel 開啟中文亂碼
+- CSV 內容開頭要加 UTF-8 BOM（用 `\uFEFF` 跳脫序列寫在程式碼裡，不要貼看不見的字元），避免 Excel 開啟中文亂碼
 - Test & Score、Feature Importance 兩個節點的檔案完全不用改
 - 型別檢查在 `datamind-frontend` container 內執行（`docker exec datamind-frontend sh -c "cd /app && npm run type-check"`）
 - 直接在 `main` branch 上工作，不開額外 git worktree
@@ -45,7 +45,7 @@ export function exportTableToCsv (
   filename: string,
 ): void {
   const lines = [headers, ...rows].map(row => row.map(cell => toCsvCell(cell)).join(','))
-  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
