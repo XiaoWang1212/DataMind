@@ -587,7 +587,6 @@
     return rows.reduce((min, row) => (row.f1 < min.f1 ? row : min)).label
   })
 
-  // 只有 matrix / perClass 這兩個分頁是表格，ROC / PR / 校準曲線是圖表，沒有對應的複製/匯出內容
   const exportableTable = computed(() => {
     const suffix = `${selectedModel.value}_${selectedFold.value}`
 
@@ -611,6 +610,47 @@
           row.support,
         ]),
         filename: `per_class_metrics_${suffix}`,
+      }
+    }
+
+    if (activeTab.value === 'roc' && visibleModelNames.value.length > 0) {
+      const rows: Array<[string, string, string]> = []
+      for (const modelName of visibleModelNames.value) {
+        const curve = groupedResults.value
+          .find(g => g.model_name === modelName)
+          ?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve
+        if (!curve) continue
+        curve.roc.fpr.forEach((fpr, i) => {
+          rows.push([modelName, fpr.toFixed(4), (curve.roc.tpr[i] ?? 0).toFixed(4)])
+        })
+      }
+      if (rows.length === 0) return null
+      return { headers: ['模型', 'FPR', 'TPR'], rows, filename: `roc_curve_${selectedFold.value}` }
+    }
+
+    if (activeTab.value === 'pr' && visibleModelNames.value.length > 0) {
+      const rows: Array<[string, string, string]> = []
+      for (const modelName of visibleModelNames.value) {
+        const curve = groupedResults.value
+          .find(g => g.model_name === modelName)
+          ?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve
+        if (!curve) continue
+        curve.pr.recall.forEach((recall, i) => {
+          rows.push([modelName, recall.toFixed(4), (curve.pr.precision[i] ?? 0).toFixed(4)])
+        })
+      }
+      if (rows.length === 0) return null
+      return { headers: ['模型', 'Recall', 'Precision'], rows, filename: `pr_curve_${selectedFold.value}` }
+    }
+
+    if (activeTab.value === 'calibration' && currentCalibrationCurve.value) {
+      const curve = currentCalibrationCurve.value
+      return {
+        headers: ['模型', '預測機率', '實際正類比例'],
+        rows: curve.probPred.map((p, i) => [
+          selectedModel.value, p.toFixed(4), (curve.probTrue[i] ?? 0).toFixed(4),
+        ]),
+        filename: `calibration_curve_${suffix}`,
       }
     }
 
