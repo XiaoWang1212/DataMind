@@ -9,7 +9,7 @@
           <p class="ci-panel__sub">{{ panelCaption }}</p>
         </div>
         <ResultTableActions
-          v-if="currentSplitMetrics.length > 0"
+          v-if="viewMode === 'fold' ? currentSplitMetrics.length > 0 : crossFoldSummary.length > 0"
           :filename="exportFilename"
           :headers="exportHeaders"
           :rows="exportRows"
@@ -210,13 +210,26 @@
     currentModelGroup.value?.splits.find(s => s.split_name === selectedFold.value)?.metrics ?? [],
   )
 
-  const exportHeaders = ['指標', 'CI Lower', 'Value', 'CI Upper']
-
-  const exportRows = computed(() =>
-    currentSplitMetrics.value.map(m => [m.metric, fmt(m.ci_lower), fmt(m.value), fmt(m.ci_upper)]),
+  const exportHeaders = computed(() =>
+    viewMode.value === 'fold'
+      ? ['指標', 'CI Lower', 'Value', 'CI Upper']
+      : ['指標', '平均信賴區間寬度', '最小值', '最大值', '平均值'],
   )
 
-  const exportFilename = computed(() => `bootstrap_ci_${selectedModel.value}_${selectedFold.value}`)
+  const exportRows = computed(() => {
+    if (viewMode.value === 'fold') {
+      return currentSplitMetrics.value.map(m => [m.metric, fmt(m.ci_lower), fmt(m.value), fmt(m.ci_upper)])
+    }
+    return crossFoldSummary.value.map(s => [
+      s.metric, fmt(s.avgCiWidth), fmt(s.minValue), fmt(s.maxValue), fmt(s.meanValue),
+    ])
+  })
+
+  const exportFilename = computed(() =>
+    viewMode.value === 'fold'
+      ? `bootstrap_ci_${selectedModel.value}_${selectedFold.value}`
+      : `bootstrap_ci_summary_${selectedModel.value}`,
+  )
 
   // 這裡的指標都是 0–1 尺度（AUC/準確率/precision/recall/F1...），直接乘 100 當百分比座標用
   const AXIS_TICKS = [0, 0.25, 0.5, 0.75, 1]
