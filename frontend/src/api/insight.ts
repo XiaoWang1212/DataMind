@@ -16,7 +16,7 @@ export async function fetchResultInsight (miningResults: Record<string, unknown>
 export async function fetchTabInsight (
   miningResults: Record<string, unknown>,
   tab: string,
-  modelName: string,
+  model: string | string[],
   splitName: string,
 ): Promise<string> {
   const response = await fetch('/api/rag/tab-insight', {
@@ -25,8 +25,8 @@ export async function fetchTabInsight (
     body: JSON.stringify({
       mining_results: miningResults,
       tab,
-      model_name: modelName,
       split_name: splitName,
+      ...(Array.isArray(model) ? { model_names: model } : { model_name: model }),
     }),
   })
 
@@ -46,7 +46,7 @@ export interface TabChatMessage {
 export async function fetchTabChatReply (
   miningResults: Record<string, unknown>,
   tab: string,
-  modelName: string,
+  model: string | string[],
   splitName: string,
   history: TabChatMessage[],
   message: string,
@@ -57,10 +57,10 @@ export async function fetchTabChatReply (
     body: JSON.stringify({
       mining_results: miningResults,
       tab,
-      model_name: modelName,
       split_name: splitName,
       history,
       message,
+      ...(Array.isArray(model) ? { model_names: model } : { model_name: model }),
     }),
   })
 

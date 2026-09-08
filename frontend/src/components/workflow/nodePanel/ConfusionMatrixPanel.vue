@@ -1,7 +1,7 @@
 <template>
   <section class="confusion-matrix-panel">
     <div v-if="groupedResults.length > 0" class="cm-controls">
-      <div class="cm-field">
+      <div v-if="activeTab !== 'roc' && activeTab !== 'pr'" class="cm-field">
         <span class="cm-field__label">模型</span>
         <CustomSelect
           v-model="selectedModel"
@@ -76,62 +76,114 @@
         該抽樣沒有可用的混淆矩陣資訊。
       </div>
 
-      <div v-if="activeTab === 'roc' && currentRocPrCurve" class="cm-chart-wrap">
-        <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
-          <path class="cm-chart-line" :d="rocPath" fill="none" />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">FPR (0 – 1)</div>
-        <div class="cm-chart-axis-y">TPR (0 – 1)</div>
+      <div v-if="activeTab === 'roc' && groupedResults.length > 0" class="cm-chart-wrap">
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">
+            正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+          </div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
+            <path
+              v-for="series in rocSeries"
+              v-show="series.visible"
+              :key="series.modelName"
+              class="cm-chart-line"
+              :d="series.path"
+              fill="none"
+              :style="{ stroke: series.color }"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">FPR (0 – 1)</div>
+          <div class="cm-chart-axis-y">TPR (0 – 1)</div>
+        </div>
+        <div class="cm-chart-legend">
+          <button
+            v-for="series in rocSeries"
+            :key="series.modelName"
+            class="cm-legend-item"
+            :class="{ 'cm-legend-item--hidden': !series.visible }"
+            type="button"
+            @click="toggleModelVisibility(series.modelName)"
+          >
+            <span class="cm-legend-swatch" :style="{ background: series.color }" />
+            {{ series.modelName }}
+          </button>
+        </div>
       </div>
       <div v-else-if="activeTab === 'roc'" class="summary-empty">
         此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
       </div>
 
-      <div v-if="activeTab === 'pr' && currentRocPrCurve" class="cm-chart-wrap">
-        <div class="cm-chart-label">正類：{{ currentRocPrCurve?.posLabel }}</div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <path class="cm-chart-line" :d="prPath" fill="none" />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">Recall (0 – 1)</div>
-        <div class="cm-chart-axis-y">Precision (0 – 1)</div>
+      <div v-if="activeTab === 'pr' && groupedResults.length > 0" class="cm-chart-wrap">
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">
+            正類：{{ groupedResults[0]?.splits.find(s => s.split_name === selectedFold)?.roc_pr_curve?.posLabel }}
+          </div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <path
+              v-for="series in prSeries"
+              v-show="series.visible"
+              :key="series.modelName"
+              class="cm-chart-line"
+              :d="series.path"
+              fill="none"
+              :style="{ stroke: series.color }"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">Recall (0 – 1)</div>
+          <div class="cm-chart-axis-y">Precision (0 – 1)</div>
+        </div>
+        <div class="cm-chart-legend">
+          <button
+            v-for="series in prSeries"
+            :key="series.modelName"
+            class="cm-legend-item"
+            :class="{ 'cm-legend-item--hidden': !series.visible }"
+            type="button"
+            @click="toggleModelVisibility(series.modelName)"
+          >
+            <span class="cm-legend-swatch" :style="{ background: series.color }" />
+            {{ series.modelName }}
+          </button>
+        </div>
       </div>
       <div v-else-if="activeTab === 'pr'" class="summary-empty">
         此模型或此類別數不支援 ROC/PR 曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
       </div>
 
       <div v-if="activeTab === 'calibration' && currentCalibrationCurve" class="cm-chart-wrap">
-        <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
-        <svg class="cm-chart" viewBox="0 0 100 100">
-          <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
-          <path class="cm-chart-line" :d="calibrationPath" fill="none" />
-          <circle
-            v-for="(point, index) in calibrationPoints"
-            :key="`cal-point-${index}`"
-            class="cm-chart-point"
-            :cx="point.x"
-            :cy="point.y"
-            r="1.5"
-          />
-          <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
-          <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
-          <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
-          <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
-        </svg>
-        <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
-        <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+        <div class="cm-chart-plot">
+          <div class="cm-chart-label">正類：{{ currentCalibrationCurve?.posLabel }}</div>
+          <svg class="cm-chart" viewBox="0 0 100 100">
+            <line class="cm-chart-diagonal" x1="18" y1="82" x2="82" y2="18" />
+            <path class="cm-chart-line" :d="calibrationPath" fill="none" />
+            <circle
+              v-for="(point, index) in calibrationPoints"
+              :key="`cal-point-${index}`"
+              class="cm-chart-point"
+              :cx="point.x"
+              :cy="point.y"
+              r="1.5"
+            />
+            <text class="cm-chart-tick" x="13" y="95" text-anchor="middle">0</text>
+            <text class="cm-chart-tick" x="50" y="90" text-anchor="middle">0.5</text>
+            <text class="cm-chart-tick" x="82" y="90" text-anchor="end">1</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="50">0.5</text>
+            <text class="cm-chart-tick" dominant-baseline="middle" text-anchor="end" x="12" y="18">1</text>
+          </svg>
+          <div class="cm-chart-axis-x">平均預測機率 (0 – 1)</div>
+          <div class="cm-chart-axis-y">實際正類比例 (0 – 1)</div>
+        </div>
       </div>
       <div v-else-if="activeTab === 'calibration'" class="summary-empty">
         此模型或此類別數不支援校準曲線（僅支援二元分類，且模型需提供機率輸出），或此結果為舊版執行結果，請重新執行 Workflow。
@@ -455,6 +507,21 @@
   const selectedModel = ref('')
   const selectedFold = ref('')
 
+  const hiddenModels = ref<Set<string>>(new Set())
+
+  const visibleModelNames = computed(() =>
+    groupedResults.value
+      .filter(g => !hiddenModels.value.has(g.model_name))
+      .map(g => g.model_name),
+  )
+
+  function toggleModelVisibility (modelName: string): void {
+    const next = new Set(hiddenModels.value)
+    if (next.has(modelName)) next.delete(modelName)
+    else next.add(modelName)
+    hiddenModels.value = next
+  }
+
   const modelOptions = computed(() =>
     groupedResults.value.map(g => ({ value: g.model_name, label: g.model_name })),
   )
@@ -520,7 +587,6 @@
     return rows.reduce((min, row) => (row.f1 < min.f1 ? row : min)).label
   })
 
-  // 只有 matrix / perClass 這兩個分頁是表格，ROC / PR / 校準曲線是圖表，沒有對應的複製/匯出內容
   const exportableTable = computed(() => {
     const suffix = `${selectedModel.value}_${selectedFold.value}`
 
@@ -547,6 +613,47 @@
       }
     }
 
+    if (activeTab.value === 'roc' && visibleModelNames.value.length > 0) {
+      const rows: Array<[string, string, string]> = []
+      for (const modelName of visibleModelNames.value) {
+        const curve = groupedResults.value
+          .find(g => g.model_name === modelName)
+          ?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve
+        if (!curve) continue
+        curve.roc.fpr.forEach((fpr, i) => {
+          rows.push([modelName, fpr.toFixed(4), (curve.roc.tpr[i] ?? 0).toFixed(4)])
+        })
+      }
+      if (rows.length === 0) return null
+      return { headers: ['模型', 'FPR', 'TPR'], rows, filename: `roc_curve_${selectedFold.value}` }
+    }
+
+    if (activeTab.value === 'pr' && visibleModelNames.value.length > 0) {
+      const rows: Array<[string, string, string]> = []
+      for (const modelName of visibleModelNames.value) {
+        const curve = groupedResults.value
+          .find(g => g.model_name === modelName)
+          ?.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve
+        if (!curve) continue
+        curve.pr.recall.forEach((recall, i) => {
+          rows.push([modelName, recall.toFixed(4), (curve.pr.precision[i] ?? 0).toFixed(4)])
+        })
+      }
+      if (rows.length === 0) return null
+      return { headers: ['模型', 'Recall', 'Precision'], rows, filename: `pr_curve_${selectedFold.value}` }
+    }
+
+    if (activeTab.value === 'calibration' && currentCalibrationCurve.value) {
+      const curve = currentCalibrationCurve.value
+      return {
+        headers: ['模型', '預測機率', '實際正類比例'],
+        rows: curve.probPred.map((p, i) => [
+          selectedModel.value, p.toFixed(4), (curve.probTrue[i] ?? 0).toFixed(4),
+        ]),
+        filename: `calibration_curve_${suffix}`,
+      }
+    }
+
     return null
   })
 
@@ -554,23 +661,38 @@
     switch (activeTab.value) {
       case 'matrix': return currentMatrix.value !== null
       case 'roc':
-      case 'pr': return currentRocPrCurve.value !== null
+      case 'pr': return visibleModelNames.value.some(name =>
+        groupedResults.value.find(g => g.model_name === name)
+          ?.splits.some(s => s.split_name === selectedFold.value && s.roc_pr_curve !== null))
       case 'calibration': return currentCalibrationCurve.value !== null
       case 'perClass': return currentPerClassMetrics.value !== null
       default: return false
     }
   })
 
+  // ROC/PR 用「目前顯示中的模型集合」當作 AI 解讀的範圍，其他分頁維持單一 selectedModel，
+  // 排序是為了同一組模型不管使用者關閉/開啟的先後順序，都對應到同一個快取 key
+  const insightModelParam = computed<string | string[]>(() => {
+    if (activeTab.value === 'roc' || activeTab.value === 'pr') {
+      return [...visibleModelNames.value].sort()
+    }
+    return selectedModel.value
+  })
+
+  function modelParamToString (model: string | string[]): string {
+    return Array.isArray(model) ? model.join(',') : model
+  }
+
   const tabInsightCache = ref<Map<string, string>>(new Map())
   const tabInsightLoadingKey = ref<string | null>(null)
   const tabInsightError = ref<string | null>(null)
 
-  function tabInsightCacheKey (tab: TabKey, model: string, fold: string): string {
-    return `${tab}::${model}::${fold}`
+  function tabInsightCacheKey (tab: TabKey, model: string | string[], fold: string): string {
+    return `${tab}::${modelParamToString(model)}::${fold}`
   }
 
   const currentTabInsightKey = computed(() =>
-    tabInsightCacheKey(activeTab.value, selectedModel.value, selectedFold.value),
+    tabInsightCacheKey(activeTab.value, insightModelParam.value, selectedFold.value),
   )
 
   const currentTabInsight = computed(() =>
@@ -582,7 +704,7 @@
   async function generateTabInsight (): Promise<void> {
     if (!props.projectId || !props.workflowResult) return
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
 
@@ -591,7 +713,7 @@
     try {
       const insight = await fetchTabInsight(props.workflowResult, tab, model, fold)
       tabInsightCache.value = new Map(tabInsightCache.value).set(key, insight)
-      saveTabInsightToStorage(props.projectId, model, fold, tab, insight)
+      saveTabInsightToStorage(props.projectId, modelParamToString(model), fold, tab, insight)
     } catch (error) {
       tabInsightError.value = error instanceof Error ? error.message : String(error)
     } finally {
@@ -664,7 +786,7 @@
   // 送出問題（sendTabChatMessage）跟按「重試」（retryTabChatMessage）都需要「拿 history 打 API、
   // 拿到回覆後 append 一筆 model 訊息」這段邏輯，抽成共用函式；呼叫端負責先把使用者訊息放進畫面陣列
   async function requestTabChatReply (
-    tab: TabKey, model: string, fold: string, history: TabChatMessage[], text: string,
+    tab: TabKey, model: string | string[], fold: string, history: TabChatMessage[], text: string,
   ): Promise<void> {
     if (!props.projectId || !props.workflowResult) return
     const key = tabInsightCacheKey(tab, model, fold)
@@ -679,7 +801,9 @@
       const reply = await fetchTabChatReply(props.workflowResult, tab, model, fold, history, text)
       const messages = [...(tabChatCache.value.get(key) ?? []), { role: 'model' as const, text: reply }]
       tabChatCache.value = new Map(tabChatCache.value).set(key, messages)
-      saveTabChatToStorage(props.projectId, model, fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES))
+      saveTabChatToStorage(
+        props.projectId, modelParamToString(model), fold, tab, messages.slice(-MAX_PERSISTED_MESSAGES),
+      )
       startTypewriter(`${key}::${messages.length - 1}`, reply)
     } catch (error) {
       tabChatError.value = new Map(tabChatError.value).set(
@@ -697,7 +821,7 @@
     if (!text || !props.projectId || !props.workflowResult) return
 
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     const cachedMessages = tabChatCache.value.get(key) ?? []
@@ -724,7 +848,7 @@
   // 用同一則訊息內容再打一次 API，不會讓使用者的問題重複出現在 history 裡
   function retryTabChatMessage (): void {
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     const messages = tabChatCache.value.get(key) ?? []
@@ -735,22 +859,23 @@
   }
 
   // 切換分頁/模型/fold 時，如果 localStorage 已經有這個組合的快取就直接顯示，不用重新打 API
-  watch([activeTab, selectedModel, selectedFold], () => {
+  watch([activeTab, () => modelParamToString(insightModelParam.value), selectedFold], () => {
     tabInsightError.value = null
     tabChatInput.value = ''
     if (!props.projectId) return
     const tab = activeTab.value
-    const model = selectedModel.value
+    const model = insightModelParam.value
+    const modelKey = modelParamToString(model)
     const fold = selectedFold.value
     const key = tabInsightCacheKey(tab, model, fold)
     if (!tabInsightCache.value.has(key)) {
-      const cached = loadTabInsightFromStorage(props.projectId, model, fold, tab)
+      const cached = loadTabInsightFromStorage(props.projectId, modelKey, fold, tab)
       if (cached !== null) {
         tabInsightCache.value = new Map(tabInsightCache.value).set(key, cached)
       }
     }
     if (!tabChatCache.value.has(key)) {
-      const cachedChat = loadTabChatFromStorage(props.projectId, model, fold, tab)
+      const cachedChat = loadTabChatFromStorage(props.projectId, modelKey, fold, tab)
       if (cachedChat.length > 0) {
         tabChatCache.value = new Map(tabChatCache.value).set(key, cachedChat)
       }
@@ -767,6 +892,19 @@
   function toChartY (value: number): number {
     return CHART_SIZE - CHART_PADDING - value * (CHART_SIZE - CHART_PADDING * 2)
   }
+
+  // 疊圖用的固定色盤：線圖需要飽和度夠、彼此區分度高，跟 --color-node-* 那組給色塊用的
+  // 低飽和 OKLCH 色票是不同調性用途，不重用。模型數超過 8 個時循環使用
+  const SERIES_COLORS = [
+    '#2563EB', // 藍
+    '#DC2626', // 紅
+    '#16A34A', // 綠
+    '#D97706', // 橙
+    '#7C3AED', // 紫
+    '#0891B2', // 青
+    '#DB2777', // 桃紅
+    '#65A30D', // 黃綠
+  ]
 
   function buildLinePath (xs: number[], ys: number[]): string {
     if (xs.length === 0 || xs.length !== ys.length) return ''
@@ -786,6 +924,31 @@
     if (!curve) return ''
     return buildLinePath(curve.pr.recall, curve.pr.precision)
   })
+
+  interface CurveSeries {
+    modelName: string
+    color: string
+    path: string
+    visible: boolean
+  }
+
+  function buildCurveSeries (
+    extractXY: (curve: RocPrCurveData) => [number[], number[]],
+  ): CurveSeries[] {
+    return groupedResults.value.map((group, index) => {
+      const curve = group.splits.find(s => s.split_name === selectedFold.value)?.roc_pr_curve
+      const [xs, ys] = curve ? extractXY(curve) : [[], []]
+      return {
+        modelName: group.model_name,
+        color: SERIES_COLORS[index % SERIES_COLORS.length]!,
+        path: buildLinePath(xs, ys),
+        visible: !hiddenModels.value.has(group.model_name),
+      }
+    })
+  }
+
+  const rocSeries = computed<CurveSeries[]>(() => buildCurveSeries(curve => [curve.roc.fpr, curve.roc.tpr]))
+  const prSeries = computed<CurveSeries[]>(() => buildCurveSeries(curve => [curve.pr.recall, curve.pr.precision]))
 
   const calibrationPath = computed(() => {
     const curve = currentCalibrationCurve.value
@@ -809,6 +972,8 @@
 
   // 結果載入或換模型後，把選取校正到有效值（預設第一個模型 / 第一個 fold）
   watch(groupedResults, groups => {
+    // 重新執行 workflow、結果整批換掉時，使用者之前關掉的模型不該延續下去
+    hiddenModels.value = new Set()
     if (groups.length === 0) {
       selectedModel.value = ''
       return
@@ -935,11 +1100,24 @@
   }
 
   .cm-chart-wrap {
-    position: relative;
-    padding: 12px 16px 28px 52px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 16px;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     background: var(--color-surface);
+  }
+
+  /* 圖表本體（含軸標籤）獨立出來，因為 axis-x/axis-y 是相對這一層定位，
+     不能再相對 .cm-chart-wrap——那一層現在要跟圖例並排。這裡的 padding 只放
+     X/Y 軸標籤額外需要的空間，跟 .cm-chart-wrap 自己的 12px/16px 加起來
+     等於原本單一 .cm-chart-wrap 的 12px 16px 28px 52px（沒有改變總留白量，
+     只是拆成兩層） */
+  .cm-chart-plot {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 0 0 16px 36px;
   }
 
   .cm-chart {
@@ -966,6 +1144,42 @@
     stroke: var(--color-ink);
     stroke-width: 1.4;
     vector-effect: non-scaling-stroke;
+  }
+
+  .cm-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cm-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text);
+  }
+
+  .cm-legend-item--hidden {
+    color: var(--color-ink-soft);
+    text-decoration: line-through;
+  }
+
+  .cm-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .cm-legend-item--hidden .cm-legend-swatch {
+    opacity: 0.35;
   }
 
   .cm-chart-point {

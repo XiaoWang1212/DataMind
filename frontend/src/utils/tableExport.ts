@@ -39,3 +39,26 @@ export function exportTableToExcel (
   link.click()
   URL.revokeObjectURL(url)
 }
+
+function toCsvCell (cell: string | number): string {
+  const text = typeof cell === 'number' ? String(cell) : cell
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+/** 產生 CSV 並觸發瀏覽器下載，開頭加 UTF-8 BOM 避免 Excel 開啟時中文亂碼。 */
+export function exportTableToCsv (
+  headers: string[],
+  rows: Array<Array<string | number>>,
+  filename: string,
+): void {
+  const lines = [headers, ...rows].map(row => row.map(cell => toCsvCell(cell)).join(','))
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${filename}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
