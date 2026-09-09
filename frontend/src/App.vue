@@ -28,5 +28,9 @@
     const root = document.documentElement
     root.classList.toggle('v-theme--dark', themeStore.isDark)
     root.classList.toggle('v-theme--light', !themeStore.isDark)
+    // 捲軸、原生 select 這些由瀏覽器繪製的元件只吃 color-scheme。index.html 的
+    // inline script 只在載入時設一次，切換主題時要在這裡跟著更新，否則它們會
+    // 停在開啟頁面當下的配色，重新整理才變
+    root.style.colorScheme = themeStore.isDark ? 'dark' : 'light'
   })
 </script>

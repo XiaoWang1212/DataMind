@@ -22,6 +22,9 @@ class Framework(db.Model):
     dependent_vars: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     hypotheses: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     workflow_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # 上傳的 PDF 內容 SHA-256（小寫十六進位）。本次改動之前建立的框架沒有這個值，
+    # 且無法回填——原始 PDF 沒有留存
+    pdf_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow, nullable=False
     )

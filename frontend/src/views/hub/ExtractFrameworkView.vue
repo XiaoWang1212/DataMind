@@ -24,9 +24,17 @@
           text="點擊上傳或拖放檔案"
           @update:model-value="onFileChange"
         />
+        <div v-if="duplicateFramework" class="notice notice--action">
+          <v-icon class="notice-icon" icon="mdi-information-outline" size="16" />
+          <span class="notice-text">{{ duplicateMessage }}</span>
+          <AppButton class="notice-btn" variant="secondary" @click="extractAnyway">
+            仍要提取
+          </AppButton>
+        </div>
         <AppButton
-          v-if="selectedFile && !extracting"
+          v-else-if="selectedFile && !extracting"
           class="extract-btn"
+          :loading="checkingDuplicate"
           :variant="extractedData ? 'secondary' : 'primary'"
           @click="startExtract"
         >
@@ -100,13 +108,15 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { RouterLink, useRouter } from 'vue-router'
+  import { checkFrameworkDuplicate, type DuplicateFramework } from '@/api/framework'
   import { streamAnalyzeWorkflowFromPdf } from '@/api/gemini'
   import FileDropZone from '@/components/common/FileDropZone.vue'
   import AppButton from '@/components/ui/AppButton.vue'
   import PageHeader from '@/components/ui/PageHeader.vue'
   import { useFrameworkStore } from '@/store/frameworkStore'
+  import { computePdfHash } from '@/utils/pdfHash'
 
   interface ExtractedFramework {
     name: string
@@ -125,6 +135,18 @@
   const extractError = ref<string | null>(null)
   const extractedData = ref<ExtractedFramework | null>(null)
   const rawWorkflowJson = ref<Record<string, unknown> | null>(null)
+  const duplicateFramework = ref<DuplicateFramework | null>(null)
+  const pdfHash = ref<string | null>(null)
+  const checkingDuplicate = ref(false)
+
+  const duplicateMessage = computed(() => {
+    const hit = duplicateFramework.value
+    if (!hit) return ''
+    return hit.matchType === 'hash'
+      ? `這份檔案已經提取過，框架庫中的《${hit.title}》`
+      : `框架庫已有同名的《${hit.title}》`
+  })
+
   const currentLine = ref('')
   const previousLine = ref('')
   let abortController: AbortController | null = null
@@ -137,6 +159,34 @@
     // 移除檔案時要一併中止進行中的提取，維持原本 removeFile 的行為
     if (!file && extracting.value) abortController?.abort()
     selectedFile.value = file
+    duplicateFramework.value = null
+    pdfHash.value = null
+    if (file) void checkDuplicate(file)
+  }
+
+  // 選檔當下就判定，讓使用者在按下提取之前就知道這份論文已經在框架庫裡
+  async function checkDuplicate (file: File): Promise<void> {
+    checkingDuplicate.value = true
+    try {
+      pdfHash.value = await computePdfHash(file)
+      const hit = await checkFrameworkDuplicate({
+        pdfHash: pdfHash.value,
+        title: file.name.replace(/\.[^.]+$/, ''),
+      })
+      // 使用者可能在等待期間換掉或移除檔案，過期的結果不要蓋上去
+      if (selectedFile.value === file) duplicateFramework.value = hit
+    } catch (error) {
+      // 重複只是提示，算不出來或查不到就當作沒有重複，不影響提取
+      console.error('比對重複框架失敗', error)
+    } finally {
+      checkingDuplicate.value = false
+    }
+  }
+
+  // 看過提示後仍要提取，清掉提示直接送出
+  function extractAnyway (): void {
+    duplicateFramework.value = null
+    void startExtract()
   }
 
   async function startExtract (): Promise<void> {
@@ -220,9 +270,12 @@
       dependentVars: d.targetCol ? [d.targetCol] : [],
       hypotheses: [],
       workflowJson: rawWorkflowJson.value ?? undefined,
+      pdfHash: pdfHash.value,
     })
     extractedData.value = null
     rawWorkflowJson.value = null
+    duplicateFramework.value = null
+    pdfHash.value = null
     selectedFile.value = null
     router.push('/hub/library')
   }
@@ -379,6 +432,39 @@
   background: var(--color-error-bg);
   border: 1px solid color-mix(in oklab, var(--color-error) 25%, transparent);
   border-radius: var(--radius-sm);
+}
+
+/* 「已經有這個框架了」是資訊，不是警示。依 DESIGN_SYSTEM §7.5 不拿狀態色做非狀態裝飾，用次級底 */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.notice--action {
+  margin-top: 14px;
+}
+
+.notice-icon {
+  flex-shrink: 0;
+}
+
+.notice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-btn {
+  flex-shrink: 0;
+  padding-inline: 12px;
+  font-size: 13px;
 }
 
 .result-field-label {

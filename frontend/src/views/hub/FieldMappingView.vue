@@ -65,7 +65,11 @@
           <span v-else-if="unmatchedCount > 0" class="footer-hint">
             還有 {{ unmatchedCount }} 個變數未對應
           </span>
-          <span v-else-if="!loading && unusedColumns.length > 0" class="footer-hint footer-hint--neutral">
+          <span
+            v-else-if="!loading && unusedColumns.length > 0"
+            class="footer-hint footer-hint--neutral"
+            :title="unusedColumnNames"
+          >
             送出後將移除 {{ unusedColumns.length }} 個未使用欄位（{{ unusedColumnNames }}）
           </span>
           <AppButton variant="ghost" @click="skipToWorkflow">
@@ -761,6 +765,21 @@
     justify-content: flex-end;
     gap: 12px;
     padding-top: 8px;
+  }
+
+  /* 未使用欄位可能很多，名稱列表壓縮並截斷成一行，避免把按鈕擠到換行。
+     完整清單放在 title */
+  .footer-hint,
+  .footer-error {
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mapping-footer .app-btn {
+    flex-shrink: 0;
   }
 
   .footer-hint {

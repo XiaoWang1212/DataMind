@@ -455,7 +455,8 @@
   /* ── Cards ── */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* minmax(0, ...) 才會真的三欄平分；1fr 的下限是內容寬度，長標題會把該欄撐開 */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
 
@@ -507,14 +508,17 @@
     min-width: 0;
   }
 
+  /* 標題允許折行，最多兩行後才截斷；檔名常有長串底線，補 anywhere 才會在字中斷開 */
   .fw-title {
+    display: -webkit-box;
     overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     font-size: 14px;
     font-weight: 500;
     line-height: 1.3;
     color: var(--color-text);
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
 
   .fw-subtitle {
