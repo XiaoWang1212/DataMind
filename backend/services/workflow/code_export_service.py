@@ -652,8 +652,6 @@ def generate_workflow_script(payload: Dict[str, Any]) -> str:
 
 由 DataMind 自動產生，重現這個 workflow 在畫布上設定的完整流程：
 前處理 → 特徵工程 → 資料切分 → 訓練 → 評估指標{"（含 95% 信賴區間）" if compute_ci else ""}。
-
-部分步驟類型目前還不支援自動產生程式碼，會用「⚠️ TODO」標註，請自行補上對應邏輯。
 """
 {chr(10).join(all_import_lines)}
 
