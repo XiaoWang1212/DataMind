@@ -270,6 +270,7 @@
         content: result.content,
         citations: result.citations,
         citationStyle: result.citationStyle,
+        language: report.value.language,
       }
       savedSnapshot = structuredClone(toRaw(report.value))
       mode.value = 'view'

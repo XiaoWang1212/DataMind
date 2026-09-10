@@ -358,7 +358,7 @@ class PaperRAGService:
             "citation_map": citation_map,
             "references": global_ref_list,
             "citation_report": citation_report,
-            "sections_generated": [s for s in structure if s in sections_text],
+            "sections_generated": [s for s in structure if sections_text.get(s)],
             "usage": usage_total,
         }
 
