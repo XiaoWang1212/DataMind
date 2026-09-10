@@ -64,7 +64,7 @@ class FakeService:
         return {"success": True, "message": "已刪除論文"}
 
     def generate_paper(self, project_id, topic, mining_results, structure=None, language="zh-TW"):
-        self.calls.append(("generate_paper", project_id))
+        self.calls.append(("generate_paper", project_id, language))
         return {
             "paper_markdown": "", "citation_map": [], "references": [],
             "citation_report": "", "sections_generated": [], "usage": {},
@@ -315,3 +315,36 @@ def test_tab_chat_requires_login(client_with_login_required):
         "message": "哪個模型比較好？",
     })
     assert response.status_code == 401
+
+
+def test_arxiv_generate_forwards_language_to_service(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/arxiv/generate", json={
+        "project_id": 7,
+        "topic": "t",
+        "mining_results": {},
+        "selected_candidates": [{"arxiv_id": "123"}],
+        "language": "en",
+    })
+
+    assert response.status_code == 200
+    assert ("generate_paper", 7, "en") in fake_service.calls
+
+
+def test_arxiv_generate_defaults_language_to_zh_tw_when_omitted(client, monkeypatch):
+    monkeypatch.setattr(rag_route, "_get_owned_project", lambda project_id: FakeProject(project_id))
+    fake_service = FakeService()
+    monkeypatch.setattr(paper_rag_module, "get_paper_rag_service", lambda: fake_service)
+
+    response = client.post("/api/rag/arxiv/generate", json={
+        "project_id": 7,
+        "topic": "t",
+        "mining_results": {},
+        "selected_candidates": [{"arxiv_id": "123"}],
+    })
+
+    assert response.status_code == 200
+    assert ("generate_paper", 7, "zh-TW") in fake_service.calls

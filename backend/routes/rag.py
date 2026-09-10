@@ -480,6 +480,7 @@ def arxiv_generate():
         - topic               : 研究主題（必填）
         - mining_results      : DataMind 探勘結果（必填）
         - selected_candidates : 使用者勾選的候選論文清單（必填，來自 /arxiv/search 的 candidates）
+        - language            : 語言（選填，預設 zh-TW）
 
     回傳：與 /generate-paper 相同形狀，外加 ingested/failed 清單
     """
@@ -498,6 +499,7 @@ def arxiv_generate():
     topic = data.get("topic", "").strip()
     mining_results = data.get("mining_results")
     selected_candidates = data.get("selected_candidates")
+    language = data.get("language", "zh-TW")
 
     if not topic:
         return jsonify({"success": False, "error": "topic 為必填欄位"}), 400
@@ -513,7 +515,9 @@ def arxiv_generate():
         if not ingest_result.get("success"):
             return jsonify(ingest_result), 422
 
-        result = service.generate_paper(project_id, topic=topic, mining_results=mining_results)
+        result = service.generate_paper(
+            project_id, topic=topic, mining_results=mining_results, language=language
+        )
         return jsonify({
             "success": True,
             "result": result,
