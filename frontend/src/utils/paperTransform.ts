@@ -58,13 +58,23 @@ function buildCitations (result: ArxivGenerateResult): Citation[] {
     })
 }
 
-export function transformArxivResultToPaperReport (result: ArxivGenerateResult, topic: string): PaperReport {
+export function transformArxivResultToPaperReport (
+  result: ArxivGenerateResult,
+  topic: string,
+  language: PaperReport['language'],
+): PaperReport {
   const blocks = result.paper_markdown.split('\n\n---\n\n')
+  // blocks[0] 固定是 `# {topic}` 標題（不是章節，不會被下面的 `## ` 判斷選中）；
+  // 接下來 sections_generated.length 個 block 才是實際生成的正文章節，再之後如果
+  // 還有 block 就是參考文獻。用數量判斷而不是比對標題文字，因為標題文字會隨
+  // language 改變（中文「參考文獻」、英文「References」），比對文字寫死其中一種
+  // 語言，另一種語言就會判斷失效、把參考文獻誤植入正文
+  const sectionBlocks = blocks.slice(1, 1 + result.sections_generated.length)
   const docContent: JSONContent[] = []
 
-  for (const block of blocks) {
+  for (const block of sectionBlocks) {
     const trimmed = block.trim()
-    if (!trimmed.startsWith('## ') || trimmed.startsWith('## 參考文獻')) {
+    if (!trimmed.startsWith('## ')) {
       continue
     }
 
@@ -99,6 +109,7 @@ export function transformArxivResultToPaperReport (result: ArxivGenerateResult, 
     content: { type: 'doc', content: docContent },
     citations: buildCitations(result),
     citationStyle: 'apa',
+    language,
   }
 }
 

@@ -27,6 +27,7 @@
     content: JSONContent
     citations: Citation[]
     citationStyle: CitationStyle
+    language?: 'zh-TW' | 'en'
   }>()
 
   const emit = defineEmits<{
@@ -72,7 +73,7 @@
       height: contentHeights[i] ?? el.getBoundingClientRect().height,
     }))
 
-    const referenceInputs = buildReferenceBlocks(props.citations, props.citationStyle)
+    const referenceInputs = buildReferenceBlocks(props.citations, props.citationStyle, props.language)
     let referenceBlocks: PaginationBlock[] = []
 
     if (referenceInputs.length > 0) {
@@ -113,7 +114,7 @@
   onMounted(computePages)
 
   watch(
-    [() => props.content, () => props.citations, () => props.citationStyle],
+    [() => props.content, () => props.citations, () => props.citationStyle, () => props.language],
     computePages,
     { deep: true },
   )

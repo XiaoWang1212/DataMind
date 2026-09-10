@@ -6,11 +6,16 @@ export interface ReferenceBlockInput {
   html: string
 }
 
-export function buildReferenceBlocks (citations: Citation[], citationStyle: CitationStyle): ReferenceBlockInput[] {
+export function buildReferenceBlocks (
+  citations: Citation[],
+  citationStyle: CitationStyle,
+  language: 'zh-TW' | 'en' = 'zh-TW',
+): ReferenceBlockInput[] {
   if (citations.length === 0) return []
 
+  const title = language === 'en' ? 'References' : '參考文獻'
   const blocks: ReferenceBlockInput[] = [
-    { kind: 'referenceHeading', html: '<h3 class="references-title">參考文獻</h3>' },
+    { kind: 'referenceHeading', html: `<h3 class="references-title">${title}</h3>` },
   ]
 
   citations.forEach((citation, index) => {

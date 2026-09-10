@@ -17,11 +17,13 @@ export interface PaperReport {
   content: JSONContent
   citations: Citation[]
   citationStyle: CitationStyle
+  language?: 'zh-TW' | 'en'
 }
 
 export const mockPaperReport: PaperReport = {
   title: '基於機器學習之電信客戶流失預測研究',
   citationStyle: 'apa',
+  language: 'zh-TW',
   citations: [
     {
       id: 'cite-1',

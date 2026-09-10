@@ -178,7 +178,12 @@
         projectId: projectId.value,
       })
       if (token !== generationToken) return
-      const report = transformArxivResultToPaperReport(result, topic.value)
+      // TODO(Task 4): 'zh-TW' 是暫時字面值，因為這裡還沒有語言選擇 UI——
+      // 今天透過這個流程生成的報告本來就都是中文，所以這個字面值跟現有行為
+      // 完全一致、不改變任何 runtime 行為，只是滿足 Task 3 把 language 改成
+      // 必填參數後的型別檢查。Task 4 加上語言選擇器後，這裡要換成使用者
+      // 實際選的值（例如 selectedLanguage.value）
+      const report = transformArxivResultToPaperReport(result, topic.value, 'zh-TW')
       generationComplete.value = true
       // 生成很花時間（要跑後端 RAG/AI），使用者看到結果就會當作「完成了」，
       // 不會直覺想到還要手動切去編輯模式按儲存——生成完直接存檔，

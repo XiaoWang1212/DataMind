@@ -1,6 +1,6 @@
 <template>
   <section v-if="citations.length > 0" class="references-section">
-    <h3 class="references-title">參考文獻</h3>
+    <h3 class="references-title">{{ language === 'en' ? 'References' : '參考文獻' }}</h3>
     <ol v-if="citationStyle === 'ieee'" class="references-list references-list--numbered">
       <li v-for="(citation, index) in citations" :key="citation.id">
         {{ formatCitation(citation, citationStyle, index + 1) }}
@@ -21,6 +21,7 @@
   defineProps<{
     citations: Citation[]
     citationStyle: CitationStyle
+    language?: 'zh-TW' | 'en'
   }>()
 </script>
 

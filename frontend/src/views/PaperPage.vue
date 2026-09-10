@@ -60,6 +60,7 @@
             :citation-style="report.citationStyle"
             :citations="report.citations"
             :content="report.content"
+            :language="report.language"
             @citation-click="onCitationClick"
           />
         </article>
@@ -71,7 +72,7 @@
             :project-id="projectId"
             @citation-click="onCitationClick"
           />
-          <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" />
+          <ReferencesSection :citation-style="report.citationStyle" :citations="report.citations" :language="report.language" />
         </article>
 
         <div class="paper-citations">
