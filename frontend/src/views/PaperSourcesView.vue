@@ -77,6 +77,16 @@
             </ul>
 
             <div class="sources-actions">
+              <div class="language-select-row">
+                <span class="sources-title-label">論文語言</span>
+                <CustomSelect
+                  aria-label="論文語言"
+                  class="language-select"
+                  :model-value="selectedLanguage"
+                  :options="languageOptions"
+                  @update:model-value="onLanguageChange"
+                />
+              </div>
               <AppButton
                 :disabled="selectedIds.length === 0"
                 :loading="generating"
@@ -101,6 +111,7 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { type ArxivCandidate, generateFromArxiv, searchArxivCandidates } from '@/api/arxiv'
   import { saveReport } from '@/api/report'
+  import CustomSelect from '@/components/common/CustomSelect.vue'
   import HubSidebar from '@/components/hub/HubSidebar.vue'
   import PaperGeneratingOverlay from '@/components/paper/PaperGeneratingOverlay.vue'
   import AppButton from '@/components/ui/AppButton.vue'
@@ -123,6 +134,16 @@
   const hasSearched = ref(false)
   const candidates = ref<ArxivCandidate[]>([])
   const selectedIds = ref<string[]>([])
+
+  const languageOptions = [
+    { value: 'en', label: 'English' },
+    { value: 'zh-TW', label: '繁體中文' },
+  ]
+  const selectedLanguage = ref<'zh-TW' | 'en'>('en')
+
+  function onLanguageChange (value: string): void {
+    selectedLanguage.value = value as 'zh-TW' | 'en'
+  }
 
   function toggleCandidate (arxivId: string, checked: boolean): void {
     selectedIds.value = checked
@@ -176,14 +197,10 @@
         miningResults: miningResults.value,
         selectedCandidates,
         projectId: projectId.value,
+        language: selectedLanguage.value,
       })
       if (token !== generationToken) return
-      // TODO(Task 4): 'zh-TW' 是暫時字面值，因為這裡還沒有語言選擇 UI——
-      // 今天透過這個流程生成的報告本來就都是中文，所以這個字面值跟現有行為
-      // 完全一致、不改變任何 runtime 行為，只是滿足 Task 3 把 language 改成
-      // 必填參數後的型別檢查。Task 4 加上語言選擇器後，這裡要換成使用者
-      // 實際選的值（例如 selectedLanguage.value）
-      const report = transformArxivResultToPaperReport(result, topic.value, 'zh-TW')
+      const report = transformArxivResultToPaperReport(result, topic.value, selectedLanguage.value)
       generationComplete.value = true
       // 生成很花時間（要跑後端 RAG/AI），使用者看到結果就會當作「完成了」，
       // 不會直覺想到還要手動切去編輯模式按儲存——生成完直接存檔，
@@ -365,5 +382,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .language-select-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .language-select {
+    width: 140px;
   }
 </style>
