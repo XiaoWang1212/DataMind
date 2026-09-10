@@ -76,6 +76,16 @@ _SECTION_WRITING_FOCUS: Dict[str, str] = {
 
 _DEFAULT_STRUCTURE = ["摘要", "前言", "研究方法", "實驗結果", "討論", "結論"]
 
+# 章節顯示標籤（僅用於輸出文字，內部 RAG 查詢/寫作指示的 key 維持中文不變）
+_SECTION_LABELS_EN: Dict[str, str] = {
+    "摘要": "Abstract",
+    "前言": "Introduction",
+    "研究方法": "Methods",
+    "實驗結果": "Results",
+    "討論": "Discussion",
+    "結論": "Conclusion",
+}
+
 # ── 期刊評分準則 ──────────────────────────────────────────────────────────────
 _JOURNAL_RUBRICS: List[Dict[str, str]] = [
     {
@@ -298,8 +308,14 @@ class PaperRAGService:
 
             # 4. 建立引用地圖（逐段）—— 要在轉換全域編號之前做，
             # 這樣才能用本地編號精準查表，不是用全域編號反查猜測
+            #
+            # 這裡刻意傳「解析後的顯示標籤」而不是內部 canonical key（section_name）：
+            # _assemble_paper() 組標題時用同一個 _section_label() 算出同一個字串，
+            # 前端是用逐字串比對這兩者來決定引用來源要掛在哪個段落上，兩邊沒有算出
+            # 同一個字串的話，英文模式下所有引用配對都會失敗
+            section_label = self._section_label(section_name, language)
             self._build_citation_map(
-                section_name, section_text, local_refs, global_ref_list, citation_map
+                section_label, section_text, local_refs, global_ref_list, citation_map
             )
 
             # 5. 本地 [n] → 全域 [n]
@@ -334,8 +350,8 @@ class PaperRAGService:
             )
 
         # 7. 組合完整論文 + 引用對照報告
-        paper_markdown = self._assemble_paper(topic, structure, sections_text, global_ref_list)
-        citation_report = self._build_citation_report(global_ref_list, citation_map)
+        paper_markdown = self._assemble_paper(topic, structure, sections_text, global_ref_list, language)
+        citation_report = self._build_citation_report(global_ref_list, citation_map, language)
 
         return {
             "paper_markdown": paper_markdown,
@@ -1203,6 +1219,25 @@ class PaperRAGService:
 
     # ── Prompt 建立 ───────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _section_label(section_name: str, language: str) -> str:
+        if language == "en":
+            return _SECTION_LABELS_EN.get(section_name, section_name)
+        return section_name
+
+    @staticmethod
+    def _build_reference_block(local_refs: Dict[int, dict]) -> str:
+        ref_lines = [
+            f"[{lid}] 論文：《{info['chunk'].title}》\n"
+            f"     摘錄：{info['chunk'].content[:400]}"
+            for lid, info in local_refs.items()
+        ]
+        return (
+            "\n\n".join(ref_lines)
+            if ref_lines
+            else "（目前論文庫中無相關參考文獻，請根據一般醫學知識撰寫）"
+        )
+
     def _build_section_prompt(
         self,
         section_name: str,
@@ -1211,19 +1246,20 @@ class PaperRAGService:
         local_refs: Dict[int, dict],
         language: str,
     ) -> str:
+        if language == "en":
+            return self._build_section_prompt_en(section_name, topic, results_text, local_refs)
+        return self._build_section_prompt_zh(section_name, topic, results_text, local_refs)
+
+    def _build_section_prompt_zh(
+        self,
+        section_name: str,
+        topic: str,
+        results_text: str,
+        local_refs: Dict[int, dict],
+    ) -> str:
         target = _SECTION_WORD_TARGETS.get(section_name, 600)
         writing_focus = _SECTION_WRITING_FOCUS.get(section_name, "")
-
-        ref_lines = [
-            f"[{lid}] 論文：《{info['chunk'].title}》\n"
-            f"     摘錄：{info['chunk'].content[:400]}"
-            for lid, info in local_refs.items()
-        ]
-        ref_block = (
-            "\n\n".join(ref_lines)
-            if ref_lines
-            else "（目前論文庫中無相關參考文獻，請根據一般醫學知識撰寫）"
-        )
+        ref_block = self._build_reference_block(local_refs)
 
         return (
             f"你是醫學資料科學領域的學術論文撰寫助手。"
@@ -1252,6 +1288,57 @@ class PaperRAGService:
             f"- 僅輸出「{section_name}」的段落內文，不需要章節標題\n"
             f"- 段落間以空行分隔\n\n"
             f"請直接輸出文章內容："
+        )
+
+    def _build_section_prompt_en(
+        self,
+        section_name: str,
+        topic: str,
+        results_text: str,
+        local_refs: Dict[int, dict],
+    ) -> str:
+        target = _SECTION_WORD_TARGETS.get(section_name, 600)
+        writing_focus = _SECTION_WRITING_FOCUS.get(section_name, "")
+        ref_block = self._build_reference_block(local_refs)
+        label = self._section_label(section_name, "en")
+
+        return (
+            f"You are an academic writing assistant specializing in medical data science.\n"
+            f"Based on the following materials, write the \"{label}\" section of an "
+            f"academic paper in English.\n\n"
+            f"[Research Topic]\n{topic}\n\n"
+            f"[Writing Focus for This Section]\n{writing_focus}\n\n"
+            f"[DataMind Data Mining Experiment Results]\n{results_text}\n\n"
+            f"[Citable References]\n"
+            f"When citing prior research, methods, or findings, add the corresponding "
+            f"citation marker at the end of the sentence (e.g. [1], [2][3]).\n\n"
+            f"{ref_block}\n\n"
+            f"[Writing Requirements]\n"
+            f"- Language: English\n"
+            f"- Target length: approximately {target} words\n"
+            f"- Follow the standard writing conventions of international academic "
+            f"journals (IMRaD): coherent, formal prose paragraphs; do not insert bullet "
+            f"points, numbered lists, or sub-headings within a paragraph\n"
+            f"- Use a formal academic register and passive voice where appropriate; "
+            f"avoid colloquial phrasing\n"
+            f"- Do not use any Markdown syntax, including *, -, #, backticks, or bold "
+            f"markers; when referring to preprocessing steps or parameter names, "
+            f"describe them in plain English prose (e.g. \"missing values were imputed "
+            f"with the mean\") rather than copying code identifiers or wrapping them in "
+            f"backticks\n"
+            f"- Citation rule: each citation marker must correspond only to the 1-2 "
+            f"sentences of specific claims or data immediately preceding it — a single "
+            f"citation marker must not cover an entire paragraph; if a paragraph "
+            f"contains multiple claims supported by different sources, cite each claim "
+            f"separately right after it instead of grouping all citations at the end of "
+            f"the paragraph\n"
+            f"- When citing multiple references for the same claim, use adjacent "
+            f"separate brackets (e.g. [1][2]); do not list multiple numbers inside one "
+            f"bracket separated by commas (e.g. [1, 2] is not allowed)\n"
+            f"- Output only the body text of the \"{label}\" section — do not include a "
+            f"section heading\n"
+            f"- Separate paragraphs with a blank line\n\n"
+            f"Please output the section content directly:"
         )
 
     @staticmethod
@@ -1377,15 +1464,28 @@ class PaperRAGService:
     def _build_citation_report(
         global_ref_list: List[dict],
         citation_map: List[dict],
+        language: str,
     ) -> str:
         """
         依參考文獻分組，記錄文章中每一段引用內文對應到該文獻的哪一段原文摘錄。
         僅包含實際被引用（citation_map 中出現過）的文獻。
         """
         if not global_ref_list:
-            return "（本文未實際引用任何參考文獻）"
+            return (
+                "(No references were cited in this paper.)"
+                if language == "en"
+                else "（本文未實際引用任何參考文獻）"
+            )
 
-        parts = ["# 引用對照報告", "", "記錄論文正文中每一處引用，對應到參考文獻原文的哪一段內容。", ""]
+        if language == "en":
+            parts = [
+                "# Citation Cross-Reference Report",
+                "",
+                "Records every citation in the body text and the source excerpt it corresponds to.",
+                "",
+            ]
+        else:
+            parts = ["# 引用對照報告", "", "記錄論文正文中每一處引用，對應到參考文獻原文的哪一段內容。", ""]
 
         for ref in global_ref_list:
             rid = ref["ref_id"]
@@ -1400,12 +1500,20 @@ class PaperRAGService:
             ]
             for entry in entries:
                 src = next((s for s in entry["sources"] if s["ref_id"] == rid), None)
-                parts.append(f"### {entry['section']} · 第 {entry['paragraph_index']} 段")
-                parts.append(f"**引用內文：** {entry['text']}")
-                if src and src.get("relevant_chunk"):
-                    parts.append(f"**對應原文摘錄：** {src['relevant_chunk']}")
-                if src and src.get("similarity_score") is not None:
-                    parts.append(f"**相似度：** {src['similarity_score']}")
+                if language == "en":
+                    parts.append(f"### {entry['section']} · Paragraph {entry['paragraph_index']}")
+                    parts.append(f"**Cited excerpt:** {entry['text']}")
+                    if src and src.get("relevant_chunk"):
+                        parts.append(f"**Source excerpt:** {src['relevant_chunk']}")
+                    if src and src.get("similarity_score") is not None:
+                        parts.append(f"**Similarity:** {src['similarity_score']}")
+                else:
+                    parts.append(f"### {entry['section']} · 第 {entry['paragraph_index']} 段")
+                    parts.append(f"**引用內文：** {entry['text']}")
+                    if src and src.get("relevant_chunk"):
+                        parts.append(f"**對應原文摘錄：** {src['relevant_chunk']}")
+                    if src and src.get("similarity_score") is not None:
+                        parts.append(f"**相似度：** {src['similarity_score']}")
                 parts.append("")
 
         return "\n".join(parts)
@@ -1418,13 +1526,15 @@ class PaperRAGService:
         structure: List[str],
         sections_text: Dict[str, str],
         global_ref_list: List[dict],
+        language: str,
     ) -> str:
         parts = [f"# {topic}"]
 
         for sec in structure:
             text = sections_text.get(sec, "")
             if text:
-                parts.append(f"## {sec}\n\n{text}")
+                label = PaperRAGService._section_label(sec, language)
+                parts.append(f"## {label}\n\n{text}")
 
         # APA 格式參考文獻
         if global_ref_list:
@@ -1434,7 +1544,8 @@ class PaperRAGService:
                 year = ref.get("year", "n.d.")
                 title = ref.get("title", "Untitled")
                 ref_lines.append(f"[{ref['ref_id']}] {author} ({year}). {title}.")
-            parts.append("## 參考文獻\n\n" + "\n\n".join(ref_lines))
+            heading = "References" if language == "en" else "參考文獻"
+            parts.append(f"## {heading}\n\n" + "\n\n".join(ref_lines))
 
         return "\n\n---\n\n".join(parts)
 
